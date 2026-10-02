@@ -17,6 +17,8 @@ MIN_CLIP_SECONDS = 35
 MAX_CLIP_SECONDS = 75
 CAPTION_MIN_WORDS = 3
 CAPTION_MAX_WORDS = 6
+CAPTION_FONT_SIZE = int(os.environ.get("CAPTION_FONT_SIZE", "48"))
+CAPTION_MARGIN_V = int(os.environ.get("CAPTION_MARGIN_V", "220"))
 ROOT = Path(__file__).resolve().parent
 WORK = ROOT / "work"
 OUTPUT = ROOT / "output"
@@ -278,7 +280,7 @@ def write_ass(segments: list[Segment], candidate: Candidate, path: Path) -> None
         "[Script Info]", "ScriptType: v4.00+", "PlayResX: 1080", "PlayResY: 1920", "ScaledBorderAndShadow: yes", "",
         "[V4+ Styles]",
         "Format: Name, Fontname, Fontsize, PrimaryColour, SecondaryColour, OutlineColour, BackColour, Bold, Italic, Underline, StrikeOut, ScaleX, ScaleY, Spacing, Angle, BorderStyle, Outline, Shadow, Alignment, MarginL, MarginR, MarginV, Encoding",
-        "Style: Default,DejaVu Sans,52,&H00FFFFFF,&H00FFFFFF,&H00000000,&H80000000,-1,0,0,0,100,100,0,0,3,4,0,2,70,70,245,1", "",
+        f"Style: Default,DejaVu Sans,{CAPTION_FONT_SIZE},&H00FFFFFF,&H00FFFFFF,&H00000000,&H80000000,-1,0,0,0,100,100,0,0,3,4,0,2,70,70,{CAPTION_MARGIN_V},1", "",
         "[Events]", "Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text",
     ]
     for chunk in caption_chunks(segments, candidate):
@@ -319,7 +321,7 @@ def write_report(source_url: str | None, info: dict[str, Any], clips: list[dict[
         "editing": {
             "format": "9:16 — 1080x1920",
             "audio": "áudio original preservado em AAC",
-            "captions": "ASS dinâmico, 3–6 palavras por bloco, destaque laranja",
+            "captions": "ASS dinâmico, 3–6 palavras por bloco, destaque laranja, proporcional e no terço inferior",
             "framing": "quadro completo com fundo desfocado para preservar rostos",
             "branding": "Corte Fino discreto, sem vinheta e sem música adicionada",
         },
