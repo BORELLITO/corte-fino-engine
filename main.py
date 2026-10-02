@@ -13,7 +13,7 @@ from pathlib import Path
 from typing import Any
 
 MAX_CLIPS = 4
-ROOT = Path(__file__).resolve().parents[1]
+ROOT = Path(__file__).resolve().parent
 WORK = ROOT / "work"
 OUTPUT = ROOT / "output"
 SOURCE_DIR = WORK / "source"
@@ -134,6 +134,11 @@ def download_source(url: str) -> tuple[Path, dict[str, Any]]:
         "quiet": False,
         "restrictfilenames": True,
     }
+    cookiefile = os.environ.get("YOUTUBE_COOKIEFILE", "").strip()
+    if cookiefile and Path(cookiefile).is_file():
+        opts["cookiefile"] = cookiefile
+        opts["extractor_args"] = {"youtube": {"player_client": ["web"]}}
+
     with YoutubeDL(opts) as ydl:
         info = ydl.extract_info(url, download=True)
         prepared = Path(ydl.prepare_filename(info))
