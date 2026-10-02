@@ -48,6 +48,7 @@ jobs:
           SOURCE_URL: ${{ inputs.source_url }}
         run: |
           sed -i 's/parents\[1\]/parent/' main.py
+          sed -i '/"noplaylist": True,/a\        "extractor_args": {"youtube": {"player_client": ["android"]}},' main.py
           python main.py
 
       - name: Enviar resultados para o Google Drive
