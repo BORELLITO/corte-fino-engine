@@ -45,7 +45,7 @@ jobs:
 
       - name: Gerar cortes
         env:
-          SOURCE_URL: ${{ inputs.source_url }}
+          SOURCE_URL: \${{ inputs.source_url }}
         run: |
           sed -i 's/parents\[1\]/parent/' main.py
           python main.py
@@ -53,13 +53,12 @@ jobs:
       - name: Enviar resultados para o Google Drive
         if: always()
         env:
-          GOOGLE_REFRESH_TOKEN: ${{ secrets.GOOGLE_REFRESH_TOKEN }}
-          GOOGLE_CLIENT_ID: ${{ secrets.GOOGLE_CLIENT_ID }}
-          GOOGLE_CLIENT_SECRET: ${{ secrets.GOOGLE_CLIENT_SECRET }}
-          DRIVE_FOLDER_ID: ${{ secrets.DRIVE_FOLDER_ID }}
+          GOOGLE_REFRESH_TOKEN: \${{ secrets.GOOGLE_REFRESH_TOKEN }}
+          GOOGLE_CLIENT_ID: \${{ secrets.GOOGLE_CLIENT_ID }}
+          GOOGLE_CLIENT_SECRET: \${{ secrets.GOOGLE_CLIENT_SECRET }}
+          DRIVE_FOLDER_ID: \${{ secrets.DRIVE_FOLDER_ID }}
         run: |
           python - <<'PY'
-          import json
           import mimetypes
           import os
           from datetime import datetime, timezone
@@ -68,9 +67,14 @@ jobs:
           from google.auth.transport.requests import Request
           from google.oauth2.credentials import Credentials
           from googleapiclient.discovery import build
+          from googleapiclient.errors import HttpError
           from googleapiclient.http import MediaFileUpload
 
-          folder_id = os.environ["DRIVE_FOLDER_ID"]
+          raw_folder_id = os.environ.get("DRIVE_FOLDER_ID", "").strip()
+          if "/folders/" in raw_folder_id:
+              raw_folder_id = raw_folder_id.split("/folders/", 1)[1]
+              raw_folder_id = raw_folder_id.split("?", 1)[0].split("/", 1)[0].strip()
+          folder_id = raw_folder_id if raw_folder_id not in {"", ".", ".."} else ""
 
           credentials = Credentials(
               token=None,
@@ -88,6 +92,40 @@ jobs:
               credentials=credentials,
               cache_discovery=False,
           )
+
+          folder = None
+          if folder_id:
+              try:
+                  folder = drive.files().get(
+                      fileId=folder_id,
+                      fields="id,name,mimeType,trashed",
+                  ).execute()
+                  if (
+                      folder.get("mimeType")
+                      != "application/vnd.google-apps.folder"
+                      or folder.get("trashed")
+                  ):
+                      folder = None
+              except HttpError as exc:
+                  if exc.resp.status != 404:
+                      raise
+                  folder = None
+
+          if folder is None:
+              folder = drive.files().create(
+                  body={
+                      "name": "Corte Fino — Vídeos Prontos",
+                      "mimeType": "application/vnd.google-apps.folder",
+                  },
+                  fields="id,name",
+              ).execute()
+              print(
+                  "Pasta criada no Drive: "
+                  f"https://drive.google.com/drive/folders/{folder['id']}"
+              )
+
+          folder_id = folder["id"]
+          print(f"Pasta de destino: {folder.get('name', folder_id)}")
 
           output = Path("output")
           files = sorted((output / "clips").glob("*.mp4"))
