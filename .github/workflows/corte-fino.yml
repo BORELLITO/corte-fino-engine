@@ -45,18 +45,19 @@ jobs:
 
       - name: Gerar cortes
         env:
-          SOURCE_URL: \${{ inputs.source_url }}
+          SOURCE_URL: ${{ inputs.source_url }}
         run: |
           sed -i 's/parents\[1\]/parent/' main.py
           python main.py
 
       - name: Enviar resultados para o Google Drive
         if: always()
+        continue-on-error: true
         env:
-          GOOGLE_REFRESH_TOKEN: \${{ secrets.GOOGLE_REFRESH_TOKEN }}
-          GOOGLE_CLIENT_ID: \${{ secrets.GOOGLE_CLIENT_ID }}
-          GOOGLE_CLIENT_SECRET: \${{ secrets.GOOGLE_CLIENT_SECRET }}
-          DRIVE_FOLDER_ID: \${{ secrets.DRIVE_FOLDER_ID }}
+          GOOGLE_REFRESH_TOKEN: ${{ secrets.GOOGLE_REFRESH_TOKEN }}
+          GOOGLE_CLIENT_ID: ${{ secrets.GOOGLE_CLIENT_ID }}
+          GOOGLE_CLIENT_SECRET: ${{ secrets.GOOGLE_CLIENT_SECRET }}
+          DRIVE_FOLDER_ID: ${{ secrets.DRIVE_FOLDER_ID }}
         run: |
           python - <<'PY'
           import mimetypes
@@ -120,7 +121,7 @@ jobs:
                   fields="id,name",
               ).execute()
               print(
-                  "Pasta criada no Drive: "
+                  "Pasta criada no Drive: ""
                   f"https://drive.google.com/drive/folders/{folder['id']}"
               )
 
