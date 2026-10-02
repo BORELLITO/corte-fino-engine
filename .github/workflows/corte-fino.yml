@@ -136,9 +136,11 @@ jobs:
           PY
 
       - name: Gerar cortes
+        id: generate_cuts
         run: |
           if [ -n "$SOURCE_FILE" ]; then
             python - <<'PY'
+            import json
             import os
             from pathlib import Path
             import main
@@ -155,7 +157,13 @@ jobs:
                 return source, info
 
             main.download_source = local_download
-            raise SystemExit(main.main())
+            code = main.main()
+            report = Path("output/relatorio.json")
+            if report.exists():
+                data = json.loads(report.read_text(encoding="utf-8"))
+                if data.get("error"):
+                    code = 1
+            raise SystemExit(code)
             PY
           else
             python main.py
@@ -236,7 +244,7 @@ jobs:
           PY
 
       - name: Marcar entrada como processada
-        if: ${{ steps.upload_drive.outcome == 'success' && steps.drive_source.outputs.file_id != '' }}
+        if: ${{ steps.generate_cuts.outcome == 'success' && steps.upload_drive.outcome == 'success' && steps.drive_source.outputs.file_id != '' }}
         env:
           GOOGLE_REFRESH_TOKEN: ${{ secrets.GOOGLE_REFRESH_TOKEN }}
           GOOGLE_CLIENT_ID: ${{ secrets.GOOGLE_CLIENT_ID }}
