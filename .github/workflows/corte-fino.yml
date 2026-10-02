@@ -52,14 +52,118 @@ jobs:
             echo "Cookies do YouTube configurados com segurança."
           fi
 
-      - name: Gerar cortes
+      - name: Definir link manual, quando informado
+        if: ${{ inputs.source_url != '' }}
         env:
-          SOURCE_URL: ${{ inputs.source_url }}
-        run: python main.py
+          MANUAL_SOURCE_URL: ${{ inputs.source_url }}
+        run: echo "SOURCE_URL=$MANUAL_SOURCE_URL" >> "$GITHUB_ENV"
+
+      - name: Buscar entrada autorizada no Drive
+        id: drive_source
+        if: ${{ inputs.source_url == '' }}
+        env:
+          GOOGLE_REFRESH_TOKEN: ${{ secrets.GOOGLE_REFRESH_TOKEN }}
+          GOOGLE_CLIENT_ID: ${{ secrets.GOOGLE_CLIENT_ID }}
+          GOOGLE_CLIENT_SECRET: ${{ secrets.GOOGLE_CLIENT_SECRET }}
+          DRIVE_SOURCE_FOLDER_ID: ${{ secrets.DRIVE_SOURCE_FOLDER_ID }}
+        run: |
+          python - <<'PY'
+          import os
+          from pathlib import Path
+
+          from google.auth.transport.requests import Request
+          from google.oauth2.credentials import Credentials
+          from googleapiclient.discovery import build
+          from googleapiclient.http import MediaIoBaseDownload
+
+          folder_id = os.environ.get("DRIVE_SOURCE_FOLDER_ID", "").strip()
+          if "/folders/" in folder_id:
+              folder_id = folder_id.split("/folders/", 1)[1].split("?", 1)[0].split("/", 1)[0].strip()
+          if not folder_id or folder_id in {".", ".."}:
+              raise SystemExit("DRIVE_SOURCE_FOLDER_ID não está configurado.")
+
+          credentials = Credentials(
+              token=None,
+              refresh_token=os.environ["GOOGLE_REFRESH_TOKEN"],
+              token_uri="https://oauth2.googleapis.com/token",
+              client_id=os.environ["GOOGLE_CLIENT_ID"],
+              client_secret=os.environ["GOOGLE_CLIENT_SECRET"],
+              scopes=["https://www.googleapis.com/auth/drive"],
+          )
+          credentials.refresh(Request())
+          drive = build("drive", "v3", credentials=credentials, cache_discovery=False)
+
+          allowed_types = (
+              "mimeType = 'video/mp4' or "
+              "mimeType = 'video/quicktime' or "
+              "mimeType = 'video/webm' or "
+              "mimeType = 'video/x-matroska'"
+          )
+          query = f"'{folder_id}' in parents and trashed = false and ({allowed_types})"
+          result = drive.files().list(
+              q=query,
+              orderBy="modifiedTime desc",
+              pageSize=20,
+              fields="files(id,name,mimeType,modifiedTime,webViewLink)",
+          ).execute()
+          files = result.get("files", [])
+          if not files:
+              raise SystemExit("Nenhum vídeo autorizado foi encontrado na pasta de entradas.")
+
+          chosen = files[0]
+          target = Path(os.environ["RUNNER_TEMP"]) / "corte-fino-authorized-source.mp4"
+          request = drive.files().get_media(fileId=chosen["id"])
+          with target.open("wb") as handle:
+              downloader = MediaIoBaseDownload(handle, request)
+              done = False
+              while not done:
+                  _, done = downloader.next_chunk()
+
+          web_url = chosen.get("webViewLink") or f"https://drive.google.com/file/d/{chosen['id']}/view"
+          with open(os.environ["GITHUB_ENV"], "a", encoding="utf-8") as env_file:
+              env_file.write(f"SOURCE_FILE={target}\n")
+              env_file.write(f"SOURCE_URL={web_url}\n")
+              env_file.write(f"SOURCE_WEB_URL={web_url}\n")
+              env_file.write(f"SOURCE_TITLE={chosen['name']}\n")
+              env_file.write("SOURCE_CHANNEL=Entrada autorizada no Google Drive\n")
+              env_file.write(f"DRIVE_SOURCE_FILE_ID={chosen['id']}\n")
+              env_file.write(f"DRIVE_SOURCE_FILE_NAME={chosen['name']}\n")
+          with open(os.environ["GITHUB_OUTPUT"], "a", encoding="utf-8") as output_file:
+              output_file.write(f"file_id={chosen['id']}\n")
+              output_file.write(f"file_name={chosen['name']}\n")
+          print(f"Fonte autorizada selecionada: {chosen['name']}")
+          print(f"Arquivo baixado para: {target}")
+          PY
+
+      - name: Gerar cortes
+        run: |
+          if [ -n "$SOURCE_FILE" ]; then
+            python - <<'PY'
+            import os
+            from pathlib import Path
+            import main
+
+            def local_download(_url):
+                source = Path(os.environ["SOURCE_FILE"])
+                if not source.is_file():
+                    raise FileNotFoundError(f"Fonte local não encontrada: {source}")
+                info = {
+                    "title": os.environ.get("SOURCE_TITLE", source.name),
+                    "channel": os.environ.get("SOURCE_CHANNEL", "Entrada autorizada no Google Drive"),
+                    "webpage_url": os.environ.get("SOURCE_WEB_URL", ""),
+                }
+                return source, info
+
+            main.download_source = local_download
+            raise SystemExit(main.main())
+            PY
+          else
+            python main.py
+          fi
 
       - name: Enviar resultados para o Google Drive
+        id: upload_drive
         if: always()
-        continue-on-error: true
         env:
           GOOGLE_REFRESH_TOKEN: ${{ secrets.GOOGLE_REFRESH_TOKEN }}
           GOOGLE_CLIENT_ID: ${{ secrets.GOOGLE_CLIENT_ID }}
@@ -129,6 +233,59 @@ jobs:
               print(f"Enviado: {result.get('name')}")
 
           print(f"Total enviado ao Drive: {len(enviados)} arquivo(s).")
+          PY
+
+      - name: Marcar entrada como processada
+        if: ${{ steps.upload_drive.outcome == 'success' && steps.drive_source.outputs.file_id != '' }}
+        env:
+          GOOGLE_REFRESH_TOKEN: ${{ secrets.GOOGLE_REFRESH_TOKEN }}
+          GOOGLE_CLIENT_ID: ${{ secrets.GOOGLE_CLIENT_ID }}
+          GOOGLE_CLIENT_SECRET: ${{ secrets.GOOGLE_CLIENT_SECRET }}
+          DRIVE_SOURCE_FOLDER_ID: ${{ secrets.DRIVE_SOURCE_FOLDER_ID }}
+          DRIVE_SOURCE_FILE_ID: ${{ steps.drive_source.outputs.file_id }}
+          DRIVE_SOURCE_FILE_NAME: ${{ steps.drive_source.outputs.file_name }}
+        run: |
+          python - <<'PY'
+          import os
+          from datetime import datetime, timezone
+
+          from google.auth.transport.requests import Request
+          from google.oauth2.credentials import Credentials
+          from googleapiclient.discovery import build
+
+          folder_id = os.environ["DRIVE_SOURCE_FOLDER_ID"].strip()
+          if "/folders/" in folder_id:
+              folder_id = folder_id.split("/folders/", 1)[1].split("?", 1)[0].split("/", 1)[0].strip()
+          credentials = Credentials(
+              token=None,
+              refresh_token=os.environ["GOOGLE_REFRESH_TOKEN"],
+              token_uri="https://oauth2.googleapis.com/token",
+              client_id=os.environ["GOOGLE_CLIENT_ID"],
+              client_secret=os.environ["GOOGLE_CLIENT_SECRET"],
+              scopes=["https://www.googleapis.com/auth/drive"],
+          )
+          credentials.refresh(Request())
+          drive = build("drive", "v3", credentials=credentials, cache_discovery=False)
+          query = (
+              f"'{folder_id}' in parents and trashed = false and "
+              "mimeType = 'application/vnd.google-apps.folder' and name = 'Processados'"
+          )
+          folders = drive.files().list(q=query, pageSize=1, fields="files(id,name)").execute().get("files", [])
+          processed_folder = folders[0] if folders else drive.files().create(
+              body={"name": "Processados", "mimeType": "application/vnd.google-apps.folder", "parents": [folder_id]},
+              fields="id,name",
+          ).execute()
+          stamp = datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%SZ")
+          old_name = os.environ.get("DRIVE_SOURCE_FILE_NAME", "fonte.mp4")
+          new_name = f"processado_{stamp}_{old_name}"
+          drive.files().update(
+              fileId=os.environ["DRIVE_SOURCE_FILE_ID"],
+              addParents=processed_folder["id"],
+              removeParents=folder_id,
+              body={"name": new_name},
+              fields="id,name,parents",
+          ).execute()
+          print(f"Entrada marcada como processada: {new_name}")
           PY
 
       - name: Salvar artefatos do GitHub
