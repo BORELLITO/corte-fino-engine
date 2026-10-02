@@ -20,6 +20,10 @@ jobs:
     timeout-minutes: 45
 
     steps:
+            - name: Instalar Deno
+          uses: denoland/setup-deno@v2
+          with:
+            deno-version: v2.x
       - name: Baixar código
         uses: actions/checkout@v4
 
