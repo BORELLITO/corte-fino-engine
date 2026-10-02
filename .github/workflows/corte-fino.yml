@@ -17,13 +17,9 @@ permissions:
 jobs:
   gerar-cortes:
     runs-on: ubuntu-latest
-    timeout-minutes: 45
+    timeout-minutes: 330
 
     steps:
-      - name: Instalar Deno
-        uses: denoland/setup-deno@v2
-        with:
-          deno-version: v2.x
       - name: Baixar código
         uses: actions/checkout@v4
 
@@ -43,13 +39,23 @@ jobs:
           pip install -r requirements.txt
           pip install google-api-python-client google-auth google-auth-httplib2 google-auth-oauthlib
 
+      - name: Configurar acesso opcional ao YouTube
+        env:
+          YOUTUBE_COOKIES_B64: ${{ secrets.YOUTUBE_COOKIES_B64 }}
+        run: |
+          if [ -z "$YOUTUBE_COOKIES_B64" ]; then
+            echo "Nenhum cookie do YouTube configurado; seguindo com acesso público."
+          else
+            printf '%s' "$YOUTUBE_COOKIES_B64" | base64 --decode > "$RUNNER_TEMP/youtube-cookies.txt"
+            chmod 600 "$RUNNER_TEMP/youtube-cookies.txt"
+            echo "YOUTUBE_COOKIEFILE=$RUNNER_TEMP/youtube-cookies.txt" >> "$GITHUB_ENV"
+            echo "Cookies do YouTube configurados com segurança."
+          fi
+
       - name: Gerar cortes
         env:
           SOURCE_URL: ${{ inputs.source_url }}
-        run: |
-          sed -i 's/parents\[1\]/parent/' main.py
-          sed -i '/"noplaylist": True,/a\        "extractor_args": {"youtube": {"player_client": ["android"]}},' main.py
-          python main.py
+        run: python main.py
 
       - name: Enviar resultados para o Google Drive
         if: always()
@@ -86,85 +92,39 @@ jobs:
               client_secret=os.environ["GOOGLE_CLIENT_SECRET"],
               scopes=["https://www.googleapis.com/auth/drive"],
           )
-
           credentials.refresh(Request())
-          drive = build(
-              "drive",
-              "v3",
-              credentials=credentials,
-              cache_discovery=False,
-          )
+          drive = build("drive", "v3", credentials=credentials, cache_discovery=False)
 
           folder = None
           if folder_id:
               try:
-                  folder = drive.files().get(
-                      fileId=folder_id,
-                      fields="id,name,mimeType,trashed",
-                  ).execute()
-                  if (
-                      folder.get("mimeType")
-                      != "application/vnd.google-apps.folder"
-                      or folder.get("trashed")
-                  ):
+                  folder = drive.files().get(fileId=folder_id, fields="id,name,mimeType,trashed").execute()
+                  if folder.get("mimeType") != "application/vnd.google-apps.folder" or folder.get("trashed"):
                       folder = None
               except HttpError as exc:
                   if exc.resp.status != 404:
                       raise
-                  folder = None
 
           if folder is None:
               folder = drive.files().create(
-                  body={
-                      "name": "Corte Fino — Vídeos Prontos",
-                      "mimeType": "application/vnd.google-apps.folder",
-                  },
+                  body={"name": "Corte Fino — Vídeos Prontos", "mimeType": "application/vnd.google-apps.folder"},
                   fields="id,name",
               ).execute()
-              print(
-                  f"Pasta criada no Drive: https://drive.google.com/drive/folders/{folder['id']}"
-              )
+              print(f"Pasta criada no Drive: https://drive.google.com/drive/folders/{folder['id']}")
 
           folder_id = folder["id"]
-          print(f"Pasta de destino: {folder.get('name', folder_id)}")
-
           output = Path("output")
           files = sorted((output / "clips").glob("*.mp4"))
-          files += [
-              output / "relatorio.md",
-              output / "relatorio.json",
-              output / "corte-fino-resultados.zip",
-          ]
-
+          files += [output / "relatorio.md", output / "relatorio.json", output / "corte-fino-resultados.zip"]
           timestamp = datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%SZ")
           enviados = []
 
           for file_path in files:
               if not file_path.exists():
                   continue
-
-              mime_type = (
-                  mimetypes.guess_type(file_path.name)[0]
-                  or "application/octet-stream"
-              )
-
-              metadata = {
-                  "name": f"{timestamp}_{file_path.name}",
-                  "parents": [folder_id],
-              }
-
-              media = MediaFileUpload(
-                  str(file_path),
-                  mimetype=mime_type,
-                  resumable=True,
-              )
-
-              result = drive.files().create(
-                  body=metadata,
-                  media_body=media,
-                  fields="id,name,webViewLink",
-              ).execute()
-
+              metadata = {"name": f"{timestamp}_{file_path.name}", "parents": [folder_id]}
+              media = MediaFileUpload(str(file_path), mimetype=mimetypes.guess_type(file_path.name)[0] or "application/octet-stream", resumable=True)
+              result = drive.files().create(body=metadata, media_body=media, fields="id,name,webViewLink").execute()
               enviados.append(result)
               print(f"Enviado: {result.get('name')}")
 
