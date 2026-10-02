@@ -1,0 +1,3 @@
+# Coloque aqui um URL por linha quando quiser controlar a fonte do dia.
+# Use apenas vídeos próprios, autorizados ou licenciados.
+# Linhas iniciadas por # são ignoradas.
