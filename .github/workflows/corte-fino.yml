@@ -140,31 +140,31 @@ jobs:
         run: |
           if [ -n "$SOURCE_FILE" ]; then
             python - <<'PY'
-import json
-import os
-from pathlib import Path
-import main
-
-def local_download(_url):
-    source = Path(os.environ["SOURCE_FILE"])
-    if not source.is_file():
-        raise FileNotFoundError(f"Fonte local não encontrada: {source}")
-    info = {
-        "title": os.environ.get("SOURCE_TITLE", source.name),
-        "channel": os.environ.get("SOURCE_CHANNEL", "Entrada autorizada no Google Drive"),
-        "webpage_url": os.environ.get("SOURCE_WEB_URL", ""),
-    }
-    return source, info
-
-main.download_source = local_download
-code = main.main()
-report = Path("output/relatorio.json")
-if report.exists():
-    data = json.loads(report.read_text(encoding="utf-8"))
-    if data.get("error"):
-        code = 1
-raise SystemExit(code)
-PY
+          import json
+          import os
+          from pathlib import Path
+          import main
+          
+          def local_download(_url):
+              source = Path(os.environ["SOURCE_FILE"])
+              if not source.is_file():
+                  raise FileNotFoundError(f"Fonte local não encontrada: {source}")
+              info = {
+                  "title": os.environ.get("SOURCE_TITLE", source.name),
+                  "channel": os.environ.get("SOURCE_CHANNEL", "Entrada autorizada no Google Drive"),
+                  "webpage_url": os.environ.get("SOURCE_WEB_URL", ""),
+              }
+              return source, info
+          
+          main.download_source = local_download
+          code = main.main()
+          report = Path("output/relatorio.json")
+          if report.exists():
+              data = json.loads(report.read_text(encoding="utf-8"))
+              if data.get("error"):
+                  code = 1
+          raise SystemExit(code)
+          PY
           else
             python main.py
           fi
