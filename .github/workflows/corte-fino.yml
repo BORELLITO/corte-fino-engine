@@ -3,6 +3,7 @@ name: Corte Fino Diário
 on:
   schedule:
     - cron: "15 22 * * *"
+
   workflow_dispatch:
     inputs:
       source_url:
@@ -19,9 +20,11 @@ jobs:
     timeout-minutes: 45
 
     steps:
-      - uses: actions/checkout@v4
+      - name: Baixar código
+        uses: actions/checkout@v4
 
-      - uses: actions/setup-python@v5
+      - name: Configurar Python
+        uses: actions/setup-python@v5
         with:
           python-version: "3.11"
           cache: pip
@@ -32,7 +35,9 @@ jobs:
           sudo apt-get install -y ffmpeg fonts-dejavu-core
 
       - name: Instalar dependências
-        run: pip install -r requirements.txt
+        run: |
+          pip install -r requirements.txt
+          pip install google-api-python-client google-auth google-auth-httplib2 google-auth-oauthlib
 
       - name: Gerar cortes
         env:
@@ -41,7 +46,89 @@ jobs:
           sed -i 's/parents\[1\]/parent/' main.py
           python main.py
 
-      - name: Baixar resultados
+      - name: Enviar resultados para o Google Drive
+        if: always()
+        env:
+          GOOGLE_REFRESH_TOKEN: ${{ secrets.GOOGLE_REFRESH_TOKEN }}
+          GOOGLE_CLIENT_ID: ${{ secrets.GOOGLE_CLIENT_ID }}
+          GOOGLE_CLIENT_SECRET: ${{ secrets.GOOGLE_CLIENT_SECRET }}
+          DRIVE_FOLDER_ID: ${{ secrets.DRIVE_FOLDER_ID }}
+        run: |
+          python - <<'PY'
+          import json
+          import mimetypes
+          import os
+          from datetime import datetime, timezone
+          from pathlib import Path
+
+          from google.auth.transport.requests import Request
+          from google.oauth2.credentials import Credentials
+          from googleapiclient.discovery import build
+          from googleapiclient.http import MediaFileUpload
+
+          folder_id = os.environ["DRIVE_FOLDER_ID"]
+
+          credentials = Credentials(
+              token=None,
+              refresh_token=os.environ["GOOGLE_REFRESH_TOKEN"],
+              token_uri="https://oauth2.googleapis.com/token",
+              client_id=os.environ["GOOGLE_CLIENT_ID"],
+              client_secret=os.environ["GOOGLE_CLIENT_SECRET"],
+              scopes=["https://www.googleapis.com/auth/drive"],
+          )
+
+          credentials.refresh(Request())
+          drive = build(
+              "drive",
+              "v3",
+              credentials=credentials,
+              cache_discovery=False,
+          )
+
+          output = Path("output")
+          files = sorted((output / "clips").glob("*.mp4"))
+          files += [
+              output / "relatorio.md",
+              output / "relatorio.json",
+              output / "corte-fino-resultados.zip",
+          ]
+
+          timestamp = datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%SZ")
+          enviados = []
+
+          for file_path in files:
+              if not file_path.exists():
+                  continue
+
+              mime_type = (
+                  mimetypes.guess_type(file_path.name)[0]
+                  or "application/octet-stream"
+              )
+
+              metadata = {
+                  "name": f"{timestamp}_{file_path.name}",
+                  "parents": [folder_id],
+              }
+
+              media = MediaFileUpload(
+                  str(file_path),
+                  mimetype=mime_type,
+                  resumable=True,
+              )
+
+              result = drive.files().create(
+                  body=metadata,
+                  media_body=media,
+                  fields="id,name,webViewLink",
+              ).execute()
+
+              enviados.append(result)
+              print(f"Enviado: {result.get('name')}")
+
+          print(f"Total enviado ao Drive: {len(enviados)} arquivo(s).")
+          PY
+
+      - name: Salvar artefatos do GitHub
         if: always()
         uses: actions/upload-artifact@v4
         with:
