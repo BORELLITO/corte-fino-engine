@@ -2,6 +2,7 @@ name: Corte Fino Diário
 
 on:
   schedule:
+    # 22:15 UTC ≈ 19:15 no horário de Brasília.
     - cron: "15 22 * * *"
 
   workflow_dispatch:
@@ -10,21 +11,34 @@ on:
         description: "Link autorizado do vídeo"
         required: false
         type: string
+      rights_confirmed:
+        description: "Confirmo que tenho autorização/licença para usar a fonte"
+        required: false
+        default: false
+        type: boolean
 
 permissions:
   contents: read
+
+concurrency:
+  group: ${{ github.ref }}
+  cancel-in-progress: false
 
 jobs:
   gerar-cortes:
     runs-on: ubuntu-latest
     timeout-minutes: 330
+    env:
+      WHISPER_MODEL: base
+      WHISPER_MODEL_CACHE: ~/.cache/faster-whisper
+      MAX_SOURCE_DURATION_SECONDS: 10800
 
     steps:
       - name: Baixar código
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
 
       - name: Configurar Python
-        uses: actions/setup-python@v5
+        uses: actions/setup-python@v7
         with:
           python-version: "3.11"
           cache: pip
@@ -36,8 +50,16 @@ jobs:
 
       - name: Instalar dependências
         run: |
-          pip install -r requirements.txt
-          pip install google-api-python-client google-auth google-auth-httplib2 google-auth-oauthlib
+          python -m pip install --upgrade pip
+          python -m pip install -r requirements.txt
+
+      - name: Preparar cache do Whisper
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/faster-whisper
+          key: faster-whisper-${{ runner.os }}-${{ env.WHISPER_MODEL }}
+          restore-keys: |
+            faster-whisper-${{ runner.os }}-
 
       - name: Configurar acesso opcional ao YouTube
         env:
@@ -56,7 +78,11 @@ jobs:
         if: ${{ inputs.source_url != '' }}
         env:
           MANUAL_SOURCE_URL: ${{ inputs.source_url }}
-        run: echo "SOURCE_URL=$MANUAL_SOURCE_URL" >> "$GITHUB_ENV"
+        run: |
+          echo "SOURCE_URL=$MANUAL_SOURCE_URL" >> "$GITHUB_ENV"
+          if [ "${{ inputs.rights_confirmed }}" = "true" ]; then
+            echo "SOURCE_RIGHTS_STATUS=AUTORIZADO — confirmação manual do proprietário/licenciante" >> "$GITHUB_ENV"
+          fi
 
       - name: Buscar entrada autorizada no Drive
         id: drive_source
@@ -93,13 +119,7 @@ jobs:
           credentials.refresh(Request())
           drive = build("drive", "v3", credentials=credentials, cache_discovery=False)
 
-          allowed_types = (
-              "mimeType = 'video/mp4' or "
-              "mimeType = 'video/quicktime' or "
-              "mimeType = 'video/webm' or "
-              "mimeType = 'video/x-matroska'"
-          )
-          query = f"'{folder_id}' in parents and trashed = false and ({allowed_types})"
+          query = f"'{folder_id}' in parents and trashed = false and mimeType contains 'video/'"
           result = drive.files().list(
               q=query,
               orderBy="modifiedTime desc",
@@ -126,6 +146,7 @@ jobs:
               env_file.write(f"SOURCE_WEB_URL={web_url}\n")
               env_file.write(f"SOURCE_TITLE={chosen['name']}\n")
               env_file.write("SOURCE_CHANNEL=Entrada autorizada no Google Drive\n")
+              env_file.write("SOURCE_RIGHTS_STATUS=AUTORIZADO — arquivo colocado na pasta de entrada autorizada\n")
               env_file.write(f"DRIVE_SOURCE_FILE_ID={chosen['id']}\n")
               env_file.write(f"DRIVE_SOURCE_FILE_NAME={chosen['name']}\n")
           with open(os.environ["GITHUB_OUTPUT"], "a", encoding="utf-8") as output_file:
@@ -161,7 +182,10 @@ jobs:
           report = Path("output/relatorio.json")
           if report.exists():
               data = json.loads(report.read_text(encoding="utf-8"))
-              if data.get("error") and not str(data.get("error") or "").startswith("Nenhum momento passou no filtro editorial"):
+              if data.get("status") == "EDITORIAL_EMPTY":
+                  with open(os.environ["GITHUB_ENV"], "a", encoding="utf-8") as env_file:
+                      env_file.write("EDITORIAL_EMPTY=1\n")
+              elif data.get("error"):
                   code = 1
           raise SystemExit(code)
           PY
@@ -171,7 +195,7 @@ jobs:
 
       - name: Enviar resultados para o Google Drive
         id: upload_drive
-        if: ${{ always() && env.NO_SOURCE != '1' }}
+        if: ${{ steps.generate_cuts.outcome == 'success' && env.NO_SOURCE != '1' }}
         env:
           GOOGLE_REFRESH_TOKEN: ${{ secrets.GOOGLE_REFRESH_TOKEN }}
           GOOGLE_CLIENT_ID: ${{ secrets.GOOGLE_CLIENT_ID }}
@@ -217,6 +241,8 @@ jobs:
           if "/folders/" in raw_folder_id:
               raw_folder_id = raw_folder_id.split("/folders/", 1)[1].split("?", 1)[0].split("/", 1)[0].strip()
           folder_id = raw_folder_id if raw_folder_id not in {"", ".", ".."} else ""
+          if not folder_id:
+              raise SystemExit("DRIVE_FOLDER_ID não está configurado; nenhum destino alternativo será criado.")
 
           credentials = Credentials(
               token=None,
@@ -229,21 +255,12 @@ jobs:
           credentials.refresh(Request())
           drive = build("drive", "v3", credentials=credentials, cache_discovery=False)
 
-          parent = None
-          if folder_id:
-              try:
-                  parent = drive.files().get(fileId=folder_id, fields="id,name,mimeType,trashed").execute()
-                  if parent.get("mimeType") != "application/vnd.google-apps.folder" or parent.get("trashed"):
-                      parent = None
-              except HttpError as exc:
-                  if exc.resp.status != 404:
-                      raise
-
-          if parent is None:
-              parent = drive.files().create(
-                  body={"name": "Corte Fino — Vídeos Prontos", "mimeType": "application/vnd.google-apps.folder"},
-                  fields="id,name",
-              ).execute()
+          try:
+              parent = drive.files().get(fileId=folder_id, fields="id,name,mimeType,trashed").execute()
+          except HttpError as exc:
+              raise RuntimeError(f"DRIVE_FOLDER_ID inválido ou inacessível: {folder_id}") from exc
+          if parent.get("mimeType") != "application/vnd.google-apps.folder" or parent.get("trashed"):
+              raise RuntimeError(f"DRIVE_FOLDER_ID não aponta para uma pasta ativa: {folder_id}")
 
           report_data = {}
           report_path = Path("output/relatorio.json")
@@ -253,7 +270,8 @@ jobs:
               except json.JSONDecodeError:
                   report_data = {}
 
-          source_title = report_data.get("source_title") or os.environ.get("SOURCE_TITLE") or "fonte autorizada"
+          source_meta = report_data.get("source") or {}
+          source_title = source_meta.get("title") or os.environ.get("SOURCE_TITLE") or "fonte autorizada"
           source_slug = normalize_name(Path(str(source_title)).stem, "fonte-autorizada")
           stamp = datetime.now(timezone.utc).strftime("%Y-%m-%d_%H-%M-%S")
           batch_name = f"{stamp} - {source_slug}"
@@ -270,8 +288,8 @@ jobs:
               "# Corte Fino — fila pronta para postagem",
               "",
               f"Fonte: {source_title}",
-              f"Canal: {report_data.get('source_channel') or 'não identificado'}",
-              f"Direitos: {report_data.get('rights_status') or 'REVISÃO DE DIREITOS'}",
+              f"Canal: {(report_data.get('source') or {}).get('channel') or report_data.get('source_channel') or 'não identificado'}",
+              f"Direitos: {(report_data.get('rights') or {}).get('status') or report_data.get('rights_status') or 'REVISÃO DE DIREITOS'}",
               "",
               "Publique na ordem abaixo somente após confirmar a licença/autorização da fonte.",
               "",
@@ -340,7 +358,7 @@ jobs:
           PY
 
       - name: Marcar entrada como processada
-        if: ${{ steps.generate_cuts.outcome == 'success' && steps.upload_drive.outcome == 'success' && steps.drive_source.outputs.file_id != '' }}
+        if: ${{ steps.generate_cuts.outcome == 'success' && steps.upload_drive.outcome == 'success' && steps.drive_source.outputs.file_id != '' && env.EDITORIAL_EMPTY != '1' }}
         env:
           GOOGLE_REFRESH_TOKEN: ${{ secrets.GOOGLE_REFRESH_TOKEN }}
           GOOGLE_CLIENT_ID: ${{ secrets.GOOGLE_CLIENT_ID }}
@@ -394,8 +412,9 @@ jobs:
 
       - name: Salvar artefatos do GitHub
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: corte-fino-resultados
           path: output/
+          if-no-files-found: ignore
           retention-days: 7
