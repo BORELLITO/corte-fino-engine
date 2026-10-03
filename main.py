@@ -18,6 +18,8 @@ MIN_EDITORIAL_SCORE = float(os.environ.get("MIN_EDITORIAL_SCORE", "78"))
 MIN_CLIP_SECONDS = int(os.environ.get("MIN_CLIP_SECONDS", "45"))
 MAX_CLIP_SECONDS = int(os.environ.get("MAX_CLIP_SECONDS", "90"))
 TARGET_CLIP_SECONDS = int(os.environ.get("TARGET_CLIP_SECONDS", "68"))
+WHISPER_MODEL = os.environ.get("WHISPER_MODEL", "base").strip() or "base"
+MAX_SOURCE_DURATION_SECONDS = int(os.environ.get("MAX_SOURCE_DURATION_SECONDS", "10800"))
 CAPTION_MIN_WORDS = 3
 CAPTION_MAX_WORDS = 6
 CAPTION_FONT_SIZE = int(os.environ.get("CAPTION_FONT_SIZE", "48"))
@@ -97,13 +99,14 @@ class Candidate:
         }
 
 
-def run(cmd: list[str], capture: bool = False) -> subprocess.CompletedProcess[str]:
+def run(cmd: list[str], capture: bool = False, timeout: int | None = None) -> subprocess.CompletedProcess[str]:
     print("$", " ".join(str(item) for item in cmd), flush=True)
     return subprocess.run(
         cmd,
         text=True,
         check=True,
         capture_output=capture,
+        timeout=timeout,
     )
 
 
@@ -139,12 +142,17 @@ def download_source(url: str) -> tuple[Path, dict[str, Any]]:
     from yt_dlp import YoutubeDL
 
     opts = {
-        "format": "bv*[height<=720]+ba/b[height<=720]/b",
+        "format": "bv*[height<=1080]+ba/b[height<=1080]/b",
         "merge_output_format": "mp4",
         "outtmpl": str(SOURCE_DIR / "source.%(ext)s"),
         "noplaylist": True,
         "quiet": False,
         "restrictfilenames": True,
+        "retries": 3,
+        "fragment_retries": 5,
+        "extractor_retries": 3,
+        "socket_timeout": 30,
+        "concurrent_fragment_downloads": 4,
     }
     cookiefile = os.environ.get("YOUTUBE_COOKIEFILE", "").strip()
     if cookiefile and Path(cookiefile).is_file():
@@ -176,10 +184,28 @@ def obtain_source(source_url: str | None) -> tuple[Path, dict[str, Any]]:
     return download_source(source_url)
 
 
+def media_duration(path: Path) -> float:
+    result = run([
+        "ffprobe", "-v", "error",
+        "-show_entries", "format=duration",
+        "-of", "default=noprint_wrappers=1:nokey=1",
+        str(path),
+    ], capture=True)
+    try:
+        return float((result.stdout or "").strip())
+    except (TypeError, ValueError):
+        return 0.0
+
+
 def transcribe(source: Path) -> list[Segment]:
     from faster_whisper import WhisperModel
 
-    model = WhisperModel("base", device="cpu", compute_type="int8")
+    model_kwargs: dict[str, Any] = {"device": "cpu", "compute_type": "int8"}
+    cache_dir = os.environ.get("WHISPER_MODEL_CACHE", "").strip()
+    if cache_dir:
+        Path(cache_dir).mkdir(parents=True, exist_ok=True)
+        model_kwargs["download_root"] = cache_dir
+    model = WhisperModel(WHISPER_MODEL, **model_kwargs)
     segments, _ = model.transcribe(
         str(source),
         language="pt",
@@ -207,8 +233,13 @@ def words_of(text: str) -> list[str]:
 
 
 def contains_signal(text: str, signals: set[str]) -> int:
-    lower = text.lower()
-    return sum(1 for signal in signals if signal in lower)
+    normalized = " ".join(words_of(text))
+    hits = 0
+    for signal in signals:
+        phrase = " ".join(words_of(signal))
+        if phrase and re.search(rf"(?<!\w){re.escape(phrase)}(?!\w)", normalized):
+            hits += 1
+    return hits
 
 
 def first_sentence(text: str) -> str:
@@ -297,7 +328,8 @@ def score_text(text: str) -> tuple[float, dict[str, float], str, str, str]:
         "novelty": round(novelty, 2),
         "commentability": round(comments, 2),
     }
-    score = round(sum(components.values()), 2)
+    raw_score = round(sum(components.values()), 2)
+    score = round((raw_score / 95.0) * 100.0, 2)
     if score < MIN_EDITORIAL_SCORE:
         rejection = f"nota {score:.2f} abaixo do mínimo {MIN_EDITORIAL_SCORE:.2f}"
     elif payoff < 8:
@@ -356,14 +388,43 @@ def select_candidates(segments: list[Segment]) -> tuple[list[Candidate], list[Ca
     all_candidates = build_candidates(segments)
     approved = [candidate for candidate in all_candidates if candidate.accepted]
     selected: list[Candidate] = []
+    deferred: list[Candidate] = []
+    trigger_counts: dict[str, int] = {}
+
+    def conflicts(candidate: Candidate) -> bool:
+        return any(
+            overlaps(candidate, other) or text_similarity(candidate.text, other.text) >= 0.52
+            for other in selected
+        )
+
     for candidate in approved:
-        if any(overlaps(candidate, other) or text_similarity(candidate.text, other.text) >= 0.52 for other in selected):
+        if conflicts(candidate):
             candidate.accepted = False
             candidate.rejection = "repetido ou sobreposto a candidato melhor"
             continue
+        if trigger_counts.get(candidate.trigger, 0) >= 2:
+            deferred.append(candidate)
+            continue
         selected.append(candidate)
+        trigger_counts[candidate.trigger] = trigger_counts.get(candidate.trigger, 0) + 1
         if len(selected) >= MAX_CLIPS:
             break
+
+    if len(selected) < MAX_CLIPS:
+        for candidate in deferred:
+            if conflicts(candidate):
+                candidate.accepted = False
+                candidate.rejection = "repetido ou sobreposto a candidato melhor"
+                continue
+            selected.append(candidate)
+            trigger_counts[candidate.trigger] = trigger_counts.get(candidate.trigger, 0) + 1
+            if len(selected) >= MAX_CLIPS:
+                break
+
+    for candidate in deferred:
+        if candidate not in selected and candidate.accepted:
+            candidate.accepted = False
+            candidate.rejection = "adiado para preservar diversidade editorial"
     selected.sort(key=lambda item: item.start)
     return selected, all_candidates
 
@@ -486,6 +547,11 @@ def validate_video(path: Path, expected_duration: float) -> dict[str, Any]:
     video = next((item for item in streams if item.get("codec_type") == "video"), None)
     audio = next((item for item in streams if item.get("codec_type") == "audio"), None)
     duration = float((data.get("format") or {}).get("duration") or 0)
+    decode_ok = True
+    try:
+        run(["ffmpeg", "-v", "error", "-i", str(path), "-f", "null", "-"], capture=True, timeout=180)
+    except (subprocess.CalledProcessError, subprocess.TimeoutExpired):
+        decode_ok = False
     checks = {
         "exists": path.is_file() and path.stat().st_size > 50_000,
         "video_stream": video is not None,
@@ -493,7 +559,7 @@ def validate_video(path: Path, expected_duration: float) -> dict[str, Any]:
         "resolution_1080x1920": bool(video and video.get("width") == 1080 and video.get("height") == 1920),
         "h264": bool(video and video.get("codec_name") == "h264"),
         "duration_reasonable": abs(duration - expected_duration) <= 3.0 and duration >= MIN_CLIP_SECONDS - 2,
-        "has_faststart_file": path.is_file(),
+        "decodable": decode_ok,
     }
     return {
         "file": path.name,
@@ -516,7 +582,7 @@ def short_hook(text: str, limit: int = 82) -> str:
 
 def rights_info() -> dict[str, Any]:
     status = os.environ.get("SOURCE_RIGHTS_STATUS", "REVISÃO DE DIREITOS — confirme autorização antes de publicar").strip()
-    authorized = status.upper().startswith(("AUTHORIZED", "AUTORIZADO", "LICENSED", "LICENCIADO", "CC "))
+    authorized = status.upper().startswith(("AUTHORIZED", "AUTORIZADO", "LICENSED", "LICENCIADO", "CC ", "CREATIVE COMMONS"))
     return {
         "status": status,
         "license": os.environ.get("SOURCE_LICENSE", "").strip(),
@@ -533,7 +599,18 @@ def enrich_clip(clip: dict[str, Any], source_url: str | None, info: dict[str, An
     title = info.get("title") or "Fonte não identificada"
     channel = info.get("channel") or info.get("uploader") or "Canal não identificado"
     source_link = source_url or info.get("webpage_url") or ""
-    hashtags = ["#CorteFino", "#Shorts", "#Cortes", "#Podcast"]
+    hashtags = ["#CorteFino", "#Shorts", "#Cortes"]
+    corpus = f"{os.environ.get('SOURCE_NICHE', '')} {title} {channel} {clip.get('text', '')}".lower()
+    for signal, tag in (
+        ("futebol", "#Futebol"), ("humor", "#Humor"), ("tecnologia", "#Tecnologia"),
+        ("negócios", "#Negocios"), ("negocios", "#Negocios"), ("finanças", "#Financas"),
+        ("financas", "#Financas"), ("relacionamento", "#Relacionamento"),
+        ("história", "#Historias"), ("historia", "#Historias"), ("true crime", "#TrueCrime"),
+        ("ia", "#InteligenciaArtificial"), ("podcast", "#Podcast"),
+    ):
+        if signal in corpus and tag not in hashtags:
+            hashtags.append(tag)
+    hashtags = hashtags[:5]
     attribution = f"Fonte: {title} — {channel}."
     if source_link:
         attribution += f" {source_link}"
@@ -547,7 +624,13 @@ def enrich_clip(clip: dict[str, Any], source_url: str | None, info: dict[str, An
         "youtube_description": f"{hook}\n\n{attribution}\nEdição: Corte Fino. Verifique a autorização antes de publicar.",
         "tiktok_caption": f"{hook}\n\n{attribution}\n\n{' '.join(hashtags)}",
         "hashtags": hashtags,
-        "comment_question": "Você concorda com essa ideia? Explique nos comentários.",
+        "comment_question": {
+            "treta": "Quem está certo nessa discussão? Explique nos comentários.",
+            "surpresa": "Você já tinha ouvido essa versão? O que achou?",
+            "humor": "Qual foi a parte mais engraçada para você?",
+            "emoção": "Essa história te lembrou alguém ou alguma situação?",
+            "curiosidade": "Você concorda com essa explicação? Por quê?",
+        }.get(clip.get("trigger"), "Você concorda com essa explicação? Por quê?"),
         "source": {"title": title, "channel": channel, "url": source_link},
         "rights_status": rights["status"],
     })
@@ -565,12 +648,28 @@ def write_reports(
 ) -> None:
     rights = rights_info()
     enriched = [enrich_clip(clip, source_url, info, rights) for clip in clips]
+    if error and error.startswith("Nenhum momento passou no filtro editorial"):
+        status = "EDITORIAL_EMPTY"
+    elif error and error.startswith("DIREITOS_PENDENTES"):
+        status = "RIGHTS_PENDING"
+    elif error:
+        status = "TECHNICAL_FAILURE"
+    elif enriched:
+        status = "READY_FOR_REVIEW"
+    else:
+        status = "EDITORIAL_EMPTY"
+    source_title = info.get("title")
+    source_channel = info.get("channel") or info.get("uploader")
     report = {
         "generated_at_utc": datetime.now(timezone.utc).isoformat(),
+        "status": status,
+        "source_title": source_title,
+        "source_channel": source_channel,
+        "rights_status": rights["status"],
         "source": {
             "url": source_url,
-            "title": info.get("title"),
-            "channel": info.get("channel") or info.get("uploader"),
+            "title": source_title,
+            "channel": source_channel,
             "fingerprint_sha256": source_hash,
         },
         "rights": rights,
@@ -598,8 +697,9 @@ def write_reports(
 
     lines = [
         "# Corte Fino — relatório editorial e técnico", "",
-        f"Fonte: {info.get('title') or 'não identificada'}",
-        f"Canal: {info.get('channel') or info.get('uploader') or 'não identificado'}",
+        f"Status: {status}",
+        f"Fonte: {source_title or 'não identificada'}",
+        f"Canal: {source_channel or 'não identificado'}",
         f"URL: {source_url or 'não informada'}",
         f"Fingerprint SHA-256: {source_hash or 'não calculado'}",
         "",
@@ -650,6 +750,14 @@ def main() -> int:
     try:
         source, info = obtain_source(source_url)
         source_hash = source_fingerprint(source)
+        duration = media_duration(source)
+        if duration <= 0:
+            raise RuntimeError("Não foi possível determinar a duração da fonte.")
+        if duration > MAX_SOURCE_DURATION_SECONDS:
+            raise RuntimeError(f"Fonte longa demais: {duration / 60:.1f} minutos; limite configurado: {MAX_SOURCE_DURATION_SECONDS / 60:.0f} minutos.")
+        rights = rights_info()
+        if not rights["authorized_signal"] and os.environ.get("ALLOW_UNVERIFIED_SOURCE", "0") != "1":
+            raise RuntimeError("DIREITOS_PENDENTES: a fonte precisa ter autorização/licença confirmada antes da geração automática.")
         segments = transcribe(source)
         selected, candidates = select_candidates(segments)
         if not selected:
@@ -689,6 +797,8 @@ def main() -> int:
     except Exception as exc:
         error = str(exc)
         print(f"ERRO: {error}", file=sys.stderr)
+        if error.startswith("Nenhum momento passou no filtro editorial"):
+            success = True
     finally:
         if OUTPUT.exists():
             write_reports(source_url, source_hash, info, clips, candidates, qa, error)
