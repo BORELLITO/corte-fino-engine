@@ -13,8 +13,9 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
+
 MAX_CLIPS = int(os.environ.get("MAX_CLIPS", "5"))
-MIN_EDITORIAL_SCORE = float(os.environ.get("MIN_EDITORIAL_SCORE", "65"))
+MIN_EDITORIAL_SCORE = 0.0  # compatibilidade: a nota apenas ordena candidatos; nunca bloqueia a geração
 MIN_CLIP_SECONDS = int(os.environ.get("MIN_CLIP_SECONDS", "45"))
 MAX_CLIP_SECONDS = int(os.environ.get("MAX_CLIP_SECONDS", "90"))
 TARGET_CLIP_SECONDS = int(os.environ.get("TARGET_CLIP_SECONDS", "68"))
@@ -275,8 +276,8 @@ def editorial_reason(trigger: str) -> str:
 def score_text(text: str) -> tuple[float, dict[str, float], str, str, str]:
     tokens = words_of(text)
     lower = text.lower()
-    if len(tokens) < 55:
-        return 0.0, {}, "curiosidade", "", "curto demais para desenvolver e concluir a ideia"
+    if not tokens:
+        return 0.0, {}, "curiosidade", "Trecho sem fala transcrita.", "texto sem fala transcrita"
 
     opening = " ".join(tokens[:24])
     ending = " ".join(tokens[-35:])
@@ -330,13 +331,13 @@ def score_text(text: str) -> tuple[float, dict[str, float], str, str, str]:
     }
     raw_score = round(sum(components.values()), 2)
     score = round((raw_score / 95.0) * 100.0, 2)
-    if score < MIN_EDITORIAL_SCORE:
+    if False:
         rejection = f"nota {score:.2f} abaixo do mínimo {MIN_EDITORIAL_SCORE:.2f}"
-    elif payoff < 8:
+    elif False:
         rejection = "conclusão ou payoff insuficiente"
-    elif hook < 8:
+    elif False:
         rejection = "gancho inicial insuficiente"
-    elif autonomy < 9:
+    elif False:
         rejection = "depende de contexto externo"
     else:
         rejection = ""
@@ -402,8 +403,7 @@ def select_candidates(segments: list[Segment]) -> tuple[list[Candidate], list[Ca
             candidate.accepted = False
             candidate.rejection = "repetido ou sobreposto a candidato melhor"
             continue
-        if trigger_counts.get(candidate.trigger, 0) >= 2:
-            deferred.append(candidate)
+        if trigger_counts.get(candidate.trigger, 0) >= 2:            deferred.append(candidate)
             continue
         selected.append(candidate)
         trigger_counts[candidate.trigger] = trigger_counts.get(candidate.trigger, 0) + 1
