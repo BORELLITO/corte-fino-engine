@@ -14,7 +14,7 @@ from pathlib import Path
 from typing import Any
 
 MAX_CLIPS = int(os.environ.get("MAX_CLIPS", "5"))
-MIN_EDITORIAL_SCORE = float(os.environ.get("MIN_EDITORIAL_SCORE", "78"))
+MIN_EDITORIAL_SCORE = float(os.environ.get("MIN_EDITORIAL_SCORE", "65"))
 MIN_CLIP_SECONDS = int(os.environ.get("MIN_CLIP_SECONDS", "45"))
 MAX_CLIP_SECONDS = int(os.environ.get("MAX_CLIP_SECONDS", "90"))
 TARGET_CLIP_SECONDS = int(os.environ.get("TARGET_CLIP_SECONDS", "68"))
