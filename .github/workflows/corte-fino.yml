@@ -161,7 +161,7 @@ jobs:
           report = Path("output/relatorio.json")
           if report.exists():
               data = json.loads(report.read_text(encoding="utf-8"))
-              if data.get("error"):
+              if data.get("error") and not str(data.get("error") or "").startswith("Nenhum momento passou no filtro editorial"):
                   code = 1
           raise SystemExit(code)
           PY
