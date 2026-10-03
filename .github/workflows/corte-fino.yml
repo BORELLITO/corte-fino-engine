@@ -84,7 +84,9 @@ jobs:
           echo "SOURCE_URL=$MANUAL_SOURCE_URL" >> "$GITHUB_ENV"
           if [ "${{ inputs.rights_confirmed }}" = "true" ]; then
             echo "SOURCE_RIGHTS_STATUS=AUTORIZADO — confirmação manual do proprietário/licenciante" >> "$GITHUB_ENV"
-          fi      - name: Validar acesso ao Google Drive antes do processamento
+          fi
+
+      - name: Validar acesso ao Google Drive antes do processamento
         env:
           GOOGLE_REFRESH_TOKEN: ${{ secrets.GOOGLE_REFRESH_TOKEN }}
           GOOGLE_CLIENT_ID: ${{ secrets.GOOGLE_CLIENT_ID }}
