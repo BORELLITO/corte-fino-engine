@@ -108,7 +108,7 @@ jobs:
           ).execute()
           files = result.get("files", [])
           if not files:
-              raise SystemExit("Nenhum vídeo autorizado foi encontrado na pasta de entradas.")
+              print("Nenhuma fonte autorizada nova; rodada encerrada sem cortes."); open(os.environ["GITHUB_ENV"], "a", encoding="utf-8").write("NO_SOURCE=1\n"); raise SystemExit(0)
 
           chosen = files[0]
           target = Path(os.environ["RUNNER_TEMP"]) / "corte-fino-authorized-source.mp4"
@@ -138,7 +138,7 @@ jobs:
       - name: Gerar cortes
         id: generate_cuts
         run: |
-          if [ -n "$SOURCE_FILE" ]; then
+          if [ "${NO_SOURCE:-0}" = "1" ]; then echo "Nenhuma fonte autorizada nova; nada a processar nesta rodada."; elif [ -n "$SOURCE_FILE" ]; then
             python - <<'PY'
           import json
           import os
@@ -171,7 +171,7 @@ jobs:
 
       - name: Enviar resultados para o Google Drive
         id: upload_drive
-        if: always()
+        if: ${{ always() && env.NO_SOURCE != '1' }}
         env:
           GOOGLE_REFRESH_TOKEN: ${{ secrets.GOOGLE_REFRESH_TOKEN }}
           GOOGLE_CLIENT_ID: ${{ secrets.GOOGLE_CLIENT_ID }}
