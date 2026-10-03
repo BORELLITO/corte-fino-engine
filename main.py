@@ -12,18 +12,23 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
-MAX_CLIPS = int(os.environ.get("MAX_CLIPS", "4"))
+MAX_CLIPS = int(os.environ.get("MAX_CLIPS", "5"))
+MIN_EDITORIAL_SCORE = float(os.environ.get("MIN_EDITORIAL_SCORE", "3.0"))
 MIN_CLIP_SECONDS = 35
 MAX_CLIP_SECONDS = 75
 CAPTION_MIN_WORDS = 3
 CAPTION_MAX_WORDS = 6
 CAPTION_FONT_SIZE = int(os.environ.get("CAPTION_FONT_SIZE", "48"))
 CAPTION_MARGIN_V = int(os.environ.get("CAPTION_MARGIN_V", "220"))
+YOUTUBE_CAPTION_MARGIN_V = int(os.environ.get("YOUTUBE_CAPTION_MARGIN_V", str(CAPTION_MARGIN_V)))
+TIKTOK_CAPTION_MARGIN_V = int(os.environ.get("TIKTOK_CAPTION_MARGIN_V", str(CAPTION_MARGIN_V + 80)))
 ROOT = Path(__file__).resolve().parent
 WORK = ROOT / "work"
 OUTPUT = ROOT / "output"
 SOURCE_DIR = WORK / "source"
 CLIPS_DIR = OUTPUT / "clips"
+YOUTUBE_DIR = CLIPS_DIR
+TIKTOK_DIR = CLIPS_DIR
 
 EMOTION_WORDS = {
     "absurdo", "absurda", "surpresa", "surpreendente", "medo", "raiva",
@@ -52,18 +57,18 @@ class Candidate:
     score: float
 
 
-def run(cmd: list[str], cwd: Path | None = None) -> subprocess.CompletedProcess[str]:
-    print("$", " ".join(str(x) for x in cmd), flush=True)
-    return subprocess.run(cmd, cwd=cwd, text=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, check=True)
+def run(cmd: list[str]) -> None:
+    print("$", " ".join(str(item) for item in cmd), flush=True)
+    subprocess.run(cmd, text=True, check=True)
 
 
 def clean() -> None:
-    if WORK.exists():
-        shutil.rmtree(WORK)
-    if OUTPUT.exists():
-        shutil.rmtree(OUTPUT)
+    for path in (WORK, OUTPUT):
+        if path.exists():
+            shutil.rmtree(path)
     SOURCE_DIR.mkdir(parents=True, exist_ok=True)
-    CLIPS_DIR.mkdir(parents=True, exist_ok=True)
+    YOUTUBE_DIR.mkdir(parents=True, exist_ok=True)
+    TIKTOK_DIR.mkdir(parents=True, exist_ok=True)
 
 
 def urls_from_sources() -> list[str]:
@@ -71,42 +76,6 @@ def urls_from_sources() -> list[str]:
     if not path.exists():
         return []
     return [line.strip() for line in path.read_text(encoding="utf-8").splitlines() if line.strip() and not line.lstrip().startswith("#")]
-
-
-def discover_url() -> str | None:
-    from yt_dlp import YoutubeDL
-
-    queries = ["podcast brasileiro", "entrevista podcast Brasil", "podcast humor Brasil", "Podpah", "Ticaracaticast", "Flow Podcast"]
-    found: list[dict[str, Any]] = []
-    opts = {"quiet": True, "skip_download": True, "extract_flat": True, "playlistend": 8}
-    with YoutubeDL(opts) as ydl:
-        for query in queries:
-            try:
-                data = ydl.extract_info(f"ytsearchdate8:{query}", download=False)
-                for item in (data or {}).get("entries", []) or []:
-                    if item and (item.get("webpage_url") or item.get("id")):
-                        found.append({**dict(item), "query": query})
-            except Exception as exc:
-                print(f"Busca falhou para {query}: {exc}")
-
-    unique: dict[str, dict[str, Any]] = {}
-    for item in found:
-        url = item.get("webpage_url") or f"https://www.youtube.com/watch?v={item.get('id')}"
-        unique[url] = {**item, "webpage_url": url}
-
-    def score(item: dict[str, Any]) -> float:
-        views = float(item.get("view_count") or 0)
-        duration = float(item.get("duration") or 0)
-        title = (item.get("title") or "").lower()
-        topic_bonus = sum(1 for word in ("podcast", "entrevista", "história", "humor", "revelou") if word in title)
-        usable_duration = 1 if 900 <= duration <= 14400 else 0
-        return (views ** 0.5) + topic_bonus * 10000 + usable_duration * 5000
-
-    ranked = sorted(unique.values(), key=score, reverse=True)
-    if not ranked:
-        return None
-    (OUTPUT / "discovery.json").write_text(json.dumps({"selected": ranked[0], "candidates": ranked[:20]}, ensure_ascii=False, indent=2), encoding="utf-8")
-    return ranked[0]["webpage_url"]
 
 
 def download_source(url: str) -> tuple[Path, dict[str, Any]]:
@@ -124,13 +93,11 @@ def download_source(url: str) -> tuple[Path, dict[str, Any]]:
     if cookiefile and Path(cookiefile).is_file():
         opts["cookiefile"] = cookiefile
         opts["extractor_args"] = {"youtube": {"player_client": ["web"]}}
-
     with YoutubeDL(opts) as ydl:
         info = ydl.extract_info(url, download=True)
         prepared = Path(ydl.prepare_filename(info))
-        source = next((item for item in (prepared, prepared.with_suffix(".mp4")) if item.exists()), None)
-        if source is None:
-            source = next(iter(SOURCE_DIR.glob("*.mp4")), None)
+        candidates = (prepared, prepared.with_suffix(".mp4"), *SOURCE_DIR.glob("*.mp4"))
+        source = next((item for item in candidates if item.exists()), None)
         if source is None:
             raise FileNotFoundError("O download terminou sem produzir um MP4.")
         return source, info
@@ -169,8 +136,8 @@ def score_text(text: str) -> float:
 
 def select_candidates(segments: list[Segment]) -> list[Candidate]:
     candidates: list[Candidate] = []
-    for index, start_segment in enumerate(segments):
-        start = start_segment.start
+    for index, segment in enumerate(segments):
+        start = segment.start
         end_index = index
         while end_index < len(segments) and segments[end_index].end - start < 68:
             end_index += 1
@@ -181,17 +148,13 @@ def select_candidates(segments: list[Segment]) -> list[Candidate]:
             continue
         text = " ".join(item.text for item in segments[index:end_index]).strip()
         score = score_text(text)
-        if score > 0:
+        if score >= MIN_EDITORIAL_SCORE:
             candidates.append(Candidate(start, end, text, round(score, 2)))
-
     candidates.sort(key=lambda item: item.score, reverse=True)
     selected: list[Candidate] = []
     for candidate in candidates:
-        if any(
-            min(candidate.end, other.end) - max(candidate.start, other.start)
-            > 0.35 * min(candidate.end - candidate.start, other.end - other.start)
-            for other in selected
-        ):
+        overlap = any(min(candidate.end, other.end) - max(candidate.start, other.start) > 0.35 * min(candidate.end - candidate.start, other.end - other.start) for other in selected)
+        if overlap:
             continue
         selected.append(candidate)
         if len(selected) == MAX_CLIPS:
@@ -233,7 +196,6 @@ def caption_chunks(segments: list[Segment], candidate: Candidate) -> list[list[d
             end = min(candidate.end, float(word["end"]))
             if end > start:
                 words.append({"start": start, "end": end, "word": text})
-
     chunks: list[list[dict[str, Any]]] = []
     current: list[dict[str, Any]] = []
     for word in words:
@@ -253,7 +215,6 @@ def render_caption(words: list[dict[str, Any]]) -> str:
     cleaned = [word_token(label) for label in labels]
     priority = set(EMOTION_WORDS) | {"mas", "porém", "porem", "entretanto", "nunca", "sempre", "porquê", "porque"}
     keyword_index = next((index for index, token in enumerate(cleaned) if token in priority), max(range(len(labels)), key=lambda index: len(cleaned[index]), default=0))
-
     break_at: int | None = None
     if len(" ".join(labels)) > 32 and len(labels) > 1:
         target = len(" ".join(labels)) / 2
@@ -263,7 +224,6 @@ def render_caption(words: list[dict[str, Any]]) -> str:
             if running >= target:
                 break_at = index + 1
                 break
-
     rendered: list[str] = []
     for index, label in enumerate(labels):
         if break_at == index:
@@ -275,12 +235,12 @@ def render_caption(words: list[dict[str, Any]]) -> str:
     return "".join(rendered)
 
 
-def write_ass(segments: list[Segment], candidate: Candidate, path: Path) -> None:
+def write_ass(segments: list[Segment], candidate: Candidate, path: Path, margin_v: int) -> None:
     lines = [
         "[Script Info]", "ScriptType: v4.00+", "PlayResX: 1080", "PlayResY: 1920", "ScaledBorderAndShadow: yes", "",
         "[V4+ Styles]",
         "Format: Name, Fontname, Fontsize, PrimaryColour, SecondaryColour, OutlineColour, BackColour, Bold, Italic, Underline, StrikeOut, ScaleX, ScaleY, Spacing, Angle, BorderStyle, Outline, Shadow, Alignment, MarginL, MarginR, MarginV, Encoding",
-        f"Style: Default,DejaVu Sans,{CAPTION_FONT_SIZE},&H00FFFFFF,&H00FFFFFF,&H00000000,&H80000000,-1,0,0,0,100,100,0,0,3,4,0,2,70,70,{CAPTION_MARGIN_V},1", "",
+        f"Style: Default,DejaVu Sans,{CAPTION_FONT_SIZE},&H00FFFFFF,&H00FFFFFF,&H00000000,&H80000000,-1,0,0,0,100,100,0,0,3,4,0,2,70,70,{margin_v},1", "",
         "[Events]", "Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text",
     ]
     for chunk in caption_chunks(segments, candidate):
@@ -300,36 +260,93 @@ def render_clip(source: Path, captions: Path, candidate: Candidate, output: Path
         "drawbox=x=iw-240:y=34:w=210:h=40:color=black@0.30:t=fill,"
         "drawtext=fontfile=/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf:text='CORTE FINO':fontcolor=white@0.76:fontsize=22:x=w-tw-48:y=43[v]"
     )
-    run([
-        "ffmpeg", "-y", "-i", str(source), "-ss", f"{candidate.start:.3f}", "-t", f"{candidate.end - candidate.start:.3f}",
-        "-filter_complex", filter_complex, "-map", "[v]", "-map", "0:a:0?", "-c:v", "libx264", "-preset", "veryfast",
-        "-crf", "21", "-pix_fmt", "yuv420p", "-r", "30", "-c:a", "aac", "-b:a", "160k", "-ar", "48000",
-        "-movflags", "+faststart", "-shortest", "-avoid_negative_ts", "make_zero", str(output),
-    ])
+    run(["ffmpeg", "-y", "-i", str(source), "-ss", f"{candidate.start:.3f}", "-t", f"{candidate.end - candidate.start:.3f}", "-filter_complex", filter_complex, "-map", "[v]", "-map", "0:a:0?", "-c:v", "libx264", "-preset", "veryfast", "-crf", "21", "-pix_fmt", "yuv420p", "-r", "30", "-c:a", "aac", "-b:a", "160k", "-ar", "48000", "-movflags", "+faststart", "-shortest", "-avoid_negative_ts", "make_zero", str(output)])
+
+
+def editorial_trigger(text: str) -> str:
+    lower = text.lower()
+    if any(word in lower for word in ("briga", "treta", "discord", "discordância", "discordancia", "concorda", "contra")):
+        return "treta"
+    if any(word in lower for word in ("risada", "risos", "engraçado", "engracado", "piada", "humor")):
+        return "humor"
+    if any(word in lower for word in ("emocion", "saudade", "família", "familia", "chor", "perdi", "ganhei")):
+        return "emoção"
+    if "?" in text or any(word in lower for word in QUESTION_WORDS):
+        return "curiosidade"
+    if any(word in lower for word in EMOTION_WORDS):
+        return "surpresa"
+    return "curiosidade"
+
+
+def editorial_reason(trigger: str) -> str:
+    return {
+        "treta": "Há uma posição clara ou contraste que convida a audiência a reagir.",
+        "surpresa": "O trecho traz uma afirmação inesperada ou uma mudança de perspectiva.",
+        "humor": "O trecho tem uma entrega cômica ou uma reação que funciona isoladamente.",
+        "emoção": "O trecho apresenta uma experiência pessoal com carga emocional.",
+        "curiosidade": "A pergunta ou a explicação cria uma promessa clara de resposta.",
+    }.get(trigger, "O trecho tem uma premissa clara e contexto suficiente.")
+
+
+def short_hook(text: str, limit: int = 82) -> str:
+    cleaned = re.sub(r"\s+", " ", text).strip()
+    first = re.split(r"(?<=[.!?])\s+", cleaned, maxsplit=1)[0] if cleaned else "Uma ideia que merece atenção"
+    hook = first if len(first) >= 18 else " ".join(cleaned.split()[:14])
+    return hook if len(hook) <= limit else hook[:limit].rsplit(" ", 1)[0].rstrip(" ,;:") + "…"
+
+
+def enrich_clip(clip: dict[str, Any], source_url: str | None, info: dict[str, Any], rights: dict[str, str]) -> dict[str, Any]:
+    enriched = dict(clip)
+    hook = short_hook(str(clip.get("text", "")))
+    trigger = editorial_trigger(str(clip.get("text", "")))
+    title = info.get("title") or "Fonte não identificada"
+    channel = info.get("channel") or info.get("uploader") or "Canal não identificado"
+    source_link = source_url or info.get("webpage_url") or ""
+    hashtags = ["#CorteFino", "#Shorts", "#Cortes", "#Podcast"]
+    attribution = f"Fonte: {title} — {channel}."
+    if source_link:
+        attribution += f" {source_link}"
+    if rights["license"]:
+        attribution += f" Licença declarada: {rights['license']}."
+    if rights["license_url"]:
+        attribution += f" {rights['license_url']}"
+    enriched.update({
+        "youtube_title": f"{hook} | Corte Fino #Shorts",
+        "youtube_description": f"{hook}\n\n{attribution}\nEdição: Corte Fino. Verifique a autorização e a licença antes de publicar.",
+        "tiktok_caption": f"{hook}\n\n{attribution}\n\n{' '.join(hashtags)}",
+        "hashtags": hashtags,
+        "comment_question": "Você concorda com essa ideia? Explique nos comentários.",
+        "trigger": trigger,
+        "editorial_reason": editorial_reason(trigger),
+    })
+    return enriched
 
 
 def write_report(source_url: str | None, info: dict[str, Any], clips: list[dict[str, Any]], error: str | None = None) -> None:
+    rights = {
+        "status": os.environ.get("SOURCE_RIGHTS_STATUS", "REVISÃO DE DIREITOS — confirme autorização antes de publicar").strip(),
+        "license": os.environ.get("SOURCE_LICENSE", "").strip(),
+        "license_url": os.environ.get("SOURCE_LICENSE_URL", "").strip(),
+        "attribution": os.environ.get("SOURCE_ATTRIBUTION", "").strip(),
+        "publication_gate": "manual_review_required",
+    }
+    enriched = [enrich_clip(clip, source_url, info, rights) for clip in clips]
     report = {
         "generated_at_utc": datetime.now(timezone.utc).isoformat(),
         "source_url": source_url,
         "source_title": info.get("title"),
         "source_channel": info.get("channel") or info.get("uploader"),
-        "rights_status": "REVISÃO DE DIREITOS — confirme autorização antes de publicar",
-        "clips": clips,
+        "rights": rights,
+        "rights_status": rights["status"],
+        "clips": enriched,
         "error": error,
-        "note": "Nenhuma promessa de viralização. A seleção é editorial e heurística.",
-        "editing": {
-            "format": "9:16 — 1080x1920",
-            "audio": "áudio original preservado em AAC",
-            "captions": "ASS dinâmico, 3–6 palavras por bloco, destaque laranja, proporcional e no terço inferior",
-            "framing": "quadro completo com fundo desfocado para preservar rostos",
-            "branding": "Corte Fino discreto, sem vinheta e sem música adicionada",
-        },
+        "note": "A seleção é editorial e heurística; não há promessa de viralização e a publicação exige revisão de direitos.",
+        "editing": {"format": "9:16 — 1080x1920", "audio": "áudio original preservado em AAC", "captions": "ASS dinâmico, 3–6 palavras por bloco, destaque laranja, proporcional e no terço inferior", "framing": "quadro completo com fundo desfocado para preservar rostos", "branding": "Corte Fino discreto, sem vinheta e sem música adicionada", "youtube_shorts": {"container": "MP4", "video": "H.264, 1080x1920, 30 fps", "duration": "35–75s por padrão; até 3 minutos compatível com Shorts"}, "tiktok": {"container": "MP4", "video": "H.264, 1080x1920, 30 fps", "duration": "35–75s por padrão; versões acima de 1 minuto só devem ser usadas quando o material for elegível e original"}},
     }
     (OUTPUT / "relatorio.json").write_text(json.dumps(report, ensure_ascii=False, indent=2), encoding="utf-8")
-    lines = ["# Corte Fino — relatório", "", f"Fonte: {info.get('title') or 'não identificada'}", f"URL: {source_url or 'não informada'}", "", "**Direitos:** REVISÃO DE DIREITOS — confirme autorização antes de publicar.", ""]
-    for index, clip in enumerate(clips, 1):
-        lines.extend([f"## Corte {index}", f"- Arquivo: {clip['file']}", f"- Tempo original: {clip['start']:.2f}s–{clip['end']:.2f}s", f"- Nota editorial: {clip['score']}", f"- Texto-base: {clip['text']}", ""])
+    lines = ["# Corte Fino — relatório", "", f"Fonte: {info.get('title') or 'não identificada'}", f"Canal: {info.get('channel') or info.get('uploader') or 'não identificado'}", f"URL: {source_url or 'não informada'}", "", f"**Direitos:** {rights['status']}", f"**Licença declarada:** {rights['license'] or 'não informada'}", "**Publicação:** revisão manual obrigatória", ""]
+    for index, clip in enumerate(enriched, 1):
+        lines.extend([f"## Corte {index}", f"- YouTube Shorts: {clip['youtube_file']}", f"- TikTok: {clip['tiktok_file']}", f"- Tempo original: {clip['start']:.2f}s–{clip['end']:.2f}s", f"- Nota editorial: {clip['score']}", f"- Gatilho: {clip['trigger']}", f"- Motivo: {clip['editorial_reason']}", f"- Título YouTube: {clip['youtube_title']}", f"- Pergunta: {clip['comment_question']}", f"- Texto-base: {clip['text']}", ""])
     if error:
         lines.extend(["## Problema", error, ""])
     (OUTPUT / "relatorio.md").write_text("\n".join(lines), encoding="utf-8")
@@ -350,20 +367,22 @@ def main() -> int:
     clips: list[dict[str, Any]] = []
     try:
         if not source_url:
-            source_url = discover_url()
-        if not source_url:
-            raise RuntimeError("Nenhuma fonte encontrada. Informe um link autorizado no workflow ou em sources.txt.")
+            raise RuntimeError("Nenhuma fonte autorizada encontrada. Coloque um vídeo na pasta Corte Fino — Entradas autorizadas ou informe um link autorizado no workflow.")
         source, info = download_source(source_url)
         segments = transcribe(source)
         candidates = select_candidates(segments)
         if not candidates:
             raise RuntimeError("A transcrição não encontrou momentos com contexto e duração suficientes.")
         for index, candidate in enumerate(candidates, 1):
-            captions = WORK / f"corte_{index:02d}.ass"
-            output = CLIPS_DIR / f"corte_fino_{index:02d}.mp4"
-            write_ass(segments, candidate, captions)
-            render_clip(source, captions, candidate, output)
-            clips.append({"file": str(output.relative_to(OUTPUT)), "start": candidate.start, "end": candidate.end, "score": candidate.score, "text": candidate.text})
+            yt_captions = WORK / f"shorts_{index:02d}.ass"
+            tt_captions = WORK / f"tiktok_{index:02d}.ass"
+            yt_output = YOUTUBE_DIR / f"corte_fino_{index:02d}_youtube_shorts.mp4"
+            tt_output = TIKTOK_DIR / f"corte_fino_{index:02d}_tiktok.mp4"
+            write_ass(segments, candidate, yt_captions, YOUTUBE_CAPTION_MARGIN_V)
+            render_clip(source, yt_captions, candidate, yt_output)
+            write_ass(segments, candidate, tt_captions, TIKTOK_CAPTION_MARGIN_V)
+            render_clip(source, tt_captions, candidate, tt_output)
+            clips.append({"file": str(yt_output.relative_to(OUTPUT)), "youtube_file": str(yt_output.relative_to(OUTPUT)), "tiktok_file": str(tt_output.relative_to(OUTPUT)), "start": candidate.start, "end": candidate.end, "duration": round(candidate.end - candidate.start, 2), "score": candidate.score, "text": candidate.text})
         write_report(source_url, info, clips)
     except Exception as exc:
         print(f"ERRO: {exc}", file=sys.stderr)
