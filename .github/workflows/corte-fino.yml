@@ -179,8 +179,11 @@ jobs:
           DRIVE_FOLDER_ID: ${{ secrets.DRIVE_FOLDER_ID }}
         run: |
           python - <<'PY'
+          import json
           import mimetypes
           import os
+          import re
+          import unicodedata
           from datetime import datetime, timezone
           from pathlib import Path
 
@@ -190,10 +193,29 @@ jobs:
           from googleapiclient.errors import HttpError
           from googleapiclient.http import MediaFileUpload
 
+          def normalize_name(value, fallback):
+              value = unicodedata.normalize("NFKD", str(value or "")).encode("ascii", "ignore").decode("ascii")
+              value = re.sub(r"[^A-Za-z0-9]+", "-", value).strip("-")
+              return (value[:90] or fallback).strip("-")
+
+          def create_folder(drive, name, parent_id):
+              return drive.files().create(
+                  body={"name": name, "mimeType": "application/vnd.google-apps.folder", "parents": [parent_id]},
+                  fields="id,name",
+              ).execute()
+
+          def upload_file(drive, file_path, parent_id, display_name=None):
+              metadata = {"name": display_name or file_path.name, "parents": [parent_id]}
+              media = MediaFileUpload(
+                  str(file_path),
+                  mimetype=mimetypes.guess_type(file_path.name)[0] or "application/octet-stream",
+                  resumable=True,
+              )
+              return drive.files().create(body=metadata, media_body=media, fields="id,name,webViewLink").execute()
+
           raw_folder_id = os.environ.get("DRIVE_FOLDER_ID", "").strip()
           if "/folders/" in raw_folder_id:
-              raw_folder_id = raw_folder_id.split("/folders/", 1)[1]
-              raw_folder_id = raw_folder_id.split("?", 1)[0].split("/", 1)[0].strip()
+              raw_folder_id = raw_folder_id.split("/folders/", 1)[1].split("?", 1)[0].split("/", 1)[0].strip()
           folder_id = raw_folder_id if raw_folder_id not in {"", ".", ".."} else ""
 
           credentials = Credentials(
@@ -207,39 +229,113 @@ jobs:
           credentials.refresh(Request())
           drive = build("drive", "v3", credentials=credentials, cache_discovery=False)
 
-          folder = None
+          parent = None
           if folder_id:
               try:
-                  folder = drive.files().get(fileId=folder_id, fields="id,name,mimeType,trashed").execute()
-                  if folder.get("mimeType") != "application/vnd.google-apps.folder" or folder.get("trashed"):
-                      folder = None
+                  parent = drive.files().get(fileId=folder_id, fields="id,name,mimeType,trashed").execute()
+                  if parent.get("mimeType") != "application/vnd.google-apps.folder" or parent.get("trashed"):
+                      parent = None
               except HttpError as exc:
                   if exc.resp.status != 404:
                       raise
 
-          if folder is None:
-              folder = drive.files().create(
+          if parent is None:
+              parent = drive.files().create(
                   body={"name": "Corte Fino — Vídeos Prontos", "mimeType": "application/vnd.google-apps.folder"},
                   fields="id,name",
               ).execute()
-              print(f"Pasta criada no Drive: https://drive.google.com/drive/folders/{folder['id']}")
 
-          folder_id = folder["id"]
-          output = Path("output")
-          files = sorted((output / "clips").glob("*.mp4"))
-          files += [output / "relatorio.md", output / "relatorio.json", output / "corte-fino-resultados.zip"]
-          timestamp = datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%SZ")
+          report_data = {}
+          report_path = Path("output/relatorio.json")
+          if report_path.exists():
+              try:
+                  report_data = json.loads(report_path.read_text(encoding="utf-8"))
+              except json.JSONDecodeError:
+                  report_data = {}
+
+          source_title = report_data.get("source_title") or os.environ.get("SOURCE_TITLE") or "fonte autorizada"
+          source_slug = normalize_name(Path(str(source_title)).stem, "fonte-autorizada")
+          stamp = datetime.now(timezone.utc).strftime("%Y-%m-%d_%H-%M-%S")
+          batch_name = f"{stamp} - {source_slug}"
+          batch_folder = create_folder(drive, batch_name, parent["id"])
+          youtube_folder = create_folder(drive, "01 - YouTube Shorts", batch_folder["id"])
+          tiktok_folder = create_folder(drive, "02 - TikTok", batch_folder["id"])
+          texts_folder = create_folder(drive, "03 - Textos para postagem", batch_folder["id"])
+          reports_folder = create_folder(drive, "04 - Relatorios", batch_folder["id"])
+
+          posting_dir = Path("output/postagem")
+          posting_dir.mkdir(parents=True, exist_ok=True)
+          clips = report_data.get("clips", [])
+          guide = [
+              "# Corte Fino — fila pronta para postagem",
+              "",
+              f"Fonte: {source_title}",
+              f"Canal: {report_data.get('source_channel') or 'não identificado'}",
+              f"Direitos: {report_data.get('rights_status') or 'REVISÃO DE DIREITOS'}",
+              "",
+              "Publique na ordem abaixo somente após confirmar a licença/autorização da fonte.",
+              "",
+          ]
+          for index, clip in enumerate(clips, 1):
+              youtube_text = (
+                  f"# YouTube Shorts — Corte {index:02d}\n\n"
+                  f"Arquivo: {Path(clip.get('youtube_file', '')).name}\n"
+                  f"Título: {clip.get('youtube_title', '')}\n\n"
+                  "Descrição:\n"
+                  f"{clip.get('youtube_description', '')}\n\n"
+                  f"Pergunta para comentários: {clip.get('comment_question', '')}\n"
+                  f"Nota editorial: {clip.get('score', '')} | Gatilho: {clip.get('trigger', '')}\n"
+              )
+              tiktok_text = (
+                  f"# TikTok — Corte {index:02d}\n\n"
+                  f"Arquivo: {Path(clip.get('tiktok_file', '')).name}\n"
+                  "Legenda:\n"
+                  f"{clip.get('tiktok_caption', '')}\n\n"
+                  f"Pergunta para comentários: {clip.get('comment_question', '')}\n"
+                  f"Nota editorial: {clip.get('score', '')} | Gatilho: {clip.get('trigger', '')}\n"
+              )
+              (posting_dir / f"{index:02d} - YouTube Shorts.md").write_text(youtube_text, encoding="utf-8")
+              (posting_dir / f"{index:02d} - TikTok.md").write_text(tiktok_text, encoding="utf-8")
+              guide.extend([
+                  f"## {index:02d} — {clip.get('trigger', 'curiosidade')}",
+                  f"- YouTube: 01 - YouTube Shorts/{Path(clip.get('youtube_file', '')).name}",
+                  f"- TikTok: 02 - TikTok/{Path(clip.get('tiktok_file', '')).name}",
+                  f"- Motivo: {clip.get('editorial_reason', '')}",
+                  "",
+              ])
+          (posting_dir / "00 - LEIA-ME.md").write_text("\n".join(guide), encoding="utf-8")
+
           enviados = []
-
-          for file_path in files:
-              if not file_path.exists():
-                  continue
-              metadata = {"name": f"{timestamp}_{file_path.name}", "parents": [folder_id]}
-              media = MediaFileUpload(str(file_path), mimetype=mimetypes.guess_type(file_path.name)[0] or "application/octet-stream", resumable=True)
-              result = drive.files().create(body=metadata, media_body=media, fields="id,name,webViewLink").execute()
+          clips_dir = Path("output/clips")
+          for file_path in sorted(clips_dir.glob("*.mp4")):
+              if "_youtube_shorts" in file_path.name:
+                  target = youtube_folder["id"]
+              elif "_tiktok" in file_path.name:
+                  target = tiktok_folder["id"]
+              else:
+                  target = batch_folder["id"]
+              result = upload_file(drive, file_path, target)
               enviados.append(result)
               print(f"Enviado: {result.get('name')}")
 
+          for file_path in sorted(posting_dir.glob("*.md")):
+              result = upload_file(drive, file_path, texts_folder["id"])
+              enviados.append(result)
+              print(f"Enviado: {result.get('name')}")
+
+          for file_path in (Path("output/relatorio.md"), Path("output/relatorio.json")):
+              if file_path.exists():
+                  result = upload_file(drive, file_path, reports_folder["id"])
+                  enviados.append(result)
+                  print(f"Enviado: {result.get('name')}")
+
+          zip_path = Path("output/corte-fino-resultados.zip")
+          if zip_path.exists():
+              result = upload_file(drive, zip_path, batch_folder["id"], f"Corte Fino - {batch_name} - pacote completo.zip")
+              enviados.append(result)
+              print(f"Enviado: {result.get('name')}")
+
+          print(f"Pasta da rodada: https://drive.google.com/drive/folders/{batch_folder['id']}")
           print(f"Total enviado ao Drive: {len(enviados)} arquivo(s).")
           PY
 
