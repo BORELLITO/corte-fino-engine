@@ -403,7 +403,8 @@ def select_candidates(segments: list[Segment]) -> tuple[list[Candidate], list[Ca
             candidate.accepted = False
             candidate.rejection = "repetido ou sobreposto a candidato melhor"
             continue
-        if trigger_counts.get(candidate.trigger, 0) >= 2:            deferred.append(candidate)
+        if trigger_counts.get(candidate.trigger, 0) >= 2:
+            deferred.append(candidate)
             continue
         selected.append(candidate)
         trigger_counts[candidate.trigger] = trigger_counts.get(candidate.trigger, 0) + 1
