@@ -84,7 +84,83 @@ jobs:
           echo "SOURCE_URL=$MANUAL_SOURCE_URL" >> "$GITHUB_ENV"
           if [ "${{ inputs.rights_confirmed }}" = "true" ]; then
             echo "SOURCE_RIGHTS_STATUS=AUTORIZADO — confirmação manual do proprietário/licenciante" >> "$GITHUB_ENV"
-          fi
+          fi      - name: Validar acesso ao Google Drive antes do processamento
+        env:
+          GOOGLE_REFRESH_TOKEN: ${{ secrets.GOOGLE_REFRESH_TOKEN }}
+          GOOGLE_CLIENT_ID: ${{ secrets.GOOGLE_CLIENT_ID }}
+          GOOGLE_CLIENT_SECRET: ${{ secrets.GOOGLE_CLIENT_SECRET }}
+          DRIVE_SOURCE_FOLDER_ID: ${{ secrets.DRIVE_SOURCE_FOLDER_ID }}
+          DRIVE_FOLDER_ID: ${{ secrets.DRIVE_FOLDER_ID }}
+          MANUAL_SOURCE_URL: ${{ inputs.source_url }}
+        run: |
+          python - <<'PY'
+          import os
+
+          from google.auth.transport.requests import Request
+          from google.oauth2.credentials import Credentials
+          from googleapiclient.discovery import build
+          from googleapiclient.errors import HttpError
+
+          def folder_id(value):
+              value = (value or "").strip()
+              if "/folders/" in value:
+                  value = value.split("/folders/", 1)[1].split("?", 1)[0].split("/", 1)[0].strip()
+              return value
+
+          def validate_folder(drive, raw_value, label, require_write=False):
+              value = folder_id(raw_value)
+              if not value or value in {".", ".."}:
+                  raise SystemExit(f"{label} não está configurado.")
+              try:
+                  item = drive.files().get(
+                      fileId=value,
+                      fields="id,name,mimeType,trashed,capabilities(canAddChildren)",
+                  ).execute()
+              except HttpError as exc:
+                  status = getattr(getattr(exc, "resp", None), "status", "desconhecido")
+                  raise SystemExit(
+                      f"{label} está inválido ou inacessível (HTTP {status}). "
+                      "Confira o secret e a pasta compartilhada com a conta do OAuth."
+                  ) from exc
+              if item.get("mimeType") != "application/vnd.google-apps.folder":
+                  raise SystemExit(f"{label} não aponta para uma pasta do Google Drive.")
+              if item.get("trashed"):
+                  raise SystemExit(f"{label} aponta para uma pasta na lixeira.")
+              if require_write and item.get("capabilities", {}).get("canAddChildren") is False:
+                  raise SystemExit(f"{label} está acessível, mas a conta não pode fazer upload nela.")
+              print(f"{label}: OK — {item.get('name', value)}")
+
+          required = ["GOOGLE_REFRESH_TOKEN", "GOOGLE_CLIENT_ID", "GOOGLE_CLIENT_SECRET", "DRIVE_FOLDER_ID"]
+          missing = [name for name in required if not os.environ.get(name, "").strip()]
+          if missing:
+              raise SystemExit("Secrets ausentes: " + ", ".join(missing))
+
+          credentials = Credentials(
+              token=None,
+              refresh_token=os.environ["GOOGLE_REFRESH_TOKEN"],
+              token_uri="https://oauth2.googleapis.com/token",
+              client_id=os.environ["GOOGLE_CLIENT_ID"],
+              client_secret=os.environ["GOOGLE_CLIENT_SECRET"],
+              scopes=["https://www.googleapis.com/auth/drive"],
+          )
+          try:
+              credentials.refresh(Request())
+              drive = build("drive", "v3", credentials=credentials, cache_discovery=False)
+              validate_folder(drive, os.environ["DRIVE_FOLDER_ID"], "DRIVE_FOLDER_ID", require_write=True)
+              if not os.environ.get("MANUAL_SOURCE_URL", "").strip():
+                  validate_folder(drive, os.environ.get("DRIVE_SOURCE_FOLDER_ID"), "DRIVE_SOURCE_FOLDER_ID")
+          except SystemExit:
+              raise
+          except Exception as exc:
+              raise SystemExit(
+                  "Não foi possível autenticar no Google Drive. "
+                  "Confira GOOGLE_REFRESH_TOKEN, GOOGLE_CLIENT_ID e GOOGLE_CLIENT_SECRET."
+              ) from exc
+
+          print("Preflight do Google Drive concluído; o processamento pode começar.")
+          PY
+
+
 
       - name: Buscar entrada no Drive
         id: drive_source
