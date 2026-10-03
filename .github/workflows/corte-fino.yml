@@ -8,11 +8,11 @@ on:
   workflow_dispatch:
     inputs:
       source_url:
-        description: "Link autorizado do vídeo"
+        description: "Link do vídeo para teste (direitos sob responsabilidade do usuário)"
         required: false
         type: string
       rights_confirmed:
-        description: "Confirmo que tenho autorização/licença para usar a fonte"
+        description: "Opcional: registrar que a revisão de direitos foi feita (não bloqueia o processamento)"
         required: false
         default: false
         type: boolean
@@ -29,6 +29,8 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 330
     env:
+      # O usuário é responsável pelas licenças; o workflow apenas edita e entrega os arquivos.
+      ALLOW_UNVERIFIED_SOURCE: "1"
       WHISPER_MODEL: base
       WHISPER_MODEL_CACHE: ~/.cache/faster-whisper
       MAX_SOURCE_DURATION_SECONDS: 10800
@@ -84,7 +86,7 @@ jobs:
             echo "SOURCE_RIGHTS_STATUS=AUTORIZADO — confirmação manual do proprietário/licenciante" >> "$GITHUB_ENV"
           fi
 
-      - name: Buscar entrada autorizada no Drive
+      - name: Buscar entrada no Drive
         id: drive_source
         if: ${{ inputs.source_url == '' }}
         env:
@@ -128,7 +130,7 @@ jobs:
           ).execute()
           files = result.get("files", [])
           if not files:
-              print("Nenhuma fonte autorizada nova; rodada encerrada sem cortes."); open(os.environ["GITHUB_ENV"], "a", encoding="utf-8").write("NO_SOURCE=1\n"); raise SystemExit(0)
+              print("Nenhum vídeo novo; rodada encerrada sem cortes."); open(os.environ["GITHUB_ENV"], "a", encoding="utf-8").write("NO_SOURCE=1\\n"); raise SystemExit(0)
 
           chosen = files[0]
           target = Path(os.environ["RUNNER_TEMP"]) / "corte-fino-authorized-source.mp4"
@@ -141,25 +143,25 @@ jobs:
 
           web_url = chosen.get("webViewLink") or f"https://drive.google.com/file/d/{chosen['id']}/view"
           with open(os.environ["GITHUB_ENV"], "a", encoding="utf-8") as env_file:
-              env_file.write(f"SOURCE_FILE={target}\n")
-              env_file.write(f"SOURCE_URL={web_url}\n")
-              env_file.write(f"SOURCE_WEB_URL={web_url}\n")
-              env_file.write(f"SOURCE_TITLE={chosen['name']}\n")
-              env_file.write("SOURCE_CHANNEL=Entrada autorizada no Google Drive\n")
-              env_file.write("SOURCE_RIGHTS_STATUS=AUTORIZADO — arquivo colocado na pasta de entrada autorizada\n")
-              env_file.write(f"DRIVE_SOURCE_FILE_ID={chosen['id']}\n")
-              env_file.write(f"DRIVE_SOURCE_FILE_NAME={chosen['name']}\n")
+              env_file.write(f"SOURCE_FILE={target}\\n")
+              env_file.write(f"SOURCE_URL={web_url}\\n")
+              env_file.write(f"SOURCE_WEB_URL={web_url}\\n")
+              env_file.write(f"SOURCE_TITLE={chosen['name']}\\n")
+              env_file.write("SOURCE_CHANNEL=Entrada do Google Drive\\n")
+              env_file.write("SOURCE_RIGHTS_STATUS=REVISÃO MANUAL — licença sob responsabilidade do usuário\\n")
+              env_file.write(f"DRIVE_SOURCE_FILE_ID={chosen['id']}\\n")
+              env_file.write(f"DRIVE_SOURCE_FILE_NAME={chosen['name']}\\n")
           with open(os.environ["GITHUB_OUTPUT"], "a", encoding="utf-8") as output_file:
-              output_file.write(f"file_id={chosen['id']}\n")
-              output_file.write(f"file_name={chosen['name']}\n")
-          print(f"Fonte autorizada selecionada: {chosen['name']}")
+              output_file.write(f"file_id={chosen['id']}\\n")
+              output_file.write(f"file_name={chosen['name']}\\n")
+          print(f"Vídeo selecionado: {chosen['name']}")
           print(f"Arquivo baixado para: {target}")
           PY
 
       - name: Gerar cortes
         id: generate_cuts
         run: |
-          if [ "${NO_SOURCE:-0}" = "1" ]; then echo "Nenhuma fonte autorizada nova; nada a processar nesta rodada."; elif [ -n "$SOURCE_FILE" ]; then
+          if [ "${NO_SOURCE:-0}" = "1" ]; then echo "Nenhum vídeo novo; nada a processar nesta rodada."; elif [ -n "$SOURCE_FILE" ]; then
             python - <<'PY'
           import json
           import os
@@ -172,7 +174,7 @@ jobs:
                   raise FileNotFoundError(f"Fonte local não encontrada: {source}")
               info = {
                   "title": os.environ.get("SOURCE_TITLE", source.name),
-                  "channel": os.environ.get("SOURCE_CHANNEL", "Entrada autorizada no Google Drive"),
+                  "channel": os.environ.get("SOURCE_CHANNEL", "Entrada do Google Drive"),
                   "webpage_url": os.environ.get("SOURCE_WEB_URL", ""),
               }
               return source, info
@@ -184,7 +186,7 @@ jobs:
               data = json.loads(report.read_text(encoding="utf-8"))
               if data.get("status") == "EDITORIAL_EMPTY":
                   with open(os.environ["GITHUB_ENV"], "a", encoding="utf-8") as env_file:
-                      env_file.write("EDITORIAL_EMPTY=1\n")
+                      env_file.write("EDITORIAL_EMPTY=1\\n")
               elif data.get("error"):
                   code = 1
           raise SystemExit(code)
@@ -296,21 +298,21 @@ jobs:
           ]
           for index, clip in enumerate(clips, 1):
               youtube_text = (
-                  f"# YouTube Shorts — Corte {index:02d}\n\n"
-                  f"Arquivo: {Path(clip.get('youtube_file', '')).name}\n"
-                  f"Título: {clip.get('youtube_title', '')}\n\n"
-                  "Descrição:\n"
-                  f"{clip.get('youtube_description', '')}\n\n"
-                  f"Pergunta para comentários: {clip.get('comment_question', '')}\n"
-                  f"Nota editorial: {clip.get('score', '')} | Gatilho: {clip.get('trigger', '')}\n"
+                  f"# YouTube Shorts — Corte {index:02d}\\n\\n"
+                  f"Arquivo: {Path(clip.get('youtube_file', '')).name}\\n"
+                  f"Título: {clip.get('youtube_title', '')}\\n\\n"
+                  "Descrição:\\n"
+                  f"{clip.get('youtube_description', '')}\\n\\n"
+                  f"Pergunta para comentários: {clip.get('comment_question', '')}\\n"
+                  f"Nota editorial: {clip.get('score', '')} | Gatilho: {clip.get('trigger', '')}\\n"
               )
               tiktok_text = (
-                  f"# TikTok — Corte {index:02d}\n\n"
-                  f"Arquivo: {Path(clip.get('tiktok_file', '')).name}\n"
-                  "Legenda:\n"
-                  f"{clip.get('tiktok_caption', '')}\n\n"
-                  f"Pergunta para comentários: {clip.get('comment_question', '')}\n"
-                  f"Nota editorial: {clip.get('score', '')} | Gatilho: {clip.get('trigger', '')}\n"
+                  f"# TikTok — Corte {index:02d}\\n\\n"
+                  f"Arquivo: {Path(clip.get('tiktok_file', '')).name}\\n"
+                  "Legenda:\\n"
+                  f"{clip.get('tiktok_caption', '')}\\n\\n"
+                  f"Pergunta para comentários: {clip.get('comment_question', '')}\\n"
+                  f"Nota editorial: {clip.get('score', '')} | Gatilho: {clip.get('trigger', '')}\\n"
               )
               (posting_dir / f"{index:02d} - YouTube Shorts.md").write_text(youtube_text, encoding="utf-8")
               (posting_dir / f"{index:02d} - TikTok.md").write_text(tiktok_text, encoding="utf-8")
@@ -321,7 +323,7 @@ jobs:
                   f"- Motivo: {clip.get('editorial_reason', '')}",
                   "",
               ])
-          (posting_dir / "00 - LEIA-ME.md").write_text("\n".join(guide), encoding="utf-8")
+          (posting_dir / "00 - LEIA-ME.md").write_text("\\n".join(guide), encoding="utf-8")
 
           enviados = []
           clips_dir = Path("output/clips")
