@@ -741,11 +741,12 @@ def write_reports(
     elif enriched:
         status = "READY_FOR_REVIEW"
     else:
+                status = "EDITORIAL_EMPTY"
     source_title = info.get("title")
     source_channel = info.get("channel") or info.get("uploader")
     report = {
+
         "generated_at_utc": datetime.now(timezone.utc).isoformat(),
-        status = "EDITORIAL_EMPTY"
         "status": status,
         "source_title": source_title,
         "source_channel": source_channel,
