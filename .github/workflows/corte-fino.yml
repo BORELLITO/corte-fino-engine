@@ -26,7 +26,7 @@ concurrency:
 
 jobs:
   gerar-cortes:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 330
     env:
       # O usuário é responsável pelas licenças; o workflow apenas edita e entrega os arquivos.
@@ -56,7 +56,7 @@ jobs:
           python -m pip install -r requirements.txt
 
       - name: Preparar cache do Whisper
-        uses: actions/cache@v4
+        uses: actions/cache@v6
         with:
           path: ~/.cache/faster-whisper
           key: faster-whisper-${{ runner.os }}-${{ env.WHISPER_MODEL }}
