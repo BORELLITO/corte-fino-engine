@@ -243,6 +243,517 @@ jobs:
             python - <<'PY'
           import json
           import os
+          import zipfile
+          from pathlib import Path
+          import main
+          
+          def local_download(_url):
+              source = Path(os.environ["SOURCE_FILE"])
+              if not source.is_file():
+                  raise FileNotFoundError(f"Fonte local não encontrada: {source}")
+              info = {
+                  "title": os.environ.get("SOURCE_TITLE", source.name),
+                  "channel": os.environ.get("SOURCE_CHANNEL", "Entrada do Google Drive"),
+                  "webpage_url": os.environ.get("SOURCE_WEB_URL", ""),
+              }
+              return source, info
+          
+          main.download_source = local_download
+          code = main.main()
+          report = Path("output/relatorio.json")
+          if report.exists():
+              data = json.loads(report.read_text(encoding="utf-8"))
+              if data.get("status") == "EDITORIAL_EMPTY":
+                  with open(os.environ["GITHUB_ENV"], "a", encoding="utf-8") as env_file:
+                      env_file.write("EDITORIAL_EMPTY=1\n")
+              elif data.get("error"):
+                  code = 1
+          raise SystemExit(code)
+          PY
+          else
+            python main.py
+          fi
+
+      - name: Enviar resultados para o Google Drive
+        id: upload_drive
+        if: ${{ steps.generate_cuts.outcome == 'success' && env.NO_SOURCE != '1' }}
+        env:
+          GOOGLE_REFRESH_TOKEN: ${{ secrets.GOOGLE_REFRESH_TOKEN }}
+          GOOGLE_CLIENT_ID: ${{ secrets.GOOGLE_CLIENT_ID }}
+          GOOGLE_CLIENT_SECRET: ${{ secrets.GOOGLE_CLIENT_SECRET }}
+          DRIVE_FOLDER_ID: ${{ secrets.DRIVE_FOLDER_ID }}
+        run: |
+          python - <<'PY'
+          import json
+          import mimetypes
+          import os
+          import re
+          import unicodedata
+          from datetime import datetime, timezone
+          from pathlib import Path
+
+          from google.auth.transport.requests import Request
+          from google.oauth2.credentials import Credentials
+          from googleapiclient.discovery import build
+          from googleapiclient.errors import HttpError
+          from googleapiclient.http import MediaFileUpload
+
+          def normalize_name(value, fallback):
+              value = unicodedata.normalize("NFKD", str(value or "")).encode("ascii", "ignore").decode("ascii")
+              value = re.sub(r"[^A-Za-z0-9]+", "-", value).strip("-")
+              return (value[:90] or fallback).strip("-")
+
+          def create_folder(drive, name, parent_id):
+              return drive.files().create(
+                  body={"name": name, "mimeType": "application/vnd.google-apps.folder", "parents": [parent_id]},
+                  fields="id,name",
+              ).execute()
+
+          def upload_file(drive, file_path, parent_id, display_name=None):
+              metadata = {"name": display_name or file_path.name, "parents": [parent_id]}
+              media = MediaFileUpload(
+                  str(file_path),
+                  mimetype=mimetypes.guess_type(file_path.name)[0] or "application/octet-stream",
+                  resumable=True,
+              )
+              return drive.files().create(body=metadata, media_body=media, fields="id,name,webViewLink").execute()
+
+          raw_folder_id = os.environ.get("DRIVE_FOLDER_ID", "").strip()
+          if "/folders/" in raw_folder_id:
+              raw_folder_id = raw_folder_id.split("/folders/", 1)[1].split("?", 1)[0].split("/", 1)[0].strip()
+          folder_id = raw_folder_id if raw_folder_id not in {"", ".", ".."} else ""
+          if not folder_id:
+              raise SystemExit("DRIVE_FOLDER_ID não está configurado; nenhum destino alternativo será criado.")
+
+          credentials = Credentials(
+              token=None,
+              refresh_token=os.environ["GOOGLE_REFRESH_TOKEN"],
+              token_uri="https://oauth2.googleapis.com/token",
+              client_id=os.environ["GOOGLE_CLIENT_ID"],
+              client_secret=os.environ["GOOGLE_CLIENT_SECRET"],
+              scopes=["https://www.googleapis.com/auth/drive"],
+          )
+          credentials.refresh(Request())
+          drive = build("drive", "v3", credentials=credentials, cache_discovery=False)
+
+          try:
+              parent = drive.files().get(fileId=folder_id, fields="id,name,mimeType,trashed").execute()
+          except HttpError as exc:
+              raise RuntimeError(f"DRIVE_FOLDER_ID inválido ou inacessível: {folder_id}") from exc
+          if parent.get("mimeType") != "application/vnd.google-apps.folder" or parent.get("trashed"):
+              raise RuntimeError(f"DRIVE_FOLDER_ID não aponta para uma pasta ativa: {folder_id}")
+
+          report_data = {}
+          report_path = Path("output/relatorio.json")
+          if report_path.exists():
+              try:
+                  report_data = json.loads(report_path.read_text(encoding="utf-8"))
+              except json.JSONDecodeError:
+                  report_data = {}
+
+          source_meta = report_data.get("source") or {}
+          source_title = source_meta.get("title") or os.environ.get("SOURCE_TITLE") or "fonte autorizada"
+          source_slug = normalize_name(Path(str(source_title)).stem, "fonte-autorizada")
+          stamp = datetime.now(timezone.utc).strftime("%Y-%m-%d_%H-%M-%S")
+          batch_name = f"{stamp} - {source_slug}"
+          batch_folder = create_folder(drive, batch_name, parent["id"])
+          youtube_folder = create_folder(drive, "01 - YouTube Shorts", batch_folder["id"])
+          tiktok_folder = create_folder(drive, "02 - TikTok", batch_folder["id"])
+          texts_folder = create_folder(drive, "03 - Textos para postagem", batch_folder["id"])
+          reports_folder = create_folder(drive, "04 - Relatorios", batch_folder["id"])
+
+          posting_dir = Path("output/postagem")
+          posting_dir.mkdir(parents=True, exist_ok=True)
+          clips = report_data.get("clips", [])
+          guide = [
+              "# Corte Fino — fila pronta para postagem",
+              "",
+              f"Fonte: {source_title}",
+              f"Canal: {(report_data.get('source') or {}).get('channel') or report_data.get('source_channel') or 'não identificado'}",
+              f"Direitos: {(report_data.get('rights') or {}).get('status') or report_data.get('rights_status') or 'REVISÃO DE DIREITOS'}",
+              "",
+              "Publique na ordem abaixo somente após confirmar a licença/autorização da fonte.",
+              "",
+          ]
+          for index, clip in enumerate(clips, 1):
+              youtube_text = (
+                  f"# YouTube Shorts — Corte {index:02d}\n\n"
+                  f"Arquivo: {Path(clip.get('youtube_file', '')).name}\n"
+                  f"Título: {clip.get('youtube_title', '')}\n\n"
+                  "Descrição:\n"
+                  f"{clip.get('youtube_description', '')}\n\n"
+                  f"Pergunta para comentários: {clip.get('comment_question', '')}\n"
+                  f"Nota editorial: {clip.get('score', '')} | Gatilho: {clip.get('trigger', '')}\n"
+              )
+              tiktok_text = (
+                  f"# TikTok — Corte {index:02d}\n\n"
+                  f"Arquivo: {Path(clip.get('tiktok_file', '')).name}\n"
+                  "Legenda:\n"
+                  f"{clip.get('tiktok_caption', '')}\n\n"
+                  f"Pergunta para comentários: {clip.get('comment_question', '')}\n"
+                  f"Nota editorial: {clip.get('score', '')} | Gatilho: {clip.get('trigger', '')}\n"
+              )
+              (posting_dir / f"{index:02d} - YouTube Shorts.md").write_text(youtube_text, encoding="utf-8")
+              (posting_dir / f"{index:02d} - TikTok.md").write_text(tiktok_text, encoding="utf-8")
+              guide.extend([
+                  f"## {index:02d} — {clip.get('trigger', 'curiosidade')}",
+                  f"- YouTube: 01 - YouTube Shorts/{Path(clip.get('youtube_file', '')).name}",
+                  f"- TikTok: 02 - TikTok/{Path(clip.get('tiktok_file', '')).name}",
+                  f"- Motivo: {clip.get('editorial_reason', '')}",
+                  "",
+              ])
+          (posting_dir / "00 - LEIA-ME.md").write_text("\n".join(guide), encoding="utf-8")
+
+          zip_path = Path("output/corte-fino-resultados.zip")
+          with zipfile.ZipFile(zip_path, "w", zipfile.ZIP_DEFLATED) as archive:
+              for path in Path("output").rglob("*"):
+                  if path.is_file() and path != zip_path:
+                      archive.write(path, path.relative_to("output"))
+
+          enviados = []
+          clips_dir = Path("output/clips")
+          for file_path in sorted(clips_dir.glob("*.mp4")):
+              if "_youtube_shorts" in file_path.name:
+                  target = youtube_folder["id"]
+              elif "_tiktok" in file_path.name:
+                  target = tiktok_folder["id"]
+              else:
+                  target = batch_folder["id"]
+              result = upload_file(drive, file_path, target)
+              enviados.append(result)
+              print(f"Enviado: {result.get('name')}")
+
+          for file_path in sorted(posting_dir.glob("*.md")):
+              result = upload_file(drive, file_path, texts_folder["id"])
+              enviados.append(result)
+              print(f"Enviado: {result.get('name')}")
+
+          for file_path in (
+              Path("output/relatorio.md"),
+              Path("output/relatorio.json"),
+              Path("output/qa.json"),
+              Path("output/candidate_scores.json"),
+          ):
+              if file_path.exists():
+                  result = upload_file(drive, file_path, reports_folder["id"])
+                  enviados.append(result)
+                  print(f"Enviado: {result.get('name')}")
+
+          zip_path = Path("output/corte-fino-resultados.zip")
+          if zip_path.exists():
+              result = upload_file(drive, zip_path, batch_folder["id"], f"Corte Fino - {batch_name} - pacote completo.zip")
+              enviados.append(result)
+              print(f"Enviado: {result.get('name')}")
+
+          print(f"Pasta da rodada: https://drive.google.com/drive/folders/{batch_folder['id']}")
+          print(f"Total enviado ao Drive: {len(enviados)} arquivo(s).")
+          PY
+
+      - name: Marcar entrada como processada
+        if: ${{ steps.generate_cuts.outcome == 'success' && steps.upload_drive.outcome == 'success' && steps.drive_source.outputs.file_id != '' && env.EDITORIAL_EMPTY != '1' }}
+        env:
+          GOOGLE_REFRESH_TOKEN: ${{ secrets.GOOGLE_REFRESH_TOKEN }}
+          GOOGLE_CLIENT_ID: ${{ secrets.GOOGLE_CLIENT_ID }}
+          GOOGLE_CLIENT_SECRET: ${{ secrets.GOOGLE_CLIENT_SECRET }}
+          DRIVE_SOURCE_FOLDER_ID: ${{ secrets.DRIVE_SOURCE_FOLDER_ID }}
+          DRIVE_SOURCE_FILE_ID: ${{ steps.drive_source.outputs.file_id }}
+          DRIVE_SOURCE_FILE_NAME: ${{ steps.drive_source.outputs.file_name }}
+        run: |
+          python - <<'PY'
+          import os
+          from datetime import datetime, timezone
+
+          from google.auth.transport.requests import Request
+          from google.oauth2.credentials import Credentials
+          from googleapiclient.discovery import build
+
+          folder_id = os.environ["DRIVE_SOURCE_FOLDER_ID"].strip()
+          if "/folders/" in folder_id:
+              folder_id = folder_id.split("/folders/", 1)[1].split("?", 1)[0].split("/", 1)[0].strip()
+          credentials = Credentials(
+              token=None,
+              refresh_token=os.environ["GOOGLE_REFRESH_TOKEN"],
+              token_uri="https://oauth2.googleapis.com/token",
+              client_id=os.environ["GOOGLE_CLIENT_ID"],
+              client_secret=os.environ["GOOGLE_CLIENT_SECRET"],
+              scopes=["https://www.googleapis.com/auth/drive"],
+          )
+          credentials.refresh(Request())
+          drive = build("drive", "v3", credentials=credentials, cache_discovery=False)
+          query = (
+              f"'{folder_id}' in parents and trashed = false and "
+              "mimeType = 'application/vnd.google-apps.folder' and name = 'Processados'"
+          )
+          folders = drive.files().list(q=query, pageSize=1, fields="files(id,name)").execute().get("files", [])
+          processed_folder = folders[0] if folders else drive.files().create(
+              body={"name": "Processados", "mimeType": "application/vnd.google-apps.folder", "parents": [folder_id]},
+              fields="id,name",
+          ).execute()
+          stamp = datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%SZ")
+          old_name = os.environ.get("DRIVE_SOURCE_FILE_NAME", "fonte.mp4")
+          new_name = f"processado_{stamp}_{old_name}"
+          drive.files().update(
+              fileId=os.environ["DRIVE_SOURCE_FILE_ID"],
+              addParents=processed_folder["id"],
+              removeParents=folder_id,
+              body={"name": new_name},
+              fields="id,name,parents",
+          ).execute()
+          print(f"Entrada marcada como processada: {new_name}")
+          PY
+
+      - name: Salvar artefatos do GitHub
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: corte-fino-resultados
+          path: output/
+          if-no-files-found: ignore
+          retention-days: 7name: Corte Fino Diário
+
+on:
+  schedule:
+    # 22:15 UTC ≈ 19:15 no horário de Brasília.
+    - cron: "15 22 * * *"
+
+  workflow_dispatch:
+    inputs:
+      source_url:
+        description: "Link do vídeo para teste (direitos sob responsabilidade do usuário)"
+        required: false
+        type: string
+      rights_confirmed:
+        description: "Opcional: registrar que a revisão de direitos foi feita (não bloqueia o processamento)"
+        required: false
+        default: false
+        type: boolean
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  gerar-cortes:
+    runs-on: ubuntu-latest
+    timeout-minutes: 330
+    env:
+      # O usuário é responsável pelas licenças; o workflow apenas edita e entrega os arquivos.
+      ALLOW_UNVERIFIED_SOURCE: "1"
+      WHISPER_MODEL: small
+      WHISPER_MODEL_CACHE: ~/.cache/faster-whisper
+      MAX_SOURCE_DURATION_SECONDS: 10800
+
+    steps:
+      - name: Baixar código
+        uses: actions/checkout@v7
+
+      - name: Configurar Python
+        uses: actions/setup-python@v7
+        with:
+          python-version: "3.11"
+          cache: pip
+
+      - name: Instalar ferramentas
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y ffmpeg fonts-dejavu-core
+
+      - name: Instalar dependências
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install -r requirements.txt
+
+      - name: Preparar cache do Whisper
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/faster-whisper
+          key: faster-whisper-${{ runner.os }}-${{ env.WHISPER_MODEL }}
+          restore-keys: |
+            faster-whisper-${{ runner.os }}-
+
+      - name: Configurar acesso opcional ao YouTube
+        env:
+          YOUTUBE_COOKIES_B64: ${{ secrets.YOUTUBE_COOKIES_B64 }}
+        run: |
+          if [ -z "$YOUTUBE_COOKIES_B64" ]; then
+            echo "Nenhum cookie do YouTube configurado; seguindo com acesso público."
+          else
+            printf '%s' "$YOUTUBE_COOKIES_B64" | base64 --decode > "$RUNNER_TEMP/youtube-cookies.txt"
+            chmod 600 "$RUNNER_TEMP/youtube-cookies.txt"
+            echo "YOUTUBE_COOKIEFILE=$RUNNER_TEMP/youtube-cookies.txt" >> "$GITHUB_ENV"
+            echo "Cookies do YouTube configurados com segurança."
+          fi
+
+      - name: Definir link manual, quando informado
+        if: ${{ inputs.source_url != '' }}
+        env:
+          MANUAL_SOURCE_URL: ${{ inputs.source_url }}
+        run: |
+          echo "SOURCE_URL=$MANUAL_SOURCE_URL" >> "$GITHUB_ENV"
+          if [ "${{ inputs.rights_confirmed }}" = "true" ]; then
+            echo "SOURCE_RIGHTS_STATUS=AUTORIZADO — confirmação manual do proprietário/licenciante" >> "$GITHUB_ENV"
+          fi
+
+      - name: Validar acesso ao Google Drive antes do processamento
+        env:
+          GOOGLE_REFRESH_TOKEN: ${{ secrets.GOOGLE_REFRESH_TOKEN }}
+          GOOGLE_CLIENT_ID: ${{ secrets.GOOGLE_CLIENT_ID }}
+          GOOGLE_CLIENT_SECRET: ${{ secrets.GOOGLE_CLIENT_SECRET }}
+          DRIVE_SOURCE_FOLDER_ID: ${{ secrets.DRIVE_SOURCE_FOLDER_ID }}
+          DRIVE_FOLDER_ID: ${{ secrets.DRIVE_FOLDER_ID }}
+          MANUAL_SOURCE_URL: ${{ inputs.source_url }}
+        run: |
+          python - <<'PY'
+          import os
+
+          from google.auth.transport.requests import Request
+          from google.oauth2.credentials import Credentials
+          from googleapiclient.discovery import build
+          from googleapiclient.errors import HttpError
+
+          def folder_id(value):
+              value = (value or "").strip()
+              if "/folders/" in value:
+                  value = value.split("/folders/", 1)[1].split("?", 1)[0].split("/", 1)[0].strip()
+              return value
+
+          def validate_folder(drive, raw_value, label, require_write=False):
+              value = folder_id(raw_value)
+              if not value or value in {".", ".."}:
+                  raise SystemExit(f"{label} não está configurado.")
+              try:
+                  item = drive.files().get(
+                      fileId=value,
+                      fields="id,name,mimeType,trashed,capabilities(canAddChildren)",
+                  ).execute()
+              except HttpError as exc:
+                  status = getattr(getattr(exc, "resp", None), "status", "desconhecido")
+                  raise SystemExit(
+                      f"{label} está inválido ou inacessível (HTTP {status}). "
+                      "Confira o secret e a pasta compartilhada com a conta do OAuth."
+                  ) from exc
+              if item.get("mimeType") != "application/vnd.google-apps.folder":
+                  raise SystemExit(f"{label} não aponta para uma pasta do Google Drive.")
+              if item.get("trashed"):
+                  raise SystemExit(f"{label} aponta para uma pasta na lixeira.")
+              if require_write and item.get("capabilities", {}).get("canAddChildren") is False:
+                  raise SystemExit(f"{label} está acessível, mas a conta não pode fazer upload nela.")
+              print(f"{label}: OK — {item.get('name', value)}")
+
+          required = ["GOOGLE_REFRESH_TOKEN", "GOOGLE_CLIENT_ID", "GOOGLE_CLIENT_SECRET", "DRIVE_FOLDER_ID"]
+          missing = [name for name in required if not os.environ.get(name, "").strip()]
+          if missing:
+              raise SystemExit("Secrets ausentes: " + ", ".join(missing))
+
+          credentials = Credentials(
+              token=None,
+              refresh_token=os.environ["GOOGLE_REFRESH_TOKEN"],
+              token_uri="https://oauth2.googleapis.com/token",
+              client_id=os.environ["GOOGLE_CLIENT_ID"],
+              client_secret=os.environ["GOOGLE_CLIENT_SECRET"],
+              scopes=["https://www.googleapis.com/auth/drive"],
+          )
+          try:
+              credentials.refresh(Request())
+              drive = build("drive", "v3", credentials=credentials, cache_discovery=False)
+              validate_folder(drive, os.environ["DRIVE_FOLDER_ID"], "DRIVE_FOLDER_ID", require_write=True)
+              if not os.environ.get("MANUAL_SOURCE_URL", "").strip():
+                  validate_folder(drive, os.environ.get("DRIVE_SOURCE_FOLDER_ID"), "DRIVE_SOURCE_FOLDER_ID")
+          except SystemExit:
+              raise
+          except Exception as exc:
+              raise SystemExit(
+                  "Não foi possível autenticar no Google Drive. "
+                  "Confira GOOGLE_REFRESH_TOKEN, GOOGLE_CLIENT_ID e GOOGLE_CLIENT_SECRET."
+              ) from exc
+
+          print("Preflight do Google Drive concluído; o processamento pode começar.")
+          PY
+
+
+
+      - name: Buscar entrada no Drive
+        id: drive_source
+        if: ${{ inputs.source_url == '' }}
+        env:
+          GOOGLE_REFRESH_TOKEN: ${{ secrets.GOOGLE_REFRESH_TOKEN }}
+          GOOGLE_CLIENT_ID: ${{ secrets.GOOGLE_CLIENT_ID }}
+          GOOGLE_CLIENT_SECRET: ${{ secrets.GOOGLE_CLIENT_SECRET }}
+          DRIVE_SOURCE_FOLDER_ID: ${{ secrets.DRIVE_SOURCE_FOLDER_ID }}
+        run: |
+          python - <<'PY'
+          import os
+          from pathlib import Path
+
+          from google.auth.transport.requests import Request
+          from google.oauth2.credentials import Credentials
+          from googleapiclient.discovery import build
+          from googleapiclient.http import MediaIoBaseDownload
+
+          folder_id = os.environ.get("DRIVE_SOURCE_FOLDER_ID", "").strip()
+          if "/folders/" in folder_id:
+              folder_id = folder_id.split("/folders/", 1)[1].split("?", 1)[0].split("/", 1)[0].strip()
+          if not folder_id or folder_id in {".", ".."}:
+              raise SystemExit("DRIVE_SOURCE_FOLDER_ID não está configurado.")
+
+          credentials = Credentials(
+              token=None,
+              refresh_token=os.environ["GOOGLE_REFRESH_TOKEN"],
+              token_uri="https://oauth2.googleapis.com/token",
+              client_id=os.environ["GOOGLE_CLIENT_ID"],
+              client_secret=os.environ["GOOGLE_CLIENT_SECRET"],
+              scopes=["https://www.googleapis.com/auth/drive"],
+          )
+          credentials.refresh(Request())
+          drive = build("drive", "v3", credentials=credentials, cache_discovery=False)
+
+          query = f"'{folder_id}' in parents and trashed = false and mimeType contains 'video/'"
+          result = drive.files().list(
+              q=query,
+              orderBy="modifiedTime desc",
+              pageSize=20,
+              fields="files(id,name,mimeType,modifiedTime,webViewLink)",
+          ).execute()
+          files = result.get("files", [])
+          if not files:
+              print("Nenhum vídeo novo; rodada encerrada sem cortes."); open(os.environ["GITHUB_ENV"], "a", encoding="utf-8").write("NO_SOURCE=1\n"); raise SystemExit(0)
+
+          chosen = files[0]
+          target = Path(os.environ["RUNNER_TEMP"]) / "corte-fino-authorized-source.mp4"
+          request = drive.files().get_media(fileId=chosen["id"])
+          with target.open("wb") as handle:
+              downloader = MediaIoBaseDownload(handle, request)
+              done = False
+              while not done:
+                  _, done = downloader.next_chunk()
+
+          web_url = chosen.get("webViewLink") or f"https://drive.google.com/file/d/{chosen['id']}/view"
+          with open(os.environ["GITHUB_ENV"], "a", encoding="utf-8") as env_file:
+              env_file.write(f"SOURCE_FILE={target}\n")
+              env_file.write(f"SOURCE_URL={web_url}\n")
+              env_file.write(f"SOURCE_WEB_URL={web_url}\n")
+              env_file.write(f"SOURCE_TITLE={chosen['name']}\n")
+              env_file.write("SOURCE_CHANNEL=Entrada do Google Drive\n")
+              env_file.write("SOURCE_RIGHTS_STATUS=REVISÃO MANUAL — licença sob responsabilidade do usuário\n")
+              env_file.write(f"DRIVE_SOURCE_FILE_ID={chosen['id']}\n")
+              env_file.write(f"DRIVE_SOURCE_FILE_NAME={chosen['name']}\n")
+          with open(os.environ["GITHUB_OUTPUT"], "a", encoding="utf-8") as output_file:
+              output_file.write(f"file_id={chosen['id']}\n")
+              output_file.write(f"file_name={chosen['name']}\n")
+          print(f"Vídeo selecionado: {chosen['name']}")
+          print(f"Arquivo baixado para: {target}")
+          PY
+
+      - name: Gerar cortes
+        id: generate_cuts
+        run: |
+          if [ "${NO_SOURCE:-0}" = "1" ]; then echo "Nenhum vídeo novo; nada a processar nesta rodada."; elif [ -n "$SOURCE_FILE" ]; then
+            python - <<'PY'
+          import json
+          import os
           from pathlib import Path
           import main
           
