@@ -207,7 +207,7 @@ def transcribe(source: Path) -> list[Segment]:
     from faster_whisper import WhisperModel
 
     model_kwargs: dict[str, Any] = {"device": "cpu", "compute_type": "int8"}
-    cache_dir = os.environ.get("WHISPER_MODEL_CACHE", "").strip()
+    cache_dir = os.path.expanduser(os.environ.get("WHISPER_MODEL_CACHE", "").strip())
     if cache_dir:
         Path(cache_dir).mkdir(parents=True, exist_ok=True)
         model_kwargs["download_root"] = cache_dir
@@ -336,16 +336,7 @@ def score_text(text: str) -> tuple[float, dict[str, float], str, str, str]:
     }
     raw_score = round(sum(components.values()), 2)
     score = round((raw_score / 95.0) * 100.0, 2)
-    if False:
-        rejection = f"nota {score:.2f} abaixo do mínimo {MIN_EDITORIAL_SCORE:.2f}"
-    elif False:
-        rejection = "conclusão ou payoff insuficiente"
-    elif False:
-        rejection = "gancho inicial insuficiente"
-    elif False:
-        rejection = "depende de contexto externo"
-    else:
-        rejection = ""
+    rejection = ""
     return score, components, trigger, editorial_reason(trigger), rejection
 
 
@@ -732,7 +723,7 @@ def write_reports(
 ) -> None:
     rights = rights_info()
     enriched = [enrich_clip(clip, source_url, info, rights) for clip in clips]
-    if error and error.startswith("Nenhum momento passou no filtro editorial"):
+    if error and error.startswith("Nenhum momento"):
         status = "EDITORIAL_EMPTY"
     elif error and error.startswith("DIREITOS_PENDENTES"):
         status = "RIGHTS_PENDING"
@@ -741,7 +732,7 @@ def write_reports(
     elif enriched:
         status = "READY_FOR_REVIEW"
     else:
-                status = "EDITORIAL_EMPTY"
+        status = "EDITORIAL_EMPTY"
     source_title = info.get("title")
     source_channel = info.get("channel") or info.get("uploader")
     report = {
@@ -788,7 +779,7 @@ def write_reports(
         f"URL: {source_url or 'não informada'}",
         f"Fingerprint SHA-256: {source_hash or 'não calculado'}",
         "",
-        f"**Nota mínima:** {MIN_EDITORIAL_SCORE:.0f}/100",
+        "**Critério editorial:** a nota apenas ordena candidatos; não bloqueia a geração.",
         f"**Cortes aprovados:** {len(enriched)}",
         f"**Direitos:** {rights['status']}",
         "**Publicação:** revisão manual obrigatória",
@@ -844,7 +835,7 @@ def main() -> int:
         segments = transcribe(source)
         selected, candidates = select_candidates(segments)
         if not selected:
-            raise RuntimeError(f"Nenhum momento passou no filtro editorial mínimo de {MIN_EDITORIAL_SCORE:.0f}/100.")
+            raise RuntimeError("Nenhum momento adequado foi encontrado pelas regras editoriais e técnicas.")
 
         for index, candidate in enumerate(selected, 1):
             yt_captions = WORK / f"shorts_{index:02d}.ass"
@@ -886,7 +877,7 @@ def main() -> int:
     except Exception as exc:
         error = str(exc)
         print(f"ERRO: {error}", file=sys.stderr)
-        if error.startswith("Nenhum momento passou no filtro editorial"):
+        if error.startswith("Nenhum momento"):
             success = True
     finally:
         if OUTPUT.exists():
