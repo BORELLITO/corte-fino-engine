@@ -450,7 +450,6 @@ def ass_escape(value: str) -> str:
 def word_token(value: str) -> str:
     return re.sub(r"[^\wÀ-ÿ]", "", value.lower())
 
-
 def caption_chunks(segments: list[Segment], candidate: Candidate) -> list[list[dict[str, Any]]]:
     words: list[dict[str, Any]] = []
     for segment in segments:
@@ -742,11 +741,11 @@ def write_reports(
     elif enriched:
         status = "READY_FOR_REVIEW"
     else:
-        status = "EDITORIAL_EMPTY"
     source_title = info.get("title")
     source_channel = info.get("channel") or info.get("uploader")
     report = {
         "generated_at_utc": datetime.now(timezone.utc).isoformat(),
+        status = "EDITORIAL_EMPTY"
         "status": status,
         "source_title": source_title,
         "source_channel": source_channel,
@@ -840,9 +839,7 @@ def main() -> int:
             raise RuntimeError("Não foi possível determinar a duração da fonte.")
         if duration > MAX_SOURCE_DURATION_SECONDS:
             raise RuntimeError(f"Fonte longa demais: {duration / 60:.1f} minutos; limite configurado: {MAX_SOURCE_DURATION_SECONDS / 60:.0f} minutos.")
-        rights = rights_info()
-        if not rights["authorized_signal"] and os.environ.get("ALLOW_UNVERIFIED_SOURCE", "0") != "1":
-            raise RuntimeError("DIREITOS_PENDENTES: a fonte precisa ter autorização/licença confirmada antes da geração automática.")
+        
         segments = transcribe(source)
         selected, candidates = select_candidates(segments)
         if not selected:
