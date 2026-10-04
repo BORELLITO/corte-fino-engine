@@ -465,18 +465,23 @@ def caption_chunks(segments: list[Segment], candidate: Candidate) -> list[list[d
     chunks: list[list[dict[str, Any]]] = []
     current: list[dict[str, Any]] = []
     for word in words:
+        if current:
+            projected_duration = float(word["end"]) - float(current[0]["start"])
+            current_duration = float(current[-1]["end"]) - float(current[0]["start"])
+            if projected_duration > CAPTION_MAX_DURATION and current_duration >= CAPTION_MIN_DURATION:
+                chunks.append(current)
+                current = []
         current.append(word)
         plain = " ".join(item["word"] for item in current)
         closes_sentence = bool(re.search(r"[.!?…]$", word["word"]))
         block_duration = float(word["end"]) - float(current[0]["start"])
         ready_sentence = len(current) >= CAPTION_MIN_WORDS and closes_sentence and block_duration >= CAPTION_MIN_DURATION
         ready_full = len(current) >= CAPTION_MAX_WORDS and block_duration >= CAPTION_MIN_DURATION
-        too_long = len(current) >= CAPTION_MIN_WORDS and block_duration >= CAPTION_MAX_DURATION
-        if ready_full or ready_sentence or too_long or len(plain) >= CAPTION_MAX_LINE_CHARS * 2:
+        if ready_full or ready_sentence or len(plain) >= CAPTION_MAX_LINE_CHARS * 2:
             chunks.append(current)
             current = []
     if current:
-        chunks.append(current)
+        chunks.append(current)    
     return chunks
 
 
