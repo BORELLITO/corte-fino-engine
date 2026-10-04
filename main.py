@@ -19,7 +19,7 @@ MIN_EDITORIAL_SCORE = 0.0  # compatibilidade: a nota apenas ordena candidatos; n
 MIN_CLIP_SECONDS = int(os.environ.get("MIN_CLIP_SECONDS", "45"))
 MAX_CLIP_SECONDS = int(os.environ.get("MAX_CLIP_SECONDS", "90"))
 TARGET_CLIP_SECONDS = int(os.environ.get("TARGET_CLIP_SECONDS", "68"))
-WHISPER_MODEL = os.environ.get("WHISPER_MODEL", "base").strip() or "base"
+WHISPER_MODEL = os.environ.get("WHISPER_MODEL", "small").strip() or "small"
 MAX_SOURCE_DURATION_SECONDS = int(os.environ.get("MAX_SOURCE_DURATION_SECONDS", "10800"))
 CAPTION_MIN_WORDS = 3
 CAPTION_MAX_WORDS = 6
@@ -27,6 +27,11 @@ CAPTION_FONT_SIZE = int(os.environ.get("CAPTION_FONT_SIZE", "48"))
 CAPTION_MARGIN_V = int(os.environ.get("CAPTION_MARGIN_V", "220"))
 YOUTUBE_CAPTION_MARGIN_V = int(os.environ.get("YOUTUBE_CAPTION_MARGIN_V", str(CAPTION_MARGIN_V)))
 TIKTOK_CAPTION_MARGIN_V = int(os.environ.get("TIKTOK_CAPTION_MARGIN_V", str(CAPTION_MARGIN_V + 80)))
+CAPTION_MAX_LINE_CHARS = int(os.environ.get("CAPTION_MAX_LINE_CHARS", "32"))
+CAPTION_MIN_DURATION = float(os.environ.get("CAPTION_MIN_DURATION", "0.45"))
+CAPTION_MAX_DURATION = float(os.environ.get("CAPTION_MAX_DURATION", "4.0"))
+CAPTION_MAX_GAP = float(os.environ.get("CAPTION_MAX_GAP", "1.5"))
+CAPTION_SYNC_TOLERANCE = float(os.environ.get("CAPTION_SYNC_TOLERANCE", "0.35"))
 ROOT = Path(__file__).resolve().parent
 WORK = ROOT / "work"
 OUTPUT = ROOT / "output"
@@ -473,12 +478,90 @@ def caption_chunks(segments: list[Segment], candidate: Candidate) -> list[list[d
         current.append(word)
         plain = " ".join(item["word"] for item in current)
         closes_sentence = bool(re.search(r"[.!?…]$", word["word"]))
-        if len(current) >= CAPTION_MAX_WORDS or (len(current) >= CAPTION_MIN_WORDS and closes_sentence) or len(plain) >= 38:
+        if len(current) >= CAPTION_MAX_WORDS or (len(current) >= CAPTION_MIN_WORDS and closes_sentence) or len(plain) >= CAPTION_MAX_LINE_CHARS * 2:
             chunks.append(current)
             current = []
     if current:
         chunks.append(current)
     return chunks
+
+
+def validate_captions(segments: list[Segment], candidate: Candidate, margin_v: int) -> dict[str, Any]:
+    """Audita tempo, continuidade, largura e posição das legendas antes da renderização."""
+    chunks = caption_chunks(segments, candidate)
+    issues: list[str] = []
+    warnings: list[str] = []
+    intervals: list[dict[str, Any]] = []
+    previous_end: float | None = None
+
+    if not chunks:
+        issues.append("nenhum bloco de legenda foi gerado")
+
+    for index, chunk in enumerate(chunks, 1):
+        labels = [str(item.get("word", "")).strip() for item in chunk if str(item.get("word", "")).strip()]
+        text = " ".join(labels)
+        start = max(0.0, float(chunk[0]["start"]) - candidate.start) if chunk else 0.0
+        end = max(start, float(chunk[-1]["end"]) - candidate.start) if chunk else start
+        duration = end - start
+
+        if not labels:
+            issues.append(f"bloco {index} sem texto")
+            continue
+        if duration < CAPTION_MIN_DURATION:
+            issues.append(f"bloco {index} rápido demais ({duration:.2f}s)")
+        if duration > CAPTION_MAX_DURATION:
+            issues.append(f"bloco {index} longo demais ({duration:.2f}s)")
+        if start < -CAPTION_SYNC_TOLERANCE or end > candidate.duration + CAPTION_SYNC_TOLERANCE:
+            issues.append(f"bloco {index} fora do intervalo do corte")
+        if previous_end is not None:
+            gap = start - previous_end
+            if gap < -0.03:
+                issues.append(f"blocos {index - 1} e {index} sobrepostos ({gap:.2f}s)")
+            elif gap > CAPTION_MAX_GAP:
+                warnings.append(f"pausa natural entre blocos {index - 1} e {index} ({gap:.2f}s)")
+
+        line_lengths = [len(text)]
+        if len(text) > CAPTION_MAX_LINE_CHARS:
+            midpoint = len(text) / 2
+            running = 0
+            break_at: int | None = None
+            for word_index, label in enumerate(labels[:-1]):
+                running += len(label) + (1 if word_index else 0)
+                if running >= midpoint:
+                    break_at = word_index + 1
+                    break
+            if break_at:
+                line_lengths = [len(" ".join(labels[:break_at])), len(" ".join(labels[break_at:]))]
+        if len(line_lengths) > 2 or max(line_lengths, default=0) > CAPTION_MAX_LINE_CHARS:
+            issues.append(f"bloco {index} ultrapassa a largura segura ({line_lengths})")
+
+        intervals.append({
+            "index": index,
+            "start": round(start, 3),
+            "end": round(end, 3),
+            "duration": round(duration, 3),
+            "text": text,
+            "line_lengths": line_lengths,
+        })
+        previous_end = end
+
+    if not 160 <= margin_v <= 420:
+        issues.append(f"margem vertical fora da área segura ({margin_v}px)")
+    if candidate.duration <= 0:
+        issues.append("duração do corte inválida")
+
+    return {
+        "passed": not issues,
+        "issues": issues,
+        "warnings": warnings,
+        "blocks": len(intervals),
+        "max_line_chars": max((max(item["line_lengths"], default=0) for item in intervals), default=0),
+        "margin_v": margin_v,
+        "alignment": "center-bottom",
+        "safe_area": {"margin_left": 70, "margin_right": 70, "margin_bottom": margin_v},
+        "sync_tolerance_seconds": CAPTION_SYNC_TOLERANCE,
+        "intervals": intervals,
+    }
 
 
 def render_caption(words: list[dict[str, Any]]) -> str:
@@ -487,7 +570,7 @@ def render_caption(words: list[dict[str, Any]]) -> str:
     priority = HOOK_WORDS | CONFLICT_WORDS | {"porque", "porquê", "por que", "você", "voce"}
     keyword_index = next((index for index, token in enumerate(cleaned) if token in priority), max(range(len(labels)), key=lambda index: len(cleaned[index]), default=0))
     break_at: int | None = None
-    if len(" ".join(labels)) > 32 and len(labels) > 1:
+    if len(" ".join(labels)) > CAPTION_MAX_LINE_CHARS and len(labels) > 1:
         target = len(" ".join(labels)) / 2
         running = 0
         for index, label in enumerate(labels[:-1]):
@@ -687,7 +770,7 @@ def write_reports(
         "editing": {
             "format": "9:16 — 1080x1920",
             "audio": "áudio original preservado em AAC",
-            "captions": "ASS dinâmico, 3–6 palavras por bloco, destaque discreto e terço inferior",
+            "captions": "ASS dinâmico, no máximo duas linhas de até 32 caracteres, sincronização auditada por palavra, posição central no terço inferior e margem segura",
             "framing": "quadro completo com fundo desfocado para preservar rostos",
             "branding": "Corte Fino discreto, sem vinheta e sem música adicionada",
         },
@@ -770,17 +853,23 @@ def main() -> int:
             yt_output = YOUTUBE_DIR / f"corte_fino_{index:02d}_youtube_shorts.mp4"
             tt_output = TIKTOK_DIR / f"corte_fino_{index:02d}_tiktok.mp4"
             write_ass(segments, candidate, yt_captions, YOUTUBE_CAPTION_MARGIN_V)
+            yt_caption_qa = validate_captions(segments, candidate, YOUTUBE_CAPTION_MARGIN_V)
             render_clip(source, yt_captions, candidate, yt_output)
             write_ass(segments, candidate, tt_captions, TIKTOK_CAPTION_MARGIN_V)
+            tt_caption_qa = validate_captions(segments, candidate, TIKTOK_CAPTION_MARGIN_V)
             render_clip(source, tt_captions, candidate, tt_output)
             yt_qa = validate_video(yt_output, candidate.duration)
             tt_qa = validate_video(tt_output, candidate.duration)
+            yt_qa["caption_qa"] = yt_caption_qa
+            tt_qa["caption_qa"] = tt_caption_qa
             qa.extend([
                 {"platform": "youtube_shorts", "clip": index, **yt_qa},
                 {"platform": "tiktok", "clip": index, **tt_qa},
             ])
+            if not yt_caption_qa["passed"] or not tt_caption_qa["passed"]:
+                raise RuntimeError(f"QA de legenda reprovou o corte {index}: confira qa.json e relatorio.json.")
             if not yt_qa["passed"] or not tt_qa["passed"]:
-                raise RuntimeError(f"QA reprovou o corte {index}: confira qa.json e relatorio.json.")
+                raise RuntimeError(f"QA técnico reprovou o corte {index}: confira qa.json e relatorio.json.")
             clips.append({
                 "file": str(yt_output.relative_to(OUTPUT)),
                 "youtube_file": str(yt_output.relative_to(OUTPUT)),
