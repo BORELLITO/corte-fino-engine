@@ -243,7 +243,6 @@ jobs:
             python - <<'PY'
           import json
           import os
-          import zipfile
           from pathlib import Path
           import main
           
@@ -287,6 +286,7 @@ jobs:
           import json
           import mimetypes
           import os
+          import zipfile
           import re
           import unicodedata
           from datetime import datetime, timezone
