@@ -611,8 +611,9 @@ def render_clip(source: Path, captions: Path, candidate: Candidate, output: Path
         "[bg]scale=1080:1920:force_original_aspect_ratio=increase,crop=1080:1920,gblur=sigma=22,eq=brightness=-0.18:saturation=0.80[bg];"
         "[fg]scale=1080:1920:force_original_aspect_ratio=decrease[fg];"
         f"[bg][fg]overlay=(W-w)/2:(H-h)/2,subtitles='{caption_path}':original_size=1080x1920,"
-        "drawbox=x=iw-240:y=34:w=210:h=40:color=black@0.30:t=fill,"
-        "drawtext=fontfile=/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf:text='CORTE FINO':fontcolor=white@0.76:fontsize=22:x=w-tw-48:y=43[v]"
+        "drawbox=x=iw-276:y=32:w=228:h=48:color=black@0.42:t=fill,"
+        "drawbox=x=iw-276:y=32:w=3:h=48:color=gold@0.92:t=fill,"
+        "drawtext=fontfile=/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf:text='CORTE FINO':fontcolor=white@0.86:fontsize=19:x=w-tw-48:y=47[v]"
     )
     run([
         "ffmpeg", "-y", "-ss", f"{candidate.start:.3f}", "-i", str(source), "-t", f"{candidate.duration:.3f}",
