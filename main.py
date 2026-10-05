@@ -7,6 +7,7 @@ import re
 import shutil
 import subprocess
 import sys
+import time
 import zipfile
 from dataclasses import asdict, dataclass, field
 from datetime import datetime, timezone
@@ -21,6 +22,9 @@ MAX_CLIP_SECONDS = int(os.environ.get("MAX_CLIP_SECONDS", "90"))
 TARGET_CLIP_SECONDS = int(os.environ.get("TARGET_CLIP_SECONDS", "68"))
 WHISPER_MODEL = os.environ.get("WHISPER_MODEL", "small").strip() or "small"
 MAX_SOURCE_DURATION_SECONDS = int(os.environ.get("MAX_SOURCE_DURATION_SECONDS", "10800"))
+TRANSCRIBE_BEAM_SIZE = max(1, int(os.environ.get("TRANSCRIBE_BEAM_SIZE", "3")))
+TRANSCRIBE_CPU_THREADS = max(1, int(os.environ.get("TRANSCRIBE_CPU_THREADS", "4")))
+TRANSCRIBE_PROGRESS_SECONDS = max(15, int(os.environ.get("TRANSCRIBE_PROGRESS_SECONDS", "45")))
 CAPTION_MIN_WORDS = 3
 CAPTION_MAX_WORDS = 6
 CAPTION_FONT_SIZE = int(os.environ.get("CAPTION_FONT_SIZE", "48"))
@@ -206,21 +210,36 @@ def media_duration(path: Path) -> float:
 def transcribe(source: Path) -> list[Segment]:
     from faster_whisper import WhisperModel
 
-    model_kwargs: dict[str, Any] = {"device": "cpu", "compute_type": "int8"}
+    model_kwargs: dict[str, Any] = {
+        "device": "cpu",
+        "compute_type": "int8",
+        "cpu_threads": TRANSCRIBE_CPU_THREADS,
+        "num_workers": 1,
+    }
     cache_dir = os.path.expanduser(os.environ.get("WHISPER_MODEL_CACHE", "").strip())
     if cache_dir:
         Path(cache_dir).mkdir(parents=True, exist_ok=True)
         model_kwargs["download_root"] = cache_dir
+
+    print(
+        f"Transcrição iniciada: modelo={WHISPER_MODEL}, beam={TRANSCRIBE_BEAM_SIZE}, "
+        f"threads={TRANSCRIBE_CPU_THREADS}",
+        flush=True,
+    )
+    started_at = time.monotonic()
     model = WhisperModel(WHISPER_MODEL, **model_kwargs)
     segments, _ = model.transcribe(
         str(source),
         language="pt",
         word_timestamps=True,
         vad_filter=True,
-        beam_size=5,
+        vad_parameters={"min_silence_duration_ms": 500},
+        beam_size=TRANSCRIBE_BEAM_SIZE,
         condition_on_previous_text=False,
     )
     result: list[Segment] = []
+    last_progress = -TRANSCRIBE_PROGRESS_SECONDS
+    segment_count = 0
     for segment in segments:
         words = [
             {"start": float(word.start), "end": float(word.end), "word": word.word}
@@ -229,8 +248,22 @@ def transcribe(source: Path) -> list[Segment]:
         text = segment.text.strip()
         if text:
             result.append(Segment(float(segment.start), float(segment.end), text, words))
+            segment_count += 1
+            if float(segment.end) - last_progress >= TRANSCRIBE_PROGRESS_SECONDS:
+                elapsed = time.monotonic() - started_at
+                print(
+                    f"Transcrição: {float(segment.end):.0f}s processados; "
+                    f"{segment_count} segmentos; {elapsed / 60:.1f} min decorridos",
+                    flush=True,
+                )
+                last_progress = float(segment.end)
     if not result:
         raise RuntimeError("A transcrição não retornou fala suficiente.")
+    print(
+        f"Transcrição concluída: {segment_count} segmentos em "
+        f"{(time.monotonic() - started_at) / 60:.1f} min",
+        flush=True,
+    )
     return result
 
 
@@ -441,6 +474,27 @@ def ass_escape(value: str) -> str:
 def word_token(value: str) -> str:
     return re.sub(r"[^\wÀ-ÿ]", "", value.lower())
 
+def caption_layout(labels: list[str]) -> tuple[int | None, list[int]]:
+    """Retorna a quebra usada simultaneamente no QA e no ASS renderizado."""
+    text = " ".join(labels).strip()
+    if not text:
+        return None, []
+    if len(text) <= CAPTION_MAX_LINE_CHARS:
+        return None, [len(text)]
+
+    options: list[tuple[float, int, list[int]]] = []
+    for index in range(1, len(labels)):
+        left = " ".join(labels[:index])
+        right = " ".join(labels[index:])
+        lengths = [len(left), len(right)]
+        if max(lengths) <= CAPTION_MAX_LINE_CHARS:
+            options.append((abs(lengths[0] - lengths[1]), index, lengths))
+    if not options:
+        return None, [len(text)]
+    _, break_at, lengths = min(options, key=lambda item: item[0])
+    return break_at, lengths
+
+
 def caption_chunks(segments: list[Segment], candidate: Candidate) -> list[list[dict[str, Any]]]:
     words: list[dict[str, Any]] = []
     for segment in segments:
@@ -451,7 +505,11 @@ def caption_chunks(segments: list[Segment], candidate: Candidate) -> list[list[d
             tokens = segment.text.split()
             duration = max(segment.end - segment.start, 0.2)
             source_words = [
-                {"start": segment.start + duration * index / max(len(tokens), 1), "end": segment.start + duration * (index + 1) / max(len(tokens), 1), "word": token}
+                {
+                    "start": segment.start + duration * index / max(len(tokens), 1),
+                    "end": segment.start + duration * (index + 1) / max(len(tokens), 1),
+                    "word": token,
+                }
                 for index, token in enumerate(tokens)
             ]
         for word in source_words:
@@ -462,27 +520,58 @@ def caption_chunks(segments: list[Segment], candidate: Candidate) -> list[list[d
             end = min(candidate.end, float(word["end"]))
             if end > start:
                 words.append({"start": start, "end": end, "word": text})
+
     chunks: list[list[dict[str, Any]]] = []
     current: list[dict[str, Any]] = []
     for word in words:
         if current:
             projected_duration = float(word["end"]) - float(current[0]["start"])
             current_duration = float(current[-1]["end"]) - float(current[0]["start"])
-            if projected_duration > CAPTION_MAX_DURATION and current_duration >= CAPTION_MIN_DURATION:
+            projected = [*current, word]
+            _, projected_lengths = caption_layout(
+                [str(item["word"]).strip() for item in projected]
+            )
+            exceeds_duration = (
+                projected_duration > CAPTION_MAX_DURATION
+                and current_duration >= CAPTION_MIN_DURATION
+            )
+            exceeds_words = len(projected) > CAPTION_MAX_WORDS
+            exceeds_width = max(projected_lengths, default=0) > CAPTION_MAX_LINE_CHARS
+            if exceeds_duration or exceeds_words or exceeds_width:
                 chunks.append(current)
                 current = []
         current.append(word)
-        plain = " ".join(item["word"] for item in current)
+        labels = [str(item["word"]).strip() for item in current]
         closes_sentence = bool(re.search(r"[.!?…]$", word["word"]))
         block_duration = float(word["end"]) - float(current[0]["start"])
-        ready_sentence = len(current) >= CAPTION_MIN_WORDS and closes_sentence and block_duration >= CAPTION_MIN_DURATION
+        ready_sentence = (
+            len(current) >= CAPTION_MIN_WORDS
+            and closes_sentence
+            and block_duration >= CAPTION_MIN_DURATION
+        )
         ready_full = len(current) >= CAPTION_MAX_WORDS and block_duration >= CAPTION_MIN_DURATION
         too_long = len(current) >= CAPTION_MIN_WORDS and block_duration >= CAPTION_MAX_DURATION
-        if ready_full or ready_sentence or too_long or len(plain) >= CAPTION_MAX_LINE_CHARS * 2:
+        _, line_lengths = caption_layout(labels)
+        if ready_full or ready_sentence or too_long or max(line_lengths, default=0) > CAPTION_MAX_LINE_CHARS:
             chunks.append(current)
             current = []
+
     if current:
-        chunks.append(current)    
+        current_duration = float(current[-1]["end"]) - float(current[0]["start"])
+        if chunks and len(current) < CAPTION_MIN_WORDS and current_duration < CAPTION_MIN_DURATION:
+            merged = [*chunks[-1], *current]
+            merged_duration = float(merged[-1]["end"]) - float(merged[0]["start"])
+            _, merged_lengths = caption_layout([str(item["word"]).strip() for item in merged])
+            if (
+                len(merged) <= CAPTION_MAX_WORDS
+                and merged_duration <= CAPTION_MAX_DURATION
+                and max(merged_lengths, default=0) <= CAPTION_MAX_LINE_CHARS
+            ):
+                chunks[-1] = merged
+            else:
+                chunks.append(current)
+        else:
+            chunks.append(current)
     return chunks
 
 
@@ -520,18 +609,7 @@ def validate_captions(segments: list[Segment], candidate: Candidate, margin_v: i
             elif gap > CAPTION_MAX_GAP:
                 warnings.append(f"pausa natural entre blocos {index - 1} e {index} ({gap:.2f}s)")
 
-        line_lengths = [len(text)]
-        if len(text) > CAPTION_MAX_LINE_CHARS:
-            midpoint = len(text) / 2
-            running = 0
-            break_at: int | None = None
-            for word_index, label in enumerate(labels[:-1]):
-                running += len(label) + (1 if word_index else 0)
-                if running >= midpoint:
-                    break_at = word_index + 1
-                    break
-            if break_at:
-                line_lengths = [len(" ".join(labels[:break_at])), len(" ".join(labels[break_at:]))]
+        _, line_lengths = caption_layout(labels)
         if len(line_lengths) > 2 or max(line_lengths, default=0) > CAPTION_MAX_LINE_CHARS:
             issues.append(f"bloco {index} ultrapassa a largura segura ({line_lengths})")
 
@@ -568,22 +646,21 @@ def render_caption(words: list[dict[str, Any]]) -> str:
     labels = [item["word"].strip() for item in words]
     cleaned = [word_token(label) for label in labels]
     priority = HOOK_WORDS | CONFLICT_WORDS | {"porque", "porquê", "por que", "você", "voce"}
-    keyword_index = next((index for index, token in enumerate(cleaned) if token in priority), max(range(len(labels)), key=lambda index: len(cleaned[index]), default=0))
-    break_at: int | None = None
-    if len(" ".join(labels)) > CAPTION_MAX_LINE_CHARS and len(labels) > 1:
-        target = len(" ".join(labels)) / 2
-        running = 0
-        for index, label in enumerate(labels[:-1]):
-            running += len(label) + (1 if index else 0)
-            if running >= target:
-                break_at = index + 1
-                break
+    keyword_index = next(
+        (index for index, token in enumerate(cleaned) if token in priority),
+        max(range(len(labels)), key=lambda index: len(cleaned[index]), default=0),
+    )
+    break_at, _ = caption_layout(labels)
     rendered: list[str] = []
     for index, label in enumerate(labels):
         if break_at == index:
             rendered.append(r"\N")
         token = ass_escape(label)
-        rendered.append(f"{{\\c&H0000A5FF&}}{token}{{\\c&H00FFFFFF&}}" if index == keyword_index else token)
+        rendered.append(
+            f"{{\\c&H0000A5FF&}}{token}{{\\c&H00FFFFFF&}}"
+            if index == keyword_index
+            else token
+        )
         if index < len(labels) - 1 and break_at != index + 1:
             rendered.append(" ")
     return "".join(rendered)
@@ -621,6 +698,26 @@ def render_clip(source: Path, captions: Path, candidate: Candidate, output: Path
         "-crf", "21", "-pix_fmt", "yuv420p", "-r", "30", "-c:a", "aac", "-b:a", "160k", "-ar", "48000",
         "-movflags", "+faststart", "-shortest", "-avoid_negative_ts", "make_zero", str(output),
     ])
+
+
+def render_and_validate(
+    source: Path,
+    captions: Path,
+    candidate: Candidate,
+    output: Path,
+) -> dict[str, Any]:
+    """Renderiza em arquivo temporário e só publica o MP4 depois do QA técnico."""
+    temporary = output.with_name(f"{output.stem}.part{output.suffix}")
+    if temporary.exists():
+        temporary.unlink()
+    render_clip(source, captions, candidate, temporary)
+    qa = validate_video(temporary, candidate.duration)
+    if qa["passed"]:
+        temporary.replace(output)
+        qa["file"] = output.name
+    else:
+        temporary.unlink(missing_ok=True)
+    return qa
 
 
 def validate_video(path: Path, expected_duration: float) -> dict[str, Any]:
@@ -854,13 +951,22 @@ def main() -> int:
             tt_output = TIKTOK_DIR / f"corte_fino_{index:02d}_tiktok.mp4"
             write_ass(segments, candidate, yt_captions, YOUTUBE_CAPTION_MARGIN_V)
             yt_caption_qa = validate_captions(segments, candidate, YOUTUBE_CAPTION_MARGIN_V)
-            render_clip(source, yt_captions, candidate, yt_output)
+            if not yt_caption_qa["passed"]:
+                raise RuntimeError(
+                    f"QA de legenda reprovou o corte {index} para YouTube: "
+                    "confira qa.json e relatorio.json."
+                )
+            yt_qa = render_and_validate(source, yt_captions, candidate, yt_output)
+            yt_qa["caption_qa"] = yt_caption_qa
+
             write_ass(segments, candidate, tt_captions, TIKTOK_CAPTION_MARGIN_V)
             tt_caption_qa = validate_captions(segments, candidate, TIKTOK_CAPTION_MARGIN_V)
-            render_clip(source, tt_captions, candidate, tt_output)
-            yt_qa = validate_video(yt_output, candidate.duration)
-            tt_qa = validate_video(tt_output, candidate.duration)
-            yt_qa["caption_qa"] = yt_caption_qa
+            if not tt_caption_qa["passed"]:
+                raise RuntimeError(
+                    f"QA de legenda reprovou o corte {index} para TikTok: "
+                    "confira qa.json e relatorio.json."
+                )
+            tt_qa = render_and_validate(source, tt_captions, candidate, tt_output)
             tt_qa["caption_qa"] = tt_caption_qa
             qa.extend([
                 {"platform": "youtube_shorts", "clip": index, **yt_qa},
@@ -898,3 +1004,4 @@ def main() -> int:
 
 if __name__ == "__main__":
     raise SystemExit(main())
+
