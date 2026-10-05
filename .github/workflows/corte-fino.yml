@@ -33,7 +33,7 @@ jobs:
       ALLOW_UNVERIFIED_SOURCE: "1"
       WHISPER_MODEL: small
       WHISPER_MODEL_CACHE: ~/.cache/faster-whisper
-      MAX_SOURCE_DURATION_SECONDS: 10800
+      MAX_SOURCE_DURATION_SECONDS: 21600
 
     steps:
       - name: Baixar código
