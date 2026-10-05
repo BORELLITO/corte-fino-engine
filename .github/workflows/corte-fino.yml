@@ -26,7 +26,7 @@ concurrency:
 
 jobs:
   gerar-cortes:
-    runs-on: ubuntu-24.04
+    runs-on: ubuntu-22.04
     timeout-minutes: 330
     env:
       # O usuário é responsável pelas licenças; o workflow apenas edita e entrega os arquivos.
@@ -34,6 +34,9 @@ jobs:
       WHISPER_MODEL: small
       WHISPER_MODEL_CACHE: ~/.cache/faster-whisper
       MAX_SOURCE_DURATION_SECONDS: 21600
+      PYTHONUNBUFFERED: "1"
+      TRANSCRIBE_BEAM_SIZE: "3"
+      TRANSCRIBE_CPU_THREADS: "4"
 
     steps:
       - name: Baixar código
@@ -220,18 +223,24 @@ jobs:
                   _, done = downloader.next_chunk()
 
           web_url = chosen.get("webViewLink") or f"https://drive.google.com/file/d/{chosen['id']}/view"
-          with open(os.environ["GITHUB_ENV"], "a", encoding="utf-8") as env_file:
-              env_file.write(f"SOURCE_FILE={target}\n")
-              env_file.write(f"SOURCE_URL={web_url}\n")
-              env_file.write(f"SOURCE_WEB_URL={web_url}\n")
-              env_file.write(f"SOURCE_TITLE={chosen['name']}\n")
-              env_file.write("SOURCE_CHANNEL=Entrada do Google Drive\n")
-              env_file.write("SOURCE_RIGHTS_STATUS=REVISÃO MANUAL — licença sob responsabilidade do usuário\n")
-              env_file.write(f"DRIVE_SOURCE_FILE_ID={chosen['id']}\n")
-              env_file.write(f"DRIVE_SOURCE_FILE_NAME={chosen['name']}\n")
-          with open(os.environ["GITHUB_OUTPUT"], "a", encoding="utf-8") as output_file:
-              output_file.write(f"file_id={chosen['id']}\n")
-              output_file.write(f"file_name={chosen['name']}\n")
+          def write_command_file(path, name, value):
+              delimiter = "CORTEFINO_" + str(abs(hash((name, value))))
+              with open(path, "a", encoding="utf-8") as handle:
+                  handle.write(f"{name}<<{delimiter}\n{value}\n{delimiter}\n")
+
+          for name, value in {
+              "SOURCE_FILE": str(target),
+              "SOURCE_URL": web_url,
+              "SOURCE_WEB_URL": web_url,
+              "SOURCE_TITLE": chosen["name"],
+              "SOURCE_CHANNEL": "Entrada do Google Drive",
+              "SOURCE_RIGHTS_STATUS": "REVISÃO MANUAL — licença sob responsabilidade do usuário",
+              "DRIVE_SOURCE_FILE_ID": chosen["id"],
+              "DRIVE_SOURCE_FILE_NAME": chosen["name"],
+          }.items():
+              write_command_file(os.environ["GITHUB_ENV"], name, value)
+          write_command_file(os.environ["GITHUB_OUTPUT"], "file_id", chosen["id"])
+          write_command_file(os.environ["GITHUB_OUTPUT"], "file_name", chosen["name"])
           print(f"Vídeo selecionado: {chosen['name']}")
           print(f"Arquivo baixado para: {target}")
           PY
@@ -303,20 +312,43 @@ jobs:
               value = re.sub(r"[^A-Za-z0-9]+", "-", value).strip("-")
               return (value[:90] or fallback).strip("-")
 
-          def create_folder(drive, name, parent_id):
+          def find_child(drive, parent_id, name, mime_type=None):
+              escaped = name.replace("'", "\\'")
+              query = f"'{parent_id}' in parents and trashed = false and name = '{escaped}'"
+              if mime_type:
+                  query += f" and mimeType = '{mime_type}'"
+              files = drive.files().list(
+                  q=query, pageSize=1, fields="files(id,name,mimeType,webViewLink)"
+              ).execute().get("files", [])
+              return files[0] if files else None
+
+          def get_or_create_folder(drive, name, parent_id):
+              existing = find_child(
+                  drive, parent_id, name, "application/vnd.google-apps.folder"
+              )
+              if existing:
+                  return existing
               return drive.files().create(
                   body={"name": name, "mimeType": "application/vnd.google-apps.folder", "parents": [parent_id]},
-                  fields="id,name",
+                  fields="id,name,webViewLink",
               ).execute()
 
           def upload_file(drive, file_path, parent_id, display_name=None):
-              metadata = {"name": display_name or file_path.name, "parents": [parent_id]}
+              name = display_name or file_path.name
+              existing = find_child(drive, parent_id, name)
               media = MediaFileUpload(
                   str(file_path),
                   mimetype=mimetypes.guess_type(file_path.name)[0] or "application/octet-stream",
                   resumable=True,
               )
-              return drive.files().create(body=metadata, media_body=media, fields="id,name,webViewLink").execute()
+              if existing:
+                  return drive.files().update(
+                      fileId=existing["id"], media_body=media, fields="id,name,webViewLink"
+                  ).execute()
+              metadata = {"name": name, "parents": [parent_id]}
+              return drive.files().create(
+                  body=metadata, media_body=media, fields="id,name,webViewLink"
+              ).execute()
 
           raw_folder_id = os.environ.get("DRIVE_FOLDER_ID", "").strip()
           if "/folders/" in raw_folder_id:
@@ -354,13 +386,17 @@ jobs:
           source_meta = report_data.get("source") or {}
           source_title = source_meta.get("title") or os.environ.get("SOURCE_TITLE") or "fonte autorizada"
           source_slug = normalize_name(Path(str(source_title)).stem, "fonte-autorizada")
-          stamp = datetime.now(timezone.utc).strftime("%Y-%m-%d_%H-%M-%S")
-          batch_name = f"{stamp} - {source_slug}"
-          batch_folder = create_folder(drive, batch_name, parent["id"])
-          youtube_folder = create_folder(drive, "01 - YouTube Shorts", batch_folder["id"])
-          tiktok_folder = create_folder(drive, "02 - TikTok", batch_folder["id"])
-          texts_folder = create_folder(drive, "03 - Textos para postagem", batch_folder["id"])
-          reports_folder = create_folder(drive, "04 - Relatorios", batch_folder["id"])
+          source_hash = str(source_meta.get("fingerprint_sha256") or "").strip().lower()
+          if source_hash:
+              batch_name = f"{source_hash[:12]} - {source_slug}"
+          else:
+              stamp = datetime.now(timezone.utc).strftime("%Y-%m-%d_%H-%M-%S")
+              batch_name = f"{stamp} - {source_slug}"
+          batch_folder = get_or_create_folder(drive, batch_name, parent["id"])
+          youtube_folder = get_or_create_folder(drive, "01 - YouTube Shorts", batch_folder["id"])
+          tiktok_folder = get_or_create_folder(drive, "02 - TikTok", batch_folder["id"])
+          texts_folder = get_or_create_folder(drive, "03 - Textos para postagem", batch_folder["id"])
+          reports_folder = get_or_create_folder(drive, "04 - Relatorios", batch_folder["id"])
 
           posting_dir = Path("output/postagem")
           posting_dir.mkdir(parents=True, exist_ok=True)
@@ -410,6 +446,13 @@ jobs:
                   if path.is_file() and path != zip_path:
                       archive.write(path, path.relative_to("output"))
 
+          manifest = {
+              "batch_folder": f"https://drive.google.com/drive/folders/{batch_folder['id']}",
+              "source_fingerprint_sha256": source_hash,
+              "source_title": source_title,
+              "uploaded_files": [],
+          }
+
           enviados = []
           clips_dir = Path("output/clips")
           for file_path in sorted(clips_dir.glob("*.mp4")):
@@ -444,6 +487,29 @@ jobs:
               result = upload_file(drive, zip_path, batch_folder["id"], f"Corte Fino - {batch_name} - pacote completo.zip")
               enviados.append(result)
               print(f"Enviado: {result.get('name')}")
+
+          manifest["uploaded_files"] = [
+              {"name": item.get("name"), "id": item.get("id"), "webViewLink": item.get("webViewLink")}
+              for item in enviados
+          ]
+          manifest_path = Path("output/drive_manifest.json")
+          manifest_path.write_text(json.dumps(manifest, ensure_ascii=False, indent=2), encoding="utf-8")
+          manifest_result = upload_file(drive, manifest_path, reports_folder["id"])
+          enviados.append(manifest_result)
+
+          # Recria o ZIP depois do manifesto para que a cópia compactada também
+          # contenha os links e IDs da rodada.
+          with zipfile.ZipFile(zip_path, "w", zipfile.ZIP_DEFLATED) as archive:
+              for path in Path("output").rglob("*"):
+                  if path.is_file() and path != zip_path:
+                      archive.write(path, path.relative_to("output"))
+          zip_result = upload_file(
+              drive,
+              zip_path,
+              batch_folder["id"],
+              f"Corte Fino - {batch_name} - pacote completo.zip",
+          )
+          enviados.append(zip_result)
 
           print(f"Pasta da rodada: https://drive.google.com/drive/folders/{batch_folder['id']}")
           print(f"Total enviado ao Drive: {len(enviados)} arquivo(s).")
@@ -510,3 +576,4 @@ jobs:
           path: output/
           if-no-files-found: ignore
           retention-days: 7
+
