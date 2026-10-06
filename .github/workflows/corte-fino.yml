@@ -26,7 +26,8 @@ permissions:
   contents: read
 
 concurrency:
-  group: ${{ github.ref }}
+  # Um único lock para evitar duas rodadas disputando a mesma entrada do Drive.
+  group: corte-fino-producao
   cancel-in-progress: false
 
 jobs:
@@ -42,6 +43,10 @@ jobs:
       PYTHONUNBUFFERED: "1"
       TRANSCRIBE_BEAM_SIZE: "3"
       TRANSCRIBE_CPU_THREADS: "4"
+      USE_EDITORIAL_SCORE_GATE: "0"
+      REQUIRE_EXACT_TOP_FIVE: "1"
+      CAPTION_MIN_WORD_PROBABILITY: "0.40"
+      CAPTION_SPELLING_MIN_ZIPF: "2.30"
       FORCE_TOP_FIVE: ${{ inputs.force_top_five == true && '1' || '0' }}
 
     steps:
@@ -63,6 +68,9 @@ jobs:
         run: |
           python -m pip install --upgrade pip
           python -m pip install -r requirements.txt
+
+      - name: Validar guards do motor
+        run: python -m pytest -q tests/test_quality_guards.py
 
       - name: Preparar cache do Whisper
         uses: actions/cache@v6
@@ -277,11 +285,26 @@ jobs:
           report = Path("output/relatorio.json")
           if report.exists():
               data = json.loads(report.read_text(encoding="utf-8"))
-              if data.get("status") == "EDITORIAL_EMPTY":
+              status = data.get("status", "")
+              if status == "EDITORIAL_EMPTY":
                   with open(os.environ["GITHUB_ENV"], "a", encoding="utf-8") as env_file:
                       env_file.write("EDITORIAL_EMPTY=1\n")
               elif data.get("error"):
                   code = 1
+              elif status != "READY_FOR_HUMAN_REVIEW" or not data.get("clips"):
+                  print(f"Gate de prontidão reprovado: status={status!r}")
+                  code = 1
+              else:
+                  rendered_qa = [
+                      item for item in data.get("qa", [])
+                      if item.get("stage") == "rendered_clip"
+                  ]
+                  if not rendered_qa or not all(item.get("passed") for item in rendered_qa):
+                      print("Gate de prontidão reprovado: existe QA final sem aprovação.")
+                      code = 1
+                  else:
+                      with open(os.environ["GITHUB_ENV"], "a", encoding="utf-8") as env_file:
+                          env_file.write("PROCESSING_READY=1\n")
           raise SystemExit(code)
           PY
           else
@@ -290,7 +313,7 @@ jobs:
 
       - name: Enviar resultados para o Google Drive
         id: upload_drive
-        if: ${{ steps.generate_cuts.outcome == 'success' && env.NO_SOURCE != '1' }}
+        if: ${{ steps.generate_cuts.outcome == 'success' && env.NO_SOURCE != '1' && env.EDITORIAL_EMPTY != '1' && env.PROCESSING_READY == '1' }}
         env:
           GOOGLE_REFRESH_TOKEN: ${{ secrets.GOOGLE_REFRESH_TOKEN }}
           GOOGLE_CLIENT_ID: ${{ secrets.GOOGLE_CLIENT_ID }}
@@ -539,7 +562,7 @@ jobs:
           PY
 
       - name: Marcar entrada como processada
-        if: ${{ steps.generate_cuts.outcome == 'success' && steps.upload_drive.outcome == 'success' && steps.drive_source.outputs.file_id != '' && env.EDITORIAL_EMPTY != '1' }}
+        if: ${{ steps.generate_cuts.outcome == 'success' && steps.upload_drive.outcome == 'success' && steps.drive_source.outputs.file_id != '' && env.EDITORIAL_EMPTY != '1' && env.PROCESSING_READY == '1' }}
         env:
           GOOGLE_REFRESH_TOKEN: ${{ secrets.GOOGLE_REFRESH_TOKEN }}
           GOOGLE_CLIENT_ID: ${{ secrets.GOOGLE_CLIENT_ID }}
