@@ -15,8 +15,13 @@ from pathlib import Path
 from typing import Any
 
 
-MAX_CLIPS = int(os.environ.get("MAX_CLIPS", "5"))
-MIN_EDITORIAL_SCORE = float(os.environ.get("MIN_EDITORIAL_SCORE", "78"))  # filtro duro: só entra candidato com nota editorial mínima
+# Regra editorial fixa: toda rodada aprovada precisa terminar com cinco cortes.
+# Não permitir override externo evita uma execução “aprovada” com 4 ou 6 arquivos.
+MAX_CLIPS = 5
+MIN_EDITORIAL_SCORE = float(os.environ.get("MIN_EDITORIAL_SCORE", "78"))
+# A nota ordena candidatos; o bloco padrão é um Top 5 fechado.
+USE_EDITORIAL_SCORE_GATE = os.environ.get("USE_EDITORIAL_SCORE_GATE", "0").strip().lower() in {"1", "true", "yes", "sim"}
+REQUIRE_EXACT_TOP_FIVE = os.environ.get("REQUIRE_EXACT_TOP_FIVE", "1").strip().lower() in {"1", "true", "yes", "sim"}
 FORCE_TOP_FIVE = os.environ.get("FORCE_TOP_FIVE", "0").strip().lower() in {"1", "true", "yes", "sim"}
 MIN_CLIP_SECONDS = int(os.environ.get("MIN_CLIP_SECONDS", "45"))
 MAX_CLIP_SECONDS = int(os.environ.get("MAX_CLIP_SECONDS", "90"))
@@ -38,8 +43,20 @@ CAPTION_MAX_DURATION = float(os.environ.get("CAPTION_MAX_DURATION", "4.0"))
 CAPTION_MAX_GAP = float(os.environ.get("CAPTION_MAX_GAP", "1.5"))
 CAPTION_SYNC_TOLERANCE = float(os.environ.get("CAPTION_SYNC_TOLERANCE", "0.35"))
 CAPTION_SUSPECT_TOKENS = {
+    # Erros recorrentes de ASR observados em revisões anteriores. Eles não são
+    # corrigidos automaticamente: reprovam o candidato para que outro momento
+    # seja tentado sem inventar a fala original.
     "revindicando", "bradão", "bradio", "idô", "crescentos", "dilhé", "pim",
     "trefa", "vítimo", "lulia", "latrão", "divestindo", "danapolítica", "coneste",
+    "médo", "jambos", "violins",
+}
+CAPTION_MIN_WORD_PROBABILITY = float(os.environ.get("CAPTION_MIN_WORD_PROBABILITY", "0.40"))
+CAPTION_SPELLING_MIN_ZIPF = float(os.environ.get("CAPTION_SPELLING_MIN_ZIPF", "2.30"))
+CAPTION_ALLOWED_TOKENS = {
+    "corte", "fino", "shorts", "tiktok", "youtube", "podcast", "stf", "ia",
+    "acre", "lito", "bolsonaro", "lula", "moraes", "brasil", "brasileiro",
+    "brasileira", "aviação", "aviao", "avião", "aviao", "helicóptero",
+    "helicoptero", "whatsapp", "chatgpt", "openai",
 }
 ROOT = Path(__file__).resolve().parent
 WORK = ROOT / "work"
@@ -74,6 +91,44 @@ GENERIC_STARTS = (
     "aí eu", "ai eu", "né,", "ne,", "bom, então", "bom entao",
 )
 
+NICHE_SIGNAL_MAP = {
+    "política e poder": {
+        "signals": {"governo", "presidente", "congresso", "stf", "ministro", "eleição", "eleicoes", "voto", "bolsonaro", "lula", "centrão", "corrupção"},
+        "lenses": ["confronto", "declaração difícil de ignorar", "consequência pública"],
+        "question": "Essa leitura sobre política faz sentido ou exagera? Por quê?",
+    },
+    "crime e segurança": {
+        "signals": {"crime", "polícia", "policia", "prisão", "prisao", "bandido", "segurança", "seguranca", "favela", "impunidade", "tribunal", "investigação"},
+        "lenses": ["relato real", "risco", "consequência"],
+        "question": "Qual ponto dessa análise mais chamou sua atenção?",
+    },
+    "tecnologia e inteligência artificial": {
+        "signals": {"tecnologia", "tecnológico", "tecnologico", "inteligência artificial", "inteligencia artificial", "ia", "robô", "robo", "algoritmo", "futuro", "chatgpt", "computador"},
+        "lenses": ["explicação contraintuitiva", "transformação", "futuro próximo"],
+        "question": "Essa mudança parece mais oportunidade ou ameaça?",
+    },
+    "ciência e conhecimento": {
+        "signals": {"ciência", "ciencia", "pesquisa", "experimento", "evidência", "evidencia", "história", "historia", "universo", "avião", "aviao", "helicóptero", "helicoptero", "mistério", "misterio"},
+        "lenses": ["explicação", "evidência versus especulação", "descoberta"],
+        "question": "Você já conhecia essa explicação?",
+    },
+    "dinheiro e trabalho": {
+        "signals": {"dinheiro", "salário", "salario", "empresa", "negócio", "negocio", "trabalho", "carreira", "investimento", "preço", "preco", "vendas", "mercado"},
+        "lenses": ["decisão", "risco", "transformação prática"],
+        "question": "Você tomaria essa decisão nas mesmas condições?",
+    },
+    "comportamento e relações": {
+        "signals": {"relacionamento", "casamento", "família", "familia", "amor", "trauma", "ansiedade", "comportamento", "pessoa", "amizade"},
+        "lenses": ["identificação", "revelação pessoal", "consequência emocional"],
+        "question": "Você já viveu ou presenciou algo parecido?",
+    },
+    "humor e entretenimento": {
+        "signals": {"humor", "risada", "engraçado", "engracado", "piada", "comédia", "comedia", "filme", "série", "serie", "música", "musica", "jogo", "games"},
+        "lenses": ["reação", "quebra de expectativa", "punchline"],
+        "question": "Qual foi a reação mais inesperada?",
+    },
+}
+
 
 @dataclass
 class Segment:
@@ -81,6 +136,8 @@ class Segment:
     end: float
     text: str
     words: list[dict[str, Any]]
+    avg_logprob: float | None = None
+    no_speech_prob: float | None = None
 
 
 @dataclass
@@ -92,6 +149,7 @@ class Candidate:
     components: dict[str, float] = field(default_factory=dict)
     trigger: str = "curiosidade"
     reason: str = ""
+    premise: str = ""
     accepted: bool = False
     rejection: str = ""
 
@@ -109,6 +167,7 @@ class Candidate:
             "components": self.components,
             "trigger": self.trigger,
             "reason": self.reason,
+            "premise": self.premise,
             "accepted": self.accepted,
             "rejection": self.rejection,
         }
@@ -246,13 +305,27 @@ def transcribe(source: Path) -> list[Segment]:
     last_progress = -TRANSCRIBE_PROGRESS_SECONDS
     segment_count = 0
     for segment in segments:
-        words = [
-            {"start": float(word.start), "end": float(word.end), "word": word.word}
-            for word in (getattr(segment, "words", None) or [])
-        ]
+        words = []
+        for word in (getattr(segment, "words", None) or []):
+            probability = getattr(word, "probability", None)
+            words.append({
+                "start": float(word.start),
+                "end": float(word.end),
+                "word": word.word,
+                "probability": float(probability) if probability is not None else None,
+            })
         text = segment.text.strip()
         if text:
-            result.append(Segment(float(segment.start), float(segment.end), text, words))
+            avg_logprob = getattr(segment, "avg_logprob", None)
+            no_speech_prob = getattr(segment, "no_speech_prob", None)
+            result.append(Segment(
+                float(segment.start),
+                float(segment.end),
+                text,
+                words,
+                float(avg_logprob) if avg_logprob is not None else None,
+                float(no_speech_prob) if no_speech_prob is not None else None,
+            ))
             segment_count += 1
             if float(segment.end) - last_progress >= TRANSCRIBE_PROGRESS_SECONDS:
                 elapsed = time.monotonic() - started_at
@@ -316,11 +389,70 @@ def editorial_reason(trigger: str) -> str:
     }.get(trigger, "O trecho tem premissa clara e contexto suficiente.")
 
 
-def score_text(text: str) -> tuple[float, dict[str, float], str, str, str]:
+def analyze_source_profile(
+    segments: list[Segment],
+    info: dict[str, Any],
+    duration: float,
+) -> dict[str, Any]:
+    """Cria uma leitura editorial específica antes de procurar os cortes."""
+    transcript = " ".join(segment.text for segment in segments)
+    corpus = f"{info.get('title', '')} {info.get('channel', '')} {transcript}".lower()
+    niche_scores: dict[str, int] = {}
+    for niche, data in NICHE_SIGNAL_MAP.items():
+        niche_scores[niche] = sum(contains_signal(corpus, {signal}) for signal in data["signals"])
+    ranked = sorted(niche_scores.items(), key=lambda item: (-item[1], item[0]))
+    dominant_niche, dominant_score = ranked[0] if ranked and ranked[0][1] else ("geral", 0)
+    profile_data = NICHE_SIGNAL_MAP.get(dominant_niche, {
+        "signals": set(),
+        "lenses": ["acontecimento completo", "reação", "consequência"],
+        "question": "O que você achou desse ponto?",
+    })
+    words = words_of(transcript)
+    questions = transcript.count("?") + contains_signal(transcript, QUESTION_WORDS)
+    conflict = contains_signal(transcript, CONFLICT_WORDS)
+    words_per_minute = round(len(words) / max(duration / 60.0, 1.0), 1)
+    if words_per_minute >= 155:
+        pace = "rápido"
+    elif words_per_minute <= 105:
+        pace = "pausado"
+    else:
+        pace = "conversacional"
+    return {
+        "niche": dominant_niche,
+        "niche_confidence": round(min(1.0, dominant_score / 8.0), 2),
+        "niche_scores": niche_scores,
+        "dominant_signals": [
+            signal for signal in profile_data["signals"]
+            if contains_signal(corpus, {signal})
+        ][:12],
+        "lenses": profile_data["lenses"],
+        "comment_question": profile_data["question"],
+        "duration_seconds": round(duration, 2),
+        "word_count": len(words),
+        "words_per_minute": words_per_minute,
+        "pace": pace,
+        "question_density": round(questions / max(len(segments), 1), 3),
+        "conflict_density": round(conflict / max(len(words), 1), 3),
+        "priority_signals": sorted(profile_data["signals"]),
+        "method": "perfil inferido do título, canal e transcrição integral; revisão humana continua recomendada",
+    }
+
+
+def candidate_premise(text: str, trigger: str, profile: dict[str, Any] | None = None) -> str:
+    cleaned = re.sub(r"\s+", " ", text).strip()
+    opening = short_hook(cleaned, 150)
+    niche = (profile or {}).get("niche", "geral")
+    return f"Em {niche}, o trecho apresenta: {opening}"
+
+
+def score_text(
+    text: str,
+    profile: dict[str, Any] | None = None,
+) -> tuple[float, dict[str, float], str, str, str, str]:
     tokens = words_of(text)
     lower = text.lower()
     if not tokens:
-        return 0.0, {}, "curiosidade", "Trecho sem fala transcrita.", "texto sem fala transcrita"
+        return 0.0, {}, "curiosidade", "Trecho sem fala transcrita.", "", "texto sem fala transcrita"
 
     opening = " ".join(tokens[:24])
     ending = " ".join(tokens[-35:])
@@ -364,6 +496,11 @@ def score_text(text: str) -> tuple[float, dict[str, float], str, str, str]:
     comments += 1.5 if trigger == "treta" else 0.0
     comments = max(0.0, min(5.0, comments))
 
+    profile = profile or {}
+    priority_signals = set(profile.get("priority_signals", []))
+    context_hits = contains_signal(lower, priority_signals) if priority_signals else 0
+    source_fit = max(0.0, min(5.0, 2.0 + min(3.0, context_hits * 0.75)))
+
     components = {
         "hook_0_2s": round(hook, 2),
         "tension_or_conflict": round(tension, 2),
@@ -371,14 +508,19 @@ def score_text(text: str) -> tuple[float, dict[str, float], str, str, str]:
         "autonomy": round(autonomy, 2),
         "novelty": round(novelty, 2),
         "commentability": round(comments, 2),
+        "source_fit": round(source_fit, 2),
     }
     raw_score = round(sum(components.values()), 2)
-    score = round((raw_score / 95.0) * 100.0, 2)
+    score = round(min(100.0, raw_score), 2)
     rejection = ""
-    return score, components, trigger, editorial_reason(trigger), rejection
+    premise = candidate_premise(text, trigger, profile)
+    return score, components, trigger, editorial_reason(trigger), premise, rejection
 
 
-def build_candidates(segments: list[Segment]) -> list[Candidate]:
+def build_candidates(
+    segments: list[Segment],
+    profile: dict[str, Any] | None = None,
+) -> list[Candidate]:
     candidates: list[Candidate] = []
     max_starts = min(len(segments), 1200)
     step = max(1, len(segments) // max_starts)
@@ -396,8 +538,19 @@ def build_candidates(segments: list[Segment]) -> list[Candidate]:
         eligible.sort(key=lambda item: abs(item[1] - TARGET_CLIP_SECONDS))
         for end_index, duration in eligible[:2]:
             text = " ".join(item.text for item in segments[index:end_index]).strip()
-            score, components, trigger, reason, rejection = score_text(text)
-            candidates.append(Candidate(start, segments[end_index - 1].end, text, score, components, trigger, reason, not rejection, rejection))
+            score, components, trigger, reason, premise, rejection = score_text(text, profile)
+            candidates.append(Candidate(
+                start,
+                segments[end_index - 1].end,
+                text,
+                score,
+                components,
+                trigger,
+                reason,
+                premise,
+                not rejection,
+                rejection,
+            ))
     unique: dict[tuple[int, int], Candidate] = {}
     for candidate in candidates:
         key = (round(candidate.start), round(candidate.end))
@@ -419,17 +572,23 @@ def overlaps(left: Candidate, right: Candidate) -> bool:
     return intersection > 0.30 * min(left.duration, right.duration)
 
 
-def select_candidates(segments: list[Segment]) -> tuple[list[Candidate], list[Candidate]]:
-    all_candidates = build_candidates(segments)
+def select_candidates(
+    segments: list[Segment],
+    profile: dict[str, Any] | None = None,
+) -> tuple[list[Candidate], list[Candidate]]:
+    all_candidates = build_candidates(segments, profile)
     force_top_five = FORCE_TOP_FIVE and MAX_CLIPS >= 5
 
-    if force_top_five:
-        # Operação manual solicitada: selecionar os cinco melhores disponíveis,
-        # sem relaxar a diversidade, a continuidade ou o QA técnico/ortográfico.
+    if force_top_five or not USE_EDITORIAL_SCORE_GATE:
+        # A nota ranqueia; a aprovação depende dos gates objetivos e da revisão final.
         pool = sorted(all_candidates, key=lambda item: (-item.score, item.start))
         for candidate in all_candidates:
             candidate.accepted = False
-            candidate.rejection = f"não selecionado no Top 5 (nota {candidate.score:.2f})"
+            candidate.rejection = (
+                f"ranqueado abaixo dos selecionados (nota {candidate.score:.2f})"
+                if not force_top_five
+                else f"não selecionado no Top 5 (nota {candidate.score:.2f})"
+            )
     else:
         for candidate in all_candidates:
             if candidate.score < MIN_EDITORIAL_SCORE:
@@ -508,6 +667,35 @@ def ass_escape(value: str) -> str:
 def word_token(value: str) -> str:
     return re.sub(r"[^\wÀ-ÿ]", "", value.lower())
 
+
+def caption_spelling_issues(labels: list[str]) -> list[str]:
+    """Retorna tokens com alto risco de erro sem tentar reescrever a fala."""
+    allowed = set(CAPTION_ALLOWED_TOKENS)
+    context = " ".join(
+        os.environ.get(name, "")
+        for name in ("SOURCE_TITLE", "SOURCE_CHANNEL", "SOURCE_NICHE")
+    )
+    allowed.update(word_token(item) for item in context.split() if word_token(item))
+    issues = {
+        word_token(label)
+        for label in labels
+        if word_token(label) in CAPTION_SUSPECT_TOKENS
+    }
+    try:
+        from wordfreq import zipf_frequency
+    except ImportError:
+        zipf_frequency = None
+
+    if zipf_frequency:
+        for label in labels:
+            token = word_token(label)
+            if len(token) < 3 or any(char.isdigit() for char in token) or token in allowed:
+                continue
+            if zipf_frequency(token, "pt") < CAPTION_SPELLING_MIN_ZIPF:
+                issues.add(token)
+    return sorted(issue for issue in issues if issue)
+
+
 def caption_layout(labels: list[str]) -> tuple[int | None, list[int]]:
     """Retorna a quebra usada simultaneamente no QA e no ASS renderizado."""
     text = " ".join(labels).strip()
@@ -553,7 +741,12 @@ def caption_chunks(segments: list[Segment], candidate: Candidate) -> list[list[d
             start = max(candidate.start, float(word["start"]))
             end = min(candidate.end, float(word["end"]))
             if end > start:
-                words.append({"start": start, "end": end, "word": text})
+                words.append({
+                    "start": start,
+                    "end": end,
+                    "word": text,
+                    "probability": word.get("probability"),
+                })
 
     chunks: list[list[dict[str, Any]]] = []
     current: list[dict[str, Any]] = []
@@ -623,14 +816,21 @@ def validate_captions(segments: list[Segment], candidate: Candidate, margin_v: i
     for index, chunk in enumerate(chunks, 1):
         labels = [str(item.get("word", "")).strip() for item in chunk if str(item.get("word", "")).strip()]
         text = " ".join(labels)
-        suspect_tokens = sorted({
-            word_token(label)
-            for label in labels
-            if word_token(label) in CAPTION_SUSPECT_TOKENS
-        })
+        suspect_tokens = caption_spelling_issues(labels)
         if suspect_tokens:
             issues.append(
                 f"bloco {index} contém possível erro de transcrição/ortografia: {', '.join(suspect_tokens)}"
+            )
+        low_confidence_tokens = sorted({
+            word_token(str(item.get("word", "")))
+            for item in chunk
+            if item.get("probability") is not None
+            and float(item.get("probability")) < CAPTION_MIN_WORD_PROBABILITY
+            and word_token(str(item.get("word", "")))
+        })
+        if low_confidence_tokens:
+            issues.append(
+                f"bloco {index} contém fala com baixa confiança do ASR: {', '.join(low_confidence_tokens)}"
             )
         start = max(0.0, float(chunk[0]["start"]) - candidate.start) if chunk else 0.0
         end = max(start, float(chunk[-1]["end"]) - candidate.start) if chunk else start
@@ -819,21 +1019,33 @@ def rights_info() -> dict[str, Any]:
     }
 
 
-def enrich_clip(clip: dict[str, Any], source_url: str | None, info: dict[str, Any], rights: dict[str, Any]) -> dict[str, Any]:
+def enrich_clip(
+    clip: dict[str, Any],
+    source_url: str | None,
+    info: dict[str, Any],
+    rights: dict[str, Any],
+    profile: dict[str, Any] | None = None,
+) -> dict[str, Any]:
+    profile = profile or {}
     hook = short_hook(str(clip.get("text", "")))
     title = info.get("title") or "Fonte não identificada"
     channel = info.get("channel") or info.get("uploader") or "Canal não identificado"
     source_link = source_url or info.get("webpage_url") or ""
     hashtags = ["#CorteFino", "#Shorts", "#Cortes"]
     corpus = f"{os.environ.get('SOURCE_NICHE', '')} {title} {channel} {clip.get('text', '')}".lower()
+    def has_signal(signal: str) -> bool:
+        pattern = rf"(?<![\wÀ-ÿ]){re.escape(signal)}(?![\wÀ-ÿ])"
+        return re.search(pattern, corpus) is not None
+
     for signal, tag in (
         ("futebol", "#Futebol"), ("humor", "#Humor"), ("tecnologia", "#Tecnologia"),
         ("negócios", "#Negocios"), ("negocios", "#Negocios"), ("finanças", "#Financas"),
         ("financas", "#Financas"), ("relacionamento", "#Relacionamento"),
         ("história", "#Historias"), ("historia", "#Historias"), ("true crime", "#TrueCrime"),
-        ("ia", "#InteligenciaArtificial"), ("podcast", "#Podcast"),
+        ("inteligência artificial", "#InteligenciaArtificial"), ("ia", "#InteligenciaArtificial"),
+        ("podcast", "#Podcast"),
     ):
-        if signal in corpus and tag not in hashtags:
+        if has_signal(signal) and tag not in hashtags:
             hashtags.append(tag)
     hashtags = hashtags[:5]
     attribution = f"Fonte: {title} — {channel}."
@@ -849,13 +1061,15 @@ def enrich_clip(clip: dict[str, Any], source_url: str | None, info: dict[str, An
         "youtube_description": f"{hook}\n\n{attribution}\nEdição: Corte Fino. Verifique a autorização antes de publicar.",
         "tiktok_caption": f"{hook}\n\n{attribution}\n\n{' '.join(hashtags)}",
         "hashtags": hashtags,
-        "comment_question": {
+        "comment_question": profile.get("comment_question") or {
             "treta": "Quem está certo nessa discussão? Explique nos comentários.",
             "surpresa": "Você já tinha ouvido essa versão? O que achou?",
             "humor": "Qual foi a parte mais engraçada para você?",
             "emoção": "Essa história te lembrou alguém ou alguma situação?",
             "curiosidade": "Você concorda com essa explicação? Por quê?",
         }.get(clip.get("trigger"), "Você concorda com essa explicação? Por quê?"),
+        "niche": profile.get("niche", "geral"),
+        "editorial_lenses": profile.get("lenses", []),
         "source": {"title": title, "channel": channel, "url": source_link},
         "rights_status": rights["status"],
     })
@@ -870,19 +1084,26 @@ def write_reports(
     candidates: list[Candidate],
     qa: list[dict[str, Any]],
     error: str | None = None,
+    profile: dict[str, Any] | None = None,
 ) -> None:
     rights = rights_info()
-    enriched = [enrich_clip(clip, source_url, info, rights) for clip in clips]
+    enriched = [enrich_clip(clip, source_url, info, rights, profile) for clip in clips]
     if error and error.startswith("Nenhum momento"):
         status = "EDITORIAL_EMPTY"
+    elif error and (
+        error.startswith("Nenhum corte passou")
+        or error.startswith("Top 5")
+        or error.startswith("Não foi possível formar exatamente")
+    ):
+        status = "TOP_FIVE_INCOMPLETE"
     elif error and error.startswith("DIREITOS_PENDENTES"):
         status = "RIGHTS_PENDING"
     elif error and error.startswith("QA de legenda"):
-        status = "EDITORIAL_REJECTED"
+        status = "CAPTION_REVIEW_REQUIRED"
     elif error:
         status = "TECHNICAL_FAILURE"
     elif enriched:
-        status = "READY_FOR_REVIEW"
+        status = "READY_FOR_HUMAN_REVIEW"
     else:
         status = "EDITORIAL_EMPTY"
     source_title = info.get("title")
@@ -891,9 +1112,16 @@ def write_reports(
 
         "generated_at_utc": datetime.now(timezone.utc).isoformat(),
         "status": status,
+        "legacy_status": "READY_FOR_REVIEW" if status == "READY_FOR_HUMAN_REVIEW" else status,
+        "execution": {
+            "github_run_id": os.environ.get("GITHUB_RUN_ID", ""),
+            "github_sha": os.environ.get("GITHUB_SHA", ""),
+            "workflow": os.environ.get("GITHUB_WORKFLOW", ""),
+        },
         "source_title": source_title,
         "source_channel": source_channel,
         "rights_status": rights["status"],
+        "analysis_profile": profile or {},
         "source": {
             "url": source_url,
             "title": source_title,
@@ -903,13 +1131,20 @@ def write_reports(
         "rights": rights,
         "editorial": {
             "minimum_score": MIN_EDITORIAL_SCORE,
-            "selection_mode": "FORCE_TOP_FIVE" if FORCE_TOP_FIVE else "MIN_SCORE_GATE",
+            "score_gate_enabled": USE_EDITORIAL_SCORE_GATE,
+            "require_exact_top_five": REQUIRE_EXACT_TOP_FIVE,
+            "selection_mode": (
+                "CLOSED_TOP_FIVE" if REQUIRE_EXACT_TOP_FIVE
+                else "FORCE_TOP_FIVE" if FORCE_TOP_FIVE
+                else "RANK_ONLY_WITH_OBJECTIVE_GATES" if not USE_EDITORIAL_SCORE_GATE
+                else "MIN_SCORE_GATE"
+            ),
             "override_minimum_score": FORCE_TOP_FIVE,
             "approved_count": len(enriched),
             "candidate_count": len(candidates),
             "rule": (
-                "Top 5 solicitado: selecionar os cinco melhores candidatos disponíveis, mantendo diversidade e QA."
-                if FORCE_TOP_FIVE
+                "Top 5 fechado: selecionar exatamente os cinco melhores candidatos disponíveis; sem substituição após a seleção."
+                if REQUIRE_EXACT_TOP_FIVE
                 else "Só entra o que vale o corte."
             ),
         },
@@ -920,7 +1155,12 @@ def write_reports(
         "editing": {
             "format": "9:16 — 1080x1920",
             "audio": "áudio original preservado em AAC",
-            "captions": "ASS dinâmico, no máximo duas linhas de até 32 caracteres, sincronização auditada por palavra, posição central no terço inferior e margem segura",
+            "captions": "ASS dinâmico, no máximo duas linhas de até 32 caracteres, sincronização auditada por palavra, gate ortográfico/confiança do ASR e margem segura",
+            "caption_gate": {
+                "spelling_checker": "wordfreq pt quando disponível + lista de risco",
+                "minimum_word_probability": CAPTION_MIN_WORD_PROBABILITY,
+                "manual_correction_policy": "não inventar nem corrigir a fala automaticamente; reprovar para revisão",
+            },
             "framing": "quadro completo com fundo desfocado para preservar rostos",
             "branding": "Corte Fino discreto, sem vinheta e sem música adicionada",
         },
@@ -936,13 +1176,27 @@ def write_reports(
         f"Canal: {source_channel or 'não identificado'}",
         f"URL: {source_url or 'não informada'}",
         f"Fingerprint SHA-256: {source_hash or 'não calculado'}",
+        f"**Perfil individual:** {(profile or {}).get('niche', 'geral')}",
+        f"**Ritmo da fonte:** {(profile or {}).get('pace', 'não calculado')} | {(profile or {}).get('words_per_minute', 'n/d')} palavras/min",
+        f"**Lentes recomendadas:** {', '.join((profile or {}).get('lenses', [])) or 'acontecimento completo'}",
         "",
         (
-            "**Critério editorial:** modo Top 5 solicitado; cinco melhores candidatos disponíveis, com diversidade e QA de legendas/técnico preservados."
-            if FORCE_TOP_FIVE
-            else "**Critério editorial:** só entram candidatos com nota mínima de 78/100; a rodada pode ter menos de cinco cortes."
+            "**Critério editorial:** Top 5 fechado; a nota ordena os cinco candidatos e os gates objetivos preservam continuidade, legenda e QA."
+            if REQUIRE_EXACT_TOP_FIVE
+            else (
+                "**Critério editorial:** Top 5 solicitado; a nota ranqueia e os gates objetivos preservam continuidade, legenda e QA."
+                if FORCE_TOP_FIVE
+                else (
+                    "**Critério editorial:** nota usada para ranqueamento; por padrão, não bloqueia nichos ou fontes de menor pontuação. "
+                    "Gates objetivos continuam obrigatórios."
+                    if not USE_EDITORIAL_SCORE_GATE
+                    else "**Critério editorial:** somente candidatos com nota mínima configurada entram na seleção."
+                )
+            )
         ),
-        f"**Cortes aprovados:** {len(enriched)}",
+        f"**Cortes aprovados:** {len(enriched)}/{MAX_CLIPS}",
+        "**Regra operacional:** Top 5 fechado; nenhuma opção reserva substitui um dos cinco candidatos.",
+        "",
         f"**Direitos:** {rights['status']}",
         "**Publicação:** revisão manual obrigatória",
         "",
@@ -955,6 +1209,7 @@ def write_reports(
             f"- Duração: {clip['duration']:.2f}s",
             f"- Nota editorial: {clip['score']}/100",
             f"- Gatilho: {clip['trigger']}",
+            f"- Premissa: {clip.get('premise', '')}",
             f"- Motivo: {clip['editorial_reason']}",
             f"- Título YouTube: {clip['youtube_title']}",
             f"- Pergunta: {clip['comment_question']}",
@@ -983,6 +1238,7 @@ def main() -> int:
     qa: list[dict[str, Any]] = []
     source_hash: str | None = None
     error: str | None = None
+    profile: dict[str, Any] = {}
     success = False
     try:
         source, info = obtain_source(source_url)
@@ -991,33 +1247,81 @@ def main() -> int:
         if duration <= 0:
             raise RuntimeError("Não foi possível determinar a duração da fonte.")
         if duration > MAX_SOURCE_DURATION_SECONDS:
-            raise RuntimeError(f"Fonte longa demais: {duration / 60:.1f} minutos; limite configurado: {MAX_SOURCE_DURATION_SECONDS / 60:.0f} minutos.")
-        
-        segments = transcribe(source)
-        selected, candidates = select_candidates(segments)
-        if not selected:
-            raise RuntimeError("Nenhum momento adequado foi encontrado pelas regras editoriais e técnicas.")
+            raise RuntimeError(
+                f"Fonte longa demais: {duration / 60:.1f} minutos; "
+                f"limite configurado: {MAX_SOURCE_DURATION_SECONDS / 60:.0f} minutos."
+            )
 
-        for index, candidate in enumerate(selected, 1):
-            # Um único render vertical canônico atende YouTube Shorts e TikTok.
-            captions = WORK / f"vertical_{index:02d}.ass"
-            output = CLIPS_DIR / f"corte_fino_{index:02d}_vertical.mp4"
+        segments = transcribe(source)
+        profile = analyze_source_profile(segments, info, duration)
+        selected, candidates = select_candidates(segments, profile)
+        if not selected:
+            raise RuntimeError(
+                "Nenhum momento adequado foi encontrado pelas regras editoriais e técnicas."
+            )
+
+        # Top 5 fechado: depois da seleção, nenhum candidato reserva pode
+        # substituir um dos cinco. Isso preserva a decisão editorial da rodada.
+        if REQUIRE_EXACT_TOP_FIVE and len(selected) < MAX_CLIPS:
+            raise RuntimeError(
+                f"Não foi possível formar exatamente {MAX_CLIPS} candidatos editoriais "
+                f"(encontrados: {len(selected)})."
+            )
+        candidate_pool = selected[:MAX_CLIPS]
+        accepted_candidates: list[Candidate] = []
+
+        for candidate in candidate_pool:
+            if len(clips) >= MAX_CLIPS:
+                break
+            if any(
+                overlaps(candidate, other)
+                or text_similarity(candidate.text, other.text) >= 0.52
+                for other in accepted_candidates
+            ):
+                raise RuntimeError(
+                    "O Top 5 fechado contém candidatos repetidos ou sobrepostos; "
+                    "nenhuma opção reserva será usada."
+                )
+
+            clip_number = len(clips) + 1
+            captions = WORK / f"vertical_{clip_number:02d}.ass"
+            output = CLIPS_DIR / f"corte_fino_{clip_number:02d}_vertical.mp4"
             write_ass(segments, candidate, captions, CAPTION_MARGIN_V)
             caption_qa = validate_captions(segments, candidate, CAPTION_MARGIN_V)
             if not caption_qa["passed"]:
+                candidate.accepted = False
+                candidate.rejection = "reprovado no gate automático de legenda"
+                qa.append({
+                    "platform": "vertical_shared",
+                    "clip": clip_number,
+                    "stage": "candidate_rejected",
+                    "fatal": True,
+                    "passed": False,
+                    "candidate": candidate.as_dict(),
+                    "caption_qa": caption_qa,
+                })
                 raise RuntimeError(
-                    f"QA de legenda reprovou o corte {index}: "
-                    "confira qa.json e relatorio.json."
+                    f"Top 5 fechado reprovou no gate de legenda no corte {clip_number}; "
+                    "nenhum candidato reserva será usado."
                 )
+
             clip_qa = render_and_validate(source, captions, candidate, output)
             clip_qa["caption_qa"] = caption_qa
-            qa.append({"platform": "vertical_shared", "clip": index, **clip_qa})
+            clip_qa["stage"] = "rendered_clip"
+            clip_qa["fatal"] = not clip_qa["passed"]
+            qa.append({"platform": "vertical_shared", "clip": clip_number, **clip_qa})
             if not clip_qa["passed"]:
-                raise RuntimeError(f"QA técnico reprovou o corte {index}: confira qa.json e relatorio.json.")
+                candidate.accepted = False
+                candidate.rejection = "reprovado no QA técnico do arquivo final"
+                raise RuntimeError(
+                    f"Top 5 fechado reprovou no QA técnico no corte {clip_number}; "
+                    "nenhum candidato reserva será usado."
+                )
+
             relative_output = str(output.relative_to(OUTPUT))
             clips.append({
                 "file": relative_output,
-                # Mantidos para compatibilidade com relatórios/consumidores anteriores.
+                # Um único arquivo vertical canônico atende YouTube Shorts e TikTok.
                 "youtube_file": relative_output,
                 "tiktok_file": relative_output,
                 "render_format": "vertical_9x16_shared",
@@ -1030,15 +1334,30 @@ def main() -> int:
                 "editorial_reason": candidate.reason,
                 "text": candidate.text,
             })
+            candidate.accepted = True
+            candidate.rejection = ""
+            accepted_candidates.append(candidate)
+
+        if REQUIRE_EXACT_TOP_FIVE and len(clips) != MAX_CLIPS:
+            raise RuntimeError(
+                f"Top 5 incompleto: {len(clips)}/{MAX_CLIPS} cortes aprovados; "
+                "nenhum candidato reserva será usado."
+            )
+        if not clips:
+            raise RuntimeError(
+                "Nenhum corte passou pelo gate automático de legenda e QA técnico; "
+                "a fonte permanece disponível para nova tentativa."
+            )
         success = True
     except Exception as exc:
         error = str(exc)
         print(f"ERRO: {error}", file=sys.stderr)
+        # Rodada vazia é um resultado editorial válido e não deve falhar o workflow.
         if error.startswith("Nenhum momento"):
             success = True
     finally:
         if OUTPUT.exists():
-            write_reports(source_url, source_hash, info, clips, candidates, qa, error)
+            write_reports(source_url, source_hash, info, clips, candidates, qa, error, profile)
             zip_outputs()
     return 0 if success else 1
 
