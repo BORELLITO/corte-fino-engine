@@ -16,6 +16,11 @@ on:
         required: false
         default: false
         type: boolean
+      force_top_five:
+        description: "Forçar os 5 melhores cortes disponíveis mantendo QA e revisão de legendas"
+        required: false
+        default: false
+        type: boolean
 
 permissions:
   contents: read
@@ -37,6 +42,7 @@ jobs:
       PYTHONUNBUFFERED: "1"
       TRANSCRIBE_BEAM_SIZE: "3"
       TRANSCRIBE_CPU_THREADS: "4"
+      FORCE_TOP_FIVE: ${{ inputs.force_top_five == true && '1' || '0' }}
 
     steps:
       - name: Baixar código
