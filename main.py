@@ -17,6 +17,7 @@ from typing import Any
 
 MAX_CLIPS = int(os.environ.get("MAX_CLIPS", "5"))
 MIN_EDITORIAL_SCORE = float(os.environ.get("MIN_EDITORIAL_SCORE", "78"))  # filtro duro: só entra candidato com nota editorial mínima
+FORCE_TOP_FIVE = os.environ.get("FORCE_TOP_FIVE", "0").strip().lower() in {"1", "true", "yes", "sim"}
 MIN_CLIP_SECONDS = int(os.environ.get("MIN_CLIP_SECONDS", "45"))
 MAX_CLIP_SECONDS = int(os.environ.get("MAX_CLIP_SECONDS", "90"))
 TARGET_CLIP_SECONDS = int(os.environ.get("TARGET_CLIP_SECONDS", "68"))
@@ -420,11 +421,22 @@ def overlaps(left: Candidate, right: Candidate) -> bool:
 
 def select_candidates(segments: list[Segment]) -> tuple[list[Candidate], list[Candidate]]:
     all_candidates = build_candidates(segments)
-    for candidate in all_candidates:
-        if candidate.score < MIN_EDITORIAL_SCORE:
+    force_top_five = FORCE_TOP_FIVE and MAX_CLIPS >= 5
+
+    if force_top_five:
+        # Operação manual solicitada: selecionar os cinco melhores disponíveis,
+        # sem relaxar a diversidade, a continuidade ou o QA técnico/ortográfico.
+        pool = sorted(all_candidates, key=lambda item: (-item.score, item.start))
+        for candidate in all_candidates:
             candidate.accepted = False
-            candidate.rejection = f"nota abaixo do mínimo editorial ({candidate.score:.2f} < {MIN_EDITORIAL_SCORE:.2f})"
-    approved = [candidate for candidate in all_candidates if candidate.accepted and candidate.score >= MIN_EDITORIAL_SCORE]
+            candidate.rejection = f"não selecionado no Top 5 (nota {candidate.score:.2f})"
+    else:
+        for candidate in all_candidates:
+            if candidate.score < MIN_EDITORIAL_SCORE:
+                candidate.accepted = False
+                candidate.rejection = f"nota abaixo do mínimo editorial ({candidate.score:.2f} < {MIN_EDITORIAL_SCORE:.2f})"
+        pool = [candidate for candidate in all_candidates if candidate.accepted and candidate.score >= MIN_EDITORIAL_SCORE]
+
     selected: list[Candidate] = []
     deferred: list[Candidate] = []
     trigger_counts: dict[str, int] = {}
@@ -435,7 +447,7 @@ def select_candidates(segments: list[Segment]) -> tuple[list[Candidate], list[Ca
             for other in selected
         )
 
-    for candidate in approved:
+    for candidate in pool:
         if conflicts(candidate):
             candidate.accepted = False
             candidate.rejection = "repetido ou sobreposto a candidato melhor"
@@ -444,6 +456,12 @@ def select_candidates(segments: list[Segment]) -> tuple[list[Candidate], list[Ca
             deferred.append(candidate)
             continue
         selected.append(candidate)
+        candidate.accepted = True
+        candidate.rejection = (
+            "override Top 5 solicitado"
+            if force_top_five and candidate.score < MIN_EDITORIAL_SCORE
+            else ""
+        )
         trigger_counts[candidate.trigger] = trigger_counts.get(candidate.trigger, 0) + 1
         if len(selected) >= MAX_CLIPS:
             break
@@ -455,14 +473,22 @@ def select_candidates(segments: list[Segment]) -> tuple[list[Candidate], list[Ca
                 candidate.rejection = "repetido ou sobreposto a candidato melhor"
                 continue
             selected.append(candidate)
+            candidate.accepted = True
+            candidate.rejection = (
+                "override Top 5 solicitado"
+                if force_top_five and candidate.score < MIN_EDITORIAL_SCORE
+                else ""
+            )
             trigger_counts[candidate.trigger] = trigger_counts.get(candidate.trigger, 0) + 1
             if len(selected) >= MAX_CLIPS:
                 break
 
-    for candidate in deferred:
-        if candidate not in selected and candidate.accepted:
+    for candidate in all_candidates:
+        if candidate in selected:
+            continue
+        if candidate.rejection in {"", "adiado para preservar diversidade editorial"}:
             candidate.accepted = False
-            candidate.rejection = "adiado para preservar diversidade editorial"
+            candidate.rejection = "não selecionado após filtro de diversidade"
     selected.sort(key=lambda item: item.start)
     return selected, all_candidates
 
@@ -877,9 +903,15 @@ def write_reports(
         "rights": rights,
         "editorial": {
             "minimum_score": MIN_EDITORIAL_SCORE,
+            "selection_mode": "FORCE_TOP_FIVE" if FORCE_TOP_FIVE else "MIN_SCORE_GATE",
+            "override_minimum_score": FORCE_TOP_FIVE,
             "approved_count": len(enriched),
             "candidate_count": len(candidates),
-            "rule": "Só entra o que vale o corte.",
+            "rule": (
+                "Top 5 solicitado: selecionar os cinco melhores candidatos disponíveis, mantendo diversidade e QA."
+                if FORCE_TOP_FIVE
+                else "Só entra o que vale o corte."
+            ),
         },
         "clips": enriched,
         "qa": qa,
@@ -905,7 +937,11 @@ def write_reports(
         f"URL: {source_url or 'não informada'}",
         f"Fingerprint SHA-256: {source_hash or 'não calculado'}",
         "",
-        "**Critério editorial:** só entram candidatos com nota mínima de 78/100; a rodada pode ter menos de cinco cortes.",
+        (
+            "**Critério editorial:** modo Top 5 solicitado; cinco melhores candidatos disponíveis, com diversidade e QA de legendas/técnico preservados."
+            if FORCE_TOP_FIVE
+            else "**Critério editorial:** só entram candidatos com nota mínima de 78/100; a rodada pode ter menos de cinco cortes."
+        ),
         f"**Cortes aprovados:** {len(enriched)}",
         f"**Direitos:** {rights['status']}",
         "**Publicação:** revisão manual obrigatória",
