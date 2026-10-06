@@ -1,6 +1,6 @@
 # Corte Fino Engine
 
-Motor de produção para preparar até cinco cortes verticais por rodada, com transcrição local, seleção editorial, renderização em 9:16 e entrega organizada no Google Drive.
+Motor de produção para preparar exatamente cinco cortes verticais por rodada aprovada, com transcrição local, seleção editorial, renderização em 9:16 e entrega organizada no Google Drive.
 
 ## O que ele faz
 
@@ -10,7 +10,7 @@ Motor de produção para preparar até cinco cortes verticais por rodada, com tr
 - aceita qualquer link manual pelo Run workflow;
 - baixa a fonte indicada;
 - transcreve em português com faster-whisper;
-- seleciona até cinco trechos independentes, priorizando gancho, tensão, payoff e clareza;
+- seleciona exatamente cinco trechos independentes, priorizando gancho, tensão, payoff e clareza;
 - renderiza MP4 1080x1920 com legendas e marca discreta Corte Fino;
 - entrega os arquivos em pastas separadas do Google Drive para YouTube Shorts, TikTok, textos e relatórios;
 - mantém a publicação manual, sem publicar automaticamente.
@@ -37,12 +37,14 @@ O workflow está configurado para aproximadamente 19h15 no horário de Brasília
 ## Estados da rodada
 
 - NO_SOURCE: nenhum vídeo novo na entrada;
-- EDITORIAL_EMPTY: fonte processada, mas nenhum trecho atingiu a nota mínima;
-- READY_FOR_REVIEW: cortes renderizados e aprovados na revisão técnica;
+- EDITORIAL_EMPTY: nenhum acontecimento suficiente foi encontrado;
+- TOP_FIVE_INCOMPLETE: não foi possível aprovar os cinco cortes fechados sem substituição;
+- READY_FOR_HUMAN_REVIEW: cortes renderizados, legendas verificadas e QA final aprovado; a postagem continua manual;
+- CAPTION_REVIEW_REQUIRED: a fala tem baixa confiança ou risco ortográfico e não foi inventada/corrigida automaticamente;
 - REVISÃO MANUAL: direitos e licenças ficam sob responsabilidade do usuário;
 - TECHNICAL_FAILURE: falha técnica real.
 
-Uma rodada EDITORIAL_EMPTY não move a fonte para Processados.
+Uma fonte só é movida para Processados depois de cortes válidos, QA final, upload confirmado e manifesto da rodada. Se o gate falhar, ela permanece disponível para nova tentativa.
 
 ## Limitações
 
@@ -52,3 +54,22 @@ Uma rodada EDITORIAL_EMPTY não move a fonte para Processados.
 - publicação no YouTube e TikTok ainda é manual;
 - a seleção editorial é heurística e não promete viralização;
 - a publicação no YouTube e TikTok permanece manual.
+
+
+## Regras de qualidade incorporadas
+
+- Um único MP4 canônico em 9:16, 1080x1920, atende Shorts e TikTok; o TikTok recebe apenas um atalho no Drive.
+- A revisão de legendas combina sincronização, área segura, tokens de risco, confiança por palavra do Whisper e verificação de frequência em português quando disponível.
+- O motor não “corrige” uma fala incerta: reprova a rodada do Top 5 e não usa o sexto colocado como substituto.
+- Hashtags usam correspondência por palavra, evitando classificar “aviação” como inteligência artificial por conter “ia”.
+- O relatório separa QA técnico de prontidão humana e preserva candidatos rejeitados para auditoria.
+
+
+## Tratamento individual por vídeo
+
+Antes da seleção, cada fonte recebe um perfil editorial próprio a partir do título, canal e transcrição integral. O relatório registra nicho provável, confiança, sinais dominantes, ritmo, densidade de perguntas/conflito e lentes recomendadas. A nota serve para ranquear candidatos; por padrão, não bloqueia o vídeo inteiro. Os bloqueios são objetivos: legenda suspeita, baixa confiança, repetição, falta de continuidade, falha de render ou QA final.
+
+
+## Regra do Top 5 fechado
+
+Cada rodada tenta entregar exatamente cinco cortes. Depois que os cinco candidatos são escolhidos, nenhum sexto candidato pode substituir um deles. Se um dos cinco falhar no gate de legenda ou no QA do arquivo, a rodada é marcada como `TOP_FIVE_INCOMPLETE`, não é enviada ao Drive e a fonte permanece disponível para nova tentativa.
