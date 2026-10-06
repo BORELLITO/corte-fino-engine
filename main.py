@@ -30,7 +30,7 @@ CAPTION_MAX_WORDS = 6
 CAPTION_FONT_SIZE = int(os.environ.get("CAPTION_FONT_SIZE", "48"))
 CAPTION_MARGIN_V = int(os.environ.get("CAPTION_MARGIN_V", "220"))
 YOUTUBE_CAPTION_MARGIN_V = int(os.environ.get("YOUTUBE_CAPTION_MARGIN_V", str(CAPTION_MARGIN_V)))
-TIKTOK_CAPTION_MARGIN_V = int(os.environ.get("TIKTOK_CAPTION_MARGIN_V", str(CAPTION_MARGIN_V + 80)))
+TIKTOK_CAPTION_MARGIN_V = CAPTION_MARGIN_V  # compatibilidade: render único para as duas plataformas
 CAPTION_MAX_LINE_CHARS = int(os.environ.get("CAPTION_MAX_LINE_CHARS", "32"))
 CAPTION_MIN_DURATION = float(os.environ.get("CAPTION_MIN_DURATION", "0.24"))
 CAPTION_MAX_DURATION = float(os.environ.get("CAPTION_MAX_DURATION", "4.0"))
@@ -895,8 +895,7 @@ def write_reports(
     for index, clip in enumerate(enriched, 1):
         lines.extend([
             f"## Corte {index}",
-            f"- YouTube Shorts: {clip['youtube_file']}",
-            f"- TikTok: {clip['tiktok_file']}",
+            f"- Arquivo vertical único (YouTube Shorts + TikTok): {clip['file']}",
             f"- Tempo original: {clip['start']:.2f}s–{clip['end']:.2f}s",
             f"- Duração: {clip['duration']:.2f}s",
             f"- Nota editorial: {clip['score']}/100",
@@ -945,41 +944,28 @@ def main() -> int:
             raise RuntimeError("Nenhum momento adequado foi encontrado pelas regras editoriais e técnicas.")
 
         for index, candidate in enumerate(selected, 1):
-            yt_captions = WORK / f"shorts_{index:02d}.ass"
-            tt_captions = WORK / f"tiktok_{index:02d}.ass"
-            yt_output = YOUTUBE_DIR / f"corte_fino_{index:02d}_youtube_shorts.mp4"
-            tt_output = TIKTOK_DIR / f"corte_fino_{index:02d}_tiktok.mp4"
-            write_ass(segments, candidate, yt_captions, YOUTUBE_CAPTION_MARGIN_V)
-            yt_caption_qa = validate_captions(segments, candidate, YOUTUBE_CAPTION_MARGIN_V)
-            if not yt_caption_qa["passed"]:
+            # Um único render vertical canônico atende YouTube Shorts e TikTok.
+            captions = WORK / f"vertical_{index:02d}.ass"
+            output = CLIPS_DIR / f"corte_fino_{index:02d}_vertical.mp4"
+            write_ass(segments, candidate, captions, CAPTION_MARGIN_V)
+            caption_qa = validate_captions(segments, candidate, CAPTION_MARGIN_V)
+            if not caption_qa["passed"]:
                 raise RuntimeError(
-                    f"QA de legenda reprovou o corte {index} para YouTube: "
+                    f"QA de legenda reprovou o corte {index}: "
                     "confira qa.json e relatorio.json."
                 )
-            yt_qa = render_and_validate(source, yt_captions, candidate, yt_output)
-            yt_qa["caption_qa"] = yt_caption_qa
-
-            write_ass(segments, candidate, tt_captions, TIKTOK_CAPTION_MARGIN_V)
-            tt_caption_qa = validate_captions(segments, candidate, TIKTOK_CAPTION_MARGIN_V)
-            if not tt_caption_qa["passed"]:
-                raise RuntimeError(
-                    f"QA de legenda reprovou o corte {index} para TikTok: "
-                    "confira qa.json e relatorio.json."
-                )
-            tt_qa = render_and_validate(source, tt_captions, candidate, tt_output)
-            tt_qa["caption_qa"] = tt_caption_qa
-            qa.extend([
-                {"platform": "youtube_shorts", "clip": index, **yt_qa},
-                {"platform": "tiktok", "clip": index, **tt_qa},
-            ])
-            if not yt_caption_qa["passed"] or not tt_caption_qa["passed"]:
-                raise RuntimeError(f"QA de legenda reprovou o corte {index}: confira qa.json e relatorio.json.")
-            if not yt_qa["passed"] or not tt_qa["passed"]:
+            clip_qa = render_and_validate(source, captions, candidate, output)
+            clip_qa["caption_qa"] = caption_qa
+            qa.append({"platform": "vertical_shared", "clip": index, **clip_qa})
+            if not clip_qa["passed"]:
                 raise RuntimeError(f"QA técnico reprovou o corte {index}: confira qa.json e relatorio.json.")
+            relative_output = str(output.relative_to(OUTPUT))
             clips.append({
-                "file": str(yt_output.relative_to(OUTPUT)),
-                "youtube_file": str(yt_output.relative_to(OUTPUT)),
-                "tiktok_file": str(tt_output.relative_to(OUTPUT)),
+                "file": relative_output,
+                # Mantidos para compatibilidade com relatórios/consumidores anteriores.
+                "youtube_file": relative_output,
+                "tiktok_file": relative_output,
+                "render_format": "vertical_9x16_shared",
                 "start": candidate.start,
                 "end": candidate.end,
                 "duration": candidate.duration,
@@ -1004,4 +990,3 @@ def main() -> int:
 
 if __name__ == "__main__":
     raise SystemExit(main())
-
