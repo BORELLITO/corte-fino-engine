@@ -34,6 +34,7 @@ TRANSCRIBE_PROGRESS_SECONDS = max(15, int(os.environ.get("TRANSCRIBE_PROGRESS_SE
 CAPTION_MIN_WORDS = 3
 CAPTION_MAX_WORDS = 6
 CAPTION_FONT_SIZE = int(os.environ.get("CAPTION_FONT_SIZE", "48"))
+CAPTION_FONT_NAME = os.environ.get("CAPTION_FONT_NAME", "DejaVu Sans Condensed").strip() or "DejaVu Sans Condensed"
 CAPTION_MARGIN_V = int(os.environ.get("CAPTION_MARGIN_V", "220"))
 YOUTUBE_CAPTION_MARGIN_V = int(os.environ.get("YOUTUBE_CAPTION_MARGIN_V", str(CAPTION_MARGIN_V)))
 TIKTOK_CAPTION_MARGIN_V = CAPTION_MARGIN_V  # compatibilidade: render único para as duas plataformas
@@ -900,7 +901,8 @@ def render_caption(words: list[dict[str, Any]]) -> str:
             rendered.append(r"\N")
         token = ass_escape(label)
         rendered.append(
-            f"{{\\c&H0000A5FF&}}{token}{{\\c&H00FFFFFF&}}"
+            # Cobre oficial da identidade: #B85A3C em ordem BGR do ASS.
+            f"{{\\c&H003C5AB8&}}{token}{{\\c&H00F4F5F5&}}"
             if index == keyword_index
             else token
         )
@@ -914,7 +916,8 @@ def write_ass(segments: list[Segment], candidate: Candidate, path: Path, margin_
         "[Script Info]", "ScriptType: v4.00+", "PlayResX: 1080", "PlayResY: 1920", "ScaledBorderAndShadow: yes", "",
         "[V4+ Styles]",
         "Format: Name, Fontname, Fontsize, PrimaryColour, SecondaryColour, OutlineColour, BackColour, Bold, Italic, Underline, StrikeOut, ScaleX, ScaleY, Spacing, Angle, BorderStyle, Outline, Shadow, Alignment, MarginL, MarginR, MarginV, Encoding",
-        f"Style: Default,DejaVu Sans,{CAPTION_FONT_SIZE},&H00FFFFFF,&H00FFFFFF,&H00000000,&H80000000,-1,0,0,0,100,100,0,0,3,4,0,2,70,70,{margin_v},1", "",
+        # Branco quente #F5F5F4, contorno preto #050505 e caixa semitransparente discreta.
+        f"Style: Default,{CAPTION_FONT_NAME},{CAPTION_FONT_SIZE},&H00F4F5F5,&H00F4F5F5,&H00050505,&H99050505,-1,0,0,0,100,100,0,0,1,3,1,2,70,70,{margin_v},1", "",
         "[Events]", "Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text",
     ]
     for chunk in caption_chunks(segments, candidate):
@@ -929,11 +932,15 @@ def render_clip(source: Path, captions: Path, candidate: Candidate, output: Path
     filter_complex = (
         "[0:v]split=2[bg][fg];"
         "[bg]scale=1080:1920:force_original_aspect_ratio=increase,crop=1080:1920,gblur=sigma=22,eq=brightness=-0.18:saturation=0.80[bg];"
-        "[fg]scale=1080:1920:force_original_aspect_ratio=decrease[fg];"
+        # Tratamento Corte Fino: imagem quase monocromática, preservando naturalidade.
+        "[fg]scale=1080:1920:force_original_aspect_ratio=decrease,eq=contrast=1.04:brightness=-0.01:saturation=0.22[fg];"
         f"[bg][fg]overlay=(W-w)/2:(H-h)/2,subtitles='{caption_path}':original_size=1080x1920,"
-        "drawbox=x=iw-276:y=32:w=228:h=48:color=black@0.42:t=fill,"
-        "drawbox=x=iw-276:y=32:w=3:h=48:color=gold@0.92:t=fill,"
-        "drawtext=fontfile=/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf:text='CORTE FINO':fontcolor=white@0.86:fontsize=19:x=w-tw-48:y=47[v]"
+        # Assinatura superior direita: C/F, branco quente + cobre oficial, em área segura.
+        "drawbox=x=iw-172:y=34:w=140:h=58:color=0x050505@0.72:t=fill,"
+        "drawbox=x=iw-172:y=34:w=3:h=58:color=0xB85A3C@0.96:t=fill,"
+        "drawtext=fontfile=/usr/share/fonts/truetype/dejavu/DejaVuSansCondensed-Bold.ttf:text='C':fontcolor=0xF5F5F4@0.96:fontsize=38:x=w-154:y=42,"
+        "drawtext=fontfile=/usr/share/fonts/truetype/dejavu/DejaVuSansCondensed-Bold.ttf:text='/':fontcolor=0xB85A3C@0.98:fontsize=42:x=w-124:y=39,"
+        "drawtext=fontfile=/usr/share/fonts/truetype/dejavu/DejaVuSansCondensed-Bold.ttf:text='F':fontcolor=0xF5F5F4@0.96:fontsize=38:x=w-94:y=42[v]"
     )
     run([
         "ffmpeg", "-y", "-ss", f"{candidate.start:.3f}", "-i", str(source), "-t", f"{candidate.duration:.3f}",
