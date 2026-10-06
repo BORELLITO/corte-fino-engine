@@ -16,7 +16,7 @@ from typing import Any
 
 
 MAX_CLIPS = int(os.environ.get("MAX_CLIPS", "5"))
-MIN_EDITORIAL_SCORE = 0.0  # compatibilidade: a nota apenas ordena candidatos; nunca bloqueia a geração
+MIN_EDITORIAL_SCORE = float(os.environ.get("MIN_EDITORIAL_SCORE", "78"))  # filtro duro: só entra candidato com nota editorial mínima
 MIN_CLIP_SECONDS = int(os.environ.get("MIN_CLIP_SECONDS", "45"))
 MAX_CLIP_SECONDS = int(os.environ.get("MAX_CLIP_SECONDS", "90"))
 TARGET_CLIP_SECONDS = int(os.environ.get("TARGET_CLIP_SECONDS", "68"))
@@ -36,6 +36,10 @@ CAPTION_MIN_DURATION = float(os.environ.get("CAPTION_MIN_DURATION", "0.24"))
 CAPTION_MAX_DURATION = float(os.environ.get("CAPTION_MAX_DURATION", "4.0"))
 CAPTION_MAX_GAP = float(os.environ.get("CAPTION_MAX_GAP", "1.5"))
 CAPTION_SYNC_TOLERANCE = float(os.environ.get("CAPTION_SYNC_TOLERANCE", "0.35"))
+CAPTION_SUSPECT_TOKENS = {
+    "revindicando", "bradão", "bradio", "idô", "crescentos", "dilhé", "pim",
+    "trefa", "vítimo", "lulia", "latrão", "divestindo", "danapolítica", "coneste",
+}
 ROOT = Path(__file__).resolve().parent
 WORK = ROOT / "work"
 OUTPUT = ROOT / "output"
@@ -416,7 +420,11 @@ def overlaps(left: Candidate, right: Candidate) -> bool:
 
 def select_candidates(segments: list[Segment]) -> tuple[list[Candidate], list[Candidate]]:
     all_candidates = build_candidates(segments)
-    approved = [candidate for candidate in all_candidates if candidate.accepted]
+    for candidate in all_candidates:
+        if candidate.score < MIN_EDITORIAL_SCORE:
+            candidate.accepted = False
+            candidate.rejection = f"nota abaixo do mínimo editorial ({candidate.score:.2f} < {MIN_EDITORIAL_SCORE:.2f})"
+    approved = [candidate for candidate in all_candidates if candidate.accepted and candidate.score >= MIN_EDITORIAL_SCORE]
     selected: list[Candidate] = []
     deferred: list[Candidate] = []
     trigger_counts: dict[str, int] = {}
@@ -589,6 +597,15 @@ def validate_captions(segments: list[Segment], candidate: Candidate, margin_v: i
     for index, chunk in enumerate(chunks, 1):
         labels = [str(item.get("word", "")).strip() for item in chunk if str(item.get("word", "")).strip()]
         text = " ".join(labels)
+        suspect_tokens = sorted({
+            word_token(label)
+            for label in labels
+            if word_token(label) in CAPTION_SUSPECT_TOKENS
+        })
+        if suspect_tokens:
+            issues.append(
+                f"bloco {index} contém possível erro de transcrição/ortografia: {', '.join(suspect_tokens)}"
+            )
         start = max(0.0, float(chunk[0]["start"]) - candidate.start) if chunk else 0.0
         end = max(start, float(chunk[-1]["end"]) - candidate.start) if chunk else start
         duration = end - start
@@ -834,6 +851,8 @@ def write_reports(
         status = "EDITORIAL_EMPTY"
     elif error and error.startswith("DIREITOS_PENDENTES"):
         status = "RIGHTS_PENDING"
+    elif error and error.startswith("QA de legenda"):
+        status = "EDITORIAL_REJECTED"
     elif error:
         status = "TECHNICAL_FAILURE"
     elif enriched:
@@ -886,7 +905,7 @@ def write_reports(
         f"URL: {source_url or 'não informada'}",
         f"Fingerprint SHA-256: {source_hash or 'não calculado'}",
         "",
-        "**Critério editorial:** a nota apenas ordena candidatos; não bloqueia a geração.",
+        "**Critério editorial:** só entram candidatos com nota mínima de 78/100; a rodada pode ter menos de cinco cortes.",
         f"**Cortes aprovados:** {len(enriched)}",
         f"**Direitos:** {rights['status']}",
         "**Publicação:** revisão manual obrigatória",
