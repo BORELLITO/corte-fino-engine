@@ -350,6 +350,22 @@ jobs:
                   body=metadata, media_body=media, fields="id,name,webViewLink"
               ).execute()
 
+          def ensure_shortcut(drive, name, target_id, parent_id):
+              existing = find_child(
+                  drive, parent_id, name, "application/vnd.google-apps.shortcut"
+              )
+              if existing:
+                  return existing
+              return drive.files().create(
+                  body={
+                      "name": name,
+                      "mimeType": "application/vnd.google-apps.shortcut",
+                      "parents": [parent_id],
+                      "shortcutDetails": {"targetId": target_id},
+                  },
+                  fields="id,name,mimeType,webViewLink,shortcutDetails",
+              ).execute()
+
           raw_folder_id = os.environ.get("DRIVE_FOLDER_ID", "").strip()
           if "/folders/" in raw_folder_id:
               raw_folder_id = raw_folder_id.split("/folders/", 1)[1].split("?", 1)[0].split("/", 1)[0].strip()
@@ -412,29 +428,27 @@ jobs:
               "",
           ]
           for index, clip in enumerate(clips, 1):
-              youtube_text = (
-                  f"# YouTube Shorts — Corte {index:02d}\n\n"
-                  f"Arquivo: {Path(clip.get('youtube_file', '')).name}\n"
+              file_name = Path(
+                  clip.get("file") or clip.get("youtube_file") or clip.get("tiktok_file") or ""
+              ).name
+              post_text = (
+                  f"# Corte Fino — Corte {index:02d}\n\n"
+                  f"Arquivo único para YouTube Shorts e TikTok: {file_name}\n\n"
+                  "## YouTube Shorts\n"
                   f"Título: {clip.get('youtube_title', '')}\n\n"
                   "Descrição:\n"
                   f"{clip.get('youtube_description', '')}\n\n"
-                  f"Pergunta para comentários: {clip.get('comment_question', '')}\n"
-                  f"Nota editorial: {clip.get('score', '')} | Gatilho: {clip.get('trigger', '')}\n"
-              )
-              tiktok_text = (
-                  f"# TikTok — Corte {index:02d}\n\n"
-                  f"Arquivo: {Path(clip.get('tiktok_file', '')).name}\n"
+                  "## TikTok\n"
                   "Legenda:\n"
                   f"{clip.get('tiktok_caption', '')}\n\n"
                   f"Pergunta para comentários: {clip.get('comment_question', '')}\n"
                   f"Nota editorial: {clip.get('score', '')} | Gatilho: {clip.get('trigger', '')}\n"
               )
-              (posting_dir / f"{index:02d} - YouTube Shorts.md").write_text(youtube_text, encoding="utf-8")
-              (posting_dir / f"{index:02d} - TikTok.md").write_text(tiktok_text, encoding="utf-8")
+              (posting_dir / f"{index:02d} - Postagem.md").write_text(post_text, encoding="utf-8")
               guide.extend([
                   f"## {index:02d} — {clip.get('trigger', 'curiosidade')}",
-                  f"- YouTube: 01 - YouTube Shorts/{Path(clip.get('youtube_file', '')).name}",
-                  f"- TikTok: 02 - TikTok/{Path(clip.get('tiktok_file', '')).name}",
+                  f"- Arquivo único: 01 - YouTube Shorts/{file_name}",
+                  f"- Atalho TikTok: 02 - TikTok/{file_name}",
                   f"- Motivo: {clip.get('editorial_reason', '')}",
                   "",
               ])
@@ -456,15 +470,18 @@ jobs:
           enviados = []
           clips_dir = Path("output/clips")
           for file_path in sorted(clips_dir.glob("*.mp4")):
-              if "_youtube_shorts" in file_path.name:
-                  target = youtube_folder["id"]
-              elif "_tiktok" in file_path.name:
-                  target = tiktok_folder["id"]
-              else:
-                  target = batch_folder["id"]
-              result = upload_file(drive, file_path, target)
+              # Renderiza/upload do MP4 uma única vez; TikTok recebe um atalho no Drive.
+              result = upload_file(drive, file_path, youtube_folder["id"])
               enviados.append(result)
               print(f"Enviado: {result.get('name')}")
+              shortcut = ensure_shortcut(
+                  drive,
+                  file_path.name,
+                  result["id"],
+                  tiktok_folder["id"],
+              )
+              enviados.append(shortcut)
+              print(f"Atalho TikTok: {shortcut.get('name')}")
 
           for file_path in sorted(posting_dir.glob("*.md")):
               result = upload_file(drive, file_path, texts_folder["id"])
@@ -576,4 +593,3 @@ jobs:
           path: output/
           if-no-files-found: ignore
           retention-days: 7
-
