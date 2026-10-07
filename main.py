@@ -33,6 +33,9 @@ TRANSCRIBE_CPU_THREADS = max(1, int(os.environ.get("TRANSCRIBE_CPU_THREADS", "4"
 TRANSCRIBE_PROGRESS_SECONDS = max(15, int(os.environ.get("TRANSCRIBE_PROGRESS_SECONDS", "45")))
 CAPTION_MIN_WORDS = 3
 CAPTION_MAX_WORDS = 6
+# Pequenas partículas finais (ex.: “né?”, “tá?”) podem durar menos que o mínimo
+# quando são unidas ao bloco anterior sem violar largura ou duração.
+CAPTION_SHORT_TAIL_WORD_SLACK = 2
 CAPTION_FONT_SIZE = int(os.environ.get("CAPTION_FONT_SIZE", "48"))
 CAPTION_FONT_NAME = os.environ.get("CAPTION_FONT_NAME", "DejaVu Sans Condensed").strip() or "DejaVu Sans Condensed"
 CAPTION_MARGIN_V = int(os.environ.get("CAPTION_MARGIN_V", "220"))
@@ -817,7 +820,7 @@ def caption_chunks(segments: list[Segment], candidate: Candidate) -> list[list[d
             merged_duration = float(merged[-1]["end"]) - float(merged[0]["start"])
             _, merged_lengths = caption_layout([str(item["word"]).strip() for item in merged])
             if (
-                len(merged) <= CAPTION_MAX_WORDS
+                len(merged) <= CAPTION_MAX_WORDS + CAPTION_SHORT_TAIL_WORD_SLACK
                 and merged_duration <= CAPTION_MAX_DURATION
                 and max(merged_lengths, default=0) <= CAPTION_MAX_LINE_CHARS
             ):
