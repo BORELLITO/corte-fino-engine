@@ -39,7 +39,7 @@ CAPTION_SHORT_TAIL_WORD_SLACK = 2
 CAPTION_FONT_SIZE = int(os.environ.get("CAPTION_FONT_SIZE", "48"))
 CAPTION_FONT_NAME = os.environ.get("CAPTION_FONT_NAME", "DejaVu Sans Condensed").strip() or "DejaVu Sans Condensed"
 # Mantém as legendas acima da área de interface inferior de Shorts e TikTok.
-CAPTION_MARGIN_V = int(os.environ.get("CAPTION_MARGIN_V", "300"))
+CAPTION_MARGIN_V = int(os.environ.get("CAPTION_MARGIN_V", "340"))
 YOUTUBE_CAPTION_MARGIN_V = int(os.environ.get("YOUTUBE_CAPTION_MARGIN_V", str(CAPTION_MARGIN_V)))
 TIKTOK_CAPTION_MARGIN_V = CAPTION_MARGIN_V  # compatibilidade: render único para as duas plataformas
 CAPTION_MAX_LINE_CHARS = int(os.environ.get("CAPTION_MAX_LINE_CHARS", "32"))
