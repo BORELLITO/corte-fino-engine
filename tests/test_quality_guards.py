@@ -4,6 +4,7 @@ from main import (
     caption_spelling_warnings,
     enrich_clip,
     rights_info,
+    build_filter_complex,
 )
 
 
@@ -75,3 +76,13 @@ def test_visual_identity_uses_off_white_and_copper_caption_tokens(tmp_path):
     assert "003C5AB8" in content  # cobre #B85A3C em BGR/ASS
     assert "00F4F5F5" in content  # branco quente #F5F5F4 em BGR/ASS
     assert "DejaVu Sans Condensed" in content
+
+
+def test_source_colors_are_preserved_and_hud_keeps_brand_palette():
+    filter_complex = build_filter_complex("captions.ass")
+    assert "saturation=0.22" not in filter_complex
+    assert "saturation=0.80" not in filter_complex
+    assert "gblur=sigma=22" in filter_complex
+    assert "0x050505" in filter_complex
+    assert "0xF5F5F4" in filter_complex
+    assert "0xB85A3C" in filter_complex
