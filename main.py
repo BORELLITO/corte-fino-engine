@@ -838,13 +838,15 @@ def caption_chunks(segments: list[Segment], candidate: Candidate) -> list[list[d
             _, projected_lengths = caption_layout(
                 [str(item["word"]).strip() for item in projected]
             )
+            word_gap = max(0.0, float(word["start"]) - float(current[-1]["end"]))
             exceeds_duration = (
                 projected_duration > CAPTION_MAX_DURATION
                 and current_duration >= CAPTION_MIN_DURATION
             )
+            exceeds_gap = word_gap > CAPTION_MAX_GAP
             exceeds_words = len(projected) > CAPTION_MAX_WORDS
             exceeds_width = max(projected_lengths, default=0) > CAPTION_MAX_LINE_CHARS
-            if exceeds_duration or exceeds_words or exceeds_width:
+            if exceeds_duration or exceeds_gap or exceeds_words or exceeds_width:
                 chunks.append(current)
                 current = []
         current.append(word)
