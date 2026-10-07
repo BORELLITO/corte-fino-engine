@@ -669,32 +669,58 @@ def word_token(value: str) -> str:
     return re.sub(r"[^\wÀ-ÿ]", "", value.lower())
 
 
-def caption_spelling_issues(labels: list[str]) -> list[str]:
-    """Retorna tokens com alto risco de erro sem tentar reescrever a fala."""
+def _caption_context_tokens() -> set[str]:
+    """Retorna palavras conhecidas pelo contexto da fonte, sem reescrever a fala."""
     allowed = set(CAPTION_ALLOWED_TOKENS)
     context = " ".join(
         os.environ.get(name, "")
         for name in ("SOURCE_TITLE", "SOURCE_CHANNEL", "SOURCE_NICHE")
     )
     allowed.update(word_token(item) for item in context.split() if word_token(item))
-    issues = {
+    return allowed
+
+
+def caption_spelling_issues(labels: list[str]) -> list[str]:
+    """Retorna apenas erros explícitos já conhecidos do ASR.
+
+    Palavras raras, nomes, apelidos, marcas, gírias e termos de internet não
+    são reprovação automática: sem áudio/contexto humano, tratá-los como erro
+    poderia alterar a fala original.
+    """
+    allowed = _caption_context_tokens()
+    return sorted({
         word_token(label)
         for label in labels
         if word_token(label) in CAPTION_SUSPECT_TOKENS
-    }
+        and word_token(label) not in allowed
+    })
+
+
+def caption_spelling_warnings(labels: list[str]) -> list[str]:
+    """Sinaliza palavras raras para revisão humana sem bloquear o corte."""
+    allowed = _caption_context_tokens()
+    explicit_issues = set(caption_spelling_issues(labels))
+    warnings: set[str] = set()
     try:
         from wordfreq import zipf_frequency
     except ImportError:
         zipf_frequency = None
 
-    if zipf_frequency:
-        for label in labels:
-            token = word_token(label)
-            if len(token) < 3 or any(char.isdigit() for char in token) or token in allowed:
-                continue
-            if zipf_frequency(token, "pt") < CAPTION_SPELLING_MIN_ZIPF:
-                issues.add(token)
-    return sorted(issue for issue in issues if issue)
+    if not zipf_frequency:
+        return []
+
+    for label in labels:
+        token = word_token(label)
+        if (
+            len(token) < 3
+            or any(char.isdigit() for char in token)
+            or token in allowed
+            or token in explicit_issues
+        ):
+            continue
+        if zipf_frequency(token, "pt") < CAPTION_SPELLING_MIN_ZIPF:
+            warnings.add(token)
+    return sorted(warnings)
 
 
 def caption_layout(labels: list[str]) -> tuple[int | None, list[int]]:
@@ -820,7 +846,12 @@ def validate_captions(segments: list[Segment], candidate: Candidate, margin_v: i
         suspect_tokens = caption_spelling_issues(labels)
         if suspect_tokens:
             issues.append(
-                f"bloco {index} contém possível erro de transcrição/ortografia: {', '.join(suspect_tokens)}"
+                f"bloco {index} contém erro conhecido de transcrição/ortografia: {', '.join(suspect_tokens)}"
+            )
+        spelling_warnings = caption_spelling_warnings(labels)
+        if spelling_warnings:
+            warnings.append(
+                f"bloco {index} contém palavra rara/nome/gíria para revisão humana: {', '.join(spelling_warnings)}"
             )
         low_confidence_tokens = sorted({
             word_token(str(item.get("word", "")))
@@ -830,8 +861,8 @@ def validate_captions(segments: list[Segment], candidate: Candidate, margin_v: i
             and word_token(str(item.get("word", "")))
         })
         if low_confidence_tokens:
-            issues.append(
-                f"bloco {index} contém fala com baixa confiança do ASR: {', '.join(low_confidence_tokens)}"
+            warnings.append(
+                f"bloco {index} contém fala com baixa confiança do ASR para revisão: {', '.join(low_confidence_tokens)}"
             )
         start = max(0.0, float(chunk[0]["start"]) - candidate.start) if chunk else 0.0
         end = max(start, float(chunk[-1]["end"]) - candidate.start) if chunk else start
@@ -876,6 +907,7 @@ def validate_captions(segments: list[Segment], candidate: Candidate, margin_v: i
         "passed": not issues,
         "issues": issues,
         "warnings": warnings,
+        "review_required": bool(warnings),
         "blocks": len(intervals),
         "max_line_chars": max((max(item["line_lengths"], default=0) for item in intervals), default=0),
         "margin_v": margin_v,
