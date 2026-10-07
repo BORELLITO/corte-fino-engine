@@ -5,22 +5,25 @@ on:
     # 22:15 UTC ≈ 19:15 no horário de Brasília.
     - cron: "15 22 * * *"
 
+  # Entradas manuais usam texto para evitar a falha 500 do formulário de dispatch.
+  # O motor continua tratando direitos como revisão manual e mantendo o Top 5 fechado.
   workflow_dispatch:
     inputs:
       source_url:
         description: "Link do vídeo para teste (direitos sob responsabilidade do usuário)"
         required: false
+        default: ""
         type: string
       rights_confirmed:
-        description: "Opcional: registrar que a revisão de direitos foi feita (não bloqueia o processamento)"
+        description: "Opcional: digite true somente se a revisão de direitos foi feita"
         required: false
-        default: false
-        type: boolean
+        default: "false"
+        type: string
       force_top_five:
-        description: "Forçar os 5 melhores cortes disponíveis mantendo QA e revisão de legendas"
+        description: "Digite true para forçar os 5 melhores cortes disponíveis"
         required: false
-        default: false
-        type: boolean
+        default: "true"
+        type: string
 
 permissions:
   contents: read
@@ -47,7 +50,7 @@ jobs:
       REQUIRE_EXACT_TOP_FIVE: "1"
       CAPTION_MIN_WORD_PROBABILITY: "0.40"
       CAPTION_SPELLING_MIN_ZIPF: "2.30"
-      FORCE_TOP_FIVE: ${{ inputs.force_top_five == true && '1' || '0' }}
+      FORCE_TOP_FIVE: ${{ inputs.force_top_five == 'true' && '1' || '0' }}
 
     steps:
       - name: Baixar código
