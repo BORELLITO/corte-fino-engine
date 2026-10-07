@@ -39,7 +39,7 @@ CAPTION_SHORT_TAIL_WORD_SLACK = 2
 CAPTION_FONT_SIZE = int(os.environ.get("CAPTION_FONT_SIZE", "48"))
 CAPTION_FONT_NAME = os.environ.get("CAPTION_FONT_NAME", "DejaVu Sans Condensed").strip() or "DejaVu Sans Condensed"
 # Mantém as legendas acima da área de interface inferior de Shorts e TikTok.
-CAPTION_MARGIN_V = int(os.environ.get("CAPTION_MARGIN_V", "340"))
+CAPTION_MARGIN_V = int(os.environ.get("CAPTION_MARGIN_V", "390"))
 YOUTUBE_CAPTION_MARGIN_V = int(os.environ.get("YOUTUBE_CAPTION_MARGIN_V", str(CAPTION_MARGIN_V)))
 TIKTOK_CAPTION_MARGIN_V = CAPTION_MARGIN_V  # compatibilidade: render único para as duas plataformas
 CAPTION_MAX_LINE_CHARS = int(os.environ.get("CAPTION_MAX_LINE_CHARS", "32"))
@@ -973,12 +973,10 @@ def build_filter_complex(caption_path: str) -> str:
         "[bg]scale=1080:1920:force_original_aspect_ratio=increase,crop=1080:1920,gblur=sigma=22[bg];"
         "[fg]scale=1080:1920:force_original_aspect_ratio=decrease[fg];"
         f"[bg][fg]overlay=(W-w)/2:(H-h)/2,subtitles='{caption_path}':original_size=1080x1920,"
-        # Assinatura superior direita: C/F, branco quente + cobre oficial, em área segura.
-        "drawbox=x=iw-172:y=34:w=140:h=58:color=0x050505@0.72:t=fill,"
-        "drawbox=x=iw-172:y=34:w=3:h=58:color=0xB85A3C@0.96:t=fill,"
-        "drawtext=fontfile=/usr/share/fonts/truetype/dejavu/DejaVuSansCondensed-Bold.ttf:text='C':fontcolor=0xF5F5F4@0.96:fontsize=38:x=w-154:y=42,"
-        "drawtext=fontfile=/usr/share/fonts/truetype/dejavu/DejaVuSansCondensed-Bold.ttf:text='/':fontcolor=0xB85A3C@0.98:fontsize=42:x=w-124:y=39,"
-        "drawtext=fontfile=/usr/share/fonts/truetype/dejavu/DejaVuSansCondensed-Bold.ttf:text='F':fontcolor=0xF5F5F4@0.96:fontsize=38:x=w-94:y=42[v]"
+        # Assinatura superior direita: CORTEFINO por extenso, compacta e discreta.
+        "drawbox=x=iw-286:y=34:w=254:h=56:color=0x050505@0.72:t=fill,"
+        "drawbox=x=iw-286:y=34:w=3:h=56:color=0xB85A3C@0.96:t=fill,"
+        "drawtext=fontfile=/usr/share/fonts/truetype/dejavu/DejaVuSansCondensed-Bold.ttf:text='CORTEFINO':fontcolor=0xF5F5F4@0.96:fontsize=26:x=w-272:y=48[v]"
     )
 
 
