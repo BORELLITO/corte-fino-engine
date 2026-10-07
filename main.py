@@ -857,7 +857,7 @@ def caption_chunks(segments: list[Segment], candidate: Candidate) -> list[list[d
             and block_duration >= CAPTION_MIN_DURATION
         )
         ready_full = len(current) >= CAPTION_MAX_WORDS and block_duration >= CAPTION_MIN_DURATION
-        too_long = len(current) >= CAPTION_MAX_WORDS and block_duration >= CAPTION_MAX_DURATION
+        too_long = len(current) >= CAPTION_MIN_WORDS and block_duration >= CAPTION_MAX_DURATION
         _, line_lengths = caption_layout(labels)
         if ready_full or ready_sentence or too_long or max(line_lengths, default=0) > CAPTION_MAX_LINE_CHARS:
             chunks.append(current)
