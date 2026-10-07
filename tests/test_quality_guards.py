@@ -1,8 +1,20 @@
-from main import CAPTION_ALLOWED_TOKENS, caption_spelling_issues, enrich_clip, rights_info
+from main import (
+    CAPTION_ALLOWED_TOKENS,
+    caption_spelling_issues,
+    caption_spelling_warnings,
+    enrich_clip,
+    rights_info,
+)
 
 
 def test_caption_gate_flags_known_asr_error():
     assert "médo" in caption_spelling_issues(["Médo"])
+
+
+def test_caption_gate_does_not_block_names_slang_or_valid_loanwords():
+    labels = ["Bianquinha", "tigrinho", "bets", "descredibilizar", "bloqueava", "consegui"]
+    assert caption_spelling_issues(labels) == []
+    assert "bianquinha" in caption_spelling_warnings(labels)
 
 
 def test_hashtag_matching_uses_word_boundaries():
