@@ -963,13 +963,15 @@ def write_ass(segments: list[Segment], candidate: Candidate, path: Path, margin_
     path.write_text("\n".join(lines) + "\n", encoding="utf-8")
 
 
-def render_clip(source: Path, captions: Path, candidate: Candidate, output: Path) -> None:
-    caption_path = str(captions).replace(":", "\\:")
-    filter_complex = (
+def build_filter_complex(caption_path: str) -> str:
+    """
+    Mantém as cores originais da fonte. O tratamento Corte Fino fica restrito
+    à composição vertical, ao fundo desfocado e aos elementos da HUD.
+    """
+    return (
         "[0:v]split=2[bg][fg];"
-        "[bg]scale=1080:1920:force_original_aspect_ratio=increase,crop=1080:1920,gblur=sigma=22,eq=brightness=-0.18:saturation=0.80[bg];"
-        # Tratamento Corte Fino: imagem quase monocromática, preservando naturalidade.
-        "[fg]scale=1080:1920:force_original_aspect_ratio=decrease,eq=contrast=1.04:brightness=-0.01:saturation=0.22[fg];"
+        "[bg]scale=1080:1920:force_original_aspect_ratio=increase,crop=1080:1920,gblur=sigma=22[bg];"
+        "[fg]scale=1080:1920:force_original_aspect_ratio=decrease[fg];"
         f"[bg][fg]overlay=(W-w)/2:(H-h)/2,subtitles='{caption_path}':original_size=1080x1920,"
         # Assinatura superior direita: C/F, branco quente + cobre oficial, em área segura.
         "drawbox=x=iw-172:y=34:w=140:h=58:color=0x050505@0.72:t=fill,"
@@ -978,6 +980,11 @@ def render_clip(source: Path, captions: Path, candidate: Candidate, output: Path
         "drawtext=fontfile=/usr/share/fonts/truetype/dejavu/DejaVuSansCondensed-Bold.ttf:text='/':fontcolor=0xB85A3C@0.98:fontsize=42:x=w-124:y=39,"
         "drawtext=fontfile=/usr/share/fonts/truetype/dejavu/DejaVuSansCondensed-Bold.ttf:text='F':fontcolor=0xF5F5F4@0.96:fontsize=38:x=w-94:y=42[v]"
     )
+
+
+def render_clip(source: Path, captions: Path, candidate: Candidate, output: Path) -> None:
+    caption_path = str(captions).replace(":", "\\:")
+    filter_complex = build_filter_complex(caption_path)
     run([
         "ffmpeg", "-y", "-ss", f"{candidate.start:.3f}", "-i", str(source), "-t", f"{candidate.duration:.3f}",
         "-filter_complex", filter_complex, "-map", "[v]", "-map", "0:a:0?", "-c:v", "libx264", "-preset", "veryfast",
@@ -1204,7 +1211,7 @@ def write_reports(
                 "minimum_word_probability": CAPTION_MIN_WORD_PROBABILITY,
                 "manual_correction_policy": "não inventar nem corrigir a fala automaticamente; reprovar para revisão",
             },
-            "framing": "quadro completo com fundo desfocado para preservar rostos",
+            "framing": "quadro completo com fundo desfocado e cores originais preservadas para proteger rostos e cenário",
             "branding": "Corte Fino discreto, sem vinheta e sem música adicionada",
         },
     }
