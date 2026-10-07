@@ -748,6 +748,55 @@ def caption_layout(labels: list[str]) -> tuple[int | None, list[int]]:
     return break_at, lengths
 
 
+def normalize_caption_chunks(
+    chunks: list[list[dict[str, Any]]],
+) -> list[list[dict[str, Any]]]:
+    """Divide blocos longos apenas entre palavras, sem duplicar ou inventar fala."""
+    normalized: list[list[dict[str, Any]]] = []
+    for original in chunks:
+        pending = list(original)
+        while pending:
+            duration = float(pending[-1]["end"]) - float(pending[0]["start"])
+            if duration <= CAPTION_MAX_DURATION or len(pending) <= 1:
+                normalized.append(pending)
+                break
+
+            options: list[tuple[tuple[float, int, int, int], int, float, float]] = []
+            for split_at in range(1, len(pending)):
+                left = pending[:split_at]
+                right = pending[split_at:]
+                left_duration = float(left[-1]["end"]) - float(left[0]["start"])
+                right_duration = float(right[-1]["end"]) - float(right[0]["start"])
+                if left_duration < CAPTION_MIN_DURATION or right_duration < CAPTION_MIN_DURATION:
+                    continue
+                left_closes_sentence = bool(re.search(r"[.!?…]$", str(left[-1]["word"])))
+                score = (
+                    max(left_duration, right_duration),
+                    0 if left_closes_sentence else 1,
+                    abs(len(left) - len(right)),
+                    split_at,
+                )
+                options.append((score, split_at, left_duration, right_duration))
+
+            if not options:
+                # Se o ASR forneceu uma palavra individual com timestamp anômalo,
+                # preservamos o bloco para o gate registrar a falha; nunca cortamos
+                # uma palavra no meio nem repetimos texto para “passar” no QA.
+                normalized.append(pending)
+                break
+
+            feasible = [
+                option for option in options
+                if option[2] <= CAPTION_MAX_DURATION
+                and option[3] <= CAPTION_MAX_DURATION
+            ]
+            _, split_at, _, _ = min(feasible or options, key=lambda item: item[0])
+            normalized.append(pending[:split_at])
+            pending = pending[split_at:]
+
+    return normalized
+
+
 def caption_chunks(segments: list[Segment], candidate: Candidate) -> list[list[dict[str, Any]]]:
     words: list[dict[str, Any]] = []
     for segment in segments:
@@ -808,7 +857,7 @@ def caption_chunks(segments: list[Segment], candidate: Candidate) -> list[list[d
             and block_duration >= CAPTION_MIN_DURATION
         )
         ready_full = len(current) >= CAPTION_MAX_WORDS and block_duration >= CAPTION_MIN_DURATION
-        too_long = len(current) >= CAPTION_MIN_WORDS and block_duration >= CAPTION_MAX_DURATION
+        too_long = len(current) >= CAPTION_MAX_WORDS and block_duration >= CAPTION_MAX_DURATION
         _, line_lengths = caption_layout(labels)
         if ready_full or ready_sentence or too_long or max(line_lengths, default=0) > CAPTION_MAX_LINE_CHARS:
             chunks.append(current)
@@ -830,8 +879,7 @@ def caption_chunks(segments: list[Segment], candidate: Candidate) -> list[list[d
                 chunks.append(current)
         else:
             chunks.append(current)
-    return chunks
-
+    return normalize_caption_chunks(chunks)
 
 def validate_captions(segments: list[Segment], candidate: Candidate, margin_v: int) -> dict[str, Any]:
     """Audita tempo, continuidade, largura e posição das legendas antes da renderização."""
