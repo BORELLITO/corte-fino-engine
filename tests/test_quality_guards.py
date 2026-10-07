@@ -1,5 +1,6 @@
 from main import (
     CAPTION_ALLOWED_TOKENS,
+    CAPTION_MARGIN_V,
     caption_spelling_issues,
     caption_spelling_warnings,
     enrich_clip,
@@ -86,3 +87,7 @@ def test_source_colors_are_preserved_and_hud_keeps_brand_palette():
     assert "0x050505" in filter_complex
     assert "0xF5F5F4" in filter_complex
     assert "0xB85A3C" in filter_complex
+    assert "text='CORTEFINO'" in filter_complex
+    assert "text='C'" not in filter_complex
+    assert "iw-286" in filter_complex
+    assert CAPTION_MARGIN_V == 390
