@@ -2,6 +2,7 @@ from main import (
     CAPTION_ALLOWED_TOKENS,
     CAPTION_MARGIN_V,
     correct_caption_word,
+    repair_short_caption_chunks,
     caption_spelling_issues,
     caption_spelling_warnings,
     enrich_clip,
@@ -20,6 +21,23 @@ def test_caption_safe_corrections_are_explicit_and_punctuation_safe():
     assert correct_caption_word("violins") == "Aviões"
     assert correct_caption_word("violins,") == "Aviões,"
     assert correct_caption_word("panoís") == "panoís"
+
+
+def test_short_caption_tail_is_joined_without_breaking_safe_layout():
+    chunks = [
+        [
+            {"start": 53.92, "end": 54.2, "word": "a"},
+            {"start": 54.2, "end": 54.5, "word": "gente"},
+            {"start": 54.5, "end": 54.7, "word": "vai"},
+            {"start": 54.7, "end": 54.8, "word": "lavar"},
+            {"start": 54.8, "end": 54.9, "word": "roupa"},
+            {"start": 54.9, "end": 55.0, "word": "suja"},
+        ],
+        [{"start": 55.0, "end": 55.22, "word": "lá?"}],
+    ]
+    repaired = repair_short_caption_chunks(chunks)
+    assert len(repaired) == 1
+    assert repaired[0][-1]["word"] == "lá?"
 
 
 def test_caption_gate_does_not_block_names_slang_or_valid_loanwords():

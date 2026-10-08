@@ -820,6 +820,51 @@ def normalize_caption_chunks(
     return normalized
 
 
+def repair_short_caption_chunks(
+    chunks: list[list[dict[str, Any]]],
+) -> list[list[dict[str, Any]]]:
+    """Une blocos curtos a um vizinho sem violar layout ou sincronização."""
+    repaired = [list(chunk) for chunk in chunks if chunk]
+    changed = True
+    while changed:
+        changed = False
+        for index, chunk in enumerate(repaired):
+            duration = float(chunk[-1]["end"]) - float(chunk[0]["start"])
+            if duration >= CAPTION_MIN_DURATION:
+                continue
+            neighbors = []
+            if index > 0:
+                neighbors.append((index - 1, "previous"))
+            if index + 1 < len(repaired):
+                neighbors.append((index + 1, "next"))
+            for neighbor_index, side in neighbors:
+                neighbor = repaired[neighbor_index]
+                if side == "previous":
+                    gap = float(chunk[0]["start"]) - float(neighbor[-1]["end"])
+                    merged = [*neighbor, *chunk]
+                else:
+                    gap = float(neighbor[0]["start"]) - float(chunk[-1]["end"])
+                    merged = [*chunk, *neighbor]
+                if gap > CAPTION_MAX_GAP:
+                    continue
+                merged_duration = float(merged[-1]["end"]) - float(merged[0]["start"])
+                labels = [str(item["word"]).strip() for item in merged]
+                _, lengths = caption_layout(labels)
+                if (
+                    len(merged) > CAPTION_MAX_WORDS + CAPTION_SHORT_TAIL_WORD_SLACK
+                    or merged_duration > CAPTION_MAX_DURATION
+                    or max(lengths, default=0) > CAPTION_MAX_LINE_CHARS
+                ):
+                    continue
+                repaired[neighbor_index] = merged
+                repaired.pop(index)
+                changed = True
+                break
+            if changed:
+                break
+    return repaired
+
+
 def caption_chunks(segments: list[Segment], candidate: Candidate) -> list[list[dict[str, Any]]]:
     words: list[dict[str, Any]] = []
     for segment in segments:
@@ -906,7 +951,7 @@ def caption_chunks(segments: list[Segment], candidate: Candidate) -> list[list[d
                 chunks.append(current)
         else:
             chunks.append(current)
-    return normalize_caption_chunks(chunks)
+    return repair_short_caption_chunks(normalize_caption_chunks(chunks))
 
 def validate_captions(segments: list[Segment], candidate: Candidate, margin_v: int) -> dict[str, Any]:
     """Audita tempo, continuidade, largura e posição das legendas antes da renderização."""
