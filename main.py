@@ -52,12 +52,18 @@ THUMB_FRAME_Y = int(os.environ.get("THUMB_FRAME_Y", "420"))
 THUMB_HEADLINE_Y = int(os.environ.get("THUMB_HEADLINE_Y", "1120"))
 THUMB_FONT_SIZE = int(os.environ.get("THUMB_FONT_SIZE", "68"))
 CAPTION_SUSPECT_TOKENS = {
-    # Erros recorrentes de ASR observados em revisões anteriores. Eles não são
-    # corrigidos automaticamente: reprovam o candidato para que outro momento
-    # seja tentado sem inventar a fala original.
+    # Erros recorrentes de ASR observados em revisões anteriores. Os termos sem
+    # correção segura continuam reprovando o candidato; os termos com correção
+    # verificada abaixo são normalizados antes do gate e ficam registrados no QA.
     "revindicando", "bradão", "bradio", "idô", "crescentos", "dilhé", "pim",
     "trefa", "vítimo", "lulia", "latrão", "divestindo", "danapolítica", "coneste",
     "médo", "jambos", "violins",
+}
+# Correções determinísticas de ASR com evidência ortográfica/contextual forte.
+# Não altera timestamps nem cria conteúdo: troca somente o token reconhecido.
+CAPTION_SAFE_CORRECTIONS = {
+    "médo": "medo",
+    "violins": "Aviões",
 }
 CAPTION_MIN_WORD_PROBABILITY = float(os.environ.get("CAPTION_MIN_WORD_PROBABILITY", "0.40"))
 CAPTION_SPELLING_MIN_ZIPF = float(os.environ.get("CAPTION_SPELLING_MIN_ZIPF", "2.30"))
@@ -676,6 +682,20 @@ def word_token(value: str) -> str:
     return re.sub(r"[^\wÀ-ÿ]", "", value.lower())
 
 
+def correct_caption_word(value: str) -> str:
+    """Corrige apenas tokens ASR previamente validados, preservando pontuação."""
+    match = re.fullmatch(r"([^\wÀ-ÿ]*)([\wÀ-ÿ]+)([^\wÀ-ÿ]*)", value)
+    if not match:
+        return value
+    prefix, token, suffix = match.groups()
+    replacement = CAPTION_SAFE_CORRECTIONS.get(word_token(token))
+    if not replacement:
+        return value
+    if replacement == "medo" and token[:1].isupper():
+        replacement = replacement.capitalize()
+    return f"{prefix}{replacement}{suffix}"
+
+
 def _caption_context_tokens() -> set[str]:
     """Retorna palavras conhecidas pelo contexto da fonte, sem reescrever a fala."""
     allowed = set(CAPTION_ALLOWED_TOKENS)
@@ -824,10 +844,12 @@ def caption_chunks(segments: list[Segment], candidate: Candidate) -> list[list[d
             start = max(candidate.start, float(word["start"]))
             end = min(candidate.end, float(word["end"]))
             if end > start:
+                corrected_text = correct_caption_word(text)
                 words.append({
                     "start": start,
                     "end": end,
-                    "word": text,
+                    "word": corrected_text,
+                    "source_word": text,
                     "probability": word.get("probability"),
                 })
 
@@ -892,12 +914,20 @@ def validate_captions(segments: list[Segment], candidate: Candidate, margin_v: i
     issues: list[str] = []
     warnings: list[str] = []
     intervals: list[dict[str, Any]] = []
+    corrections: list[dict[str, Any]] = []
     previous_end: float | None = None
 
     if not chunks:
         issues.append("nenhum bloco de legenda foi gerado")
 
     for index, chunk in enumerate(chunks, 1):
+        for item in chunk:
+            original = str(item.get("source_word", item.get("word", ""))).strip()
+            corrected = str(item.get("word", "")).strip()
+            if original and corrected and original != corrected:
+                correction = {"block": index, "from": original, "to": corrected}
+                if correction not in corrections:
+                    corrections.append(correction)
         labels = [str(item.get("word", "")).strip() for item in chunk if str(item.get("word", "")).strip()]
         text = " ".join(labels)
         suspect_tokens = caption_spelling_issues(labels)
@@ -964,7 +994,8 @@ def validate_captions(segments: list[Segment], candidate: Candidate, margin_v: i
         "passed": not issues,
         "issues": issues,
         "warnings": warnings,
-        "review_required": bool(warnings),
+        "corrections": corrections,
+        "review_required": bool(warnings or corrections),
         "blocks": len(intervals),
         "max_line_chars": max((max(item["line_lengths"], default=0) for item in intervals), default=0),
         "margin_v": margin_v,

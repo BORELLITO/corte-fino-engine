@@ -1,6 +1,7 @@
 from main import (
     CAPTION_ALLOWED_TOKENS,
     CAPTION_MARGIN_V,
+    correct_caption_word,
     caption_spelling_issues,
     caption_spelling_warnings,
     enrich_clip,
@@ -12,6 +13,13 @@ from main import (
 
 def test_caption_gate_flags_known_asr_error():
     assert "médo" in caption_spelling_issues(["Médo"])
+
+
+def test_caption_safe_corrections_are_explicit_and_punctuation_safe():
+    assert correct_caption_word("Médo") == "Medo"
+    assert correct_caption_word("violins") == "Aviões"
+    assert correct_caption_word("violins,") == "Aviões,"
+    assert correct_caption_word("panoís") == "panoís"
 
 
 def test_caption_gate_does_not_block_names_slang_or_valid_loanwords():
