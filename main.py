@@ -8,7 +8,6 @@ import shutil
 import subprocess
 import sys
 import time
-import zipfile
 from dataclasses import asdict, dataclass, field
 from datetime import datetime, timezone
 from pathlib import Path
@@ -47,6 +46,11 @@ CAPTION_MIN_DURATION = float(os.environ.get("CAPTION_MIN_DURATION", "0.24"))
 CAPTION_MAX_DURATION = float(os.environ.get("CAPTION_MAX_DURATION", "4.0"))
 CAPTION_MAX_GAP = float(os.environ.get("CAPTION_MAX_GAP", "1.5"))
 CAPTION_SYNC_TOLERANCE = float(os.environ.get("CAPTION_SYNC_TOLERANCE", "0.35"))
+THUMB_WIDTH = 1080
+THUMB_HEIGHT = 1920
+THUMB_FRAME_Y = int(os.environ.get("THUMB_FRAME_Y", "420"))
+THUMB_HEADLINE_Y = int(os.environ.get("THUMB_HEADLINE_Y", "1120"))
+THUMB_FONT_SIZE = int(os.environ.get("THUMB_FONT_SIZE", "68"))
 CAPTION_SUSPECT_TOKENS = {
     # Erros recorrentes de ASR observados em revisões anteriores. Eles não são
     # corrigidos automaticamente: reprovam o candidato para que outro momento
@@ -68,8 +72,7 @@ WORK = ROOT / "work"
 OUTPUT = ROOT / "output"
 SOURCE_DIR = WORK / "source"
 CLIPS_DIR = OUTPUT / "clips"
-YOUTUBE_DIR = CLIPS_DIR
-TIKTOK_DIR = CLIPS_DIR
+THUMBS_DIR = OUTPUT / "thumbs"
 
 HOOK_WORDS = {
     "absurdo", "absurda", "surpresa", "surpreendente", "inacreditável", "inacreditavel",
@@ -194,8 +197,8 @@ def clean() -> None:
         if path.exists():
             shutil.rmtree(path)
     SOURCE_DIR.mkdir(parents=True, exist_ok=True)
-    YOUTUBE_DIR.mkdir(parents=True, exist_ok=True)
-    TIKTOK_DIR.mkdir(parents=True, exist_ok=True)
+    CLIPS_DIR.mkdir(parents=True, exist_ok=True)
+    THUMBS_DIR.mkdir(parents=True, exist_ok=True)
 
 
 def urls_from_sources() -> list[str]:
@@ -1023,10 +1026,12 @@ def build_filter_complex(caption_path: str) -> str:
         "[bg]scale=1080:1920:force_original_aspect_ratio=increase,crop=1080:1920,gblur=sigma=22[bg];"
         "[fg]scale=1080:1920:force_original_aspect_ratio=decrease[fg];"
         f"[bg][fg]overlay=(W-w)/2:(H-h)/2,subtitles='{caption_path}':original_size=1080x1920,"
-        # Assinatura superior direita: CORTEFINO por extenso, compacta e discreta.
-        "drawbox=x=iw-286:y=34:w=254:h=56:color=0x050505@0.72:t=fill,"
-        "drawbox=x=iw-286:y=34:w=3:h=56:color=0xB85A3C@0.96:t=fill,"
-        "drawtext=fontfile=/usr/share/fonts/truetype/dejavu/DejaVuSansCondensed-Bold.ttf:text='CORTEFINO':fontcolor=0xF5F5F4@0.96:fontsize=26:x=w-272:y=48[v]"
+        # Assinatura superior direita: CORTE / FINO, compacta e discreta.
+        "drawbox=x=iw-300:y=34:w=268:h=56:color=0x050505@0.72:t=fill,"
+        "drawbox=x=iw-300:y=34:w=3:h=56:color=0xB85A3C@0.96:t=fill,"
+        "drawtext=fontfile=/usr/share/fonts/truetype/dejavu/DejaVuSansCondensed-Bold.ttf:text='CORTE':fontcolor=0xF5F5F4@0.96:fontsize=22:x=w-286:y=49,"
+        "drawtext=fontfile=/usr/share/fonts/truetype/dejavu/DejaVuSansCondensed-Bold.ttf:text='/':fontcolor=0xB85A3C@0.96:fontsize=24:x=w-215:y=47,"
+        "drawtext=fontfile=/usr/share/fonts/truetype/dejavu/DejaVuSansCondensed-Bold.ttf:text='FINO':fontcolor=0xF5F5F4@0.96:fontsize=22:x=w-194:y=49[v]"
     )
 
 
@@ -1091,6 +1096,101 @@ def validate_video(path: Path, expected_duration: float) -> dict[str, Any]:
         "height": video.get("height") if video else None,
         "video_codec": video.get("codec_name") if video else None,
         "audio_codec": audio.get("codec_name") if audio else None,
+        "checks": checks,
+        "passed": all(checks.values()),
+    }
+
+
+def ffmpeg_path(path: Path) -> str:
+    """Escapa um caminho Linux para uso dentro de um filtro FFmpeg."""
+    return str(path).replace("\\", "\\\\").replace(":", "\\:").replace("'", "\\'")
+
+
+def thumbnail_headline(text: str, limit: int = 42) -> str:
+    """Gera manchete curta a partir da fala real, sem inventar copy editorial."""
+    cleaned = re.sub(r"\s+", " ", text).strip()
+    sentence = first_sentence(cleaned) or cleaned
+    if len(sentence) > limit:
+        sentence = sentence[:limit].rsplit(" ", 1)[0].rstrip(" ,;:!?…") + "…"
+    words = sentence.upper().split()
+    lines: list[str] = []
+    current = ""
+    for word in words:
+        candidate = f"{current} {word}".strip()
+        if current and len(candidate) > 21 and len(lines) < 1:
+            lines.append(current)
+            current = word
+        else:
+            current = candidate
+    if current:
+        lines.append(current)
+    return "\n".join(lines[:2]) or "CORTE FINO"
+
+
+def render_thumbnail(source: Path, candidate: Candidate, output: Path, number: int) -> dict[str, Any]:
+    """Cria a thumb com um frame real e um esqueleto determinístico de marca."""
+    output.parent.mkdir(parents=True, exist_ok=True)
+    temporary = output.with_name(f"{output.stem}.part{output.suffix}")
+    temporary.unlink(missing_ok=True)
+    headline = thumbnail_headline(candidate.text)
+    headline_path = WORK / f"thumb_{number:02d}.txt"
+    headline_path.write_text(headline, encoding="utf-8")
+    headline_file = ffmpeg_path(headline_path)
+    filter_complex = (
+        "[0:v]split=2[bg][fg];"
+        f"[bg]scale={THUMB_WIDTH}:{THUMB_HEIGHT}:force_original_aspect_ratio=increase,"
+        f"crop={THUMB_WIDTH}:{THUMB_HEIGHT},gblur=sigma=26,eq=brightness=-0.10[bg];"
+        f"[fg]scale=980:1080:force_original_aspect_ratio=decrease[fg];"
+        f"[bg][fg]overlay=(W-w)/2:{THUMB_FRAME_Y},"
+        "drawbox=x=42:y=42:w=996:h=1836:color=0xF5F5F4@0.82:t=2,"
+        "drawbox=x=58:y=1062:w=964:h=300:color=0x050505@0.82:t=fill,"
+        f"drawtext=fontfile=/usr/share/fonts/truetype/dejavu/DejaVuSansCondensed-Bold.ttf:"
+        f"textfile='{headline_file}':fontcolor=0xF5F5F4@0.98:fontsize={THUMB_FONT_SIZE}:"
+        f"line_spacing=8:x=86:y={THUMB_HEADLINE_Y},"
+        "drawbox=x=58:y=58:w=4:h=76:color=0xB85A3C@0.98:t=fill,"
+        "drawtext=fontfile=/usr/share/fonts/truetype/dejavu/DejaVuSansCondensed-Bold.ttf:text='CORTE':fontcolor=0xF5F5F4@0.96:fontsize=24:x=82:y=72,"
+        "drawtext=fontfile=/usr/share/fonts/truetype/dejavu/DejaVuSansCondensed-Bold.ttf:text='/':fontcolor=0xB85A3C@0.96:fontsize=26:x=158:y=70,"
+        "drawtext=fontfile=/usr/share/fonts/truetype/dejavu/DejaVuSansCondensed-Bold.ttf:text='FINO':fontcolor=0xF5F5F4@0.96:fontsize=24:x=180:y=72,"
+        "drawtext=fontfile=/usr/share/fonts/truetype/dejavu/DejaVuSansCondensed-Bold.ttf:text='C/F':fontcolor=0xB85A3C@0.96:fontsize=30:x=82:y=1800"
+    )
+    frame_time = candidate.start + max(0.25, min(candidate.duration * 0.5, candidate.duration - 0.25))
+    run([
+        "ffmpeg", "-y", "-ss", f"{frame_time:.3f}", "-i", str(source), "-frames:v", "1",
+        "-vf", filter_complex, "-an", "-c:v", "png", str(temporary),
+    ])
+    qa = validate_thumbnail(temporary, headline)
+    if qa["passed"]:
+        temporary.replace(output)
+        qa["file"] = output.name
+    else:
+        temporary.unlink(missing_ok=True)
+    qa["headline"] = headline
+    qa["frame_time"] = round(frame_time, 3)
+    return qa
+
+
+def validate_thumbnail(path: Path, headline: str) -> dict[str, Any]:
+    result = run([
+        "ffprobe", "-v", "error", "-show_streams", "-show_format", "-of", "json", str(path),
+    ], capture=True)
+    data = json.loads(result.stdout or "{}")
+    image = next((item for item in data.get("streams", []) if item.get("codec_type") == "video"), None)
+    checks = {
+        "exists": path.is_file() and path.stat().st_size > 20_000,
+        "png": bool(image and image.get("codec_name") == "png"),
+        "resolution_1080x1920": bool(image and image.get("width") == THUMB_WIDTH and image.get("height") == THUMB_HEIGHT),
+        "headline_present": bool(headline.strip()),
+    }
+    try:
+        run(["ffmpeg", "-v", "error", "-i", str(path), "-f", "null", "-"], capture=True, timeout=60)
+    except (subprocess.CalledProcessError, subprocess.TimeoutExpired):
+        checks["decodable"] = False
+    else:
+        checks["decodable"] = True
+    return {
+        "stage": "thumbnail",
+        "width": image.get("width") if image else None,
+        "height": image.get("height") if image else None,
         "checks": checks,
         "passed": all(checks.values()),
     }
@@ -1260,7 +1360,13 @@ def write_reports(
                 "manual_correction_policy": "não inventar nem corrigir a fala automaticamente; reprovar para revisão",
             },
             "framing": "quadro completo com fundo desfocado e cores originais preservadas para proteger rostos e cenário",
-            "branding": "Corte Fino discreto, sem vinheta e sem música adicionada",
+            "branding": "HUD CORTE / FINO no canto superior direito; cores da fonte preservadas; sem vinheta e sem música adicionada",
+            "thumbnails": {
+                "count": len(enriched),
+                "format": "PNG 1080x1920",
+                "source_policy": "frame real do corte; nenhuma face ou identidade gerada/alterada",
+                "skeleton": "frame real + fundo desfocado + headline fiel em branco/cobre + moldura fina + marca CORTE / FINO + C/F",
+            },
         },
     }
     (OUTPUT / "relatorio.json").write_text(json.dumps(report, ensure_ascii=False, indent=2), encoding="utf-8")
@@ -1302,7 +1408,8 @@ def write_reports(
     for index, clip in enumerate(enriched, 1):
         lines.extend([
             f"## Corte {index}",
-            f"- Arquivo vertical único (YouTube Shorts + TikTok): {clip['file']}",
+            f"- Vídeo: {clip['file']}",
+            f"- Thumbnail pareada: {clip.get('thumbnail_file', 'não gerada')}",
             f"- Tempo original: {clip['start']:.2f}s–{clip['end']:.2f}s",
             f"- Duração: {clip['duration']:.2f}s",
             f"- Nota editorial: {clip['score']}/100",
@@ -1317,14 +1424,6 @@ def write_reports(
     if error:
         lines.extend(["## Problema", error, ""])
     (OUTPUT / "relatorio.md").write_text("\n".join(lines), encoding="utf-8")
-
-
-def zip_outputs() -> None:
-    zip_path = OUTPUT / "corte-fino-resultados.zip"
-    with zipfile.ZipFile(zip_path, "w", zipfile.ZIP_DEFLATED) as archive:
-        for path in OUTPUT.rglob("*"):
-            if path.is_file() and path != zip_path:
-                archive.write(path, path.relative_to(OUTPUT))
 
 
 def main() -> int:
@@ -1416,12 +1515,28 @@ def main() -> int:
                     "nenhum candidato reserva será usado."
                 )
 
+            thumbnail_output = THUMBS_DIR / f"corte_fino_{clip_number:02d}_thumb.png"
+            thumbnail_qa = render_thumbnail(source, candidate, thumbnail_output, clip_number)
+            qa.append({
+                "platform": "vertical_shared",
+                "clip": clip_number,
+                "stage": "thumbnail",
+                "fatal": not thumbnail_qa["passed"],
+                **thumbnail_qa,
+            })
+            if not thumbnail_qa["passed"]:
+                candidate.accepted = False
+                candidate.rejection = "reprovado no QA técnico da thumbnail"
+                raise RuntimeError(
+                    f"Top 5 fechado reprovou na thumbnail do corte {clip_number}; "
+                    "nenhum candidato reserva será usado."
+                )
+
             relative_output = str(output.relative_to(OUTPUT))
+            relative_thumbnail = str(thumbnail_output.relative_to(OUTPUT))
             clips.append({
                 "file": relative_output,
-                # Um único arquivo vertical canônico atende YouTube Shorts e TikTok.
-                "youtube_file": relative_output,
-                "tiktok_file": relative_output,
+                "thumbnail_file": relative_thumbnail,
                 "render_format": "vertical_9x16_shared",
                 "start": candidate.start,
                 "end": candidate.end,
@@ -1443,7 +1558,7 @@ def main() -> int:
             )
         if not clips:
             raise RuntimeError(
-                "Nenhum corte passou pelo gate automático de legenda e QA técnico; "
+                "Nenhum corte passou pelo gate automático de legenda, vídeo e thumbnail; "
                 "a fonte permanece disponível para nova tentativa."
             )
         success = True
@@ -1456,9 +1571,9 @@ def main() -> int:
     finally:
         if OUTPUT.exists():
             write_reports(source_url, source_hash, info, clips, candidates, qa, error, profile)
-            zip_outputs()
     return 0 if success else 1
 
 
 if __name__ == "__main__":
     raise SystemExit(main())
+

@@ -6,6 +6,7 @@ from main import (
     enrich_clip,
     rights_info,
     build_filter_complex,
+    thumbnail_headline,
 )
 
 
@@ -87,7 +88,16 @@ def test_source_colors_are_preserved_and_hud_keeps_brand_palette():
     assert "0x050505" in filter_complex
     assert "0xF5F5F4" in filter_complex
     assert "0xB85A3C" in filter_complex
-    assert "text='CORTEFINO'" in filter_complex
+    assert "text='CORTE'" in filter_complex
+    assert "text='/'" in filter_complex
+    assert "text='FINO'" in filter_complex
     assert "text='C'" not in filter_complex
-    assert "iw-286" in filter_complex
+    assert "w-286" in filter_complex
     assert CAPTION_MARGIN_V == 390
+
+
+def test_thumbnail_headline_is_derived_from_real_clip_text():
+    headline = thumbnail_headline("A verdade que ninguém contou sobre o caso")
+    assert headline == "A VERDADE QUE NINGUÉM\nCONTOU SOBRE O CASO"
+    assert len(headline.splitlines()) <= 2
+

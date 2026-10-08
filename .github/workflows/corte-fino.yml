@@ -302,8 +302,17 @@ jobs:
                       item for item in data.get("qa", [])
                       if item.get("stage") == "rendered_clip"
                   ]
-                  if not rendered_qa or not all(item.get("passed") for item in rendered_qa):
-                      print("Gate de prontidão reprovado: existe QA final sem aprovação.")
+                  thumbnail_qa = [
+                      item for item in data.get("qa", [])
+                      if item.get("stage") == "thumbnail"
+                  ]
+                  if (
+                      len(data.get("clips", [])) != 5
+                      or len(rendered_qa) != 5
+                      or len(thumbnail_qa) != 5
+                      or not all(item.get("passed") for item in rendered_qa + thumbnail_qa)
+                  ):
+                      print("Gate de prontidão reprovado: a rodada não tem 5 vídeos e 5 thumbnails aprovados.")
                       code = 1
                   else:
                       with open(os.environ["GITHUB_ENV"], "a", encoding="utf-8") as env_file:
@@ -314,7 +323,7 @@ jobs:
             python main.py
           fi
 
-      - name: Enviar resultados para o Google Drive
+      - name: Enviar 5 vídeos e 5 thumbnails para o Google Drive
         id: upload_drive
         if: ${{ steps.generate_cuts.outcome == 'success' && env.NO_SOURCE != '1' && env.EDITORIAL_EMPTY != '1' && env.PROCESSING_READY == '1' }}
         env:
@@ -327,10 +336,7 @@ jobs:
           import json
           import mimetypes
           import os
-          import zipfile
           import re
-          import unicodedata
-          from datetime import datetime, timezone
           from pathlib import Path
 
           from google.auth.transport.requests import Request
@@ -339,70 +345,71 @@ jobs:
           from googleapiclient.errors import HttpError
           from googleapiclient.http import MediaFileUpload
 
-          def normalize_name(value, fallback):
-              value = unicodedata.normalize("NFKD", str(value or "")).encode("ascii", "ignore").decode("ascii")
-              value = re.sub(r"[^A-Za-z0-9]+", "-", value).strip("-")
-              return (value[:90] or fallback).strip("-")
+          FOLDER_MIME = "application/vnd.google-apps.folder"
 
-          def find_child(drive, parent_id, name, mime_type=None):
+          def folder_id(value):
+              value = (value or "").strip()
+              if "/folders/" in value:
+                  value = value.split("/folders/", 1)[1].split("?", 1)[0].split("/", 1)[0].strip()
+              return value
+
+          def clean_display_name(value, fallback):
+              value = re.sub(r"[\\/:*?\"<>|\x00-\x1f]+", "-", str(value or ""))
+              value = re.sub(r"\s+", " ", value).strip(" .-")
+              return (value[:120] or fallback)
+
+          def find_child(drive, parent_id, name):
               escaped = name.replace("'", "\\'")
               query = f"'{parent_id}' in parents and trashed = false and name = '{escaped}'"
-              if mime_type:
-                  query += f" and mimeType = '{mime_type}'"
-              files = drive.files().list(
-                  q=query, pageSize=1, fields="files(id,name,mimeType,webViewLink)"
+              return drive.files().list(
+                  q=query,
+                  pageSize=10,
+                  fields="files(id,name,mimeType,size,webViewLink,parents)",
               ).execute().get("files", [])
-              return files[0] if files else None
 
-          def get_or_create_folder(drive, name, parent_id):
-              existing = find_child(
-                  drive, parent_id, name, "application/vnd.google-apps.folder"
-              )
-              if existing:
-                  return existing
+          def get_or_create_folder(drive, parent_id, name):
+              matches = find_child(drive, parent_id, name)
+              folders = [item for item in matches if item.get("mimeType") == FOLDER_MIME]
+              if folders:
+                  return folders[0]
+              if matches:
+                  raise RuntimeError(f"Já existe um arquivo com o nome da pasta da rodada: {name}")
               return drive.files().create(
-                  body={"name": name, "mimeType": "application/vnd.google-apps.folder", "parents": [parent_id]},
+                  body={"name": name, "mimeType": FOLDER_MIME, "parents": [parent_id]},
                   fields="id,name,webViewLink",
               ).execute()
 
-          def upload_file(drive, file_path, parent_id, display_name=None):
-              name = display_name or file_path.name
-              existing = find_child(drive, parent_id, name)
+          def upload_idempotent(drive, path, parent_id, name):
+              matches = find_child(drive, parent_id, name)
+              if len(matches) > 1:
+                  raise RuntimeError(f"Duplicidade detectada no Drive para {name}")
               media = MediaFileUpload(
-                  str(file_path),
-                  mimetype=mimetypes.guess_type(file_path.name)[0] or "application/octet-stream",
+                  str(path),
+                  mimetype=mimetypes.guess_type(name)[0] or "application/octet-stream",
                   resumable=True,
               )
-              if existing:
-                  return drive.files().update(
-                      fileId=existing["id"], media_body=media, fields="id,name,webViewLink"
+              if matches:
+                  item = drive.files().update(
+                      fileId=matches[0]["id"],
+                      media_body=media,
+                      fields="id,name,mimeType,size,webViewLink,parents",
                   ).execute()
-              metadata = {"name": name, "parents": [parent_id]}
-              return drive.files().create(
-                  body=metadata, media_body=media, fields="id,name,webViewLink"
+              else:
+                  item = drive.files().create(
+                      body={"name": name, "parents": [parent_id]},
+                      media_body=media,
+                      fields="id,name,mimeType,size,webViewLink,parents",
+                  ).execute()
+              verified = drive.files().get(
+                  fileId=item["id"],
+                  fields="id,name,mimeType,size,webViewLink,parents,trashed",
               ).execute()
+              if verified.get("trashed") or int(verified.get("size") or 0) <= 0:
+                  raise RuntimeError(f"Upload não verificável para {name}")
+              return verified
 
-          def ensure_shortcut(drive, name, target_id, parent_id):
-              existing = find_child(
-                  drive, parent_id, name, "application/vnd.google-apps.shortcut"
-              )
-              if existing:
-                  return existing
-              return drive.files().create(
-                  body={
-                      "name": name,
-                      "mimeType": "application/vnd.google-apps.shortcut",
-                      "parents": [parent_id],
-                      "shortcutDetails": {"targetId": target_id},
-                  },
-                  fields="id,name,mimeType,webViewLink,shortcutDetails",
-              ).execute()
-
-          raw_folder_id = os.environ.get("DRIVE_FOLDER_ID", "").strip()
-          if "/folders/" in raw_folder_id:
-              raw_folder_id = raw_folder_id.split("/folders/", 1)[1].split("?", 1)[0].split("/", 1)[0].strip()
-          folder_id = raw_folder_id if raw_folder_id not in {"", ".", ".."} else ""
-          if not folder_id:
+          raw_parent = folder_id(os.environ.get("DRIVE_FOLDER_ID"))
+          if not raw_parent:
               raise SystemExit("DRIVE_FOLDER_ID não está configurado; nenhum destino alternativo será criado.")
 
           credentials = Credentials(
@@ -417,151 +424,97 @@ jobs:
           drive = build("drive", "v3", credentials=credentials, cache_discovery=False)
 
           try:
-              parent = drive.files().get(fileId=folder_id, fields="id,name,mimeType,trashed").execute()
+              parent = drive.files().get(
+                  fileId=raw_parent,
+                  fields="id,name,mimeType,trashed,capabilities(canAddChildren)",
+              ).execute()
           except HttpError as exc:
-              raise RuntimeError(f"DRIVE_FOLDER_ID inválido ou inacessível: {folder_id}") from exc
-          if parent.get("mimeType") != "application/vnd.google-apps.folder" or parent.get("trashed"):
-              raise RuntimeError(f"DRIVE_FOLDER_ID não aponta para uma pasta ativa: {folder_id}")
+              raise RuntimeError(f"DRIVE_FOLDER_ID inválido ou inacessível: {raw_parent}") from exc
+          if parent.get("mimeType") != FOLDER_MIME or parent.get("trashed"):
+              raise RuntimeError("DRIVE_FOLDER_ID não aponta para uma pasta ativa.")
+          if parent.get("capabilities", {}).get("canAddChildren") is False:
+              raise RuntimeError("A conta não pode fazer upload em DRIVE_FOLDER_ID.")
 
-          report_data = {}
-          report_path = Path("output/relatorio.json")
-          if report_path.exists():
-              try:
-                  report_data = json.loads(report_path.read_text(encoding="utf-8"))
-              except json.JSONDecodeError:
-                  report_data = {}
+          report = json.loads(Path("output/relatorio.json").read_text(encoding="utf-8"))
+          clips = report.get("clips", [])
+          if len(clips) != 5:
+              raise RuntimeError(f"Entrega bloqueada: esperados 5 cortes, encontrados {len(clips)}.")
 
-          source_meta = report_data.get("source") or {}
-          source_title = source_meta.get("title") or os.environ.get("SOURCE_TITLE") or "fonte autorizada"
-          source_slug = normalize_name(Path(str(source_title)).stem, "fonte-autorizada")
+          source_meta = report.get("source") or {}
+          source_title = clean_display_name(
+              Path(str(source_meta.get("title") or os.environ.get("SOURCE_TITLE") or "fonte")).stem,
+              "fonte autorizada",
+          )
           source_hash = str(source_meta.get("fingerprint_sha256") or "").strip().lower()
-          if source_hash:
-              batch_name = f"{source_hash[:12]} - {source_slug}"
-          else:
-              stamp = datetime.now(timezone.utc).strftime("%Y-%m-%d_%H-%M-%S")
-              batch_name = f"{stamp} - {source_slug}"
-          batch_folder = get_or_create_folder(drive, batch_name, parent["id"])
-          youtube_folder = get_or_create_folder(drive, "01 - YouTube Shorts", batch_folder["id"])
-          tiktok_folder = get_or_create_folder(drive, "02 - TikTok", batch_folder["id"])
-          texts_folder = get_or_create_folder(drive, "03 - Textos para postagem", batch_folder["id"])
-          reports_folder = get_or_create_folder(drive, "04 - Relatorios", batch_folder["id"])
+          if not source_hash:
+              raise RuntimeError("Entrega bloqueada: fingerprint da fonte ausente.")
+          batch_name = f"{source_hash[:12]} - {source_title}"
+          batch = get_or_create_folder(drive, raw_parent, batch_name)
 
-          posting_dir = Path("output/postagem")
-          posting_dir.mkdir(parents=True, exist_ok=True)
-          clips = report_data.get("clips", [])
-          guide = [
-              "# Corte Fino — fila pronta para postagem",
-              "",
-              f"Fonte: {source_title}",
-              f"Canal: {(report_data.get('source') or {}).get('channel') or report_data.get('source_channel') or 'não identificado'}",
-              f"Direitos: {(report_data.get('rights') or {}).get('status') or report_data.get('rights_status') or 'REVISÃO DE DIREITOS'}",
-              "",
-              "Publique na ordem abaixo somente após confirmar a licença/autorização da fonte.",
-              "",
-          ]
+          expected = []
+          local_pairs = []
           for index, clip in enumerate(clips, 1):
-              file_name = Path(
-                  clip.get("file") or clip.get("youtube_file") or clip.get("tiktok_file") or ""
-              ).name
-              post_text = (
-                  f"# Corte Fino — Corte {index:02d}\n\n"
-                  f"Arquivo único para YouTube Shorts e TikTok: {file_name}\n\n"
-                  "## YouTube Shorts\n"
-                  f"Título: {clip.get('youtube_title', '')}\n\n"
-                  "Descrição:\n"
-                  f"{clip.get('youtube_description', '')}\n\n"
-                  "## TikTok\n"
-                  "Legenda:\n"
-                  f"{clip.get('tiktok_caption', '')}\n\n"
-                  f"Pergunta para comentários: {clip.get('comment_question', '')}\n"
-                  f"Nota editorial: {clip.get('score', '')} | Gatilho: {clip.get('trigger', '')}\n"
+              video_path = Path("output") / clip["file"]
+              thumb_path = Path("output") / clip["thumbnail_file"]
+              if not video_path.is_file() or not thumb_path.is_file():
+                  raise RuntimeError(f"Par incompleto no corte {index:02d}.")
+              video_name = f"{source_title} - {index:02d}.mp4"
+              thumb_name = f"{source_title} - {index:02d} - THUMB.png"
+              expected.extend([video_name, thumb_name])
+              local_pairs.append((video_path, video_name, thumb_path, thumb_name))
+
+          children = drive.files().list(
+              q=f"'{batch['id']}' in parents and trashed = false",
+              pageSize=100,
+              fields="files(id,name,mimeType,size,webViewLink,parents)",
+          ).execute().get("files", [])
+          unexpected = sorted(
+              item.get("name", "")
+              for item in children
+              if item.get("name") not in expected
+          )
+          if unexpected:
+              raise RuntimeError(
+                  "A pasta da rodada já contém arquivos fora do contrato; "
+                  "nenhum arquivo foi removido: " + ", ".join(unexpected)
               )
-              (posting_dir / f"{index:02d} - Postagem.md").write_text(post_text, encoding="utf-8")
-              guide.extend([
-                  f"## {index:02d} — {clip.get('trigger', 'curiosidade')}",
-                  f"- Arquivo único: 01 - YouTube Shorts/{file_name}",
-                  f"- Atalho TikTok: 02 - TikTok/{file_name}",
-                  f"- Motivo: {clip.get('editorial_reason', '')}",
-                  "",
-              ])
-          (posting_dir / "00 - LEIA-ME.md").write_text("\n".join(guide), encoding="utf-8")
 
-          zip_path = Path("output/corte-fino-resultados.zip")
-          with zipfile.ZipFile(zip_path, "w", zipfile.ZIP_DEFLATED) as archive:
-              for path in Path("output").rglob("*"):
-                  if path.is_file() and path != zip_path:
-                      archive.write(path, path.relative_to("output"))
+          uploaded = []
+          for video_path, video_name, thumb_path, thumb_name in local_pairs:
+              uploaded.append(upload_idempotent(drive, video_path, batch["id"], video_name))
+              uploaded.append(upload_idempotent(drive, thumb_path, batch["id"], thumb_name))
 
+          final_children = drive.files().list(
+              q=f"'{batch['id']}' in parents and trashed = false",
+              pageSize=100,
+              fields="files(id,name,mimeType,size,webViewLink,parents)",
+          ).execute().get("files", [])
+          by_name = {item.get("name"): item for item in final_children}
+          missing = [name for name in expected if name not in by_name]
+          if missing or len(final_children) != 10:
+              raise RuntimeError(
+                  f"Verificação final falhou: arquivos={len(final_children)}, ausentes={missing}"
+              )
+          if any(int(by_name[name].get("size") or 0) <= 0 for name in expected):
+              raise RuntimeError("Verificação final falhou: existe arquivo vazio.")
           manifest = {
-              "batch_folder": f"https://drive.google.com/drive/folders/{batch_folder['id']}",
+              "batch_folder": batch.get("webViewLink") or f"https://drive.google.com/drive/folders/{batch['id']}",
               "source_fingerprint_sha256": source_hash,
               "source_title": source_title,
-              "uploaded_files": [],
+              "file_count": 10,
+              "files": [
+                  {"name": name, "id": by_name[name]["id"], "webViewLink": by_name[name].get("webViewLink")}
+                  for name in expected
+              ],
           }
-
-          enviados = []
-          clips_dir = Path("output/clips")
-          for file_path in sorted(clips_dir.glob("*.mp4")):
-              # Renderiza/upload do MP4 uma única vez; TikTok recebe um atalho no Drive.
-              result = upload_file(drive, file_path, youtube_folder["id"])
-              enviados.append(result)
-              print(f"Enviado: {result.get('name')}")
-              shortcut = ensure_shortcut(
-                  drive,
-                  file_path.name,
-                  result["id"],
-                  tiktok_folder["id"],
-              )
-              enviados.append(shortcut)
-              print(f"Atalho TikTok: {shortcut.get('name')}")
-
-          for file_path in sorted(posting_dir.glob("*.md")):
-              result = upload_file(drive, file_path, texts_folder["id"])
-              enviados.append(result)
-              print(f"Enviado: {result.get('name')}")
-
-          for file_path in (
-              Path("output/relatorio.md"),
-              Path("output/relatorio.json"),
-              Path("output/qa.json"),
-              Path("output/candidate_scores.json"),
-          ):
-              if file_path.exists():
-                  result = upload_file(drive, file_path, reports_folder["id"])
-                  enviados.append(result)
-                  print(f"Enviado: {result.get('name')}")
-
-          zip_path = Path("output/corte-fino-resultados.zip")
-          if zip_path.exists():
-              result = upload_file(drive, zip_path, batch_folder["id"], f"Corte Fino - {batch_name} - pacote completo.zip")
-              enviados.append(result)
-              print(f"Enviado: {result.get('name')}")
-
-          manifest["uploaded_files"] = [
-              {"name": item.get("name"), "id": item.get("id"), "webViewLink": item.get("webViewLink")}
-              for item in enviados
-          ]
-          manifest_path = Path("output/drive_manifest.json")
-          manifest_path.write_text(json.dumps(manifest, ensure_ascii=False, indent=2), encoding="utf-8")
-          manifest_result = upload_file(drive, manifest_path, reports_folder["id"])
-          enviados.append(manifest_result)
-
-          # Recria o ZIP depois do manifesto para que a cópia compactada também
-          # contenha os links e IDs da rodada.
-          with zipfile.ZipFile(zip_path, "w", zipfile.ZIP_DEFLATED) as archive:
-              for path in Path("output").rglob("*"):
-                  if path.is_file() and path != zip_path:
-                      archive.write(path, path.relative_to("output"))
-          zip_result = upload_file(
-              drive,
-              zip_path,
-              batch_folder["id"],
-              f"Corte Fino - {batch_name} - pacote completo.zip",
+          Path("output/drive_manifest.json").write_text(
+              json.dumps(manifest, ensure_ascii=False, indent=2),
+              encoding="utf-8",
           )
-          enviados.append(zip_result)
-
-          print(f"Pasta da rodada: https://drive.google.com/drive/folders/{batch_folder['id']}")
-          print(f"Total enviado ao Drive: {len(enviados)} arquivo(s).")
+          print(f"Pasta da rodada: {manifest['batch_folder']}")
+          print("Entrega verificada: 5 MP4 + 5 THUMB, sem subpastas e sem arquivos extras.")
+          for item in manifest["files"]:
+              print(f"{item['name']}: {item['webViewLink']}")
           PY
 
       - name: Marcar entrada como processada
@@ -625,3 +578,5 @@ jobs:
           path: output/
           if-no-files-found: ignore
           retention-days: 7
+
+
