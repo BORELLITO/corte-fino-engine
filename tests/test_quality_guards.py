@@ -1,6 +1,11 @@
 from main import (
     CAPTION_ALLOWED_TOKENS,
     CAPTION_MARGIN_V,
+    CAPTION_MAX_CPS,
+    Candidate,
+    Segment,
+    caption_chunks,
+    caption_layout,
     correct_caption_word,
     repair_short_caption_chunks,
     caption_spelling_issues,
@@ -12,6 +17,7 @@ from main import (
     VIDEO_AUDIO_BITRATE,
     VIDEO_CRF,
     VIDEO_PRESET,
+    LOGO_PATH,
 )
 
 
@@ -121,15 +127,41 @@ def test_source_colors_are_preserved_and_hud_keeps_brand_palette():
     assert "saturation=0.80" not in filter_complex
     assert "gblur=sigma=22" in filter_complex
     assert "flags=lanczos" in filter_complex
-    assert "0x050505" in filter_complex
-    assert "0xF5F5F4" in filter_complex
-    assert "0xB85A3C" in filter_complex
-    assert "text='CORTE'" in filter_complex
-    assert "text='/'" in filter_complex
-    assert "text='FINO'" in filter_complex
-    assert "text='C'" not in filter_complex
-    assert "w-286" in filter_complex
+    assert "movie='" in filter_complex
+    assert "corte_fino_logo.png" in filter_complex
+    assert "loop=loop=-1" in filter_complex
+    assert "drawbox=" not in filter_complex
+    assert "drawtext=" not in filter_complex
     assert CAPTION_MARGIN_V == 390
+    assert LOGO_PATH.name == "corte_fino_logo.png"
+
+
+def test_caption_layout_respects_units_of_meaning():
+    labels = "o governo anunciou uma nova medida importante".split()
+    break_at, lengths = caption_layout(labels)
+    assert break_at is not None
+    left = " ".join(labels[:break_at])
+    right = " ".join(labels[break_at:])
+    assert not left.endswith((" de", " do", " da", " em", " para", " por"))
+    assert not right.startswith(("de ", "do ", "da ", "em ", "para ", "por "))
+    assert max(lengths) <= 32
+
+
+def test_caption_quality_exposes_reading_speed_limit():
+    assert CAPTION_MAX_CPS == 18.0
+
+
+def test_caption_chunks_never_duplicate_words_when_splitting():
+    words = [
+        {"start": index * 0.12, "end": index * 0.12 + 0.08, "word": word}
+        for index, word in enumerate("esta é uma legenda de teste para validar a logo oficial".split())
+    ]
+    text = " ".join(item["word"] for item in words)
+    segment = Segment(start=0.0, end=2.0, text=text, words=words)
+    candidate = Candidate(start=0.0, end=2.0, text=text, score=90)
+    chunks = caption_chunks([segment], candidate)
+    flattened = [item["word"] for chunk in chunks for item in chunk]
+    assert flattened == [item["word"] for item in words]
 
 
 def test_thumbnail_headline_is_derived_from_real_clip_text():

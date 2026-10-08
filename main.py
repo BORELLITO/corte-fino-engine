@@ -48,10 +48,12 @@ CAPTION_MARGIN_V = int(os.environ.get("CAPTION_MARGIN_V", "390"))
 YOUTUBE_CAPTION_MARGIN_V = int(os.environ.get("YOUTUBE_CAPTION_MARGIN_V", str(CAPTION_MARGIN_V)))
 TIKTOK_CAPTION_MARGIN_V = CAPTION_MARGIN_V  # compatibilidade: render único para as duas plataformas
 CAPTION_MAX_LINE_CHARS = int(os.environ.get("CAPTION_MAX_LINE_CHARS", "32"))
-CAPTION_MIN_DURATION = float(os.environ.get("CAPTION_MIN_DURATION", "0.24"))
+CAPTION_MIN_DURATION = float(os.environ.get("CAPTION_MIN_DURATION", "0.35"))
 CAPTION_MAX_DURATION = float(os.environ.get("CAPTION_MAX_DURATION", "4.0"))
 CAPTION_MAX_GAP = float(os.environ.get("CAPTION_MAX_GAP", "1.5"))
 CAPTION_SYNC_TOLERANCE = float(os.environ.get("CAPTION_SYNC_TOLERANCE", "0.35"))
+CAPTION_MAX_CPS = float(os.environ.get("CAPTION_MAX_CPS", "18.0"))
+CAPTION_LOW_CONFIDENCE_FATAL = os.environ.get("CAPTION_LOW_CONFIDENCE_FATAL", "1").strip().lower() in {"1", "true", "yes", "sim"}
 THUMB_WIDTH = 1080
 THUMB_HEIGHT = 1920
 THUMB_FRAME_Y = int(os.environ.get("THUMB_FRAME_Y", "420"))
@@ -63,7 +65,7 @@ CAPTION_SUSPECT_TOKENS = {
     # verificada abaixo são normalizados antes do gate e ficam registrados no QA.
     "revindicando", "bradão", "bradio", "idô", "crescentos", "dilhé", "pim",
     "trefa", "vítimo", "lulia", "latrão", "divestindo", "danapolítica", "coneste",
-    "médo", "jambos", "violins", "latrão", "danapolítica", "coneste",
+    "médo", "jambos", "violins",
 }
 # Correções determinísticas de ASR com evidência ortográfica/contextual forte.
 # Não altera timestamps nem cria conteúdo: troca somente o token reconhecido.
@@ -77,7 +79,7 @@ CAPTION_SAFE_CORRECTIONS = {
     "idô": "segundo",
     "crescentos": "crescendo",
     "dilhé": "devia",
-        "latrão": "ladrão",
+    "latrão": "ladrão",
     "danapolítica": "na política",
     "coneste": "conhece",
     "pim": "PIB",
@@ -96,6 +98,11 @@ OUTPUT = ROOT / "output"
 SOURCE_DIR = WORK / "source"
 CLIPS_DIR = OUTPUT / "clips"
 THUMBS_DIR = OUTPUT / "thumbs"
+ASSETS_DIR = ROOT / "assets"
+LOGO_PATH = ASSETS_DIR / "corte_fino_logo.png"
+LOGO_WIDTH = int(os.environ.get("LOGO_WIDTH", "270"))
+LOGO_MARGIN_RIGHT = int(os.environ.get("LOGO_MARGIN_RIGHT", "54"))
+LOGO_MARGIN_TOP = int(os.environ.get("LOGO_MARGIN_TOP", "72"))
 
 HOOK_WORDS = {
     "absurdo", "absurda", "surpresa", "surpreendente", "inacreditável", "inacreditavel",
@@ -767,25 +774,102 @@ def caption_spelling_warnings(labels: list[str]) -> list[str]:
     return sorted(warnings)
 
 
+CAPTION_FUNCTION_WORDS = {
+    "a", "as", "à", "às", "ao", "aos", "com", "da", "das", "de", "do", "dos",
+    "em", "entre", "na", "nas", "no", "nos", "o", "os", "para", "pela", "pelas",
+    "pelo", "pelos", "por", "que", "se", "um", "uma", "uns", "umas",
+}
+CAPTION_WEAK_CONNECTORS = {"e", "ou", "mas", "nem", "porque", "porém", "porem", "como"}
+
+
+def caption_break_penalty(labels: list[str], index: int) -> float:
+    """Pontua uma quebra linguística: menor é melhor.
+
+    O limite de caracteres continua sendo obrigatório, mas não pode ser o único
+    critério. Esta função evita separar preposição/artigo do complemento e
+    favorece pontuação e pausas naturais.
+    """
+    if index <= 0 or index >= len(labels):
+        return 999.0
+    left = str(labels[index - 1]).strip()
+    right = str(labels[index]).strip()
+    left_token = word_token(left)
+    right_token = word_token(right)
+    left_text = " ".join(labels[:index])
+    right_text = " ".join(labels[index:])
+    penalty = abs(len(left_text) - len(right_text)) * 0.18
+    if re.search(r"[.!?…,:;]$", left):
+        penalty -= 10.0
+    if left_token in CAPTION_FUNCTION_WORDS:
+        penalty += 12.0
+    if right_token in CAPTION_FUNCTION_WORDS:
+        penalty += 8.0
+    if left_token in CAPTION_WEAK_CONNECTORS:
+        penalty += 4.0
+    if right_token in CAPTION_WEAK_CONNECTORS:
+        penalty += 2.0
+    if len(left_text) < 8 or len(right_text) < 8:
+        penalty += 2.0
+    return penalty
+
+
 def caption_layout(labels: list[str]) -> tuple[int | None, list[int]]:
-    """Retorna a quebra usada simultaneamente no QA e no ASS renderizado."""
+    """Retorna uma quebra de no máximo duas linhas com critério linguístico."""
     text = " ".join(labels).strip()
     if not text:
         return None, []
     if len(text) <= CAPTION_MAX_LINE_CHARS:
         return None, [len(text)]
 
-    options: list[tuple[float, int, list[int]]] = []
+    options: list[tuple[float, float, int, list[int]]] = []
     for index in range(1, len(labels)):
         left = " ".join(labels[:index])
         right = " ".join(labels[index:])
         lengths = [len(left), len(right)]
         if max(lengths) <= CAPTION_MAX_LINE_CHARS:
-            options.append((abs(lengths[0] - lengths[1]), index, lengths))
+            options.append((caption_break_penalty(labels, index), abs(lengths[0] - lengths[1]), index, lengths))
     if not options:
         return None, [len(text)]
-    _, break_at, lengths = min(options, key=lambda item: item[0])
+    _, _, break_at, lengths = min(options, key=lambda item: (item[0], item[1], item[2]))
     return break_at, lengths
+
+
+def caption_cps(words: list[dict[str, Any]]) -> float:
+    """Calcula caracteres por segundo usando os timestamps reais do ASR."""
+    if not words:
+        return 0.0
+    text = " ".join(str(item.get("word", "")).strip() for item in words).strip()
+    duration = float(words[-1]["end"]) - float(words[0]["start"])
+    return len(text) / max(duration, 0.001)
+
+
+def choose_caption_split(words: list[dict[str, Any]]) -> int | None:
+    """Escolhe o melhor ponto para dividir um bloco sem destruir a frase."""
+    if len(words) < CAPTION_MIN_WORDS + 1:
+        return None
+    labels = [str(item.get("word", "")).strip() for item in words]
+    minimum_right = 2 if len(words) >= CAPTION_MIN_WORDS + 2 else 1
+    options: list[tuple[float, float, int]] = []
+    for index in range(CAPTION_MIN_WORDS, len(words) - minimum_right + 1):
+        left = words[:index]
+        right = words[index:]
+        _, left_lengths = caption_layout([str(item["word"]) for item in left])
+        _, right_lengths = caption_layout([str(item["word"]) for item in right])
+        if max(left_lengths, default=0) > CAPTION_MAX_LINE_CHARS:
+            continue
+        if max(right_lengths, default=0) > CAPTION_MAX_LINE_CHARS:
+            continue
+        left_duration = float(left[-1]["end"]) - float(left[0]["start"])
+        if left_duration > CAPTION_MAX_DURATION:
+            continue
+        right_duration = float(right[-1]["end"]) - float(right[0]["start"])
+        cost = caption_break_penalty(labels, index)
+        cost += abs(len(left) - len(right)) * 0.35
+        cost += max(0.0, caption_cps(left) - CAPTION_MAX_CPS) * 2.0
+        options.append((cost, -left_duration, index))
+    if not options:
+        return None
+    return min(options, key=lambda item: (item[0], item[1], item[2]))[2]
 
 
 def normalize_caption_chunks(
@@ -801,7 +885,7 @@ def normalize_caption_chunks(
                 normalized.append(pending)
                 break
 
-            options: list[tuple[tuple[float, int, int, int], int, float, float]] = []
+            options: list[tuple[tuple[float, float, int, int], int, float, float]] = []
             for split_at in range(1, len(pending)):
                 left = pending[:split_at]
                 right = pending[split_at:]
@@ -809,10 +893,10 @@ def normalize_caption_chunks(
                 right_duration = float(right[-1]["end"]) - float(right[0]["start"])
                 if left_duration < CAPTION_MIN_DURATION or right_duration < CAPTION_MIN_DURATION:
                     continue
-                left_closes_sentence = bool(re.search(r"[.!?…]$", str(left[-1]["word"])))
+                labels = [str(item["word"]).strip() for item in pending]
                 score = (
+                    caption_break_penalty(labels, split_at),
                     max(left_duration, right_duration),
-                    0 if left_closes_sentence else 1,
                     abs(len(left) - len(right)),
                     split_at,
                 )
@@ -918,6 +1002,7 @@ def caption_chunks(segments: list[Segment], candidate: Candidate) -> list[list[d
     chunks: list[list[dict[str, Any]]] = []
     current: list[dict[str, Any]] = []
     for word in words:
+        word_already_in_current = False
         if current:
             projected_duration = float(word["end"]) - float(current[0]["start"])
             current_duration = float(current[-1]["end"]) - float(current[0]["start"])
@@ -933,10 +1018,31 @@ def caption_chunks(segments: list[Segment], candidate: Candidate) -> list[list[d
             exceeds_gap = word_gap > CAPTION_MAX_GAP
             exceeds_words = len(projected) > CAPTION_MAX_WORDS
             exceeds_width = max(projected_lengths, default=0) > CAPTION_MAX_LINE_CHARS
+            exceeds_reading_speed = caption_cps(projected) > CAPTION_MAX_CPS and len(current) >= CAPTION_MIN_WORDS
             if exceeds_duration or exceeds_gap or exceeds_words or exceeds_width:
-                chunks.append(current)
-                current = []
-        current.append(word)
+                if exceeds_gap:
+                    chunks.append(current)
+                    current = []
+                else:
+                    split_at = choose_caption_split(projected)
+                    if split_at is not None:
+                        chunks.append(projected[:split_at])
+                        current = projected[split_at:]
+                        word_already_in_current = True
+                    else:
+                        chunks.append(current)
+                        current = []
+            elif exceeds_reading_speed:
+                split_at = choose_caption_split(projected)
+                if split_at is not None:
+                    chunks.append(projected[:split_at])
+                    current = projected[split_at:]
+                    word_already_in_current = True
+                else:
+                    chunks.append(current)
+                    current = []
+        if not word_already_in_current:
+            current.append(word)
         labels = [str(item["word"]).strip() for item in current]
         closes_sentence = bool(re.search(r"[.!?…]$", word["word"]))
         block_duration = float(word["end"]) - float(current[0]["start"])
@@ -1010,9 +1116,14 @@ def validate_captions(segments: list[Segment], candidate: Candidate, margin_v: i
             and word_token(str(item.get("word", "")))
         })
         if low_confidence_tokens:
-            warnings.append(
-                f"bloco {index} contém fala com baixa confiança do ASR para revisão: {', '.join(low_confidence_tokens)}"
+            message = (
+                f"bloco {index} contém fala com baixa confiança do ASR: "
+                f"{', '.join(low_confidence_tokens)}"
             )
+            if CAPTION_LOW_CONFIDENCE_FATAL:
+                issues.append(message)
+            else:
+                warnings.append(message)
         start = max(0.0, float(chunk[0]["start"]) - candidate.start) if chunk else 0.0
         end = max(start, float(chunk[-1]["end"]) - candidate.start) if chunk else start
         duration = end - start
@@ -1024,6 +1135,9 @@ def validate_captions(segments: list[Segment], candidate: Candidate, margin_v: i
             issues.append(f"bloco {index} rápido demais ({duration:.2f}s)")
         if duration > CAPTION_MAX_DURATION:
             issues.append(f"bloco {index} longo demais ({duration:.2f}s)")
+        cps = caption_cps(chunk)
+        if cps > CAPTION_MAX_CPS:
+            issues.append(f"bloco {index} rápido demais para leitura ({cps:.1f} caracteres/s)")
         if start < -CAPTION_SYNC_TOLERANCE or end > candidate.duration + CAPTION_SYNC_TOLERANCE:
             issues.append(f"bloco {index} fora do intervalo do corte")
         if previous_end is not None:
@@ -1042,6 +1156,7 @@ def validate_captions(segments: list[Segment], candidate: Candidate, margin_v: i
             "start": round(start, 3),
             "end": round(end, 3),
             "duration": round(duration, 3),
+            "characters_per_second": round(cps, 2),
             "text": text,
             "line_lengths": line_lengths,
         })
@@ -1064,6 +1179,7 @@ def validate_captions(segments: list[Segment], candidate: Candidate, margin_v: i
         "alignment": "center-bottom",
         "safe_area": {"margin_left": 70, "margin_right": 70, "margin_bottom": margin_v},
         "sync_tolerance_seconds": CAPTION_SYNC_TOLERANCE,
+        "max_characters_per_second": CAPTION_MAX_CPS,
         "intervals": intervals,
     }
 
@@ -1109,28 +1225,28 @@ def write_ass(segments: list[Segment], candidate: Candidate, path: Path, margin_
     path.write_text("\n".join(lines) + "\n", encoding="utf-8")
 
 
-def build_filter_complex(caption_path: str) -> str:
+def build_filter_complex(caption_path: str, logo_path: str | None = None) -> str:
     """
     Mantém as cores originais da fonte. O tratamento Corte Fino fica restrito
     à composição vertical, ao fundo desfocado e aos elementos da HUD.
     """
+    logo_path = logo_path or str(LOGO_PATH)
+    logo_path = ffmpeg_path(Path(logo_path))
     return (
         "[0:v]split=2[bg][fg];"
         "[bg]scale=1080:1920:force_original_aspect_ratio=increase:flags=lanczos,crop=1080:1920,gblur=sigma=22[bg];"
         "[fg]scale=1080:1920:force_original_aspect_ratio=decrease:flags=lanczos[fg];"
-        f"[bg][fg]overlay=(W-w)/2:(H-h)/2,subtitles='{caption_path}':original_size=1080x1920,"
-        # Assinatura superior direita: CORTE / FINO, compacta e discreta.
-        "drawbox=x=iw-300:y=34:w=268:h=56:color=0x050505@0.72:t=fill,"
-        "drawbox=x=iw-300:y=34:w=3:h=56:color=0xB85A3C@0.96:t=fill,"
-        "drawtext=fontfile=/usr/share/fonts/truetype/dejavu/DejaVuSansCondensed-Bold.ttf:text='CORTE':fontcolor=0xF5F5F4@0.96:fontsize=22:x=w-286:y=49,"
-        "drawtext=fontfile=/usr/share/fonts/truetype/dejavu/DejaVuSansCondensed-Bold.ttf:text='/':fontcolor=0xB85A3C@0.96:fontsize=24:x=w-215:y=47,"
-        "drawtext=fontfile=/usr/share/fonts/truetype/dejavu/DejaVuSansCondensed-Bold.ttf:text='FINO':fontcolor=0xF5F5F4@0.96:fontsize=22:x=w-194:y=49[v]"
+        f"[bg][fg]overlay=(W-w)/2:(H-h)/2,subtitles='{caption_path}':original_size=1080x1920[captioned];"
+        f"movie='{logo_path}',format=rgba,scale={LOGO_WIDTH}:-1:flags=lanczos,loop=loop=-1:size=1:start=0[logo];"
+        f"[captioned][logo]overlay=W-w-{LOGO_MARGIN_RIGHT}:{LOGO_MARGIN_TOP}:eof_action=repeat:shortest=0:format=auto[v]"
     )
 
 
 def render_clip(source: Path, captions: Path, candidate: Candidate, output: Path) -> None:
     caption_path = str(captions).replace(":", "\\:")
-    filter_complex = build_filter_complex(caption_path)
+    if not LOGO_PATH.is_file():
+        raise FileNotFoundError(f"Logo oficial não encontrada: {LOGO_PATH}")
+    filter_complex = build_filter_complex(caption_path, str(LOGO_PATH))
     run([
         "ffmpeg", "-y", "-ss", f"{candidate.start:.3f}", "-i", str(source), "-t", f"{candidate.duration:.3f}",
         "-filter_complex", filter_complex, "-map", "[v]", "-map", "0:a:0?", "-c:v", "libx264", "-preset", VIDEO_PRESET,
@@ -1171,6 +1287,13 @@ def validate_video(path: Path, expected_duration: float) -> dict[str, Any]:
     duration = float((data.get("format") or {}).get("duration") or 0)
     video_bitrate = int((video or {}).get("bit_rate") or 0)
     audio_bitrate = int((audio or {}).get("bit_rate") or 0)
+    frame_rate = 0.0
+    if video:
+        numerator, _, denominator = str(video.get("r_frame_rate") or "0/1").partition("/")
+        try:
+            frame_rate = float(numerator) / max(float(denominator or 1), 1.0)
+        except ValueError:
+            frame_rate = 0.0
     decode_ok = True
     try:
         run(["ffmpeg", "-v", "error", "-i", str(path), "-f", "null", "-"], capture=True, timeout=180)
@@ -1182,6 +1305,9 @@ def validate_video(path: Path, expected_duration: float) -> dict[str, Any]:
         "audio_stream": audio is not None,
         "resolution_1080x1920": bool(video and video.get("width") == 1080 and video.get("height") == 1920),
         "h264": bool(video and video.get("codec_name") == "h264"),
+        "profile_high": bool(video and str(video.get("profile") or "").lower() == "high"),
+        "pixel_format_yuv420p": bool(video and video.get("pix_fmt") == "yuv420p"),
+        "frame_rate_30": abs(frame_rate - 30.0) < 0.1,
         "audio_aac": bool(audio and audio.get("codec_name") == "aac"),
         "audio_quality_target": audio_bitrate >= 160000,
         "duration_reasonable": abs(duration - expected_duration) <= 3.0 and duration >= MIN_CLIP_SECONDS - 2,
@@ -1194,6 +1320,8 @@ def validate_video(path: Path, expected_duration: float) -> dict[str, Any]:
         "height": video.get("height") if video else None,
         "video_codec": video.get("codec_name") if video else None,
         "video_profile": video.get("profile") if video else None,
+        "pixel_format": video.get("pix_fmt") if video else None,
+        "frame_rate": round(frame_rate, 3),
         "video_bitrate": video_bitrate or None,
         "audio_codec": audio.get("codec_name") if audio else None,
         "audio_bitrate": audio_bitrate or None,

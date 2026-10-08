@@ -337,6 +337,7 @@ jobs:
         run: |
           python - <<'PY'
           import json
+          import hashlib
           import mimetypes
           import os
           import re
@@ -349,6 +350,17 @@ jobs:
           from googleapiclient.http import MediaFileUpload
 
           FOLDER_MIME = "application/vnd.google-apps.folder"
+          DRIVE_RETRIES = 4
+
+          def execute(request):
+              return request.execute(num_retries=DRIVE_RETRIES)
+
+          def file_md5(path):
+              digest = hashlib.md5()
+              with path.open("rb") as handle:
+                  for chunk in iter(lambda: handle.read(1024 * 1024), b""):
+                      digest.update(chunk)
+              return digest.hexdigest()
 
           def folder_id(value):
               value = (value or "").strip()
@@ -364,23 +376,25 @@ jobs:
           def find_child(drive, parent_id, name):
               escaped = name.replace("'", "\\'")
               query = f"'{parent_id}' in parents and trashed = false and name = '{escaped}'"
-              return drive.files().list(
+              return execute(drive.files().list(
                   q=query,
                   pageSize=10,
-                  fields="files(id,name,mimeType,size,webViewLink,parents)",
-              ).execute().get("files", [])
+                  fields="files(id,name,mimeType,size,md5Checksum,webViewLink,parents)",
+              )).get("files", [])
 
           def get_or_create_folder(drive, parent_id, name):
               matches = find_child(drive, parent_id, name)
+              if len(matches) > 1:
+                  raise RuntimeError(f"Duplicidade detectada no Drive para a pasta da rodada: {name}")
               folders = [item for item in matches if item.get("mimeType") == FOLDER_MIME]
               if folders:
                   return folders[0]
               if matches:
                   raise RuntimeError(f"Já existe um arquivo com o nome da pasta da rodada: {name}")
-              return drive.files().create(
+              return execute(drive.files().create(
                   body={"name": name, "mimeType": FOLDER_MIME, "parents": [parent_id]},
                   fields="id,name,webViewLink",
-              ).execute()
+              ))
 
           def upload_idempotent(drive, path, parent_id, name):
               matches = find_child(drive, parent_id, name)
@@ -392,23 +406,31 @@ jobs:
                   resumable=True,
               )
               if matches:
-                  item = drive.files().update(
+                  item = execute(drive.files().update(
                       fileId=matches[0]["id"],
                       media_body=media,
-                      fields="id,name,mimeType,size,webViewLink,parents",
-                  ).execute()
+                      fields="id,name,mimeType,size,md5Checksum,webViewLink,parents",
+                  ))
               else:
-                  item = drive.files().create(
+                  item = execute(drive.files().create(
                       body={"name": name, "parents": [parent_id]},
                       media_body=media,
-                      fields="id,name,mimeType,size,webViewLink,parents",
-                  ).execute()
-              verified = drive.files().get(
+                      fields="id,name,mimeType,size,md5Checksum,webViewLink,parents",
+                  ))
+              verified = execute(drive.files().get(
                   fileId=item["id"],
-                  fields="id,name,mimeType,size,webViewLink,parents,trashed",
-              ).execute()
+                  fields="id,name,mimeType,size,md5Checksum,webViewLink,parents,trashed",
+              ))
+              expected_mime = mimetypes.guess_type(name)[0] or "application/octet-stream"
               if verified.get("trashed") or int(verified.get("size") or 0) <= 0:
                   raise RuntimeError(f"Upload não verificável para {name}")
+              if verified.get("mimeType") != expected_mime:
+                  raise RuntimeError(
+                      f"Tipo MIME inesperado para {name}: {verified.get('mimeType')} != {expected_mime}"
+                  )
+              remote_md5 = verified.get("md5Checksum")
+              if remote_md5 and remote_md5 != file_md5(path):
+                  raise RuntimeError(f"Checksum divergente após upload para {name}")
               return verified
 
           raw_parent = folder_id(os.environ.get("DRIVE_FOLDER_ID"))
@@ -430,7 +452,7 @@ jobs:
               parent = drive.files().get(
                   fileId=raw_parent,
                   fields="id,name,mimeType,trashed,capabilities(canAddChildren)",
-              ).execute()
+              ).execute(num_retries=DRIVE_RETRIES)
           except HttpError as exc:
               raise RuntimeError(f"DRIVE_FOLDER_ID inválido ou inacessível: {raw_parent}") from exc
           if parent.get("mimeType") != FOLDER_MIME or parent.get("trashed"):
@@ -466,11 +488,11 @@ jobs:
               expected.extend([video_name, thumb_name])
               local_pairs.append((video_path, video_name, thumb_path, thumb_name))
 
-          children = drive.files().list(
+          children = execute(drive.files().list(
               q=f"'{batch['id']}' in parents and trashed = false",
               pageSize=100,
-              fields="files(id,name,mimeType,size,webViewLink,parents)",
-          ).execute().get("files", [])
+              fields="files(id,name,mimeType,size,md5Checksum,webViewLink,parents)",
+          )).get("files", [])
           unexpected = sorted(
               item.get("name", "")
               for item in children
@@ -487,19 +509,24 @@ jobs:
               uploaded.append(upload_idempotent(drive, video_path, batch["id"], video_name))
               uploaded.append(upload_idempotent(drive, thumb_path, batch["id"], thumb_name))
 
-          final_children = drive.files().list(
+          final_children = execute(drive.files().list(
               q=f"'{batch['id']}' in parents and trashed = false",
               pageSize=100,
-              fields="files(id,name,mimeType,size,webViewLink,parents)",
-          ).execute().get("files", [])
+              fields="files(id,name,mimeType,size,md5Checksum,webViewLink,parents)",
+          )).get("files", [])
           by_name = {item.get("name"): item for item in final_children}
           missing = [name for name in expected if name not in by_name]
-          if missing or len(final_children) != 10:
+          if missing or len(final_children) != 10 or len(by_name) != 10:
               raise RuntimeError(
                   f"Verificação final falhou: arquivos={len(final_children)}, ausentes={missing}"
               )
           if any(int(by_name[name].get("size") or 0) <= 0 for name in expected):
               raise RuntimeError("Verificação final falhou: existe arquivo vazio.")
+          if any(
+              by_name[name].get("mimeType") != ("image/png" if name.endswith(".png") else "video/mp4")
+              for name in expected
+          ):
+              raise RuntimeError("Verificação final falhou: tipo MIME incompatível com o nome do arquivo.")
           manifest = {
               "batch_folder": batch.get("webViewLink") or f"https://drive.google.com/drive/folders/{batch['id']}",
               "source_fingerprint_sha256": source_hash,
