@@ -1,12 +1,6 @@
 name: Corte Fino Diário
 
 on:
-  # Gatilho temporário de execução controlada; será removido após esta rodada.
-  push:
-    branches: [main]
-    paths:
-      - ".codex-run"
-
   schedule:
     # 22:15 UTC ≈ 19:15 no horário de Brasília.
     - cron: "15 22 * * *"
