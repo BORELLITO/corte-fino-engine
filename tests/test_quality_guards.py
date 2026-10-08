@@ -9,6 +9,9 @@ from main import (
     rights_info,
     build_filter_complex,
     thumbnail_headline,
+    VIDEO_AUDIO_BITRATE,
+    VIDEO_CRF,
+    VIDEO_PRESET,
 )
 
 
@@ -106,11 +109,18 @@ def test_visual_identity_uses_off_white_and_copper_caption_tokens(tmp_path):
     assert "DejaVu Sans Condensed" in content
 
 
+def test_output_encoding_profile_is_youtube_ready():
+    assert VIDEO_CRF == 18
+    assert VIDEO_PRESET == "medium"
+    assert VIDEO_AUDIO_BITRATE == "192k"
+
+
 def test_source_colors_are_preserved_and_hud_keeps_brand_palette():
     filter_complex = build_filter_complex("captions.ass")
     assert "saturation=0.22" not in filter_complex
     assert "saturation=0.80" not in filter_complex
     assert "gblur=sigma=22" in filter_complex
+    assert "flags=lanczos" in filter_complex
     assert "0x050505" in filter_complex
     assert "0xF5F5F4" in filter_complex
     assert "0xB85A3C" in filter_complex
