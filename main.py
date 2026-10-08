@@ -69,6 +69,7 @@ CAPTION_SUSPECT_TOKENS = {
 # Não altera timestamps nem cria conteúdo: troca somente o token reconhecido.
 CAPTION_SAFE_CORRECTIONS = {
     "médo": "medo",
+    "divestindo": "desistindo",
     "violins": "Aviões",
 }
 CAPTION_MIN_WORD_PROBABILITY = float(os.environ.get("CAPTION_MIN_WORD_PROBABILITY", "0.40"))
