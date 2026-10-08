@@ -30,6 +30,12 @@ MAX_SOURCE_DURATION_SECONDS = int(os.environ.get("MAX_SOURCE_DURATION_SECONDS", 
 TRANSCRIBE_BEAM_SIZE = max(1, int(os.environ.get("TRANSCRIBE_BEAM_SIZE", "3")))
 TRANSCRIBE_CPU_THREADS = max(1, int(os.environ.get("TRANSCRIBE_CPU_THREADS", "4")))
 TRANSCRIBE_PROGRESS_SECONDS = max(15, int(os.environ.get("TRANSCRIBE_PROGRESS_SECONDS", "45")))
+# Perfil técnico travado para uma saída mais limpa no YouTube sem alterar a identidade visual.
+VIDEO_CRF = max(16, min(23, int(os.environ.get("VIDEO_CRF", "18"))))
+VIDEO_PRESET = os.environ.get("VIDEO_PRESET", "medium").strip() or "medium"
+if VIDEO_PRESET not in {"fast", "veryfast", "medium", "slow"}:
+    VIDEO_PRESET = "medium"
+VIDEO_AUDIO_BITRATE = os.environ.get("VIDEO_AUDIO_BITRATE", "192k").strip() or "192k"
 CAPTION_MIN_WORDS = 3
 CAPTION_MAX_WORDS = 6
 # Pequenas partículas finais (ex.: “né?”, “tá?”) podem durar menos que o mínimo
@@ -1099,8 +1105,8 @@ def build_filter_complex(caption_path: str) -> str:
     """
     return (
         "[0:v]split=2[bg][fg];"
-        "[bg]scale=1080:1920:force_original_aspect_ratio=increase,crop=1080:1920,gblur=sigma=22[bg];"
-        "[fg]scale=1080:1920:force_original_aspect_ratio=decrease[fg];"
+        "[bg]scale=1080:1920:force_original_aspect_ratio=increase:flags=lanczos,crop=1080:1920,gblur=sigma=22[bg];"
+        "[fg]scale=1080:1920:force_original_aspect_ratio=decrease:flags=lanczos[fg];"
         f"[bg][fg]overlay=(W-w)/2:(H-h)/2,subtitles='{caption_path}':original_size=1080x1920,"
         # Assinatura superior direita: CORTE / FINO, compacta e discreta.
         "drawbox=x=iw-300:y=34:w=268:h=56:color=0x050505@0.72:t=fill,"
@@ -1116,8 +1122,9 @@ def render_clip(source: Path, captions: Path, candidate: Candidate, output: Path
     filter_complex = build_filter_complex(caption_path)
     run([
         "ffmpeg", "-y", "-ss", f"{candidate.start:.3f}", "-i", str(source), "-t", f"{candidate.duration:.3f}",
-        "-filter_complex", filter_complex, "-map", "[v]", "-map", "0:a:0?", "-c:v", "libx264", "-preset", "veryfast",
-        "-crf", "21", "-pix_fmt", "yuv420p", "-r", "30", "-c:a", "aac", "-b:a", "160k", "-ar", "48000",
+        "-filter_complex", filter_complex, "-map", "[v]", "-map", "0:a:0?", "-c:v", "libx264", "-preset", VIDEO_PRESET,
+        "-crf", str(VIDEO_CRF), "-profile:v", "high", "-level:v", "4.2", "-pix_fmt", "yuv420p", "-r", "30",
+        "-c:a", "aac", "-b:a", VIDEO_AUDIO_BITRATE, "-ar", "48000",
         "-movflags", "+faststart", "-shortest", "-avoid_negative_ts", "make_zero", str(output),
     ])
 
@@ -1151,6 +1158,8 @@ def validate_video(path: Path, expected_duration: float) -> dict[str, Any]:
     video = next((item for item in streams if item.get("codec_type") == "video"), None)
     audio = next((item for item in streams if item.get("codec_type") == "audio"), None)
     duration = float((data.get("format") or {}).get("duration") or 0)
+    video_bitrate = int((video or {}).get("bit_rate") or 0)
+    audio_bitrate = int((audio or {}).get("bit_rate") or 0)
     decode_ok = True
     try:
         run(["ffmpeg", "-v", "error", "-i", str(path), "-f", "null", "-"], capture=True, timeout=180)
@@ -1162,6 +1171,8 @@ def validate_video(path: Path, expected_duration: float) -> dict[str, Any]:
         "audio_stream": audio is not None,
         "resolution_1080x1920": bool(video and video.get("width") == 1080 and video.get("height") == 1920),
         "h264": bool(video and video.get("codec_name") == "h264"),
+        "audio_aac": bool(audio and audio.get("codec_name") == "aac"),
+        "audio_quality_target": audio_bitrate >= 160000,
         "duration_reasonable": abs(duration - expected_duration) <= 3.0 and duration >= MIN_CLIP_SECONDS - 2,
         "decodable": decode_ok,
     }
@@ -1171,7 +1182,16 @@ def validate_video(path: Path, expected_duration: float) -> dict[str, Any]:
         "width": video.get("width") if video else None,
         "height": video.get("height") if video else None,
         "video_codec": video.get("codec_name") if video else None,
+        "video_profile": video.get("profile") if video else None,
+        "video_bitrate": video_bitrate or None,
         "audio_codec": audio.get("codec_name") if audio else None,
+        "audio_bitrate": audio_bitrate or None,
+        "encoding_profile": {
+            "crf": VIDEO_CRF,
+            "preset": VIDEO_PRESET,
+            "scale": "lanczos",
+            "audio_bitrate": VIDEO_AUDIO_BITRATE,
+        },
         "checks": checks,
         "passed": all(checks.values()),
     }
