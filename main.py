@@ -71,6 +71,13 @@ CAPTION_SAFE_CORRECTIONS = {
     "médo": "medo",
     "divestindo": "desistindo",
     "violins": "Aviões",
+    "revindicando": "reivindicando",
+    "bradão": "Brasil",
+    "bradio": "Brasil",
+    "idô": "segundo",
+    "crescentos": "crescendo",
+    "dilhé": "devia",
+    "pim": "PIB",
 }
 CAPTION_MIN_WORD_PROBABILITY = float(os.environ.get("CAPTION_MIN_WORD_PROBABILITY", "0.40"))
 CAPTION_SPELLING_MIN_ZIPF = float(os.environ.get("CAPTION_SPELLING_MIN_ZIPF", "2.30"))
