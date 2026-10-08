@@ -63,7 +63,7 @@ CAPTION_SUSPECT_TOKENS = {
     # verificada abaixo são normalizados antes do gate e ficam registrados no QA.
     "revindicando", "bradão", "bradio", "idô", "crescentos", "dilhé", "pim",
     "trefa", "vítimo", "lulia", "latrão", "divestindo", "danapolítica", "coneste",
-    "médo", "jambos", "violins",
+    "médo", "jambos", "violins", "latrão", "danapolítica", "coneste",
 }
 # Correções determinísticas de ASR com evidência ortográfica/contextual forte.
 # Não altera timestamps nem cria conteúdo: troca somente o token reconhecido.
@@ -77,6 +77,9 @@ CAPTION_SAFE_CORRECTIONS = {
     "idô": "segundo",
     "crescentos": "crescendo",
     "dilhé": "devia",
+        "latrão": "ladrão",
+    "danapolítica": "na política",
+    "coneste": "conhece",
     "pim": "PIB",
 }
 CAPTION_MIN_WORD_PROBABILITY = float(os.environ.get("CAPTION_MIN_WORD_PROBABILITY", "0.40"))
