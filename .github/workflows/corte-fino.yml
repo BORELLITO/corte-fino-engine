@@ -53,6 +53,7 @@ jobs:
       REQUIRE_EXACT_TOP_FIVE: "1"
       CAPTION_MIN_WORD_PROBABILITY: "0.40"
       CAPTION_SPELLING_MIN_ZIPF: "2.30"
+      CAPTION_HARD_MAX_CPS: "24.0"
       FORCE_TOP_FIVE: ${{ inputs.force_top_five == 'true' && '1' || '0' }}
 
     steps:
