@@ -18,7 +18,7 @@ Não são criados subdiretórios de plataforma, atalhos, ZIPs, relatórios, text
 - aceita uma fonte manual pelo botão Run workflow;
 - transcreve em português com faster-whisper e timestamps por palavra;
 - analisa cada fonte individualmente para adaptar a leitura editorial;
-- seleciona exatamente cinco candidatos, sem substituir um candidato reprovado por um sexto;
+- pré-audita legendas e seleciona exatamente cinco candidatos publicáveis, sem substituir um candidato reprovado depois do fechamento por um sexto;
 - bloqueia legenda suspeita, repetição, falta de continuidade, falha de render ou vídeo inválido;
 - renderiza os cinco vídeos;
 - faz upload idempotente e verificável na mesma pasta, podendo retomar uma rodada parcial;
@@ -34,7 +34,7 @@ Não são criados subdiretórios de plataforma, atalhos, ZIPs, relatórios, text
 - `CAPTION_REVIEW_REQUIRED`: risco de transcrição/ortografia exige revisão;
 - `TECHNICAL_FAILURE`: falha técnica real.
 
-Se qualquer item do Top 5 falhar, a rodada não é enviada ao Drive e a fonte permanece disponível para nova tentativa. Não há substituição silenciosa pelo sexto colocado.
+O alvo confortável de leitura é 18 caracteres por segundo; até 24 caracteres por segundo é o limite duro para fala acelerada e fica marcado para revisão humana. Se qualquer item do Top 5 fechado falhar depois da seleção, a rodada não é enviada ao Drive e a fonte permanece disponível para nova tentativa. Não há substituição silenciosa depois do fechamento.
 
 ## Como usar
 
