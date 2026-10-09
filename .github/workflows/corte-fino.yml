@@ -305,17 +305,12 @@ jobs:
                       item for item in data.get("qa", [])
                       if item.get("stage") == "rendered_clip"
                   ]
-                  thumbnail_qa = [
-                      item for item in data.get("qa", [])
-                      if item.get("stage") == "thumbnail"
-                  ]
                   if (
                       len(data.get("clips", [])) != 5
                       or len(rendered_qa) != 5
-                      or len(thumbnail_qa) != 5
-                      or not all(item.get("passed") for item in rendered_qa + thumbnail_qa)
+                      or not all(item.get("passed") for item in rendered_qa)
                   ):
-                      print("Gate de prontidão reprovado: a rodada não tem 5 vídeos e 5 thumbnails aprovados.")
+                      print("Gate de prontidão reprovado: a rodada não tem 5 vídeos aprovados.")
                       code = 1
                   else:
                       with open(os.environ["GITHUB_ENV"], "a", encoding="utf-8") as env_file:
@@ -326,7 +321,7 @@ jobs:
             python main.py
           fi
 
-      - name: Enviar 5 vídeos e 5 thumbnails para o Google Drive
+      - name: Enviar 5 vídeos para o Google Drive
         id: upload_drive
         if: ${{ steps.generate_cuts.outcome == 'success' && env.NO_SOURCE != '1' && env.EDITORIAL_EMPTY != '1' && env.PROCESSING_READY == '1' }}
         env:
@@ -373,14 +368,31 @@ jobs:
               value = re.sub(r"\s+", " ", value).strip(" .-")
               return (value[:120] or fallback)
 
+          def list_all(drive, query, fields):
+              items = []
+              page_token = None
+              while True:
+                  kwargs = {
+                      "q": query,
+                      "pageSize": 100,
+                      "fields": f"nextPageToken,files({fields})",
+                  }
+                  if page_token:
+                      kwargs["pageToken"] = page_token
+                  result = execute(drive.files().list(**kwargs))
+                  items.extend(result.get("files", []))
+                  page_token = result.get("nextPageToken")
+                  if not page_token:
+                      return items
+
           def find_child(drive, parent_id, name):
               escaped = name.replace("'", "\\'")
               query = f"'{parent_id}' in parents and trashed = false and name = '{escaped}'"
-              return execute(drive.files().list(
-                  q=query,
-                  pageSize=10,
-                  fields="files(id,name,mimeType,size,md5Checksum,webViewLink,parents)",
-              )).get("files", [])
+              return list_all(
+                  drive,
+                  query,
+                  "id,name,mimeType,size,md5Checksum,webViewLink,parents",
+              )
 
           def get_or_create_folder(drive, parent_id, name):
               matches = find_child(drive, parent_id, name)
@@ -477,22 +489,20 @@ jobs:
           batch = get_or_create_folder(drive, raw_parent, batch_name)
 
           expected = []
-          local_pairs = []
+          local_videos = []
           for index, clip in enumerate(clips, 1):
               video_path = Path("output") / clip["file"]
-              thumb_path = Path("output") / clip["thumbnail_file"]
-              if not video_path.is_file() or not thumb_path.is_file():
-                  raise RuntimeError(f"Par incompleto no corte {index:02d}.")
+              if not video_path.is_file():
+                  raise RuntimeError(f"Vídeo ausente no corte {index:02d}.")
               video_name = f"{source_title} - {index:02d}.mp4"
-              thumb_name = f"{source_title} - {index:02d} - THUMB.png"
-              expected.extend([video_name, thumb_name])
-              local_pairs.append((video_path, video_name, thumb_path, thumb_name))
+              expected.append(video_name)
+              local_videos.append((video_path, video_name))
 
-          children = execute(drive.files().list(
-              q=f"'{batch['id']}' in parents and trashed = false",
-              pageSize=100,
-              fields="files(id,name,mimeType,size,md5Checksum,webViewLink,parents)",
-          )).get("files", [])
+          children = list_all(
+              drive,
+              f"'{batch['id']}' in parents and trashed = false",
+              "id,name,mimeType,size,md5Checksum,webViewLink,parents",
+          )
           unexpected = sorted(
               item.get("name", "")
               for item in children
@@ -504,26 +514,24 @@ jobs:
                   "nenhum arquivo foi removido: " + ", ".join(unexpected)
               )
 
-          uploaded = []
-          for video_path, video_name, thumb_path, thumb_name in local_pairs:
-              uploaded.append(upload_idempotent(drive, video_path, batch["id"], video_name))
-              uploaded.append(upload_idempotent(drive, thumb_path, batch["id"], thumb_name))
+          for video_path, video_name in local_videos:
+              upload_idempotent(drive, video_path, batch["id"], video_name)
 
-          final_children = execute(drive.files().list(
-              q=f"'{batch['id']}' in parents and trashed = false",
-              pageSize=100,
-              fields="files(id,name,mimeType,size,md5Checksum,webViewLink,parents)",
-          )).get("files", [])
+          final_children = list_all(
+              drive,
+              f"'{batch['id']}' in parents and trashed = false",
+              "id,name,mimeType,size,md5Checksum,webViewLink,parents",
+          )
           by_name = {item.get("name"): item for item in final_children}
           missing = [name for name in expected if name not in by_name]
-          if missing or len(final_children) != 10 or len(by_name) != 10:
+          if missing or len(final_children) != 5 or len(by_name) != 5:
               raise RuntimeError(
                   f"Verificação final falhou: arquivos={len(final_children)}, ausentes={missing}"
               )
           if any(int(by_name[name].get("size") or 0) <= 0 for name in expected):
               raise RuntimeError("Verificação final falhou: existe arquivo vazio.")
           if any(
-              by_name[name].get("mimeType") != ("image/png" if name.endswith(".png") else "video/mp4")
+              by_name[name].get("mimeType") != "video/mp4"
               for name in expected
           ):
               raise RuntimeError("Verificação final falhou: tipo MIME incompatível com o nome do arquivo.")
@@ -531,7 +539,7 @@ jobs:
               "batch_folder": batch.get("webViewLink") or f"https://drive.google.com/drive/folders/{batch['id']}",
               "source_fingerprint_sha256": source_hash,
               "source_title": source_title,
-              "file_count": 10,
+              "file_count": 5,
               "files": [
                   {"name": name, "id": by_name[name]["id"], "webViewLink": by_name[name].get("webViewLink")}
                   for name in expected
@@ -542,7 +550,7 @@ jobs:
               encoding="utf-8",
           )
           print(f"Pasta da rodada: {manifest['batch_folder']}")
-          print("Entrega verificada: 5 MP4 + 5 THUMB, sem subpastas e sem arquivos extras.")
+          print("Entrega verificada: 5 MP4, sem subpastas e sem arquivos extras.")
           for item in manifest["files"]:
               print(f"{item['name']}: {item['webViewLink']}")
           PY
@@ -605,7 +613,7 @@ jobs:
         uses: actions/upload-artifact@v7
         with:
           name: corte-fino-resultados
-          path: output/
+          path: output/clips/
           if-no-files-found: ignore
           retention-days: 7
 

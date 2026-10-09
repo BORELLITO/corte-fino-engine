@@ -13,7 +13,6 @@ from main import (
     enrich_clip,
     rights_info,
     build_filter_complex,
-    thumbnail_headline,
     VIDEO_AUDIO_BITRATE,
     VIDEO_CRF,
     VIDEO_PRESET,
@@ -162,10 +161,3 @@ def test_caption_chunks_never_duplicate_words_when_splitting():
     chunks = caption_chunks([segment], candidate)
     flattened = [item["word"] for chunk in chunks for item in chunk]
     assert flattened == [item["word"] for item in words]
-
-
-def test_thumbnail_headline_is_derived_from_real_clip_text():
-    headline = thumbnail_headline("A verdade que ninguém contou sobre o caso")
-    assert headline == "A VERDADE QUE NINGUÉM\nCONTOU SOBRE O CASO"
-    assert len(headline.splitlines()) <= 2
-
