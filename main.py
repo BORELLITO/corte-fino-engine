@@ -37,7 +37,7 @@ if VIDEO_PRESET not in {"fast", "veryfast", "medium", "slow"}:
     VIDEO_PRESET = "medium"
 VIDEO_AUDIO_BITRATE = os.environ.get("VIDEO_AUDIO_BITRATE", "192k").strip() or "192k"
 CAPTION_MIN_WORDS = 3
-CAPTION_MAX_WORDS = 6
+CAPTION_MAX_WORDS = 8
 # Pequenas partículas finais (ex.: “né?”, “tá?”) podem durar menos que o mínimo
 # quando são unidas ao bloco anterior sem violar largura ou duração.
 CAPTION_SHORT_TAIL_WORD_SLACK = 2
@@ -53,7 +53,12 @@ CAPTION_MAX_DURATION = float(os.environ.get("CAPTION_MAX_DURATION", "4.0"))
 CAPTION_MAX_GAP = float(os.environ.get("CAPTION_MAX_GAP", "1.5"))
 CAPTION_SYNC_TOLERANCE = float(os.environ.get("CAPTION_SYNC_TOLERANCE", "0.35"))
 CAPTION_MAX_CPS = float(os.environ.get("CAPTION_MAX_CPS", "18.0"))
-CAPTION_LOW_CONFIDENCE_FATAL = os.environ.get("CAPTION_LOW_CONFIDENCE_FATAL", "1").strip().lower() in {"1", "true", "yes", "sim"}
+# 18 cps é o alvo confortável; 24 cps é o limite duro para vídeos curtos,
+# onde a legenda ainda precisa acompanhar uma fala naturalmente acelerada.
+CAPTION_HARD_MAX_CPS = float(os.environ.get("CAPTION_HARD_MAX_CPS", "24.0"))
+# Baixa confiança do ASR é sinalizada para revisão, mas não reprova sozinha:
+# palavras comuns podem receber probabilidade baixa sem estarem erradas.
+CAPTION_LOW_CONFIDENCE_FATAL = os.environ.get("CAPTION_LOW_CONFIDENCE_FATAL", "0").strip().lower() in {"1", "true", "yes", "sim"}
 CAPTION_SUSPECT_TOKENS = {
     # Erros recorrentes de ASR observados em revisões anteriores. Os termos sem
     # correção segura continuam reprovando o candidato; os termos com correção
@@ -627,6 +632,19 @@ def select_candidates(
                 candidate.rejection = f"nota abaixo do mínimo editorial ({candidate.score:.2f} < {MIN_EDITORIAL_SCORE:.2f})"
         pool = [candidate for candidate in all_candidates if candidate.accepted and candidate.score >= MIN_EDITORIAL_SCORE]
 
+    # O Top 5 fechado deve ser fechado entre candidatos tecnicamente
+    # publicáveis. Um trecho rápido/ilegível não pode ocupar uma vaga e só ser
+    # descoberto depois, durante a renderização.
+    caption_ready = []
+    for candidate in pool:
+        caption_qa = validate_captions(segments, candidate, CAPTION_MARGIN_V)
+        if caption_qa["passed"]:
+            caption_ready.append(candidate)
+        else:
+            candidate.accepted = False
+            candidate.rejection = "reprovado no pré-gate automático de legenda"
+    pool = caption_ready
+
     selected: list[Candidate] = []
     deferred: list[Candidate] = []
     trigger_counts: dict[str, int] = {}
@@ -917,20 +935,28 @@ def normalize_caption_chunks(
 def repair_short_caption_chunks(
     chunks: list[list[dict[str, Any]]],
 ) -> list[list[dict[str, Any]]]:
-    """Une blocos curtos a um vizinho sem violar layout ou sincronização."""
+    """Une blocos curtos/rápidos a um vizinho sem violar o layout.
+
+    O ASR às vezes encerra um bloco em uma pausa mínima. Se o bloco também
+    ficou rápido para leitura, mantê-lo isolado produz uma legenda picotada.
+    A união só é aceita quando o texto continua em até duas linhas, dentro do
+    tempo máximo e abaixo do limite de caracteres por segundo.
+    """
     repaired = [list(chunk) for chunk in chunks if chunk]
     changed = True
     while changed:
         changed = False
         for index, chunk in enumerate(repaired):
             duration = float(chunk[-1]["end"]) - float(chunk[0]["start"])
-            if duration >= CAPTION_MIN_DURATION:
+            speed = caption_cps(chunk)
+            if duration >= CAPTION_MIN_DURATION and speed <= CAPTION_HARD_MAX_CPS:
                 continue
             neighbors = []
             if index > 0:
                 neighbors.append((index - 1, "previous"))
             if index + 1 < len(repaired):
                 neighbors.append((index + 1, "next"))
+            options = []
             for neighbor_index, side in neighbors:
                 neighbor = repaired[neighbor_index]
                 if side == "previous":
@@ -948,8 +974,16 @@ def repair_short_caption_chunks(
                     len(merged) > CAPTION_MAX_WORDS + CAPTION_SHORT_TAIL_WORD_SLACK
                     or merged_duration > CAPTION_MAX_DURATION
                     or max(lengths, default=0) > CAPTION_MAX_LINE_CHARS
+                    or (
+                        caption_cps(merged) > CAPTION_MAX_CPS
+                        and duration >= CAPTION_MIN_DURATION
+                        and caption_cps(merged) > CAPTION_HARD_MAX_CPS
+                    )
                 ):
                     continue
+                options.append((caption_cps(merged), merged_duration, neighbor_index, merged))
+            if options:
+                _, _, neighbor_index, merged = min(options, key=lambda item: (item[0], item[1], item[2]))
                 repaired[neighbor_index] = merged
                 repaired.pop(index)
                 changed = True
@@ -1011,7 +1045,7 @@ def caption_chunks(segments: list[Segment], candidate: Candidate) -> list[list[d
             exceeds_gap = word_gap > CAPTION_MAX_GAP
             exceeds_words = len(projected) > CAPTION_MAX_WORDS
             exceeds_width = max(projected_lengths, default=0) > CAPTION_MAX_LINE_CHARS
-            exceeds_reading_speed = caption_cps(projected) > CAPTION_MAX_CPS and len(current) >= CAPTION_MIN_WORDS
+            exceeds_reading_speed = caption_cps(projected) > CAPTION_HARD_MAX_CPS and len(current) >= CAPTION_MIN_WORDS
             if exceeds_duration or exceeds_gap or exceeds_words or exceeds_width:
                 if exceeds_gap:
                     chunks.append(current)
@@ -1129,8 +1163,16 @@ def validate_captions(segments: list[Segment], candidate: Candidate, margin_v: i
         if duration > CAPTION_MAX_DURATION:
             issues.append(f"bloco {index} longo demais ({duration:.2f}s)")
         cps = caption_cps(chunk)
-        if cps > CAPTION_MAX_CPS:
-            issues.append(f"bloco {index} rápido demais para leitura ({cps:.1f} caracteres/s)")
+        if cps > CAPTION_HARD_MAX_CPS:
+            issues.append(
+                f"bloco {index} rápido demais para leitura ({cps:.1f} caracteres/s; "
+                f"limite duro {CAPTION_HARD_MAX_CPS:.1f})"
+            )
+        elif cps > CAPTION_MAX_CPS:
+            warnings.append(
+                f"bloco {index} acima do alvo confortável de leitura "
+                f"({cps:.1f} caracteres/s; alvo {CAPTION_MAX_CPS:.1f})"
+            )
         if start < -CAPTION_SYNC_TOLERANCE or end > candidate.duration + CAPTION_SYNC_TOLERANCE:
             issues.append(f"bloco {index} fora do intervalo do corte")
         if previous_end is not None:
@@ -1172,7 +1214,8 @@ def validate_captions(segments: list[Segment], candidate: Candidate, margin_v: i
         "alignment": "center-bottom",
         "safe_area": {"margin_left": 70, "margin_right": 70, "margin_bottom": margin_v},
         "sync_tolerance_seconds": CAPTION_SYNC_TOLERANCE,
-        "max_characters_per_second": CAPTION_MAX_CPS,
+        "recommended_characters_per_second": CAPTION_MAX_CPS,
+        "hard_max_characters_per_second": CAPTION_HARD_MAX_CPS,
         "intervals": intervals,
     }
 
@@ -1491,10 +1534,12 @@ def write_reports(
         "editing": {
             "format": "9:16 — 1080x1920",
             "audio": "áudio original preservado em AAC",
-            "captions": "ASS dinâmico, no máximo duas linhas de até 32 caracteres, sincronização auditada por palavra, gate ortográfico/confiança do ASR e margem segura",
+            "captions": "ASS dinâmico, no máximo duas linhas de até 32 caracteres, sincronização auditada por palavra, alvo de 18 cps e limite duro de 24 cps, gate ortográfico/confiança do ASR e margem segura",
             "caption_gate": {
                 "spelling_checker": "wordfreq pt quando disponível + lista de risco",
                 "minimum_word_probability": CAPTION_MIN_WORD_PROBABILITY,
+                "recommended_characters_per_second": CAPTION_MAX_CPS,
+                "hard_max_characters_per_second": CAPTION_HARD_MAX_CPS,
                 "manual_correction_policy": "aplica somente correções ASR explicitamente catalogadas; demais riscos reprovam para revisão",
             },
             "framing": "quadro completo com fundo desfocado e cores originais preservadas para proteger rostos e cenário",
@@ -1682,6 +1727,10 @@ def main() -> int:
             success = True
     finally:
         if OUTPUT.exists():
+            # Nunca deixe artefatos de renderização parcial junto dos vídeos
+            # finais; o gate do Drive aceita somente os cinco MP4 publicados.
+            for temporary in CLIPS_DIR.glob("*.part.mp4"):
+                temporary.unlink(missing_ok=True)
             write_reports(source_url, source_hash, info, clips, candidates, qa, error, profile)
     return 0 if success else 1
 
