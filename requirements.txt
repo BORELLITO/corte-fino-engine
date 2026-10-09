@@ -1,5 +1,7 @@
 yt-dlp>=2025.01.15,<2027
 faster-whisper>=1.1.0,<2
+# faster-whisper 1.x ainda usa metadata_errors na abertura do PyAV.
+av>=11,<19
 google-api-python-client>=2,<3
 google-auth>=2,<3
 google-auth-httplib2>=0.2,<1
