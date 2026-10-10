@@ -52,16 +52,19 @@ def _json_request(url: str, *, method: str = "POST", token: str = "", body: dict
 
 
 def _refresh_access_token() -> str:
-    required = ("PUBLISHER_TIKTOK_CLIENT_KEY", "PUBLISHER_TIKTOK_CLIENT_SECRET", "PUBLISHER_TIKTOK_REFRESH_TOKEN")
+    sandbox = env("PUBLISHER_TIKTOK_ENV").strip().casefold() == "sandbox"
+    prefix = "PUBLISHER_TIKTOK_SANDBOX" if sandbox else "PUBLISHER_TIKTOK"
+    required = (f"{prefix}_CLIENT_KEY", f"{prefix}_CLIENT_SECRET", f"{prefix}_REFRESH_TOKEN")
     missing = [name for name in required if not env(name)]
     if missing:
-        raise TikTokError("Credenciais ausentes: " + ", ".join(missing))
+        target = "Sandbox" if sandbox else "Produção"
+        raise TikTokError(f"Credenciais TikTok de {target} ausentes: " + ", ".join(missing))
     form = urllib.parse.urlencode(
         {
-            "client_key": env("PUBLISHER_TIKTOK_CLIENT_KEY"),
-            "client_secret": env("PUBLISHER_TIKTOK_CLIENT_SECRET"),
+            "client_key": env(f"{prefix}_CLIENT_KEY"),
+            "client_secret": env(f"{prefix}_CLIENT_SECRET"),
             "grant_type": "refresh_token",
-            "refresh_token": env("PUBLISHER_TIKTOK_REFRESH_TOKEN"),
+            "refresh_token": env(f"{prefix}_REFRESH_TOKEN"),
         }
     ).encode("utf-8")
     request = urllib.request.Request(TOKEN_URL, data=form, headers={"Content-Type": "application/x-www-form-urlencoded"}, method="POST")
@@ -79,14 +82,12 @@ def _refresh_access_token() -> str:
     if not token:
         raise TikTokError("TikTok não retornou access_token.")
     rotated_refresh = result.get("refresh_token")
-    if rotated_refresh and rotated_refresh != env("PUBLISHER_TIKTOK_REFRESH_TOKEN"):
+    if rotated_refresh and rotated_refresh != env(f"{prefix}_REFRESH_TOKEN"):
         raise TikTokError(
-            "TikTok rotacionou o refresh token; atualize PUBLISHER_TIKTOK_REFRESH_TOKEN "
-            "antes de publicar novamente."
+            f"TikTok rotacionou o refresh token de {'Sandbox' if sandbox else 'Produção'}; "
+            f"atualize {prefix}_REFRESH_TOKEN antes de publicar novamente."
         )
     return token
-
-
 def _creator_info(token: str) -> dict:
     result = _json_request(f"{API_ROOT}/post/publish/creator_info/query/", token=token)
     data = result.get("data", {})
