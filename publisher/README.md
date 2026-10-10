@@ -31,10 +31,10 @@ O campo `containsSyntheticMedia` fica em `false` para os cortes editoriais origi
 
 Secrets:
 
-- `GOOGLE_CLIENT_ID` — credencial OAuth do Google.
-- `GOOGLE_CLIENT_SECRET` — credencial OAuth do Google.
-- `GOOGLE_REFRESH_TOKEN` — refresh token do Drive.
-- `YOUTUBE_REFRESH_TOKEN` — refresh token do canal Corte Fino com escopo `https://www.googleapis.com/auth/youtube.upload`.
+- `` — credencial OAuth do Google.
+- `PUBLISHER_GOOGLE_CLIENT_ID` — credencial OAuth do Google.
+- `PUBLISHER_GOOGLE_CLIENT_SECRET` — refresh token do Drive.
+- `PUBLISHER_GOOGLE_REFRESH_TOKEN` — refresh token do canal Corte Fino com escopo `https://www.googleapis.com/auth/youtube.upload`.
 - `PUBLISHER_ENABLED=1` — só depois dos testes, para ligar a execução diária.
 
 ## TikTok
