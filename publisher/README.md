@@ -1,4 +1,4 @@
-# Corte Fino Publisher 1.4
+# Corte Fino Publisher 1.5
 
 Módulo separado do gerador de cortes. Lê os 5 MP4 prontos no Google Drive, transcreve localmente com `faster-whisper`, cria copy completa para TikTok/YouTube, ranqueia os cortes e agenda os Shorts pela YouTube Data API.
 
@@ -8,13 +8,15 @@ Pasta: `15UJh2z5hBRKB8q_JpNpH1rcZZUANO6Da`
 
 Na ativação manual, o campo `drive_folder` aceita diretamente o link compartilhado
 da pasta. O Publisher extrai o ID, valida a pasta e só então inicia a preparação.
-O ID fixo acima continua sendo o padrão das execuções agendadas.
+Se o link apontar para a pasta-mãe de saída, ele localiza a subpasta mais recente
+que contenha exatamente os cinco MP4s 01..05. O ID fixo acima continua sendo o
+padrão das execuções agendadas.
 
 Contrato: exatamente 5 MP4 identificáveis como 01, 02, 03, 04 e 05. O Publisher não cria, recorta, reprocessa nem altera o motor que gera os cinco cortes diários.
 
 ## Copy completa
 
-- Copy Editorial 2.0: variação controlada de gancho, contexto e CTA por tema, sem texto genérico repetido.
+- Copy Editorial 2.0: cada corte recebe uma copy individual baseada no próprio transcript, com gancho, evidência textual, CTA contextual e hashtags derivadas do conteúdo.
 - Título em CAIXA ALTA, baseado na fala mais forte do trecho, com fallback editorial apenas quando a fala é curta demais.
 - Legenda com apelo emocional, contexto humano, pergunta de conversa e hashtags.
 - Hashtags próprias por plataforma: TikTok não recebe `#Shorts` e YouTube não recebe `#TikTok`.
@@ -22,7 +24,8 @@ Contrato: exatamente 5 MP4 identificáveis como 01, 02, 03, 04 e 05. O Publisher
 - Tags do YouTube também são enviadas no campo nativo `snippet.tags[]`, além das hashtags na descrição.
 - O texto é normalizado para respeitar 100 caracteres no título, 5.000 bytes UTF-8 na descrição e 500 caracteres nas tags.
 - Correções ortográficas seguras são aplicadas antes da copy; tokens de transcrição conhecidos como suspeitos reprovam a rodada em vez de serem inventados.
-- O QA bloqueia título truncado, hashtag de plataforma incorreta, espaçamento inválido e erros ASR não resolvidos antes de qualquer publicação.
+- O QA bloqueia título truncado, hashtag de plataforma incorreta, espaçamento inválido, frases genéricas antigas e erros ASR não resolvidos antes de qualquer publicação.
+- A copy nunca afirma um fato que não esteja sustentado pelo transcript: evidências são trechos literais do corte; perguntas editoriais permanecem perguntas.
 
 ## Horários base — America/Sao_Paulo
 

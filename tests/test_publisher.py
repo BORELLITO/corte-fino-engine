@@ -59,12 +59,14 @@ def test_title_uses_the_strongest_hook():
 
 
 def test_copy_editorial_qa_cleans_fillers_and_safe_spelling_errors():
-    normalized = normalize_transcript("Bom, pessoal, a politica e o casino prejudicam a audiencia.")
-    assert normalized == "Bom, pessoal, a política e o cassino prejudicam a audiência."
+    normalized = normalize_transcript("Bom, pessoal, a politica e o casino prejudicam a audiencia. O impacto aparece quando ninguém confere a informação.")
+    assert normalized == "Bom, pessoal, a política e o cassino prejudicam a audiência. O impacto aparece quando ninguém confere a informação."
     title = build_title("Bom, pessoal, essa é a verdade sobre responsabilidade", "geral")
     assert not title.startswith("BOM, PESSOAL")
     assert "…" not in title
     assert copy_quality_issues(make_copy(normalized)) == []
+    assert make_copy(normalized).evidence
+    assert make_copy(normalized).cta
 
 
 def test_drive_folder_accepts_url_or_id():

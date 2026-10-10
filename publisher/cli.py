@@ -11,6 +11,8 @@ from publisher.tiktok_io import publish_tiktok, verify_tiktok_account
 
 def load(path: Path) -> dict:
     data = json.loads(path.read_text(encoding="utf-8"))
+    if int(data.get("version", 0) or 0) < 2:
+        raise RuntimeError("Manifesto antigo ou incompatível; execute prepare novamente antes de publicar.")
     if len(data.get("clips", [])) != 5:
         raise RuntimeError("Manifesto inválido: precisa conter 5 cortes.")
     return data

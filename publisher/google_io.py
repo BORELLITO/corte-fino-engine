@@ -12,6 +12,7 @@ from publisher.core import TIMEZONE, YOUTUBE_HOURS, TIKTOK_HOURS, assign_slots, 
 
 
 FOLDER_ID = "15UJh2z5hBRKB8q_JpNpH1rcZZUANO6Da"
+FOLDER_MIME = "application/vnd.google-apps.folder"
 
 
 def env(name: str, default: str = "") -> str:
@@ -106,6 +107,52 @@ def list_videos(drive, folder_id: str) -> list[dict]:
     return files
 
 
+def list_folders(drive, parent_id: str) -> list[dict]:
+    parent_id = normalize_folder_id(parent_id)
+    folders = (
+        drive.files()
+        .list(
+            q=f"'{parent_id}' in parents and trashed = false and mimeType = '{FOLDER_MIME}'",
+            pageSize=100,
+            orderBy="modifiedTime desc",
+            fields="files(id,name,mimeType,modifiedTime)",
+        )
+        .execute(num_retries=4)
+        .get("files", [])
+    )
+    return folders
+
+
+def _is_complete_batch(files: list[dict]) -> bool:
+    return len(files) == 5 and [natural_index(item.get("name", "")) for item in files] == [1, 2, 3, 4, 5]
+
+
+def resolve_publication_folder(drive, folder_id: str) -> str:
+    """Resolve either a batch folder or its parent output folder.
+
+    The daily generator creates one dated/source subfolder under the output
+    folder. Manual activation may point directly at that subfolder, while the
+    scheduled publisher may keep using the stable parent ID.
+    """
+    requested = normalize_folder_id(folder_id)
+    direct = list_videos(drive, requested)
+    if _is_complete_batch(direct):
+        return requested
+    if direct:
+        raise RuntimeError(
+            f"Pasta do Publisher possui vídeos, mas não um lote completo 01..05: encontrados {len(direct)}."
+        )
+
+    candidates: list[dict] = []
+    for child in list_folders(drive, requested):
+        videos = list_videos(drive, child["id"])
+        if _is_complete_batch(videos):
+            candidates.append(child)
+    if not candidates:
+        raise RuntimeError("Nenhuma subpasta da pasta informada contém exatamente os 5 vídeos 01..05.")
+    return candidates[0]["id"]
+
+
 def download(drive, file_id: str, target: Path) -> None:
     from googleapiclient.http import MediaIoBaseDownload
 
@@ -181,8 +228,8 @@ def publication_day(now: datetime | None = None, target_date: date | str | None 
 
 
 def prepare(folder_id: str, output: Path, target_date: date | str | None = None) -> dict:
-    folder_id = normalize_folder_id(folder_id)
     drive = drive_service()
+    folder_id = resolve_publication_folder(drive, folder_id)
     files = list_videos(drive, folder_id)
     if len(files) != 5:
         raise RuntimeError(f"Pasta do Publisher precisa conter exatamente 5 vídeos; encontrados: {len(files)}")
@@ -217,7 +264,7 @@ def prepare(folder_id: str, output: Path, target_date: date | str | None = None)
 
     assign_slots(clips)
     manifest = {
-        "version": 1,
+        "version": 2,
         "date": publication_day(target_date=target_date).isoformat(),
         "timezone": "America/Sao_Paulo",
         "drive_folder_id": folder_id,
@@ -232,8 +279,8 @@ def prepare(folder_id: str, output: Path, target_date: date | str | None = None)
 
 def verify_google_accounts(folder_id: str) -> dict:
     """Read-only preflight for Drive and the OAuth credentials used by Publisher."""
-    folder_id = normalize_folder_id(folder_id)
     drive = drive_service()
+    folder_id = resolve_publication_folder(drive, folder_id)
     files = list_videos(drive, folder_id)
     indexed = [natural_index(item.get("name", "")) for item in files]
     if len(files) != 5 or indexed != [1, 2, 3, 4, 5]:
@@ -250,6 +297,7 @@ def verify_google_accounts(folder_id: str) -> dict:
     credentials("PUBLISHER_YOUTUBE_REFRESH_TOKEN", ["https://www.googleapis.com/auth/youtube.upload"])
     return {
         "status": "ok",
+        "drive_folder_id": folder_id,
         "drive_videos": [{"index": index, "name": item.get("name", "")} for index, item in zip(indexed, files)],
         "youtube_credentials": "ok",
     }

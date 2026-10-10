@@ -3,7 +3,7 @@ from __future__ import annotations
 import re
 import unicodedata
 from collections import Counter
-from dataclasses import asdict, dataclass
+from dataclasses import asdict, dataclass, field
 from datetime import date, datetime, time, timezone
 from zoneinfo import ZoneInfo
 
@@ -15,7 +15,7 @@ YOUTUBE_PRIORITY = (16, 14, 10, 12, 18)
 TIKTOK_PRIORITY = (18, 10, 12, 16, 20)
 
 
-STOPWORDS = set("a o as os um uma uns umas de da do das dos e em no na nos nas para pra por com sem que quem qual quando onde como porque isso isto essa esse essas esses eu voce voces ele ela eles elas me te se meu minha seu sua mais menos muito muita muitos muitas ja nao sim so tambem aqui ali la tem ter vai vou foi ser sao era esta estao ta tao entao ne tipo cara gente acho fica ficar fazer faz fez pode poder todo toda todos todas num numa ate ai bem sobre existe ainda realmente falei falou falando dizer disse diz aqui agora assim entao bom pessoal".split())
+STOPWORDS = set("a o as os um uma uns umas de da do das dos e em no na nos nas para pra por com sem que quem qual quando onde como porque isso isto essa esse essas esses eu voce voces ele ela eles elas me te se meu minha seu sua mais menos muito muita muitos muitas ja nao sim so tambem aqui ali la tem ter vai vou foi ser sao era esta estao ta tao entao ne tipo cara gente acho fica ficar fazer faz fez pode poder todo toda todos todas num numa ate ai bem sobre existe ainda realmente falei falo falou falando dizer disse diz aqui assim entao bom pessoal".split())
 COPY_NOISE = set("assunto assuntos coisa coisas pessoa pessoas parte jeito forma fala falas trecho trechos video videos canal corte cortes sempre nunca agora hoje casa ganha ganhou divulga divulgar".split())
 TOPIC_RULES = {
     "apostas": "aposta apostas bet bets cassino cassinos tigrinho jogo jogos vicio apostar".split(),
@@ -48,60 +48,6 @@ KEYWORD_ALIASES = {
     "tragedia": "tragédia",
     "vicio": "vício",
 }
-CTA_VARIANTS = {
-    "apostas": (
-        "Onde termina a escolha individual e começa a responsabilidade de quem influencia?",
-        "Você acha que o problema está apenas em apostar ou também em estimular esse comportamento?",
-        "Ganhar uma vez muda sua visão sobre o risco?",
-    ),
-    "politica": (
-        "Você concorda com esse argumento ou vê a situação de outra forma?",
-        "Esse raciocínio explica o problema ou simplifica demais o debate?",
-        "Qual consequência dessa posição costuma ser ignorada?",
-    ),
-    "seguranca": (
-        "Na prática, qual seria a resposta mais justa para esse problema?",
-        "Punir, prevenir ou mudar a estrutura: por onde esse debate deveria começar?",
-        "Qual parte dessa discussão costuma ficar fora do discurso público?",
-    ),
-    "midia": (
-        "Informar ou explorar o impacto emocional: onde você colocaria o limite?",
-        "Quando a informação vira espetáculo, quem assume a responsabilidade?",
-        "Você acha que a audiência justifica esse tipo de exposição?",
-    ),
-    "geral": (
-        "Você concorda com esse ponto ou enxerga de outra forma?",
-        "Esse argumento convence ou deixa uma contradição importante de fora?",
-        "Qual é a sua leitura sobre essa fala?",
-    ),
-}
-EMOTIONAL_BRIDGE_VARIANTS = {
-    "apostas": (
-        "Quando a recompensa vira vício, a discussão deixa de ser apenas sobre dinheiro.",
-        "Por trás da promessa de ganho existe uma discussão sobre comportamento e responsabilidade.",
-        "Ganhar uma vez não apaga o risco de perder no longo prazo.",
-    ),
-    "politica": (
-        "A fala toca em uma consequência concreta de um debate que costuma ficar preso aos slogans.",
-        "O argumento parece simples, mas muda de peso quando observamos quem será afetado por ele.",
-        "Mais do que uma disputa de opiniões, essa fala expõe uma escolha com consequências reais.",
-    ),
-    "seguranca": (
-        "Quando esse assunto entra em pauta, o debate deixa de ser abstrato e encosta na vida real.",
-        "A discussão sobre segurança muda quando colocamos as pessoas afetadas no centro da análise.",
-        "Entre a reação imediata e a solução duradoura existe um debate que quase sempre é simplificado.",
-    ),
-    "midia": (
-        "A questão não é apenas mostrar o fato, mas decidir como a dor será apresentada ao público.",
-        "Informação e audiência podem caminhar juntas, mas nem sempre sem conflito.",
-        "O impacto de uma notícia também depende da forma como ela é enquadrada e repetida.",
-    ),
-    "geral": (
-        "Uma fala aparentemente simples pode revelar uma discussão muito maior.",
-        "O ponto central não está apenas no que foi dito, mas na consequência desse raciocínio.",
-        "É uma opinião curta, mas com espaço suficiente para abrir um debate importante.",
-    ),
-}
 TOPIC_TAGS = {
     "apostas": "#Apostas",
     "politica": "#Politica",
@@ -109,13 +55,19 @@ TOPIC_TAGS = {
     "midia": "#Midia",
     "geral": "#Debate",
 }
-TITLE_TEMPLATES = {
-    "apostas": "A VERDADE INCÔMODA SOBRE APOSTAS E RESPONSABILIDADE",
-    "politica": "O ARGUMENTO QUE DIVIDIU O DEBATE",
-    "seguranca": "A PERGUNTA QUE A SEGURANÇA PÚBLICA EXIGE",
-    "midia": "QUANDO A MÍDIA TRANSFORMA DOR EM AUDIÊNCIA",
-    "geral": "ESSA FALA ABRIU UM DEBATE INCÔMODO",
+TOPIC_LABELS = {
+    "apostas": "apostas",
+    "politica": "política",
+    "seguranca": "segurança",
+    "midia": "mídia",
+    "geral": "essa fala",
 }
+GENERIC_COPY_PATTERNS = (
+    "o trecho transforma",
+    "a conversa coloca",
+    "uma fala aparentemente simples",
+    "recortes que transformam falas em debates",
+)
 
 # Correções deliberadamente pequenas e verificadas no motor de legendas. O
 # Publisher não tenta "embelezar" nomes, marcas ou gírias desconhecidas.
@@ -167,6 +119,9 @@ class CopyPack:
     youtube_title: str
     youtube_description: str
     youtube_tags: list[str]
+    evidence: list[str] = field(default_factory=list)
+    cta: str = ""
+    editorial_mode: str = "grounded_context"
 
 
 def fold(text: str) -> str:
@@ -242,7 +197,11 @@ def detect_topic(text: str) -> str:
 
 def split_sentences(text: str) -> list[str]:
     parts = re.split(r"(?<=[.!?])\s+|\n+", re.sub(r"\s+", " ", text).strip())
-    return [sentence.strip(" -–—") for sentence in parts if 18 <= len(sentence.strip()) <= 220]
+    sentences = [sentence.strip(" -–—") for sentence in parts if 18 <= len(sentence.strip()) <= 220]
+    if sentences:
+        return sentences
+    compact = re.sub(r"\s+", " ", text or "").strip(" -–—")
+    return [compact] if 18 <= len(compact) <= 220 else []
 
 
 def sentence_score(sentence: str) -> float:
@@ -261,8 +220,13 @@ def sentence_score(sentence: str) -> float:
 def choose_hook(text: str) -> str:
     sentences = split_sentences(text)
     if not sentences:
-        return truncate(text or "Esse trecho levanta uma discussão importante", 92)
-    return truncate(max(sentences[:18], key=sentence_score), 92).strip('"“”')
+        return ""
+    candidate = max(sentences[:18], key=sentence_score).strip('"“”')
+    if len(candidate) <= 92:
+        return candidate
+    clauses = [part.strip(" ,;:-") for part in re.split(r"[,;:!?]", candidate)]
+    valid = [part for part in clauses if 18 <= len(part) <= 92]
+    return max(valid, key=len, default="")
 
 
 def clean_hook(text: str) -> str:
@@ -271,18 +235,19 @@ def clean_hook(text: str) -> str:
     while cleaned and cleaned != previous:
         previous = cleaned
         cleaned = LEADING_FILLER_RE.sub("", cleaned).strip()
-    return cleaned[:1].upper() + cleaned[1:] if cleaned else "Esse trecho levanta uma discussão importante"
+    return cleaned[:1].upper() + cleaned[1:] if cleaned else ""
 
 
 def build_title(hook: str, topic: str) -> str:
+    del topic  # Mantido na assinatura para compatibilidade com o manifesto atual.
     candidate = clean_hook(hook)
     if len(candidate) > 100 or candidate.upper().endswith(BAD_TITLE_ENDINGS) or "…" in candidate:
         clauses = [part.strip(" ,;:-") for part in re.split(r"[,;:!?]", candidate)]
         clauses = [part for part in clauses if len(part) >= 24 and not part.upper().endswith(BAD_TITLE_ENDINGS)]
         candidate = max(clauses, key=len, default="")
-    if len(candidate) < 24 or len(candidate) > 100 or candidate.upper().endswith(BAD_TITLE_ENDINGS):
-        candidate = TITLE_TEMPLATES.get(topic, TITLE_TEMPLATES["geral"])
-    return candidate.upper().strip(" .,!?:;")
+    if not candidate or len(candidate) > 100 or candidate.upper().endswith(BAD_TITLE_ENDINGS) or "…" in candidate:
+        raise ValueError("Copy reprovada: não foi possível formar um título completo a partir da fala real.")
+    return candidate.upper().strip(" .,:;")
 
 
 def viral_score(text: str) -> float:
@@ -304,8 +269,13 @@ def copy_quality_issues(pack: CopyPack) -> list[str]:
     for token in UNRESOLVED_ASR_TOKENS:
         if re.search(rf"(?<![a-zà-ÿ]){re.escape(fold(token))}(?![a-zà-ÿ])", combined):
             issues.append(f"token ASR não resolvido: {token}")
+    for phrase in GENERIC_COPY_PATTERNS:
+        if phrase in combined:
+            issues.append(f"frase genérica proibida: {phrase}")
     if "#shorts" in fold(pack.tiktok_caption):
         issues.append("TikTok não pode conter #Shorts")
+    if "#tiktok" in fold(pack.youtube_description):
+        issues.append("YouTube não pode conter #TikTok")
     if "…" in pack.youtube_title or pack.youtube_title.upper().endswith(BAD_TITLE_ENDINGS):
         issues.append("título incompleto ou truncado")
     for text in texts:
@@ -313,6 +283,55 @@ def copy_quality_issues(pack: CopyPack) -> list[str]:
             issues.append("pontuação ou espaçamento inválido")
             break
     return list(dict.fromkeys(issues))
+
+
+def _evidence_sentences(transcript: str, hook: str, keywords: list[str]) -> list[str]:
+    """Select exact transcript sentences; never synthesize factual context."""
+    hook_key = fold(hook)
+    candidates = []
+    for sentence in split_sentences(transcript):
+        if fold(sentence) == hook_key:
+            continue
+        relevance = sentence_score(sentence)
+        relevance += sum(0.75 for keyword in keywords if re.search(
+            rf"(?<![\wÀ-ÿ]){re.escape(keyword)}(?![\wÀ-ÿ])", fold(sentence)
+        ))
+        candidates.append((relevance, sentence))
+    candidates.sort(key=lambda item: (-item[0], item[1]))
+    return [sentence for _, sentence in candidates[:1]]
+
+
+def _question_anchor(topic: str, keywords: list[str], transcript: str) -> str:
+    for keyword in keywords:
+        if keyword in KEYWORD_ALIASES:
+            return KEYWORD_ALIASES[keyword].lower()
+    if topic != "geral":
+        return TOPIC_LABELS.get(topic, TOPIC_LABELS["geral"])
+    for keyword in keywords:
+        if keyword not in COPY_NOISE and len(keyword) >= 4:
+            original = next(
+                (
+                    token
+                    for token in re.findall(r"[A-Za-zÀ-ÿ0-9]{3,}", transcript)
+                    if fold(token) == keyword
+                ),
+                keyword,
+            )
+            return (original or keyword).lower()
+    return TOPIC_LABELS.get(topic, TOPIC_LABELS["geral"])
+
+
+def build_contextual_cta(transcript: str, topic: str, keywords: list[str], hook: str) -> str:
+    """Use curiosity and tension as questions, without asserting new facts."""
+    normalized = fold(transcript)
+    anchor = _question_anchor(topic, keywords, transcript)
+    if "?" in hook or "?" in transcript:
+        return f"Essa pergunta sobre {anchor} responde ao problema ou deixa algo importante de fora?"
+    if any(marker in normalized for marker in (" mas ", " porem ", " porém ", " so que ", " só que ", " nao ", " não ")):
+        return f"Esse contraste sobre {anchor} explica a situação ou simplifica demais a discussão?"
+    if any(word in normalized for word in ("raiva", "medo", "vergonha", "sangue", "morte", "perdi", "trauma")):
+        return f"Essa fala sobre {anchor} desperta mais identificação, revolta ou dúvida em você?"
+    return f"Depois de ouvir essa fala sobre {anchor}, qual ponto mais chamou sua atenção?"
 
 
 def build_hashtags(topic: str, keywords: list[str], platform: str = "youtube") -> list[str]:
@@ -352,17 +371,21 @@ def build_youtube_tags(topic: str, keywords: list[str]) -> list[str]:
 
 def make_copy(transcript: str) -> CopyPack:
     transcript = normalize_transcript(transcript)
+    if len(transcript.split()) < 6:
+        raise ValueError("Copy reprovada: transcrição insuficiente para uma criação individual.")
     topic = detect_topic(transcript)
     keys = get_keywords(transcript)
     hook = clean_hook(choose_hook(transcript))
+    if not hook:
+        raise ValueError("Copy reprovada: não foi encontrado um gancho completo na fala real.")
     title = build_title(hook, topic)
+    evidence = _evidence_sentences(transcript, hook, keys)
+    cta = build_contextual_cta(transcript, topic, keys, hook)
     tiktok_hashtag_text = " ".join(build_hashtags(topic, keys, "tiktok"))
     youtube_hashtag_text = " ".join(build_hashtags(topic, keys, "youtube"))
-    variants_index = int(viral_score(transcript) * 100) % len(EMOTIONAL_BRIDGE_VARIANTS[topic])
-    bridge = EMOTIONAL_BRIDGE_VARIANTS[topic][variants_index]
-    cta = CTA_VARIANTS[topic][variants_index]
-    tiktok = f"{title}\n\n{bridge}\n\n{cta}\n\n{tiktok_hashtag_text}"
-    youtube_description = f"{hook}\n\n{bridge}\n\n{cta}\n\nCorte Fino — recortes que transformam falas em debates.\n\n{youtube_hashtag_text}"
+    evidence_block = f'“{evidence[0]}”\n\n' if evidence else ""
+    tiktok = f"{title}\n\n{evidence_block}{cta}\n\n{tiktok_hashtag_text}"
+    youtube_description = f"{hook}\n\n{evidence_block}{cta}\n\n{youtube_hashtag_text}"
     pack = CopyPack(
         topic,
         hook,
@@ -372,8 +395,15 @@ def make_copy(transcript: str) -> CopyPack:
         title,
         truncate_utf8(youtube_description, 5000),
         build_youtube_tags(topic, keys),
+        evidence=evidence,
+        cta=cta,
     )
     issues = copy_quality_issues(pack)
+    normalized_source = fold(transcript)
+    for sentence in evidence:
+        if fold(sentence) not in normalized_source:
+            issues.append("evidência editorial não encontrada na transcrição")
+            break
     if issues:
         raise ValueError("Copy reprovada no QA: " + "; ".join(issues))
     return pack
