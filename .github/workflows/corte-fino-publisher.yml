@@ -204,6 +204,9 @@ jobs:
 
       - name: Teste de publicação TikTok no Sandbox
         if: steps.guard.outputs.run == '1' && github.event_name == 'workflow_dispatch' && inputs.mode == 'tiktok-now' && inputs.tiktok_env == 'sandbox'
+        env:
+          # Apps Sandbox não auditados só podem publicar como privado.
+          PUBLISHER_TIKTOK_PRIVACY_LEVEL: SELF_ONLY
         run: python -m publisher.cli tiktok --allow-immediate
 
       - name: Relatório final
