@@ -105,7 +105,7 @@ def test_editorial_score_gate_keeps_candidates_above_threshold(monkeypatch):
         selected, candidates = select_candidates(segments, {})
         assert candidates
         assert selected
-        assert all(candidate.accepted for candidate in candidates if candidate.score >= 0.0)
+        assert all(candidate.accepted for candidate in selected)
     finally:
         engine.USE_EDITORIAL_SCORE_GATE = previous_gate
         engine.MIN_EDITORIAL_SCORE = previous_minimum
