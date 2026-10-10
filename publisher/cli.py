@@ -33,11 +33,13 @@ def report(manifest: dict, drive=None) -> dict:
         youtube_status = properties.get("cf_youtube_upload_status", "pending")
         if youtube_status == "PENDING":
             youtube_status = "recovery_required"
+        if properties.get("cf_youtube_video_id") and youtube_status == "SCHEDULED":
+            youtube_status = "scheduled"
         youtube.append({
             "index": clip["index"],
             "hour": clip["schedule"]["youtube_hour"],
             "title": clip["copy"]["youtube_title"],
-            "status": "scheduled" if properties.get("cf_youtube_video_id") else youtube_status,
+            "status": youtube_status,
             "video_id": properties.get("cf_youtube_video_id"),
         })
     for clip in sorted(manifest["clips"], key=lambda c: c["schedule"]["tiktok_hour"]):
