@@ -87,8 +87,8 @@ def test_top_five_is_closed():
     assert REQUIRE_EXACT_TOP_FIVE is True
     assert MAX_CLIPS == 5
 
-def test_editorial_score_gate_keeps_candidates_above_threshold():
-    from main import Candidate, select_candidates
+def test_editorial_score_gate_keeps_candidates_above_threshold(monkeypatch):
+    from main import select_candidates
     import main as engine
 
     previous_gate = engine.USE_EDITORIAL_SCORE_GATE
@@ -96,6 +96,7 @@ def test_editorial_score_gate_keeps_candidates_above_threshold():
     try:
         engine.USE_EDITORIAL_SCORE_GATE = True
         engine.MIN_EDITORIAL_SCORE = 78.0
+        monkeypatch.setattr(engine, "validate_captions", lambda *args, **kwargs: {"passed": True})
         segments = [
             Segment(0, 50, "Essa é uma fala forte sobre política e responsabilidade.", []),
             Segment(50, 100, "O contexto continua e explica a consequência pública.", []),
@@ -103,6 +104,7 @@ def test_editorial_score_gate_keeps_candidates_above_threshold():
         ]
         selected, candidates = select_candidates(segments, {})
         assert candidates
+        assert selected
         assert all(candidate.accepted or candidate.score < 78.0 for candidate in candidates)
     finally:
         engine.USE_EDITORIAL_SCORE_GATE = previous_gate
