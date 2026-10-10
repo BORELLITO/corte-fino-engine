@@ -1,4 +1,5 @@
-from datetime import date
+from datetime import date, datetime
+from zoneinfo import ZoneInfo
 
 from publisher.core import YOUTUBE_HOURS, TIKTOK_HOURS, assign_slots, detect_topic, local_publish_at, make_copy, natural_index
 from publisher.tiktok_io import publish_tiktok
@@ -55,3 +56,21 @@ def test_tiktok_dry_run_keeps_five_scheduled_posts():
     assert len(result) == 5
     assert [item["index"] for item in result] == [1, 2, 3, 4, 5]
     assert all(item["status"] == "dry_run" for item in result)
+
+
+def test_tiktok_due_only_returns_one_post_for_the_current_window():
+    manifest = {
+        "date": "2026-10-10",
+        "clips": [
+            {"index": index, "schedule": {"tiktok_hour": hour}, "copy": {"tiktok_caption": f"Legenda {index}"}}
+            for index, hour in enumerate(TIKTOK_HOURS, 1)
+        ],
+    }
+    result = publish_tiktok(
+        manifest,
+        dry_run=True,
+        due_only=True,
+        now=datetime(2026, 10, 10, 10, 15, tzinfo=ZoneInfo("America/Sao_Paulo")),
+    )
+    assert len(result) == 1
+    assert result[0]["index"] == 1

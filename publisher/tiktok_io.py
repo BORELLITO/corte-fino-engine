@@ -7,10 +7,10 @@ import time
 import urllib.error
 import urllib.parse
 import urllib.request
-from datetime import date
+from datetime import date, datetime, time
 from pathlib import Path
 
-from publisher.core import local_publish_at, truncate_utf8
+from publisher.core import TIMEZONE, local_publish_at, truncate_utf8
 from publisher.google_io import download, drive_service, env, marker
 
 
@@ -154,15 +154,37 @@ def _post_clip(token: str, creator: dict, clip: dict, source: Path) -> dict:
     return {"publish_id": publish_id, "status": state}
 
 
-def publish_tiktok(manifest: dict, dry_run: bool = False) -> list[dict]:
+def _due_clips(manifest: dict, now: datetime | None = None) -> list[dict]:
+    current = now or datetime.now(TIMEZONE)
     day = date.fromisoformat(manifest["date"])
+    if current.date() != day:
+        return []
+    eligible = [
+        clip
+        for clip in manifest["clips"]
+        if current >= datetime.combine(
+            day,
+            time(hour=int(clip["schedule"]["tiktok_hour"])),
+            tzinfo=TIMEZONE,
+        )
+    ]
+    return sorted(eligible, key=lambda item: (int(item["schedule"]["tiktok_hour"]), item["index"]))
+
+
+def publish_tiktok(manifest: dict, dry_run: bool = False, due_only: bool = False, now: datetime | None = None) -> list[dict]:
+    day = date.fromisoformat(manifest["date"])
+    clips = _due_clips(manifest, now) if due_only else sorted(manifest["clips"], key=lambda item: item["index"])
     if dry_run:
-        return [{"index": clip["index"], "status": "dry_run", "publish_at": local_publish_at(day, int(clip["schedule"]["tiktok_hour"])), "caption": truncate_utf8(clip["copy"]["tiktok_caption"], 2200)} for clip in sorted(manifest["clips"], key=lambda item: item["index"])]
+        if due_only:
+            clips = clips[:1]
+        return [{"index": clip["index"], "status": "dry_run", "publish_at": local_publish_at(day, int(clip["schedule"]["tiktok_hour"])), "caption": truncate_utf8(clip["copy"]["tiktok_caption"], 2200)} for clip in clips]
     token, creator, drive = _refresh_access_token(), None, None
     creator = _creator_info(token)
     drive = drive_service()
     results: list[dict] = []
-    for clip in sorted(manifest["clips"], key=lambda item: item["index"]):
+    if due_only and not clips:
+        return [{"status": "nothing_due"}]
+    for clip in clips:
         item = drive.files().get(fileId=clip["drive_id"], fields="id,name,appProperties").execute(num_retries=4)
         properties = item.get("appProperties", {})
         if properties.get("cf_tiktok_publish_id"):
@@ -174,4 +196,6 @@ def publish_tiktok(manifest: dict, dry_run: bool = False) -> list[dict]:
             outcome = _post_clip(token, creator, clip, source)
         marker(drive, clip["drive_id"], {"cf_tiktok_publish_id": outcome["publish_id"], "cf_tiktok_status": outcome["status"], "cf_tiktok_date": manifest["date"]})
         results.append({"index": clip["index"], **outcome})
+        if due_only:
+            break
     return results

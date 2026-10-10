@@ -40,7 +40,7 @@ Secrets:
 
 ## TikTok
 
-O Publisher gera automaticamente ordem, horário, legenda e hashtags para cinco vídeos. Com o app TikTok aprovado, o Content Posting API configurado e os três secrets abaixo preenchidos, o comando `tiktok` publica os cinco cortes como Direct Post e marca cada arquivo no Drive para impedir duplicidade.
+O Publisher gera automaticamente ordem, horário, legenda e hashtags para cinco vídeos. Como o Direct Post do TikTok envia o vídeo imediatamente, o workflow roda nas cinco janelas locais (10h, 12h, 16h, 18h e 20h) e publica no máximo um corte por janela. Cada arquivo é marcado no Drive para impedir duplicidade.
 
 Secrets exclusivos do Publisher:
 
@@ -48,7 +48,7 @@ Secrets exclusivos do Publisher:
 - `PUBLISHER_TIKTOK_CLIENT_SECRET` — Client secret do app Corte Fino Publisher.
 - `PUBLISHER_TIKTOK_REFRESH_TOKEN` — refresh token obtido após autorizar a conta TikTok de publicação.
 
-O modo `tiktok --dry-run` não acessa a API e valida os cinco horários e captions. A publicação real exige `video.publish`, autorização da conta TikTok e aprovação/auditoria do app para sair das limitações de teste da plataforma.
+O modo `tiktok --dry-run` não acessa a API e valida os cinco horários e captions. `tiktok --due-only` publica somente o próximo corte vencido, evitando enviar os cinco de uma vez. A publicação real exige `video.publish`, autorização da conta TikTok e aprovação/auditoria do app para sair das limitações de teste da plataforma.
 
 ## Comandos
 

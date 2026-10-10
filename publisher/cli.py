@@ -29,6 +29,7 @@ def main() -> int:
     parser.add_argument("--folder-id", default=os.environ.get("PUBLISHER_DRIVE_FOLDER_ID", FOLDER_ID))
     parser.add_argument("--manifest", default="publisher/state/current.json")
     parser.add_argument("--dry-run", action="store_true")
+    parser.add_argument("--due-only", action="store_true", help="publica no máximo um TikTok já vencido no horário local")
     args = parser.parse_args()
     path = Path(args.manifest)
     if args.command == "prepare":
@@ -39,7 +40,7 @@ def main() -> int:
     if args.command == "youtube":
         print(json.dumps(publish_youtube(data, dry_run=args.dry_run), ensure_ascii=False, indent=2))
     elif args.command == "tiktok":
-        print(json.dumps(publish_tiktok(data, dry_run=args.dry_run), ensure_ascii=False, indent=2))
+        print(json.dumps(publish_tiktok(data, dry_run=args.dry_run, due_only=args.due_only), ensure_ascii=False, indent=2))
     else:
         print(json.dumps(report(data), ensure_ascii=False, indent=2))
     return 0
