@@ -57,6 +57,14 @@ Secrets:
 
 ## TikTok
 
+Fluxo operacional oficial:
+
+1. O vídeo é colocado na pasta de entrada do gerador.
+2. O workflow **Corte Fino Diário** seleciona o vídeo, cria exatamente cinco cortes e envia os cinco MP4 para uma única pasta de lote no Drive.
+3. O gerador registra automaticamente o link e o ID dessa pasta em `publisher/state/latest_batch.json`.
+4. O workflow **Corte Fino Publisher** usa esse lote registrado automaticamente. O campo `drive_folder` só é necessário quando você quiser substituir manualmente o lote.
+5. O Publisher prepara um manifesto v3, cria as copies e publica YouTube/TikTok de forma independente, usando os mesmos cinco arquivos e marcadores anti-duplicidade no Drive.
+
 O Publisher gera automaticamente ordem, horário, legenda e hashtags para cinco vídeos. Como o Direct Post do TikTok envia o vídeo imediatamente, o workflow roda nas cinco janelas locais (10h, 12h, 16h, 18h e 20h) e publica no máximo um corte por janela. Cada arquivo é marcado no Drive para impedir duplicidade.
 
 Secrets exclusivos do Publisher:
@@ -68,6 +76,9 @@ Secrets exclusivos do Publisher:
 - `PUBLISHER_TIKTOK_PRIVACY_LEVEL` — opcional; padrão `PUBLIC_TO_EVERYONE`, sempre validado contra as opções devolvidas pela conta.
 
 O modo `tiktok --dry-run` não acessa a API e valida os cinco horários e captions. `tiktok --due-only` publica somente o próximo corte vencido, evitando enviar os cinco de uma vez. A publicação imediata de todos os cortes fica bloqueada por padrão e exige confirmação explícita. Depois do `init`, o `publish_id` é gravado imediatamente no Drive; novas execuções consultam esse ID antes de criar outro post. Uploads de chunks têm retry e estados ainda processando não são tratados como concluídos. A publicação real exige `video.publish`, autorização da conta TikTok e aprovação/auditoria do app para sair das limitações de teste da plataforma.
+Para o teste real controlado do Sandbox pelo GitHub Actions, use `mode=tiktok-now` e `tiktok_env=sandbox`. Esse modo prepara o lote e envia os cinco vídeos imediatamente apenas para a conta Sandbox configurada; ele é bloqueado quando o ambiente escolhido é Produção. Em Produção, o modo normal continua usando `--due-only`, um vídeo por janela programada.
+
+
 
 Antes de ativar a publicação, rode `python -m publisher.cli verify-tiktok`. Esse comando renova o OAuth, consulta o perfil autorizado e não publica nem envia vídeo. Se `PUBLISHER_TIKTOK_EXPECTED_USERNAME` estiver configurado, a execução falha quando o token pertence a outro perfil.
 
