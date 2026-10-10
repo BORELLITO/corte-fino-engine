@@ -4,11 +4,11 @@ on:
   workflow_dispatch:
     inputs:
       mode:
-        description: "prepare, dry-run, preflight, verify-google, verify-tiktok, youtube, tiktok ou all"
+        description: "prepare, dry-run, preflight, verify-google, verify-tiktok, youtube, tiktok, tiktok-now ou all"
         required: true
         default: "dry-run"
         type: choice
-        options: [dry-run, prepare, preflight, verify-google, verify-tiktok, youtube, tiktok, all]
+        options: [dry-run, prepare, preflight, verify-google, verify-tiktok, youtube, tiktok, tiktok-now, all]
       target_date:
         description: "data ISO opcional para recovery manual (AAAA-MM-DD)"
         required: false
@@ -60,7 +60,7 @@ jobs:
       PUBLISHER_TIKTOK_SANDBOX_CLIENT_SECRET: ${{ secrets.TIKTOK_SANDBOX_CLIENT_SECRET }}
       PUBLISHER_TIKTOK_SANDBOX_REFRESH_TOKEN: ${{ secrets.TIKTOK_SANDBOX_REFRESH_TOKEN }}
       PUBLISHER_TIKTOK_ENV: ${{ github.event_name == 'workflow_dispatch' && inputs.tiktok_env || 'production' }}
-      PUBLISHER_TIKTOK_EXPECTED_USERNAME: ${{ secrets.PUBLISHER_TIKTOK_EXPECTED_USERNAME }}
+      PUBLISHER_TIKTOK_EXPECTED_USERNAME: ${{ github.event_name == 'workflow_dispatch' && inputs.tiktok_env == 'sandbox' && 'absurdodocumentado' || secrets.PUBLISHER_TIKTOK_EXPECTED_USERNAME }}
       PUBLISHER_TIKTOK_PRIVACY_LEVEL: PUBLIC_TO_EVERYONE
       PUBLISHER_ENABLED: ${{ secrets.PUBLISHER_ENABLED }}
 
@@ -195,6 +195,16 @@ jobs:
       - name: Publicar TikTok
         if: steps.guard.outputs.run == '1' && ((github.event_name == 'workflow_dispatch' && (inputs.mode == 'tiktok' || inputs.mode == 'all')) || (github.event_name == 'schedule' && github.event.schedule != '30 11 * * *' && env.PUBLISHER_ENABLED == '1'))
         run: python -m publisher.cli tiktok --due-only
+
+      - name: Bloquear publicação imediata fora do Sandbox
+        if: steps.guard.outputs.run == '1' && github.event_name == 'workflow_dispatch' && inputs.mode == 'tiktok-now' && inputs.tiktok_env != 'sandbox'
+        run: |
+          echo "O modo tiktok-now é exclusivo do Sandbox; use tiktok para a publicação controlada em Produção."
+          exit 1
+
+      - name: Teste de publicação TikTok no Sandbox
+        if: steps.guard.outputs.run == '1' && github.event_name == 'workflow_dispatch' && inputs.mode == 'tiktok-now' && inputs.tiktok_env == 'sandbox'
+        run: python -m publisher.cli tiktok --allow-immediate
 
       - name: Relatório final
         if: always() && steps.guard.outputs.run == '1' && (steps.prepare.outcome == 'success' || (github.event_name == 'schedule' && github.event.schedule != '30 11 * * *')) && (github.event_name != 'workflow_dispatch' || (inputs.mode != 'verify-tiktok' && inputs.mode != 'verify-google' && inputs.mode != 'preflight'))
