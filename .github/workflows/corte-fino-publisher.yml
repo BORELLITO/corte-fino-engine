@@ -4,11 +4,11 @@ on:
   workflow_dispatch:
     inputs:
       mode:
-        description: "prepare, dry-run, youtube, tiktok ou all"
+        description: "prepare, dry-run, verify-tiktok, youtube, tiktok ou all"
         required: true
         default: "dry-run"
         type: choice
-        options: [dry-run, prepare, youtube, tiktok, all]
+        options: [dry-run, prepare, verify-tiktok, youtube, tiktok, all]
   schedule:
     - cron: "30 11 * * *" # 08:30 — prepara o manifesto e agenda o YouTube
     - cron: "0 13 * * *" # 10:00 — TikTok 01
@@ -39,6 +39,7 @@ jobs:
       PUBLISHER_TIKTOK_CLIENT_KEY: ${{ secrets.PUBLISHER_TIKTOK_CLIENT_KEY }}
       PUBLISHER_TIKTOK_CLIENT_SECRET: ${{ secrets.PUBLISHER_TIKTOK_CLIENT_SECRET }}
       PUBLISHER_TIKTOK_REFRESH_TOKEN: ${{ secrets.PUBLISHER_TIKTOK_REFRESH_TOKEN }}
+      PUBLISHER_TIKTOK_EXPECTED_USERNAME: ${{ secrets.PUBLISHER_TIKTOK_EXPECTED_USERNAME }}
       PUBLISHER_ENABLED: ${{ secrets.PUBLISHER_ENABLED }}
 
     steps:
@@ -95,6 +96,10 @@ jobs:
       - name: Dry-run TikTok
         if: steps.guard.outputs.run == '1' && github.event_name == 'workflow_dispatch' && inputs.mode == 'dry-run'
         run: python -m publisher.cli tiktok --dry-run
+
+      - name: Verificar conta TikTok
+        if: steps.guard.outputs.run == '1' && github.event_name == 'workflow_dispatch' && inputs.mode == 'verify-tiktok'
+        run: python -m publisher.cli verify-tiktok
 
       - name: Agendar YouTube
         if: steps.guard.outputs.run == '1' && ((github.event_name == 'workflow_dispatch' && (inputs.mode == 'youtube' || inputs.mode == 'all')) || (github.event_name == 'schedule' && github.event.schedule == '30 11 * * *' && env.PUBLISHER_ENABLED == '1'))

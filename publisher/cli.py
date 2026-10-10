@@ -6,7 +6,7 @@ import os
 from pathlib import Path
 
 from publisher.google_io import FOLDER_ID, prepare, publish_youtube
-from publisher.tiktok_io import publish_tiktok
+from publisher.tiktok_io import publish_tiktok, verify_tiktok_account
 
 
 def load(path: Path) -> dict:
@@ -25,13 +25,16 @@ def report(manifest: dict) -> dict:
 
 def main() -> int:
     parser = argparse.ArgumentParser(description="Corte Fino Publisher")
-    parser.add_argument("command", choices=["prepare", "report", "youtube", "tiktok"])
+    parser.add_argument("command", choices=["prepare", "report", "youtube", "tiktok", "verify-tiktok"])
     parser.add_argument("--folder-id", default=os.environ.get("PUBLISHER_DRIVE_FOLDER_ID", FOLDER_ID))
     parser.add_argument("--manifest", default="publisher/state/current.json")
     parser.add_argument("--dry-run", action="store_true")
     parser.add_argument("--due-only", action="store_true", help="publica no máximo um TikTok já vencido no horário local")
     args = parser.parse_args()
     path = Path(args.manifest)
+    if args.command == "verify-tiktok":
+        print(json.dumps(verify_tiktok_account(), ensure_ascii=False, indent=2))
+        return 0
     if args.command == "prepare":
         data = prepare(args.folder_id, path)
         print(json.dumps({"status": "prepared", "date": data["date"], "clips": 5}, ensure_ascii=False))

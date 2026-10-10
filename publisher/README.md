@@ -47,8 +47,11 @@ Secrets exclusivos do Publisher:
 - `PUBLISHER_TIKTOK_CLIENT_KEY` — Client key do app Corte Fino Publisher.
 - `PUBLISHER_TIKTOK_CLIENT_SECRET` — Client secret do app Corte Fino Publisher.
 - `PUBLISHER_TIKTOK_REFRESH_TOKEN` — refresh token obtido após autorizar a conta TikTok de publicação.
+- `PUBLISHER_TIKTOK_EXPECTED_USERNAME` — opcional; @handle esperado para bloquear publicação na conta errada.
 
 O modo `tiktok --dry-run` não acessa a API e valida os cinco horários e captions. `tiktok --due-only` publica somente o próximo corte vencido, evitando enviar os cinco de uma vez. A publicação real exige `video.publish`, autorização da conta TikTok e aprovação/auditoria do app para sair das limitações de teste da plataforma.
+
+Antes de ativar a publicação, rode `python -m publisher.cli verify-tiktok`. Esse comando renova o OAuth, consulta o perfil autorizado e não publica nem envia vídeo. Se `PUBLISHER_TIKTOK_EXPECTED_USERNAME` estiver configurado, a execução falha quando o token pertence a outro perfil.
 
 ## Comandos
 
@@ -60,6 +63,7 @@ python -m publisher.cli youtube
 python -m publisher.cli tiktok --dry-run
 python -m publisher.cli tiktok --due-only
 python -m publisher.cli tiktok
+python -m publisher.cli verify-tiktok
 ```
 
 ## Guards

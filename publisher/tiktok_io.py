@@ -87,6 +87,33 @@ def _creator_info(token: str) -> dict:
     return data
 
 
+def verify_tiktok_account() -> dict:
+    """Validate TikTok OAuth and return non-secret account metadata.
+
+    This is intentionally read-only: it refreshes the access token and calls
+    creator_info, but it never initializes a post or uploads a video.
+    """
+    token = _refresh_access_token()
+    creator = _creator_info(token)
+    username = str(creator.get("creator_username", "")).strip()
+    expected = env("PUBLISHER_TIKTOK_EXPECTED_USERNAME")
+    if expected and username and username.casefold() != expected.lstrip("@").casefold():
+        raise TikTokError(
+            f"Conta TikTok incorreta: token pertence a @{username}, "
+            f"mas o Publisher espera @{expected.lstrip('@')}."
+        )
+    return {
+        "status": "ok",
+        "creator_username": username or None,
+        "creator_nickname": creator.get("creator_nickname") or None,
+        "privacy_levels": creator.get("privacy_level_options", []),
+        "comment_disabled": bool(creator.get("comment_disabled", False)),
+        "duet_disabled": bool(creator.get("duet_disabled", False)),
+        "stitch_disabled": bool(creator.get("stitch_disabled", False)),
+        "expected_username_check": bool(expected),
+    }
+
+
 def _upload_file(upload_url: str, path: Path) -> None:
     size = path.stat().st_size
     with path.open("rb") as source:
