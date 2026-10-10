@@ -3,30 +3,30 @@
   "timezone": "America/Sao_Paulo",
   "youtube": [
     {
-      "index": 4,
-      "hour": 10,
-      "title": "PRA CRIANÇA REALMENTE É PIOR, NÉ?",
-      "status": "pending",
-      "video_id": null
-    },
-    {
       "index": 5,
-      "hour": 12,
-      "title": "É ISSO PESSOAL, A LIVE FOI ESSA, TEM MAIS DONATES?",
+      "hour": 10,
+      "title": "ATÉ PORQUE EU NÃO PRECISO FAZER TUDO ISSO PRA BIANQUINHA, NÉ?",
       "status": "pending",
       "video_id": null
     },
     {
       "index": 3,
+      "hour": 12,
+      "title": "E A JIKEI TEM MUITO DINHEIRO, ELA NÃO PRECISAVA DESSE DINHEIRO TAMBÉM",
+      "status": "pending",
+      "video_id": null
+    },
+    {
+      "index": 4,
       "hour": 14,
-      "title": "BIANQUINHA, VOCÊ TEM SANGUE NAS MÃOS, TÁ?",
+      "title": "MUDA, PRA CRIANÇA REALMENTE É PIOR, NÉ?",
       "status": "pending",
       "video_id": null
     },
     {
       "index": 2,
       "hour": 16,
-      "title": "NO LONGO PRAZO, ELA VAI GANHAR SEMPRE",
+      "title": "OU SEJA, A MENINA GANHA 5 MIL, SE VOCÊ SACAR E NÃO APOSTAR MAIS?",
       "status": "pending",
       "video_id": null
     },
@@ -40,30 +40,30 @@
   ],
   "tiktok": [
     {
-      "index": 3,
-      "hour": 10,
-      "caption": "BIANQUINHA, VOCÊ TEM SANGUE NAS MÃOS, TÁ? “É, sobre o episódio do Caju e da Lucqueta, da Caju e da Lucqueta, a gente falou sobre Cassino e eu falei pra Virginia inclusive, eu falei assim, Virginia, você fechou Cassino, você tem sangue nas mãos.” Essa pergunta sobre apostas responde ao problema ou deixa algo importante de fora? #Apostas #Cassino #CorteFino #TikTok",
-      "status": "pending",
-      "publish_id": null
-    },
-    {
       "index": 4,
-      "hour": 12,
-      "caption": "PRA CRIANÇA REALMENTE É PIOR, NÉ? “Como tem algumas pessoas que levantam de manhã e falam, cara, hoje eu vou causar o mal?” Essa pergunta sobre apostas responde ao problema ou deixa algo importante de fora? #Apostas #CorteFino #TikTok",
+      "hour": 10,
+      "caption": "MUDA, PRA CRIANÇA REALMENTE É PIOR, NÉ? “Você falar pra criança, a criança tem uma capacidade de autocontrole ainda mais menos.” Essa pergunta sobre apostas responde ao problema ou deixa algo importante de fora? #Apostas #CorteFino #TikTok",
       "status": "pending",
       "publish_id": null
     },
     {
       "index": 5,
+      "hour": 12,
+      "caption": "ATÉ PORQUE EU NÃO PRECISO FAZER TUDO ISSO PRA BIANQUINHA, NÉ? “Não é outro sentimento além de raiva, cara, sabe?” Essa pergunta sobre apostas responde ao problema ou deixa algo importante de fora? #Apostas #CorteFino #TikTok",
+      "status": "pending",
+      "publish_id": null
+    },
+    {
+      "index": 3,
       "hour": 16,
-      "caption": "É ISSO PESSOAL, A LIVE FOI ESSA, TEM MAIS DONATES? “Não é o sentimento além de raiva, cara, sabe?” Essa pergunta sobre apostas responde ao problema ou deixa algo importante de fora? #Apostas #CorteFino #TikTok",
+      "caption": "E A JIKEI TEM MUITO DINHEIRO, ELA NÃO PRECISAVA DESSE DINHEIRO TAMBÉM “Não, eu estou a favor da verdade, cara.” Essa pergunta sobre apostas responde ao problema ou deixa algo importante de fora? #Apostas #CorteFino #TikTok",
       "status": "pending",
       "publish_id": null
     },
     {
       "index": 2,
       "hour": 18,
-      "caption": "NO LONGO PRAZO, ELA VAI GANHAR SEMPRE “Bom, pessoal, a gente, quando fala de jogo de azar, a gente não tá falando sobre ganhar dinheiro ou perder dinheiro.” Essa pergunta sobre apostas responde ao problema ou deixa algo importante de fora? #Apostas #Aposta #CorteFino #TikTok",
+      "caption": "OU SEJA, A MENINA GANHA 5 MIL, SE VOCÊ SACAR E NÃO APOSTAR MAIS? “Bom, pessoal, a gente, quando fala de jogo de azar, a gente não tá falando sobre ganhar dinheiro ou perder dinheiro.” Essa pergunta sobre apostas responde ao problema ou deixa algo importante de fora? #Apostas #Aposta #CorteFino #TikTok",
       "status": "pending",
       "publish_id": null
     },
