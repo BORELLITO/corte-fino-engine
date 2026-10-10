@@ -22,9 +22,13 @@ def credentials(refresh_name: str, scopes: list[str]):
     from google.oauth2.credentials import Credentials
 
     refresh = env(refresh_name)
-    if not refresh and refresh_name == "":
-        refresh = env("GOOGLE_REFRESH_TOKEN")
-    missing = [n for n in ("GOOGLE_CLIENT_ID", "GOOGLE_CLIENT_SECRET") if not env(n)]
+    if not refresh and refresh_name == "PUBLISHER_YOUTUBE_REFRESH_TOKEN":
+        refresh = env("PUBLISHER_GOOGLE_REFRESH_TOKEN")
+    missing = [
+        n
+        for n in ("PUBLISHER_GOOGLE_CLIENT_ID", "PUBLISHER_GOOGLE_CLIENT_SECRET")
+        if not env(n)
+    ]
     if not refresh:
         missing.append(refresh_name)
     if missing:
@@ -34,8 +38,8 @@ def credentials(refresh_name: str, scopes: list[str]):
         token=None,
         refresh_token=refresh,
         token_uri="https://oauth2.googleapis.com/token",
-        client_id=env("GOOGLE_CLIENT_ID"),
-        client_secret=env("GOOGLE_CLIENT_SECRET"),
+        client_id=env("PUBLISHER_GOOGLE_CLIENT_ID"),
+        client_secret=env("PUBLISHER_GOOGLE_CLIENT_SECRET"),
         scopes=scopes,
     )
     try:
@@ -55,7 +59,7 @@ def drive_service():
     return build(
         "drive",
         "v3",
-        credentials=credentials("GOOGLE_REFRESH_TOKEN", ["https://www.googleapis.com/auth/drive"]),
+        credentials=credentials("PUBLISHER_GOOGLE_REFRESH_TOKEN", ["https://www.googleapis.com/auth/drive"]),
         cache_discovery=False,
     )
 
@@ -176,7 +180,7 @@ def publish_youtube(manifest: dict, dry_run: bool = False) -> list[dict]:
         youtube = build(
             "youtube",
             "v3",
-            credentials=credentials("", ["https://www.googleapis.com/auth/youtube.upload"]),
+            credentials=credentials("PUBLISHER_YOUTUBE_REFRESH_TOKEN", ["https://www.googleapis.com/auth/youtube.upload"]),
             cache_discovery=False,
         )
 
