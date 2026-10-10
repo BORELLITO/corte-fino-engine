@@ -97,7 +97,7 @@ jobs:
 
       - name: Resolver pasta do Drive
         id: folder
-        if: steps.guard.outputs.run == '1'
+        if: steps.guard.outputs.run == '1' && (github.event_name != 'workflow_dispatch' || inputs.mode != 'verify-tiktok')
         env:
           DEFAULT_FOLDER: ${{ env.PUBLISHER_DRIVE_FOLDER_ID }}
           REQUESTED_FOLDER: ${{ inputs.drive_folder }}
