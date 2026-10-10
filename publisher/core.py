@@ -14,6 +14,12 @@ TIKTOK_HOURS = (10, 12, 16, 18, 20)
 YOUTUBE_PRIORITY = (16, 14, 10, 12, 18)
 TIKTOK_PRIORITY = (18, 10, 12, 16, 20)
 
+# Limites oficiais usados pelo Publisher para evitar rejeições na API.
+TIKTOK_CAPTION_LIMIT = 2200
+YOUTUBE_TITLE_LIMIT = 100
+YOUTUBE_DESCRIPTION_LIMIT = 5000
+YOUTUBE_TAGS_LIMIT = 500
+
 
 STOPWORDS = set("a o as os um uma uns umas de da do das dos e em no na nos nas para pra por com sem que quem qual quando onde como porque isso isto essa esse essas esses eu voce voces ele ela eles elas me te se meu minha seu sua mais menos muito muita muitos muitas ja nao sim so tambem aqui ali la tem ter vai vou foi ser sao era esta estao ta tao entao ne tipo cara gente acho fica ficar fazer faz fez pode poder todo toda todos todas num numa ate ai bem sobre existe ainda realmente falei falo falou falando dizer disse diz aqui assim entao bom pessoal".split())
 COPY_NOISE = set("assunto assuntos coisa coisas pessoa pessoas parte jeito forma fala falas trecho trechos video videos canal corte cortes sempre nunca agora hoje casa ganha ganhou divulga divulgar".split())
@@ -152,6 +158,41 @@ def truncate_utf8(text: str, limit: int) -> str:
     return candidate.rstrip(" ,.;:-") + "…"
 
 
+def _capitalize_sentence_starts(text: str) -> str:
+    chars = list(text)
+    capitalize_next = True
+    for index, char in enumerate(chars):
+        if capitalize_next and char.isalpha():
+            chars[index] = char.upper()
+            capitalize_next = False
+        elif char in ".!?":
+            capitalize_next = True
+    return "".join(chars)
+
+
+def format_copy_text(text: str, *, final_punctuation: bool = False) -> str:
+    """Normalize spacing and punctuation while preserving the source meaning."""
+    normalized = re.sub(r"\s+", " ", text or "").strip()
+    normalized = re.sub(r"\s+([,.;!?])", r"\1", normalized)
+    normalized = re.sub(r"([,;:!?])(?=[A-Za-zÀ-ÿ0-9#])", r"\1 ", normalized)
+    normalized = re.sub(r",\s*,+", ", ", normalized)
+    normalized = re.sub(r"([.!?])\s*([.!?])+", r"\1", normalized)
+    normalized = normalized.strip(" ,;:-")
+    normalized = _capitalize_sentence_starts(normalized)
+    if final_punctuation and normalized and normalized[-1] not in ".!?…":
+        normalized += "."
+    return normalized
+
+
+def truncate_chars(text: str, limit: int) -> str:
+    """Truncate by characters, without exceeding a platform limit."""
+    text = re.sub(r"\s+", " ", text or "").strip()
+    if len(text) <= limit:
+        return text
+    cut = text[: limit - 1].rsplit(" ", 1)[0].rstrip(" ,.;:-")
+    return (cut or text[: limit - 1]).rstrip() + "…"
+
+
 def _preserve_case(replacement: str, original: str) -> str:
     if original.isupper():
         return replacement.upper()
@@ -246,11 +287,11 @@ def clean_hook(text: str) -> str:
 def build_title(hook: str, topic: str) -> str:
     del topic  # Mantido na assinatura para compatibilidade com o manifesto atual.
     candidate = clean_hook(hook)
-    if len(candidate) > 100 or candidate.upper().endswith(BAD_TITLE_ENDINGS) or "…" in candidate:
+    if len(candidate) > YOUTUBE_TITLE_LIMIT or candidate.upper().endswith(BAD_TITLE_ENDINGS) or "…" in candidate:
         clauses = [part.strip(" ,;:-") for part in re.split(r"[,;:!?]", candidate)]
         clauses = [part for part in clauses if len(part) >= 24 and not part.upper().endswith(BAD_TITLE_ENDINGS)]
         candidate = max(clauses, key=len, default="")
-    if not candidate or len(candidate) > 100 or candidate.upper().endswith(BAD_TITLE_ENDINGS) or "…" in candidate:
+    if not candidate or len(candidate) > YOUTUBE_TITLE_LIMIT or candidate.upper().endswith(BAD_TITLE_ENDINGS) or "…" in candidate:
         raise ValueError("Copy reprovada: não foi possível formar um título completo a partir da fala real.")
     return candidate.upper().strip(" .,:;")
 
@@ -271,6 +312,14 @@ def copy_quality_issues(pack: CopyPack) -> list[str]:
     texts = [pack.youtube_title, pack.tiktok_caption, pack.youtube_description]
     combined = fold(" ".join(texts))
     issues: list[str] = []
+    if pack.youtube_title and pack.youtube_title != pack.youtube_title.upper():
+        issues.append("título do YouTube não está totalmente em maiúsculas")
+    if len(pack.youtube_title) > YOUTUBE_TITLE_LIMIT:
+        issues.append("título do YouTube excede 100 caracteres")
+    if len(pack.tiktok_caption) > TIKTOK_CAPTION_LIMIT:
+        issues.append("legenda do TikTok excede 2200 caracteres")
+    if len(pack.youtube_description) > YOUTUBE_DESCRIPTION_LIMIT:
+        issues.append("descrição do YouTube excede 5000 caracteres")
     for token in UNRESOLVED_ASR_TOKENS:
         if re.search(rf"(?<![a-zà-ÿ]){re.escape(fold(token))}(?![a-zà-ÿ])", combined):
             issues.append(f"token ASR não resolvido: {token}")
@@ -383,32 +432,35 @@ def make_copy(transcript: str) -> CopyPack:
         raise ValueError("Copy reprovada: transcrição insuficiente para uma criação individual.")
     topic = detect_topic(transcript)
     keys = get_keywords(transcript)
-    hook = clean_hook(choose_hook(transcript))
+    hook = format_copy_text(clean_hook(choose_hook(transcript)))
     if not hook:
         raise ValueError("Copy reprovada: não foi encontrado um gancho completo na fala real.")
     title = build_title(hook, topic)
-    evidence = _evidence_sentences(transcript, hook, keys)
-    cta = build_contextual_cta(transcript, topic, keys, hook)
+
+    raw_evidence = _evidence_sentences(transcript, hook, keys)
+    evidence = [format_copy_text(sentence, final_punctuation=True) for sentence in raw_evidence]
+    cta = format_copy_text(build_contextual_cta(transcript, topic, keys, hook), final_punctuation=True)
     tiktok_hashtag_text = " ".join(build_hashtags(topic, keys, "tiktok"))
     youtube_hashtag_text = " ".join(build_hashtags(topic, keys, "youtube"))
     evidence_block = f'“{evidence[0]}”\n\n' if evidence else ""
     tiktok = f"{title}\n\n{evidence_block}{cta}\n\n{tiktok_hashtag_text}"
-    youtube_description = f"{hook}\n\n{evidence_block}{cta}\n\n{youtube_hashtag_text}"
+    description_hook = format_copy_text(hook, final_punctuation=True)
+    youtube_description = f"{description_hook}\n\n{evidence_block}{cta}\n\n{youtube_hashtag_text}"
     pack = CopyPack(
         topic,
         hook,
         keys,
         viral_score(transcript),
-        truncate(tiktok, 3500),
+        truncate_chars(tiktok, TIKTOK_CAPTION_LIMIT),
         title,
-        truncate_utf8(youtube_description, 5000),
+        truncate_chars(youtube_description, YOUTUBE_DESCRIPTION_LIMIT),
         build_youtube_tags(topic, keys),
         evidence=evidence,
         cta=cta,
     )
     issues = copy_quality_issues(pack)
     normalized_source = fold(transcript)
-    for sentence in evidence:
+    for sentence in raw_evidence:
         if fold(sentence) not in normalized_source:
             issues.append("evidência editorial não encontrada na transcrição")
             break
