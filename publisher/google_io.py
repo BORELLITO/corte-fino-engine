@@ -4,6 +4,7 @@ import json
 import os
 import subprocess
 import tempfile
+import time
 from datetime import date, datetime, timedelta, timezone
 from pathlib import Path
 from urllib.parse import parse_qs, urlparse
@@ -13,6 +14,8 @@ from publisher.core import TIMEZONE, YOUTUBE_HOURS, TIKTOK_HOURS, assign_slots, 
 
 FOLDER_ID = "15UJh2z5hBRKB8q_JpNpH1rcZZUANO6Da"
 FOLDER_MIME = "application/vnd.google-apps.folder"
+YOUTUBE_PROCESSING_ATTEMPTS = 12
+YOUTUBE_PROCESSING_INTERVAL = 5
 
 
 def env(name: str, default: str = "") -> str:
@@ -348,6 +351,33 @@ def reconcile_youtube_upload(youtube, title: str, intent_at: str) -> str | None:
     return None
 
 
+def youtube_processing_status(youtube, video_id: str) -> str:
+    response = youtube.videos().list(
+        part="processingDetails,status",
+        id=video_id,
+    ).execute(num_retries=4)
+    items = response.get("items", [])
+    if not items:
+        return "unknown"
+    details = items[0].get("processingDetails", {})
+    return str(details.get("processingStatus", "unknown")).lower()
+
+
+def wait_youtube_processing(youtube, video_id: str) -> str:
+    """Confirm processing without treating an in-flight upload as complete."""
+    latest = "unknown"
+    for attempt in range(YOUTUBE_PROCESSING_ATTEMPTS):
+        try:
+            latest = youtube_processing_status(youtube, video_id)
+        except Exception:
+            latest = "unknown"
+        if latest in {"succeeded", "failed"}:
+            return latest
+        if attempt < YOUTUBE_PROCESSING_ATTEMPTS - 1:
+            time.sleep(YOUTUBE_PROCESSING_INTERVAL)
+    return latest
+
+
 def marker(drive, file_id: str, values: dict[str, str]) -> None:
     current = drive.files().get(fileId=file_id, fields="appProperties").execute(num_retries=4)
     properties = dict(current.get("appProperties", {}))
@@ -377,8 +407,34 @@ def publish_youtube(manifest: dict, dry_run: bool = False) -> list[dict]:
     for clip in sorted(manifest["clips"], key=lambda item: item["index"]):
         item = drive.files().get(fileId=clip["drive_id"], fields="id,name,appProperties").execute(num_retries=4)
         properties = item.get("appProperties", {})
-        if properties.get("cf_youtube_video_id"):
-            results.append({"index": clip["index"], "status": "already_published", "video_id": properties["cf_youtube_video_id"]})
+        existing_video_id = properties.get("cf_youtube_video_id", "").strip()
+        if existing_video_id:
+            existing_status = properties.get("cf_youtube_upload_status", "")
+            if existing_status == "FAILED":
+                raise RuntimeError(
+                    f"YouTube registrou falha no corte {clip['index']:02d}; reconcilie o estado antes de reenviar."
+                )
+            if existing_status == "PROCESSING" and not dry_run:
+                processing = wait_youtube_processing(youtube, existing_video_id)
+                if processing == "succeeded":
+                    marker(
+                        drive,
+                        clip["drive_id"],
+                        {"cf_youtube_upload_status": "SCHEDULED"},
+                    )
+                    existing_status = "SCHEDULED"
+                elif processing == "failed":
+                    marker(
+                        drive,
+                        clip["drive_id"],
+                        {"cf_youtube_upload_status": "FAILED"},
+                    )
+                    raise RuntimeError(f"Processamento YouTube falhou para o corte {clip['index']:02d}.")
+            results.append({
+                "index": clip["index"],
+                "status": "already_published" if existing_status == "SCHEDULED" else "processing",
+                "video_id": existing_video_id,
+            })
             continue
 
         hour = int(clip["schedule"]["youtube_hour"])
@@ -401,17 +457,22 @@ def publish_youtube(manifest: dict, dry_run: bool = False) -> list[dict]:
                     f"Upload YouTube do corte {clip['index']:02d} ficou pendente sem reconciliação segura; "
                     "o envio foi bloqueado para evitar duplicidade."
                 )
+            processing = wait_youtube_processing(youtube, recovered_id)
+            if processing == "failed":
+                marker(drive, clip["drive_id"], {"cf_youtube_upload_status": "FAILED"})
+                raise RuntimeError(f"Processamento YouTube falhou para o corte {clip['index']:02d}.")
+            recovered_status = "SCHEDULED" if processing == "succeeded" else "PROCESSING"
             marker(
                 drive,
                 clip["drive_id"],
                 {
                     "cf_youtube_video_id": recovered_id,
-                    "cf_youtube_upload_status": "SCHEDULED",
+                    "cf_youtube_upload_status": recovered_status,
                     "cf_youtube_publish_at": publish_at,
                     "cf_youtube_date": manifest["date"],
                 },
             )
-            results.append({"index": clip["index"], "status": "reconciled", "video_id": recovered_id, "publish_at": publish_at})
+            results.append({"index": clip["index"], "status": recovered_status.lower(), "video_id": recovered_id, "publish_at": publish_at})
             continue
 
         if dry_run:
@@ -466,16 +527,30 @@ def publish_youtube(manifest: dict, dry_run: bool = False) -> list[dict]:
             ).execute(num_retries=4)
 
         video_id = response["id"]
+        processing = wait_youtube_processing(youtube, video_id)
+        if processing == "failed":
+            marker(
+                drive,
+                clip["drive_id"],
+                {
+                    "cf_youtube_video_id": video_id,
+                    "cf_youtube_upload_status": "FAILED",
+                    "cf_youtube_publish_at": publish_at,
+                    "cf_youtube_date": manifest["date"],
+                },
+            )
+            raise RuntimeError(f"Processamento YouTube falhou para o corte {clip['index']:02d}.")
+        final_status = "SCHEDULED" if processing == "succeeded" else "PROCESSING"
         marker(
             drive,
             clip["drive_id"],
             {
                 "cf_youtube_video_id": video_id,
-                "cf_youtube_upload_status": "SCHEDULED",
+                "cf_youtube_upload_status": final_status,
                 "cf_youtube_publish_at": publish_at,
                 "cf_youtube_date": manifest["date"],
             },
         )
-        results.append({"index": clip["index"], "status": "published", "video_id": video_id, "publish_at": publish_at})
+        results.append({"index": clip["index"], "status": final_status.lower(), "video_id": video_id, "publish_at": publish_at})
 
     return results

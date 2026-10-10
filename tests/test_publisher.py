@@ -3,7 +3,7 @@ from zoneinfo import ZoneInfo
 
 from publisher.cli import report
 from publisher.core import YOUTUBE_HOURS, TIKTOK_HOURS, assign_slots, build_title, copy_quality_issues, detect_topic, local_publish_at, make_copy, natural_index, normalize_transcript
-from publisher.google_io import normalize_folder_id, publication_day, reconcile_youtube_upload
+from publisher.google_io import normalize_folder_id, publication_day, reconcile_youtube_upload, wait_youtube_processing
 from publisher.tiktok_io import choose_privacy_level, publish_tiktok
 import publisher.tiktok_io as tiktok_io
 
@@ -142,6 +142,36 @@ def test_youtube_reconciliation_finds_recent_exact_title():
             return Search()
 
     assert reconcile_youtube_upload(YouTube(), "TÍTULO FORTE", "2026-10-10T11:55:00Z") == "youtube-1"
+
+
+def test_youtube_processing_status_must_succeed_before_scheduled(monkeypatch):
+    class Request:
+        def __init__(self, data):
+            self.data = data
+
+        def execute(self, **kwargs):
+            return self.data
+
+    class Videos:
+        def __init__(self):
+            self.calls = 0
+
+        def list(self, **kwargs):
+            self.calls += 1
+            status = "processing" if self.calls == 1 else "succeeded"
+            return Request({"items": [{"processingDetails": {"processingStatus": status}}]})
+
+    class YouTube:
+        def __init__(self):
+            self.videos_api = Videos()
+
+        def videos(self):
+            return self.videos_api
+
+    monkeypatch.setattr("publisher.google_io.time.sleep", lambda seconds: None)
+    youtube = YouTube()
+    assert wait_youtube_processing(youtube, "youtube-1") == "succeeded"
+    assert youtube.videos_api.calls == 2
 
 
 def test_report_exposes_remote_states_and_attention_count():

@@ -40,6 +40,8 @@ Os cinco vídeos são enviados como `private` com `status.publishAt`, para publi
 
 O campo `containsSyntheticMedia` fica em `false` para os cortes editoriais originais do Corte Fino, sem cenas realistas geradas ou alteradas por IA. Se um vídeo futuro tiver alteração sintética realista, essa declaração deve ser revisada antes do upload.
 
+Depois do `videos.insert`, o Publisher consulta o processamento do vídeo. Só grava `SCHEDULED` quando o YouTube confirma `succeeded`; estados ainda processando permanecem reconciliáveis e não geram um segundo upload.
+
 Secrets:
 
 - `PUBLISHER_GOOGLE_CLIENT_ID` — credencial OAuth exclusiva do Publisher.
