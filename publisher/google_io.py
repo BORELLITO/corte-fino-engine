@@ -5,6 +5,7 @@ import os
 import subprocess
 import tempfile
 import time
+import uuid
 from datetime import date, datetime, timedelta, timezone
 from pathlib import Path
 from urllib.parse import parse_qs, urlparse
@@ -12,9 +13,13 @@ from urllib.parse import parse_qs, urlparse
 from publisher.core import TIMEZONE, YOUTUBE_HOURS, TIKTOK_HOURS, assign_slots, copy_dict, local_publish_at, make_copy, natural_index, truncate, truncate_utf8
 
 
-FOLDER_ID = "15UJh2z5hBRKB8q_JpNpH1rcZZUANO6Da"
+FOLDER_ID = os.environ.get("PUBLISHER_DRIVE_FOLDER_ID", "").strip()
 YOUTUBE_PROCESSING_ATTEMPTS = 12
 YOUTUBE_PROCESSING_INTERVAL = 5
+PUBLISHER_MIN_CLIP_SECONDS = 45.0
+PUBLISHER_MAX_CLIP_SECONDS = 90.0
+PUBLISHER_MIN_FILE_BYTES = 50_000
+_WHISPER_MODEL = None
 
 
 def env(name: str, default: str = "") -> str:
@@ -94,17 +99,22 @@ def drive_service():
 def list_videos(drive, folder_id: str) -> list[dict]:
     folder_id = normalize_folder_id(folder_id)
     q = f"'{folder_id}' in parents and trashed = false and mimeType = 'video/mp4'"
-    files = (
-        drive.files()
-        .list(
-            q=q,
-            pageSize=100,
-            orderBy="name",
-            fields="files(id,name,size,mimeType,appProperties,modifiedTime)",
-        )
-        .execute(num_retries=4)
-        .get("files", [])
-    )
+    files: list[dict] = []
+    page_token = None
+    while True:
+        kwargs = {
+            "q": q,
+            "pageSize": 100,
+            "orderBy": "name",
+            "fields": "nextPageToken,files(id,name,size,mimeType,md5Checksum,appProperties,modifiedTime,parents)",
+        }
+        if page_token:
+            kwargs["pageToken"] = page_token
+        response = drive.files().list(**kwargs).execute(num_retries=4)
+        files.extend(response.get("files", []))
+        page_token = response.get("nextPageToken")
+        if not page_token:
+            break
     files.sort(key=lambda f: (natural_index(f.get("name", "")), f.get("name", "")))
     return files
 
@@ -142,13 +152,21 @@ def download(drive, file_id: str, target: Path) -> None:
 def transcribe(path: Path) -> str:
     from faster_whisper import WhisperModel
 
-    model = WhisperModel(
-        env("PUBLISHER_WHISPER_MODEL", "small"),
-        device="cpu",
-        compute_type="int8",
-        cpu_threads=4,
+    global _WHISPER_MODEL
+    if _WHISPER_MODEL is None:
+        _WHISPER_MODEL = WhisperModel(
+            env("PUBLISHER_WHISPER_MODEL", "small"),
+            device="cpu",
+            compute_type="int8",
+            cpu_threads=max(1, int(env("PUBLISHER_WHISPER_CPU_THREADS", "4"))),
+        )
+    segments, _ = _WHISPER_MODEL.transcribe(
+        str(path),
+        language="pt",
+        beam_size=max(1, int(env("PUBLISHER_WHISPER_BEAM_SIZE", "3"))),
+        vad_filter=True,
+        condition_on_previous_text=False,
     )
-    segments, _ = model.transcribe(str(path), language="pt", beam_size=3, vad_filter=True)
     return " ".join(s.text.strip() for s in segments if s.text.strip()).strip()
 
 
@@ -186,11 +204,49 @@ def probe_video(path: Path) -> dict:
     elif audio.get("codec_name") != "aac":
         errors.append(f"codec de áudio {audio.get('codec_name')} (esperado aac)")
     duration = float((metadata.get("format") or {}).get("duration") or 0)
+    frame_rate = 0.0
+    if video:
+        numerator, _, denominator = str(video.get("r_frame_rate") or "0/1").partition("/")
+        try:
+            frame_rate = float(numerator) / max(float(denominator or 1), 1.0)
+        except ValueError:
+            frame_rate = 0.0
     if duration <= 0:
         errors.append("duração inválida")
+    elif not PUBLISHER_MIN_CLIP_SECONDS <= duration <= PUBLISHER_MAX_CLIP_SECONDS:
+        errors.append(
+            f"duração {duration:.2f}s (esperado entre {PUBLISHER_MIN_CLIP_SECONDS:.0f}s e {PUBLISHER_MAX_CLIP_SECONDS:.0f}s)"
+        )
+    if video and video.get("pix_fmt") != "yuv420p":
+        errors.append(f"pixel format {video.get('pix_fmt')} (esperado yuv420p)")
+    if video and abs(frame_rate - 30.0) >= 0.1:
+        errors.append(f"frame rate {frame_rate:.3f} (esperado 30)")
+    if audio and str(audio.get("sample_rate") or "") != "48000":
+        errors.append(f"sample rate {audio.get('sample_rate')} (esperado 48000)")
+    if not path.is_file() or path.stat().st_size <= PUBLISHER_MIN_FILE_BYTES:
+        errors.append("arquivo vazio ou pequeno demais")
+    try:
+        subprocess.run(
+            ["ffmpeg", "-v", "error", "-i", str(path), "-f", "null", "-"],
+            check=True,
+            capture_output=True,
+            text=True,
+            timeout=180,
+        )
+    except (FileNotFoundError, subprocess.CalledProcessError, subprocess.TimeoutExpired):
+        errors.append("arquivo não decodifica integralmente")
     if errors:
         raise RuntimeError(f"{path.name}: " + "; ".join(errors))
-    return {"width": video["width"], "height": video["height"], "video_codec": video["codec_name"], "audio_codec": audio["codec_name"], "duration": duration}
+    return {
+        "width": video["width"],
+        "height": video["height"],
+        "video_codec": video["codec_name"],
+        "audio_codec": audio["codec_name"],
+        "pixel_format": video.get("pix_fmt"),
+        "frame_rate": round(frame_rate, 3),
+        "audio_sample_rate": audio.get("sample_rate"),
+        "duration": duration,
+    }
 
 
 def publication_day(now: datetime | None = None, target_date: date | str | None = None) -> date:
@@ -228,6 +284,7 @@ def prepare(folder_id: str, output: Path, target_date: date | str | None = None)
                     "drive_id": item["id"],
                     "name": item.get("name", ""),
                     "size": int(item.get("size", 0) or 0),
+                    "md5_checksum": item.get("md5Checksum", ""),
                     "mime_type": item.get("mimeType", "video/mp4"),
                     "modified_time": item.get("modifiedTime", ""),
                     "video_profile": profile,
@@ -239,7 +296,9 @@ def prepare(folder_id: str, output: Path, target_date: date | str | None = None)
 
     assign_slots(clips)
     manifest = {
-        "version": 2,
+        "version": 3,
+        "run_id": uuid.uuid4().hex,
+        "created_at_utc": _utc_now().isoformat().replace("+00:00", "Z"),
         "date": publication_day(target_date=target_date).isoformat(),
         "timezone": "America/Sao_Paulo",
         "drive_folder_id": folder_id,
@@ -361,6 +420,31 @@ def marker(drive, file_id: str, values: dict[str, str]) -> None:
     ).execute(num_retries=4)
 
 
+def verify_manifest_clip(drive, manifest: dict, clip: dict) -> dict:
+    """Guarantee that publication still targets the exact prepared Drive file."""
+    item = drive.files().get(
+        fileId=clip["drive_id"],
+        fields="id,name,size,mimeType,md5Checksum,parents,trashed,appProperties",
+    ).execute(num_retries=4)
+    expected_folder = normalize_folder_id(manifest["drive_folder_id"])
+    parents = set(item.get("parents", []))
+    if item.get("trashed") or expected_folder not in parents:
+        raise RuntimeError(
+            f"Conteúdo do corte {clip['index']:02d} mudou de pasta ou foi para a lixeira; publicação bloqueada."
+        )
+    if item.get("name") != clip.get("name") or item.get("mimeType") != "video/mp4":
+        raise RuntimeError(f"Metadados do corte {clip['index']:02d} mudaram desde o preflight; publicação bloqueada.")
+    expected_size = int(clip.get("size", 0) or 0)
+    current_size = int(item.get("size", 0) or 0)
+    if expected_size and current_size != expected_size:
+        raise RuntimeError(f"Tamanho do corte {clip['index']:02d} mudou desde o preflight; publicação bloqueada.")
+    expected_md5 = str(clip.get("md5_checksum", "") or "").strip()
+    current_md5 = str(item.get("md5Checksum", "") or "").strip()
+    if expected_md5 and current_md5 and expected_md5 != current_md5:
+        raise RuntimeError(f"Checksum do corte {clip['index']:02d} mudou desde o preflight; publicação bloqueada.")
+    return item
+
+
 def publish_youtube(manifest: dict, dry_run: bool = False) -> list[dict]:
     day = date.fromisoformat(manifest["date"])
     drive = drive_service()
@@ -377,7 +461,7 @@ def publish_youtube(manifest: dict, dry_run: bool = False) -> list[dict]:
 
     results: list[dict] = []
     for clip in sorted(manifest["clips"], key=lambda item: item["index"]):
-        item = drive.files().get(fileId=clip["drive_id"], fields="id,name,appProperties").execute(num_retries=4)
+        item = verify_manifest_clip(drive, manifest, clip)
         properties = item.get("appProperties", {})
         existing_video_id = properties.get("cf_youtube_video_id", "").strip()
         if existing_video_id:

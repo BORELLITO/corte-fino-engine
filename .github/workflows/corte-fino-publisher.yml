@@ -15,7 +15,7 @@ on:
         default: ""
         type: string
       drive_folder:
-        description: "URL ou ID da pasta do Google Drive com os 5 MP4"
+        description: "URL ou ID exato da pasta do lote com os 5 MP4"
         required: false
         default: ""
         type: string
@@ -40,7 +40,7 @@ jobs:
     timeout-minutes: 90
     env:
       PYTHONUNBUFFERED: "1"
-      PUBLISHER_DRIVE_FOLDER_ID: "15UJh2z5hBRKB8q_JpNpH1rcZZUANO6Da"
+      PUBLISHER_DRIVE_FOLDER_ID: ""
       PUBLISHER_WHISPER_MODEL: small
       PUBLISHER_GOOGLE_CLIENT_ID: ${{ secrets.PUBLISHER_GOOGLE_CLIENT_ID }}
       PUBLISHER_GOOGLE_CLIENT_SECRET: ${{ secrets.PUBLISHER_GOOGLE_CLIENT_SECRET }}
@@ -63,20 +63,6 @@ jobs:
             echo "run=1" >> "$GITHUB_OUTPUT"
           fi
 
-      - name: Resolver pasta do Drive
-        id: folder
-        if: steps.guard.outputs.run == '1'
-        env:
-          DEFAULT_FOLDER: ${{ env.PUBLISHER_DRIVE_FOLDER_ID }}
-          REQUESTED_FOLDER: ${{ inputs.drive_folder }}
-        run: |
-          folder="${REQUESTED_FOLDER:-$DEFAULT_FOLDER}"
-          if [ -z "$folder" ]; then
-            echo "Nenhuma pasta do Drive foi informada." >&2
-            exit 1
-          fi
-          echo "value=$folder" >> "$GITHUB_OUTPUT"
-
       - name: Checkout
         if: steps.guard.outputs.run == '1'
         uses: actions/checkout@v7
@@ -88,11 +74,41 @@ jobs:
           python-version: "3.11"
           cache: pip
 
+      - name: Ferramentas de vídeo
+        if: steps.guard.outputs.run == '1'
+        run: sudo apt-get update && sudo apt-get install -y ffmpeg fonts-dejavu-core
+
       - name: Dependências
         if: steps.guard.outputs.run == '1'
         run: |
           python -m pip install --upgrade pip
           python -m pip install -r requirements.txt
+
+      - name: Resolver pasta do Drive
+        id: folder
+        if: steps.guard.outputs.run == '1'
+        env:
+          DEFAULT_FOLDER: ${{ env.PUBLISHER_DRIVE_FOLDER_ID }}
+          REQUESTED_FOLDER: ${{ inputs.drive_folder }}
+        run: |
+          folder="${REQUESTED_FOLDER:-}"
+          if [ -z "$folder" ] && [ -f publisher/state/latest_batch.json ]; then
+            folder="$(python - <<'PY'
+          import json
+          from pathlib import Path
+          data = json.loads(Path('publisher/state/latest_batch.json').read_text(encoding='utf-8'))
+          print(data.get('batch_folder_id', '').strip())
+          PY
+            )"
+          fi
+          if [ -z "$folder" ]; then
+            folder="${DEFAULT_FOLDER:-}"
+          fi
+          if [ -z "$folder" ]; then
+            echo "Nenhuma pasta exata do lote foi informada." >&2
+            exit 1
+          fi
+          echo "value=$folder" >> "$GITHUB_OUTPUT"
 
       - name: Cache Whisper
         if: steps.guard.outputs.run == '1'
@@ -106,8 +122,39 @@ jobs:
         if: steps.guard.outputs.run == '1'
         run: python -m pytest -q tests/test_publisher.py tests/test_quality_guards.py
 
+      - name: Verificar manifesto persistido
+        id: state
+        if: steps.guard.outputs.run == '1'
+        run: |
+          needs_prepare=1
+          if [ -f publisher/state/current.json ]; then
+            version="$(python - <<'PY'
+          import json
+          from pathlib import Path
+          try:
+              print(json.loads(Path('publisher/state/current.json').read_text(encoding='utf-8')).get('version', 0))
+          except Exception:
+              print(0)
+          PY
+            )"
+            if [ "$version" -ge 3 ] 2>/dev/null; then
+              needs_prepare=0
+            fi
+          fi
+          if [ "${{ github.event_name }}" = "schedule" ] && [ "${{ github.event.schedule }}" = "30 11 * * *" ]; then
+            needs_prepare=1
+          fi
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ] && [ "${{ inputs.mode }}" != "verify-tiktok" ] && [ "${{ inputs.mode }}" != "verify-google" ] && [ "${{ inputs.mode }}" != "preflight" ]; then
+            needs_prepare=1
+          fi
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ] && [ "${{ inputs.mode }}" = "verify-tiktok" -o "${{ inputs.mode }}" = "verify-google" -o "${{ inputs.mode }}" = "preflight" ]; then
+            needs_prepare=0
+          fi
+          echo "needs_prepare=$needs_prepare" >> "$GITHUB_OUTPUT"
+
       - name: Preparar
-        if: steps.guard.outputs.run == '1' && (github.event_name != 'schedule' || github.event.schedule == '30 11 * * *') && (github.event_name != 'workflow_dispatch' || (inputs.mode != 'verify-tiktok' && inputs.mode != 'verify-google' && inputs.mode != 'preflight'))
+        id: prepare
+        if: steps.guard.outputs.run == '1' && steps.state.outputs.needs_prepare == '1' && (github.event_name != 'workflow_dispatch' || (inputs.mode != 'verify-tiktok' && inputs.mode != 'verify-google' && inputs.mode != 'preflight'))
         run: python -m publisher.cli prepare --folder-id "${{ steps.folder.outputs.value }}" --target-date "${{ inputs.target_date }}"
 
       - name: Dry-run YouTube
@@ -139,11 +186,11 @@ jobs:
         run: python -m publisher.cli tiktok --due-only
 
       - name: Relatório final
-        if: always() && steps.guard.outputs.run == '1' && (github.event_name != 'workflow_dispatch' || (inputs.mode != 'verify-tiktok' && inputs.mode != 'verify-google' && inputs.mode != 'preflight'))
+        if: always() && steps.guard.outputs.run == '1' && (steps.prepare.outcome == 'success' || (github.event_name == 'schedule' && github.event.schedule != '30 11 * * *')) && (github.event_name != 'workflow_dispatch' || (inputs.mode != 'verify-tiktok' && inputs.mode != 'verify-google' && inputs.mode != 'preflight'))
         run: python -m publisher.cli report --remote | tee publisher/state/report.json
 
       - name: Guard de falhas parciais
-        if: always() && steps.guard.outputs.run == '1' && (github.event_name != 'workflow_dispatch' || (inputs.mode != 'verify-tiktok' && inputs.mode != 'verify-google' && inputs.mode != 'preflight'))
+        if: always() && steps.guard.outputs.run == '1' && (steps.prepare.outcome == 'success' || (github.event_name == 'schedule' && github.event.schedule != '30 11 * * *')) && (github.event_name != 'workflow_dispatch' || (inputs.mode != 'verify-tiktok' && inputs.mode != 'verify-google' && inputs.mode != 'preflight'))
         run: |
           python - <<'PY'
           import json
@@ -160,7 +207,7 @@ jobs:
           PY
 
       - name: Persistir manifesto
-        if: always() && steps.guard.outputs.run == '1' && (github.event_name != 'workflow_dispatch' || (inputs.mode != 'verify-tiktok' && inputs.mode != 'verify-google' && inputs.mode != 'preflight'))
+        if: always() && steps.guard.outputs.run == '1' && (steps.prepare.outcome == 'success' || (github.event_name == 'schedule' && github.event.schedule != '30 11 * * *')) && (github.event_name != 'workflow_dispatch' || (inputs.mode != 'verify-tiktok' && inputs.mode != 'verify-google' && inputs.mode != 'preflight'))
         run: |
           git config user.name "corte-fino-publisher[bot]"
           git config user.email "corte-fino-publisher[bot]@users.noreply.github.com"

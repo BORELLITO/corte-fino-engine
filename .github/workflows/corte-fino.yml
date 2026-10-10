@@ -26,7 +26,7 @@ on:
         type: string
 
 permissions:
-  contents: read
+  contents: write
 
 concurrency:
   # Um único lock para evitar duas rodadas disputando a mesma entrada do Drive.
@@ -52,6 +52,7 @@ jobs:
       USE_EDITORIAL_SCORE_GATE: "0"
       REQUIRE_EXACT_TOP_FIVE: "1"
       CAPTION_MIN_WORD_PROBABILITY: "0.40"
+      CAPTION_LOW_CONFIDENCE_FATAL: "1"
       CAPTION_SPELLING_MIN_ZIPF: "2.30"
       CAPTION_HARD_MAX_CPS: "24.0"
       FORCE_TOP_FIVE: ${{ inputs.force_top_five == 'true' && '1' || '0' }}
@@ -537,6 +538,7 @@ jobs:
           ):
               raise RuntimeError("Verificação final falhou: tipo MIME incompatível com o nome do arquivo.")
           manifest = {
+              "batch_folder_id": batch["id"],
               "batch_folder": batch.get("webViewLink") or f"https://drive.google.com/drive/folders/{batch['id']}",
               "source_fingerprint_sha256": source_hash,
               "source_title": source_title,
@@ -556,8 +558,45 @@ jobs:
               print(f"{item['name']}: {item['webViewLink']}")
           PY
 
+      - name: Registrar lote exato do Publisher
+        if: ${{ steps.upload_drive.outcome == 'success' && env.PROCESSING_READY == '1' }}
+        run: |
+          python - <<'PY'
+          import json
+          from datetime import datetime, timezone
+          from pathlib import Path
+
+          source = Path("output/drive_manifest.json")
+          if not source.exists():
+              raise SystemExit("Manifesto do lote não encontrado; Publisher não será ativado.")
+          manifest = json.loads(source.read_text(encoding="utf-8"))
+          folder_id = str(manifest.get("batch_folder_id") or "").strip()
+          folder_url = str(manifest.get("batch_folder") or "").strip()
+          if not folder_id or not folder_url or len(manifest.get("files", [])) != 5:
+              raise SystemExit("Manifesto do lote não contém a pasta exata e os cinco arquivos.")
+          pointer = {
+              "version": 1,
+              "batch_folder_id": folder_id,
+              "batch_folder": folder_url,
+              "source_fingerprint_sha256": manifest.get("source_fingerprint_sha256", ""),
+              "source_title": manifest.get("source_title", ""),
+              "files": manifest.get("files", []),
+              "updated_at_utc": datetime.now(timezone.utc).isoformat().replace("+00:00", "Z"),
+          }
+          target = Path("publisher/state/latest_batch.json")
+          target.parent.mkdir(parents=True, exist_ok=True)
+          target.write_text(json.dumps(pointer, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+          PY
+          git config user.name "corte-fino-generator[bot]"
+          git config user.email "corte-fino-generator[bot]@users.noreply.github.com"
+          git add publisher/state/latest_batch.json
+          if ! git diff --cached --quiet; then
+            git commit -m "chore(generator): registrar lote exato do publisher"
+            git push
+          fi
+
       - name: Marcar entrada como processada
-        if: ${{ steps.generate_cuts.outcome == 'success' && steps.upload_drive.outcome == 'success' && steps.drive_source.outputs.file_id != '' && env.EDITORIAL_EMPTY != '1' && env.PROCESSING_READY == '1' }}
+        if: ${{ steps.generate_cuts.outcome == 'success' && steps.upload_drive.outcome == 'success' && steps.drive_source.outputs.file_id != '' && env.EDITORIAL_EMPTY != '1' && env.PROCESSING_READY == '1' && success() }}
         env:
           GOOGLE_REFRESH_TOKEN: ${{ secrets.GOOGLE_REFRESH_TOKEN }}
           GOOGLE_CLIENT_ID: ${{ secrets.GOOGLE_CLIENT_ID }}

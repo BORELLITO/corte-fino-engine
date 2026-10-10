@@ -4,14 +4,16 @@ Módulo separado do gerador de cortes. Lê os 5 MP4 prontos no Google Drive, tra
 
 ## Entrada
 
-Pasta: `15UJh2z5hBRKB8q_JpNpH1rcZZUANO6Da`
+Pasta: o lote exato informado pelo usuário ou registrado pelo gerador em
+`publisher/state/latest_batch.json`.
 
 Na ativação manual, o campo `drive_folder` aceita diretamente o link compartilhado
 da pasta. O Publisher extrai o ID, valida a pasta e só então inicia a preparação.
 O link é uma fronteira rígida: somente os arquivos diretamente dentro da pasta
 indicada são considerados. O Publisher nunca procura subpastas, lotes anteriores,
-pastas vizinhas ou outro conteúdo. O ID fixo acima continua sendo o padrão das
-execuções agendadas.
+pastas vizinhas ou outro conteúdo. Quando a execução é agendada, o Publisher usa
+somente o último lote exato registrado pelo gerador; nunca redescobre uma pasta
+por data, nome ou proximidade.
 
 Contrato: exatamente 5 MP4 identificáveis como 01, 02, 03, 04 e 05. O Publisher não cria, recorta, reprocessa nem altera o motor que gera os cinco cortes diários.
 
@@ -24,7 +26,7 @@ Contrato: exatamente 5 MP4 identificáveis como 01, 02, 03, 04 e 05. O Publisher
 - Descrição do YouTube com a mesma linha editorial, CTA e bloco de hashtags.
 - Tags do YouTube também são enviadas no campo nativo `snippet.tags[]`, além das hashtags na descrição.
 - O texto é normalizado para respeitar 100 caracteres no título, 5.000 bytes UTF-8 na descrição e 500 caracteres nas tags.
-- Correções ortográficas seguras são aplicadas antes da copy; tokens de transcrição conhecidos como suspeitos reprovam a rodada em vez de serem inventados.
+- Correções ortográficas seguras são aplicadas antes da copy; tokens de transcrição conhecidos como suspeitos e baixa confiança do ASR reprovam a rodada em vez de serem inventados.
 - O QA bloqueia título truncado, hashtag de plataforma incorreta, espaçamento inválido, frases genéricas antigas e erros ASR não resolvidos antes de qualquer publicação.
 - A copy nunca afirma um fato que não esteja sustentado pelo transcript: evidências são trechos literais do corte; perguntas editoriais permanecem perguntas.
 
@@ -65,7 +67,7 @@ Secrets exclusivos do Publisher:
 - `PUBLISHER_TIKTOK_EXPECTED_USERNAME` — opcional; @handle esperado para bloquear publicação na conta errada.
 - `PUBLISHER_TIKTOK_PRIVACY_LEVEL` — opcional; padrão `PUBLIC_TO_EVERYONE`, sempre validado contra as opções devolvidas pela conta.
 
-O modo `tiktok --dry-run` não acessa a API e valida os cinco horários e captions. `tiktok --due-only` publica somente o próximo corte vencido, evitando enviar os cinco de uma vez. Depois do `init`, o `publish_id` é gravado imediatamente no Drive; novas execuções consultam esse ID antes de criar outro post. Uploads de chunks têm retry e estados ainda processando não são tratados como concluídos. A publicação real exige `video.publish`, autorização da conta TikTok e aprovação/auditoria do app para sair das limitações de teste da plataforma.
+O modo `tiktok --dry-run` não acessa a API e valida os cinco horários e captions. `tiktok --due-only` publica somente o próximo corte vencido, evitando enviar os cinco de uma vez. A publicação imediata de todos os cortes fica bloqueada por padrão e exige confirmação explícita. Depois do `init`, o `publish_id` é gravado imediatamente no Drive; novas execuções consultam esse ID antes de criar outro post. Uploads de chunks têm retry e estados ainda processando não são tratados como concluídos. A publicação real exige `video.publish`, autorização da conta TikTok e aprovação/auditoria do app para sair das limitações de teste da plataforma.
 
 Antes de ativar a publicação, rode `python -m publisher.cli verify-tiktok`. Esse comando renova o OAuth, consulta o perfil autorizado e não publica nem envia vídeo. Se `PUBLISHER_TIKTOK_EXPECTED_USERNAME` estiver configurado, a execução falha quando o token pertence a outro perfil.
 
@@ -96,6 +98,7 @@ python -m publisher.cli youtube
 python -m publisher.cli tiktok --dry-run
 python -m publisher.cli tiktok --due-only
 python -m publisher.cli tiktok
+python -m publisher.cli tiktok --allow-immediate  # somente se o envio imediato for intencional
 python -m publisher.cli verify-tiktok
 python -m publisher.cli verify-google
 python -m publisher.cli preflight
@@ -105,8 +108,9 @@ python -m publisher.cli prepare --target-date 2026-10-07
 
 ## Guards
 
-- exatamente 5 vídeos e sequência 01..05;
-- MP4 validado com `ffprobe`: 1080x1920, H.264, AAC e duração positiva;
+- exatamente 5 vídeos MP4 diretos e sequência 01..05;
+- checksum, tamanho, nome e pasta dos cinco arquivos revalidados antes de cada publicação;
+- MP4 validado com `ffprobe`/`ffmpeg`: 1080x1920, H.264, AAC, 30 fps, yuv420p, áudio 48 kHz, decodificação integral e duração entre 45 e 90 segundos;
 - transcrição local;
 - sem Metricool;
 - copy completa com limites de caracteres/bytes;
@@ -115,4 +119,5 @@ python -m publisher.cli prepare --target-date 2026-10-07
 - intenção pendente e reconciliação do upload do YouTube;
 - estados TikTok pendente, processando, concluído e falho persistidos no Drive;
 - preflight read-only separado para Google e TikTok;
-- publicação automática desativada até `PUBLISHER_ENABLED=1`.
+- publicação automática desativada até `PUBLISHER_ENABLED=1`;
+- manifesto v3 com `run_id`, fonte imutável e lote exato do Drive.

@@ -3,8 +3,8 @@ from zoneinfo import ZoneInfo
 
 from publisher.cli import report
 from publisher.core import YOUTUBE_HOURS, TIKTOK_HOURS, assign_slots, build_title, copy_quality_issues, detect_topic, local_publish_at, make_copy, natural_index, normalize_transcript
-from publisher.google_io import normalize_folder_id, publication_day, reconcile_youtube_upload, resolve_publication_folder, wait_youtube_processing
-from publisher.tiktok_io import choose_privacy_level, publish_tiktok
+from publisher.google_io import normalize_folder_id, publication_day, reconcile_youtube_upload, resolve_publication_folder, verify_manifest_clip, wait_youtube_processing
+from publisher.tiktok_io import TikTokError, choose_privacy_level, publish_tiktok
 import publisher.tiktok_io as tiktok_io
 
 
@@ -118,6 +118,44 @@ def test_drive_parent_without_direct_videos_is_rejected():
         raise AssertionError("uma pasta sem os cinco MP4s diretos deve bloquear a publicação")
 
 
+def test_manifest_file_mutation_is_blocked_before_publication():
+    class Request:
+        def execute(self, **kwargs):
+            return {
+                "id": "drive-1",
+                "name": "lote - 01.mp4",
+                "size": 999,
+                "mimeType": "video/mp4",
+                "md5Checksum": "new-checksum",
+                "parents": ["folder-1"],
+                "trashed": False,
+                "appProperties": {},
+            }
+
+    class Files:
+        def get(self, **kwargs):
+            return Request()
+
+    class Drive:
+        def files(self):
+            return Files()
+
+    manifest = {"drive_folder_id": "folder-1"}
+    clip = {
+        "index": 1,
+        "drive_id": "drive-1",
+        "name": "lote - 01.mp4",
+        "size": 100,
+        "md5_checksum": "old-checksum",
+    }
+    try:
+        verify_manifest_clip(Drive(), manifest, clip)
+    except RuntimeError as error:
+        assert "mudou" in str(error)
+    else:
+        raise AssertionError("arquivo alterado depois do preparo deve ser bloqueado")
+
+
 def test_publication_day_supports_boundary_and_manual_recovery_date():
     sao_paulo = ZoneInfo("America/Sao_Paulo")
     assert publication_day(datetime(2026, 10, 10, 8, 59, tzinfo=sao_paulo)) == date(2026, 10, 10)
@@ -140,7 +178,15 @@ def test_tiktok_existing_processing_id_is_reconciled_without_duplicate(monkeypat
 
     class Files:
         def get(self, **kwargs):
-            return Request({"id": "drive-1", "appProperties": {"cf_tiktok_publish_id": "publish-1"}})
+            return Request({
+                "id": "drive-1",
+                "name": "fonte - 01.mp4",
+                "size": 100,
+                "mimeType": "video/mp4",
+                "md5Checksum": "abc",
+                "parents": ["folder-1"],
+                "appProperties": {"cf_tiktok_publish_id": "publish-1"},
+            })
 
     class Drive:
         def files(self):
@@ -148,9 +194,13 @@ def test_tiktok_existing_processing_id_is_reconciled_without_duplicate(monkeypat
 
     manifest = {
         "date": "2026-10-10",
+        "drive_folder_id": "folder-1",
         "clips": [{
             "index": 1,
             "drive_id": "drive-1",
+            "name": "fonte - 01.mp4",
+            "size": 100,
+            "md5_checksum": "abc",
             "schedule": {"tiktok_hour": 10},
             "copy": {"tiktok_caption": "Legenda de teste"},
         }],
@@ -166,6 +216,19 @@ def test_tiktok_existing_processing_id_is_reconciled_without_duplicate(monkeypat
     result = publish_tiktok(manifest, due_only=True)
     assert result == [{"index": 1, "status": "PROCESSING", "publish_id": "publish-1"}]
     assert markers == [{"cf_tiktok_status": "PROCESSING", "cf_tiktok_date": "2026-10-10"}]
+
+
+def test_tiktok_immediate_publish_is_blocked_by_default():
+    manifest = {
+        "date": "2026-10-10",
+        "clips": [{"index": 1, "schedule": {"tiktok_hour": 10}, "copy": {"tiktok_caption": "Legenda"}}],
+    }
+    try:
+        publish_tiktok(manifest)
+    except TikTokError as error:
+        assert "publicação imediata" in str(error).lower()
+    else:
+        raise AssertionError("publicação imediata deveria exigir confirmação explícita")
 
 
 def test_youtube_reconciliation_finds_recent_exact_title():

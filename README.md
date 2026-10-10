@@ -10,7 +10,7 @@ Cada rodada aprovada entrega exatamente cinco arquivos na mesma pasta da rodada:
 
 Os vídeos são MP4 H.264/AAC em 1080x1920, com áudio original, fundo desfocado, cores originais, HUD `CORTE / FINO` no canto superior direito e legendas sincronizadas na área segura.
 
-Não são criados subdiretórios de plataforma, atalhos, ZIPs, relatórios, textos ou arquivos de QA dentro da pasta final. Relatórios e QA permanecem apenas como artefatos internos da execução. A publicação é manual.
+Não são criados subdiretórios de plataforma, atalhos, ZIPs, relatórios, textos ou arquivos de QA dentro da pasta final. Relatórios e QA permanecem apenas como artefatos internos da execução. A publicação é feita pelo Publisher separado, usando exclusivamente o link exato do lote.
 
 ## O que ele faz
 

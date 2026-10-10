@@ -56,9 +56,10 @@ CAPTION_MAX_CPS = float(os.environ.get("CAPTION_MAX_CPS", "18.0"))
 # 18 cps é o alvo confortável; 24 cps é o limite duro para vídeos curtos,
 # onde a legenda ainda precisa acompanhar uma fala naturalmente acelerada.
 CAPTION_HARD_MAX_CPS = float(os.environ.get("CAPTION_HARD_MAX_CPS", "24.0"))
-# Baixa confiança do ASR é sinalizada para revisão, mas não reprova sozinha:
-# palavras comuns podem receber probabilidade baixa sem estarem erradas.
-CAPTION_LOW_CONFIDENCE_FATAL = os.environ.get("CAPTION_LOW_CONFIDENCE_FATAL", "0").strip().lower() in {"1", "true", "yes", "sim"}
+# Baixa confiança do ASR bloqueia por padrão; palavras comuns podem receber
+# probabilidade baixa sem estarem erradas, mas a rodada precisa ser reavaliada
+# antes de qualquer entrega automática.
+CAPTION_LOW_CONFIDENCE_FATAL = os.environ.get("CAPTION_LOW_CONFIDENCE_FATAL", "1").strip().lower() in {"1", "true", "yes", "sim"}
 CAPTION_SUSPECT_TOKENS = {
     # Erros recorrentes de ASR observados em revisões anteriores. Os termos sem
     # correção segura continuam reprovando o candidato; os termos com correção
@@ -89,7 +90,7 @@ CAPTION_SPELLING_MIN_ZIPF = float(os.environ.get("CAPTION_SPELLING_MIN_ZIPF", "2
 CAPTION_ALLOWED_TOKENS = {
     "corte", "fino", "shorts", "tiktok", "youtube", "podcast", "stf", "ia",
     "acre", "lito", "bolsonaro", "lula", "moraes", "brasil", "brasileiro",
-    "brasileira", "aviação", "aviao", "avião", "aviao", "helicóptero",
+    "brasileira", "aviação", "aviao", "avião", "helicóptero",
     "helicoptero", "whatsapp", "chatgpt", "openai",
 }
 ROOT = Path(__file__).resolve().parent
@@ -1335,6 +1336,22 @@ def validate_video(path: Path, expected_duration: float) -> dict[str, Any]:
         run(["ffmpeg", "-v", "error", "-i", str(path), "-f", "null", "-"], capture=True, timeout=180)
     except (subprocess.CalledProcessError, subprocess.TimeoutExpired):
         decode_ok = False
+    mean_volume = None
+    max_volume = None
+    if audio:
+        try:
+            audio_probe = run(
+                ["ffmpeg", "-v", "info", "-i", str(path), "-vn", "-af", "volumedetect", "-f", "null", "-"],
+                capture=True,
+                timeout=180,
+            )
+            audio_log = f"{audio_probe.stdout or ''}\n{audio_probe.stderr or ''}"
+            mean_match = re.search(r"mean_volume:\s*(-?\d+(?:\.\d+)?) dB", audio_log)
+            max_match = re.search(r"max_volume:\s*(-?\d+(?:\.\d+)?) dB", audio_log)
+            mean_volume = float(mean_match.group(1)) if mean_match else None
+            max_volume = float(max_match.group(1)) if max_match else None
+        except (subprocess.CalledProcessError, subprocess.TimeoutExpired):
+            pass
     checks = {
         "exists": path.is_file() and path.stat().st_size > 50_000,
         "video_stream": video is not None,
@@ -1345,8 +1362,14 @@ def validate_video(path: Path, expected_duration: float) -> dict[str, Any]:
         "pixel_format_yuv420p": bool(video and video.get("pix_fmt") == "yuv420p"),
         "frame_rate_30": abs(frame_rate - 30.0) < 0.1,
         "audio_aac": bool(audio and audio.get("codec_name") == "aac"),
+        "audio_sample_rate_48k": bool(audio and str(audio.get("sample_rate") or "") == "48000"),
         "audio_quality_target": audio_bitrate >= 160000,
-        "duration_reasonable": abs(duration - expected_duration) <= 3.0 and duration >= MIN_CLIP_SECONDS - 2,
+        "audio_not_silent": mean_volume is not None and mean_volume > -50.0,
+        "audio_not_clipped": max_volume is not None and max_volume < 0.0,
+        "duration_reasonable": (
+            MIN_CLIP_SECONDS - 2 <= duration <= MAX_CLIP_SECONDS + 2
+            and abs(duration - expected_duration) <= 3.0
+        ),
         "decodable": decode_ok,
     }
     return {
@@ -1361,6 +1384,8 @@ def validate_video(path: Path, expected_duration: float) -> dict[str, Any]:
         "video_bitrate": video_bitrate or None,
         "audio_codec": audio.get("codec_name") if audio else None,
         "audio_bitrate": audio_bitrate or None,
+        "mean_volume_db": mean_volume,
+        "max_volume_db": max_volume,
         "encoding_profile": {
             "crf": VIDEO_CRF,
             "preset": VIDEO_PRESET,
@@ -1477,7 +1502,7 @@ def write_reports(
         status = "TOP_FIVE_INCOMPLETE"
     elif error and error.startswith("DIREITOS_PENDENTES"):
         status = "RIGHTS_PENDING"
-    elif error and error.startswith("QA de legenda"):
+    elif error and (error.startswith("QA de legenda") or "gate de legenda" in error):
         status = "CAPTION_REVIEW_REQUIRED"
     elif error:
         status = "TECHNICAL_FAILURE"
@@ -1530,7 +1555,7 @@ def write_reports(
         "clips": enriched,
         "qa": qa,
         "error": error,
-        "note": "A seleção usa heurísticas editoriais e não promete viralização. A publicação permanece manual.",
+        "note": "A seleção usa heurísticas editoriais e não promete viralização. A publicação é feita pelo Publisher separado, após preflight e reconciliação.",
         "editing": {
             "format": "9:16 — 1080x1920",
             "audio": "áudio original preservado em AAC",

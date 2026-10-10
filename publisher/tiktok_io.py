@@ -11,7 +11,7 @@ from datetime import date, datetime, time
 from pathlib import Path
 
 from publisher.core import TIMEZONE, local_publish_at, truncate_utf8
-from publisher.google_io import download, drive_service, env, marker
+from publisher.google_io import download, drive_service, env, marker, verify_manifest_clip
 
 
 API_ROOT = "https://open.tiktokapis.com/v2"
@@ -232,7 +232,17 @@ def _due_clips(manifest: dict, now: datetime | None = None) -> list[dict]:
     return sorted(eligible, key=lambda item: (int(item["schedule"]["tiktok_hour"]), item["index"]))
 
 
-def publish_tiktok(manifest: dict, dry_run: bool = False, due_only: bool = False, now: datetime | None = None) -> list[dict]:
+def publish_tiktok(
+    manifest: dict,
+    dry_run: bool = False,
+    due_only: bool = False,
+    now: datetime | None = None,
+    allow_immediate: bool = False,
+) -> list[dict]:
+    if not dry_run and not due_only and not allow_immediate and env("PUBLISHER_ALLOW_IMMEDIATE_TIKTOK") != "1":
+        raise TikTokError(
+            "Publicação imediata dos cinco TikToks está bloqueada. Use --due-only ou confirme explicitamente a execução imediata."
+        )
     day = date.fromisoformat(manifest["date"])
     clips = _due_clips(manifest, now) if due_only else sorted(manifest["clips"], key=lambda item: item["index"])
     if dry_run:
@@ -246,7 +256,7 @@ def publish_tiktok(manifest: dict, dry_run: bool = False, due_only: bool = False
     drive = drive_service()
     results: list[dict] = []
     for clip in clips:
-        item = drive.files().get(fileId=clip["drive_id"], fields="id,name,appProperties").execute(num_retries=4)
+        item = verify_manifest_clip(drive, manifest, clip)
         properties = item.get("appProperties", {})
         existing_id = properties.get("cf_tiktok_publish_id", "").strip()
         if existing_id:

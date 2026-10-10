@@ -11,7 +11,7 @@ from publisher.tiktok_io import publish_tiktok, verify_tiktok_account
 
 def load(path: Path) -> dict:
     data = json.loads(path.read_text(encoding="utf-8"))
-    if int(data.get("version", 0) or 0) < 2:
+    if int(data.get("version", 0) or 0) < 3:
         raise RuntimeError("Manifesto antigo ou incompatível; execute prepare novamente antes de publicar.")
     if len(data.get("clips", [])) != 5:
         raise RuntimeError("Manifesto inválido: precisa conter 5 cortes.")
@@ -73,6 +73,7 @@ def main() -> int:
     parser.add_argument("--manifest", default="publisher/state/current.json")
     parser.add_argument("--dry-run", action="store_true")
     parser.add_argument("--due-only", action="store_true", help="publica no máximo um TikTok já vencido no horário local")
+    parser.add_argument("--allow-immediate", action="store_true", help="confirma publicação imediata de todos os TikToks")
     parser.add_argument("--target-date", default="", help="data ISO do manifesto; útil para recuperação manual (AAAA-MM-DD)")
     parser.add_argument("--remote", action="store_true", help="inclui estados persistidos no Drive no relatório")
     args = parser.parse_args()
@@ -94,7 +95,16 @@ def main() -> int:
     if args.command == "youtube":
         print(json.dumps(publish_youtube(data, dry_run=args.dry_run), ensure_ascii=False, indent=2))
     elif args.command == "tiktok":
-        print(json.dumps(publish_tiktok(data, dry_run=args.dry_run, due_only=args.due_only), ensure_ascii=False, indent=2))
+        print(json.dumps(
+            publish_tiktok(
+                data,
+                dry_run=args.dry_run,
+                due_only=args.due_only,
+                allow_immediate=args.allow_immediate,
+            ),
+            ensure_ascii=False,
+            indent=2,
+        ))
     else:
         print(json.dumps(report(data, drive=drive_service() if args.remote else None), ensure_ascii=False, indent=2))
     return 0
