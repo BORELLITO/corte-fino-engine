@@ -1,6 +1,6 @@
 from datetime import date
 
-from publisher.core import detect_topic, local_publish_at, make_copy, natural_index
+from publisher.core import YOUTUBE_HOURS, TIKTOK_HOURS, assign_slots, detect_topic, local_publish_at, make_copy, natural_index
 
 
 def test_numbering():
@@ -15,10 +15,23 @@ def test_bets_copy():
     assert pack.topic == "apostas"
     assert len(pack.youtube_title) <= 100
     assert pack.youtube_title == pack.youtube_title.upper()
+    assert "#Apostas" in pack.tiktok_caption
     assert "#CorteFino" in pack.tiktok_caption
     assert "#Shorts" in pack.youtube_description
+    assert "#Problema" not in pack.tiktok_caption
     assert pack.youtube_tags
+    assert any("cassino" in tag.lower() for tag in pack.youtube_tags)
     assert sum(len(tag) for tag in pack.youtube_tags) + max(0, 2 * (len(pack.youtube_tags) - 1)) <= 500
+
+
+def test_five_slots_for_both_networks():
+    clips = [
+        {"index": index, "copy": {"viral_score": float(index)}, "schedule": {}}
+        for index in range(1, 6)
+    ]
+    assign_slots(clips)
+    assert sorted(clip["schedule"]["youtube_hour"] for clip in clips) == list(YOUTUBE_HOURS)
+    assert sorted(clip["schedule"]["tiktok_hour"] for clip in clips) == list(TIKTOK_HOURS)
 
 
 def test_politics():
