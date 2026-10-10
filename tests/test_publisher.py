@@ -69,6 +69,14 @@ def test_copy_editorial_qa_cleans_fillers_and_safe_spelling_errors():
     assert make_copy(normalized).cta
 
 
+def test_copy_editorial_qa_normalizes_casino_gender_without_blocking():
+    normalized = normalize_transcript(
+        "A casino aparece na discussão sobre vício e responsabilidade. O debate mostra como o dinheiro muda decisões."
+    )
+    assert normalized.startswith("O cassino")
+    assert copy_quality_issues(make_copy(normalized)) == []
+
+
 def test_drive_folder_accepts_url_or_id():
     url = "https://drive.google.com/drive/folders/abc_123?usp=sharing"
     assert normalize_folder_id(url) == "abc_123"
