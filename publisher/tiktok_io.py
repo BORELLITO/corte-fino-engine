@@ -127,6 +127,10 @@ def verify_tiktok_account() -> dict:
 def choose_privacy_level(creator: dict, desired: str | None = None) -> str:
     options = [str(option) for option in creator.get("privacy_level_options", [])]
     desired = desired or env("PUBLISHER_TIKTOK_PRIVACY_LEVEL", "PUBLIC_TO_EVERYONE")
+    # TikTok blocks unaudited Sandbox clients from public posting. Keep the
+    # production preference untouched, but safely downgrade Sandbox to private.
+    if env("PUBLISHER_TIKTOK_ENV").strip().casefold() == "sandbox" and desired == "PUBLIC_TO_EVERYONE":
+        desired = "SELF_ONLY"
     if desired not in options:
         raise TikTokError(
             f"Privacidade TikTok indisponível: {desired}. Opções retornadas: {', '.join(options) or 'nenhuma'}"
