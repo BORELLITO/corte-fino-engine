@@ -88,7 +88,7 @@ def test_top_five_is_closed():
     assert MAX_CLIPS == 5
 
 def test_editorial_score_gate_keeps_candidates_above_threshold(monkeypatch):
-    from main import select_candidates
+    from main import Candidate, select_candidates
     import main as engine
 
     previous_gate = engine.USE_EDITORIAL_SCORE_GATE
@@ -97,12 +97,15 @@ def test_editorial_score_gate_keeps_candidates_above_threshold(monkeypatch):
         engine.USE_EDITORIAL_SCORE_GATE = True
         engine.MIN_EDITORIAL_SCORE = 0.0
         monkeypatch.setattr(engine, "validate_captions", lambda *args, **kwargs: {"passed": True})
-        segments = [
-            Segment(0, 50, "Essa é uma fala forte sobre política e responsabilidade.", []),
-            Segment(50, 100, "O contexto continua e explica a consequência pública.", []),
-            Segment(100, 150, "Essa fala tem uma conclusão importante sobre o assunto.", []),
-        ]
-        selected, candidates = select_candidates(segments, {})
+        monkeypatch.setattr(
+            engine,
+            "build_candidates",
+            lambda *args, **kwargs: [
+                Candidate(0, 60, "fala forte sobre política", 80.0),
+                Candidate(70, 130, "fala forte sobre segurança", 70.0),
+            ],
+        )
+        selected, candidates = select_candidates([], {})
         assert candidates
         assert selected
         assert all(candidate.accepted for candidate in selected)
