@@ -10,7 +10,7 @@ import urllib.request
 from datetime import date, datetime, time
 from pathlib import Path
 
-from publisher.core import TIMEZONE, local_publish_at, truncate_utf8
+from publisher.core import TIKTOK_CAPTION_LIMIT, TIMEZONE, local_publish_at, truncate_utf8
 from publisher.google_io import download, drive_service, env, marker, verify_manifest_clip
 
 
@@ -189,7 +189,7 @@ def _wait_for_publish(token: str, publish_id: str) -> tuple[str, dict]:
 def _post_clip(token: str, creator: dict, clip: dict, source: Path, on_initialized=None) -> dict:
     size = source.stat().st_size
     post_info = {
-        "title": truncate_utf8(clip["copy"]["tiktok_caption"], 2200),
+        "title": truncate_utf8(clip["copy"]["tiktok_caption"], TIKTOK_CAPTION_LIMIT),
         "privacy_level": choose_privacy_level(creator),
         "disable_comment": bool(creator.get("comment_disabled", False)),
         "disable_duet": bool(creator.get("duet_disabled", False)),
