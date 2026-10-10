@@ -15,7 +15,7 @@ YOUTUBE_PRIORITY = (16, 14, 10, 12, 18)
 TIKTOK_PRIORITY = (18, 10, 12, 16, 20)
 
 
-STOPWORDS = set("a o as os um uma uns umas de da do das dos e em no na nos nas para pra por com sem que quem qual quando onde como porque isso isto essa esse essas esses eu voce voces ele ela eles elas me te se meu minha seu sua mais menos muito muita muitos muitas ja nao sim so tambem aqui ali la tem ter vai vou foi ser sao era esta estao ta tao entao ne tipo cara gente acho fica ficar fazer faz fez pode poder todo toda todos todas num numa ate ai bem".split())
+STOPWORDS = set("a o as os um uma uns umas de da do das dos e em no na nos nas para pra por com sem que quem qual quando onde como porque isso isto essa esse essas esses eu voce voces ele ela eles elas me te se meu minha seu sua mais menos muito muita muitos muitas ja nao sim so tambem aqui ali la tem ter vai vou foi ser sao era esta estao ta tao entao ne tipo cara gente acho fica ficar fazer faz fez pode poder todo toda todos todas num numa ate ai bem sobre existe ainda realmente falei falou falando dizer disse diz aqui agora assim entao bom pessoal".split())
 COPY_NOISE = set("assunto assuntos coisa coisas pessoa pessoas parte jeito forma fala falas trecho trechos video videos canal corte cortes sempre nunca agora hoje casa ganha ganhou divulga divulgar".split())
 TOPIC_RULES = {
     "apostas": "aposta apostas bet bets cassino cassinos tigrinho jogo jogos vicio apostar".split(),
@@ -68,6 +68,13 @@ TOPIC_TAGS = {
     "seguranca": "#SegurancaPublica",
     "midia": "#Midia",
     "geral": "#Debate",
+}
+TITLE_TEMPLATES = {
+    "apostas": "A VERDADE INCÔMODA SOBRE APOSTAS E RESPONSABILIDADE",
+    "politica": "O ARGUMENTO QUE DIVIDIU O DEBATE",
+    "seguranca": "A PERGUNTA QUE A SEGURANÇA PÚBLICA EXIGE",
+    "midia": "QUANDO A MÍDIA TRANSFORMA DOR EM AUDIÊNCIA",
+    "geral": "ESSA FALA ABRIU UM DEBATE INCÔMODO",
 }
 
 
@@ -171,7 +178,7 @@ def build_hashtags(topic: str, keywords: list[str]) -> list[str]:
     tags = [TOPIC_TAGS.get(topic, TOPIC_TAGS["geral"])]
     allowed = TOPIC_KEYWORDS.get(topic, set())
     for word in keywords[:5]:
-        if allowed and word not in allowed:
+        if not allowed or word not in allowed:
             continue
         if word not in COPY_NOISE:
             tags.append(hashtag(KEYWORD_ALIASES.get(word, word)))
@@ -181,7 +188,7 @@ def build_hashtags(topic: str, keywords: list[str]) -> list[str]:
 
 def build_youtube_tags(topic: str, keywords: list[str]) -> list[str]:
     allowed = TOPIC_KEYWORDS.get(topic, set())
-    relevant = [word for word in keywords if not allowed or word in allowed]
+    relevant = [word for word in keywords if allowed and word in allowed]
     candidates = [*TOPIC_TERMS.get(topic, TOPIC_TERMS["geral"])]
     candidates.extend(KEYWORD_ALIASES.get(word, word) for word in relevant[:5])
     candidates.extend(("corte fino", "cortes de podcast", "shorts"))
@@ -204,12 +211,11 @@ def make_copy(transcript: str) -> CopyPack:
     topic = detect_topic(transcript)
     keys = get_keywords(transcript)
     hook = choose_hook(transcript)
-    title = truncate(hook.upper(), 96)
-    subject = ", ".join(KEYWORD_ALIASES.get(word, word) for word in keys[:3]) or "o tema central"
+    title = truncate(TITLE_TEMPLATES.get(topic, TITLE_TEMPLATES["geral"]), 100)
     hashtags = build_hashtags(topic, keys)
     hashtag_text = " ".join(hashtags)
     bridge = EMOTIONAL_BRIDGE.get(topic, EMOTIONAL_BRIDGE["geral"])
-    context = f"A conversa coloca {subject} no centro e abre espaço para uma reflexão que não passa despercebida."
+    context = "A fala coloca esse tema no centro e abre espaço para uma reflexão que não passa despercebida."
     cta = CTA[topic]
     tiktok = f"{title}\n\n{bridge} {context}\n\n{cta}\n\n{hashtag_text}"
     youtube_description = f"{hook}\n\n{bridge} {context}\n\n{cta}\n\nCorte Fino — recortes que transformam falas em debates.\n\n{hashtag_text}"

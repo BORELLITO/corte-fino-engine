@@ -24,6 +24,7 @@ def test_bets_copy():
     assert pack.youtube_tags
     assert any("cassino" in tag.lower() for tag in pack.youtube_tags)
     assert sum(len(tag) for tag in pack.youtube_tags) + max(0, 2 * (len(pack.youtube_tags) - 1)) <= 500
+    assert "A conversa coloca" not in pack.tiktok_caption
 
 
 def test_five_slots_for_both_networks():
@@ -38,6 +39,13 @@ def test_five_slots_for_both_networks():
 
 def test_politics():
     assert detect_topic("O presidente falou do governo e o congresso respondeu.") == "politica"
+
+
+def test_general_copy_does_not_turn_transcription_noise_into_tags():
+    pack = make_copy("E falo mais, Jikei, você tem sangue nas mãos, tá?")
+    assert pack.topic == "geral"
+    assert pack.tiktok_caption.endswith("#Debate #CorteFino #Shorts")
+    assert all("jikei" not in tag.lower() for tag in pack.youtube_tags)
 
 
 def test_timezone():
