@@ -6,6 +6,7 @@ import os
 from pathlib import Path
 
 from publisher.google_io import FOLDER_ID, prepare, publish_youtube
+from publisher.tiktok_io import publish_tiktok
 
 
 def load(path: Path) -> dict:
@@ -24,7 +25,7 @@ def report(manifest: dict) -> dict:
 
 def main() -> int:
     parser = argparse.ArgumentParser(description="Corte Fino Publisher")
-    parser.add_argument("command", choices=["prepare", "report", "youtube"])
+    parser.add_argument("command", choices=["prepare", "report", "youtube", "tiktok"])
     parser.add_argument("--folder-id", default=os.environ.get("PUBLISHER_DRIVE_FOLDER_ID", FOLDER_ID))
     parser.add_argument("--manifest", default="publisher/state/current.json")
     parser.add_argument("--dry-run", action="store_true")
@@ -37,6 +38,8 @@ def main() -> int:
     data = load(path)
     if args.command == "youtube":
         print(json.dumps(publish_youtube(data, dry_run=args.dry_run), ensure_ascii=False, indent=2))
+    elif args.command == "tiktok":
+        print(json.dumps(publish_tiktok(data, dry_run=args.dry_run), ensure_ascii=False, indent=2))
     else:
         print(json.dumps(report(data), ensure_ascii=False, indent=2))
     return 0

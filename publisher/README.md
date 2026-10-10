@@ -31,15 +31,24 @@ O campo `containsSyntheticMedia` fica em `false` para os cortes editoriais origi
 
 Secrets:
 
-- `` — credencial OAuth do Google.
-- `PUBLISHER_GOOGLE_CLIENT_ID` — credencial OAuth do Google.
-- `PUBLISHER_GOOGLE_CLIENT_SECRET` — refresh token do Drive.
-- `PUBLISHER_GOOGLE_REFRESH_TOKEN` — refresh token do canal Corte Fino com escopo `https://www.googleapis.com/auth/youtube.upload`.
+- `PUBLISHER_GOOGLE_CLIENT_ID` — credencial OAuth exclusiva do Publisher.
+- `PUBLISHER_GOOGLE_CLIENT_SECRET` — segredo OAuth exclusivo do Publisher.
+- `PUBLISHER_GOOGLE_REFRESH_TOKEN` — refresh token do Drive usado pelo Publisher.
+- `PUBLISHER_YOUTUBE_REFRESH_TOKEN` — refresh token da conta `extremeheroesshorts@gmail.com`, com escopo `https://www.googleapis.com/auth/youtube.upload`.
+- Os secrets `GOOGLE_*` antigos permanecem exclusivos do motor diário e não devem ser alterados.
 - `PUBLISHER_ENABLED=1` — só depois dos testes, para ligar a execução diária.
 
 ## TikTok
 
-O Publisher gera automaticamente ordem, horário e legenda, mas não faz Direct Post nesta versão. O pacote fica pronto para TikTok Studio ou para futura integração oficial aprovada.
+O Publisher gera automaticamente ordem, horário, legenda e hashtags para cinco vídeos. Com o app TikTok aprovado, o Content Posting API configurado e os três secrets abaixo preenchidos, o comando `tiktok` publica os cinco cortes como Direct Post e marca cada arquivo no Drive para impedir duplicidade.
+
+Secrets exclusivos do Publisher:
+
+- `PUBLISHER_TIKTOK_CLIENT_KEY` — Client key do app Corte Fino Publisher.
+- `PUBLISHER_TIKTOK_CLIENT_SECRET` — Client secret do app Corte Fino Publisher.
+- `PUBLISHER_TIKTOK_REFRESH_TOKEN` — refresh token obtido após autorizar a conta TikTok de publicação.
+
+O modo `tiktok --dry-run` não acessa a API e valida os cinco horários e captions. A publicação real exige `video.publish`, autorização da conta TikTok e aprovação/auditoria do app para sair das limitações de teste da plataforma.
 
 ## Comandos
 
@@ -48,6 +57,8 @@ python -m publisher.cli prepare
 python -m publisher.cli report
 python -m publisher.cli youtube --dry-run
 python -m publisher.cli youtube
+python -m publisher.cli tiktok --dry-run
+python -m publisher.cli tiktok
 ```
 
 ## Guards

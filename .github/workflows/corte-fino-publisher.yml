@@ -8,7 +8,7 @@ on:
         required: true
         default: "dry-run"
         type: choice
-        options: [dry-run, prepare, youtube]
+        options: [dry-run, prepare, youtube, tiktok, all]
   schedule:
     - cron: "30 11 * * *" # 08:30 em America/Sao_Paulo
 
@@ -31,6 +31,9 @@ jobs:
       PUBLISHER_GOOGLE_CLIENT_SECRET: ${{ secrets.PUBLISHER_GOOGLE_CLIENT_SECRET }}
       PUBLISHER_GOOGLE_REFRESH_TOKEN: ${{ secrets.PUBLISHER_GOOGLE_REFRESH_TOKEN }}
       PUBLISHER_YOUTUBE_REFRESH_TOKEN: ${{ secrets.PUBLISHER_YOUTUBE_REFRESH_TOKEN }}
+      PUBLISHER_TIKTOK_CLIENT_KEY: ${{ secrets.PUBLISHER_TIKTOK_CLIENT_KEY }}
+      PUBLISHER_TIKTOK_CLIENT_SECRET: ${{ secrets.PUBLISHER_TIKTOK_CLIENT_SECRET }}
+      PUBLISHER_TIKTOK_REFRESH_TOKEN: ${{ secrets.PUBLISHER_TIKTOK_REFRESH_TOKEN }}
       PUBLISHER_ENABLED: ${{ secrets.PUBLISHER_ENABLED }}
 
     steps:
@@ -84,9 +87,17 @@ jobs:
         if: steps.guard.outputs.run == '1' && github.event_name == 'workflow_dispatch' && inputs.mode == 'dry-run'
         run: python -m publisher.cli youtube --dry-run
 
+      - name: Dry-run TikTok
+        if: steps.guard.outputs.run == '1' && github.event_name == 'workflow_dispatch' && inputs.mode == 'dry-run'
+        run: python -m publisher.cli tiktok --dry-run
+
       - name: Agendar YouTube
-        if: steps.guard.outputs.run == '1' && ((github.event_name == 'workflow_dispatch' && inputs.mode == 'youtube') || (github.event_name == 'schedule' && env.PUBLISHER_ENABLED == '1'))
+        if: steps.guard.outputs.run == '1' && ((github.event_name == 'workflow_dispatch' && (inputs.mode == 'youtube' || inputs.mode == 'all')) || (github.event_name == 'schedule' && env.PUBLISHER_ENABLED == '1'))
         run: python -m publisher.cli youtube
+
+      - name: Publicar TikTok
+        if: steps.guard.outputs.run == '1' && ((github.event_name == 'workflow_dispatch' && (inputs.mode == 'tiktok' || inputs.mode == 'all')) || (github.event_name == 'schedule' && env.PUBLISHER_ENABLED == '1'))
+        run: python -m publisher.cli tiktok
 
       - name: Persistir manifesto
         if: steps.guard.outputs.run == '1'
