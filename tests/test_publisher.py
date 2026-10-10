@@ -191,6 +191,7 @@ def test_publication_day_supports_boundary_and_manual_recovery_date():
 
 def test_tiktok_privacy_level_is_explicit_and_available(monkeypatch):
     creator = {"privacy_level_options": ["SELF_ONLY", "PUBLIC_TO_EVERYONE"]}
+    monkeypatch.setenv("PUBLISHER_TIKTOK_ENV", "production")
     assert choose_privacy_level(creator) == "PUBLIC_TO_EVERYONE"
     monkeypatch.setenv("PUBLISHER_TIKTOK_ENV", "sandbox")
     monkeypatch.setenv("PUBLISHER_TIKTOK_PRIVACY_LEVEL", "PUBLIC_TO_EVERYONE")
