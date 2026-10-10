@@ -4,7 +4,7 @@ import json
 import os
 import subprocess
 import tempfile
-from datetime import date, datetime, timedelta
+from datetime import date, datetime, timedelta, timezone
 from pathlib import Path
 
 from publisher.core import TIMEZONE, YOUTUBE_HOURS, TIKTOK_HOURS, assign_slots, copy_dict, local_publish_at, make_copy, natural_index, truncate, truncate_utf8
@@ -210,6 +210,13 @@ def verify_google_accounts(folder_id: str) -> dict:
     indexed = [natural_index(item.get("name", "")) for item in files]
     if len(files) != 5 or indexed != [1, 2, 3, 4, 5]:
         raise RuntimeError(f"Preflight Drive falhou: esperados 5 vídeos 01..05, encontrados {indexed}.")
+    invalid = [
+        item.get("name", "")
+        for item in files
+        if item.get("mimeType") != "video/mp4" or int(item.get("size", 0) or 0) <= 0
+    ]
+    if invalid:
+        raise RuntimeError("Preflight Drive encontrou arquivos inválidos: " + ", ".join(invalid))
     # Apenas renova o token: consultar canais exigiria um escopo adicional e
     # não deve invalidar um refresh token emitido originalmente para upload.
     credentials("PUBLISHER_YOUTUBE_REFRESH_TOKEN", ["https://www.googleapis.com/auth/youtube.upload"])
@@ -218,6 +225,51 @@ def verify_google_accounts(folder_id: str) -> dict:
         "drive_videos": [{"index": index, "name": item.get("name", "")} for index, item in zip(indexed, files)],
         "youtube_credentials": "ok",
     }
+
+
+def _utc_now() -> datetime:
+    return datetime.now(timezone.utc)
+
+
+def _parse_utc(value: str) -> datetime | None:
+    try:
+        parsed = datetime.fromisoformat(value.replace("Z", "+00:00"))
+    except (TypeError, ValueError):
+        return None
+    return parsed.astimezone(timezone.utc) if parsed.tzinfo else parsed.replace(tzinfo=timezone.utc)
+
+
+def reconcile_youtube_upload(youtube, title: str, intent_at: str) -> str | None:
+    """Find a just-created upload when the Drive marker was not finalized."""
+    intent = _parse_utc(intent_at)
+    if not intent:
+        return None
+    try:
+        response = youtube.search().list(
+            part="id,snippet",
+            forMine=True,
+            type="video",
+            q=title,
+            order="date",
+            maxResults=25,
+        ).execute(num_retries=4)
+    except Exception:
+        # A token scoped only for upload may not be allowed to search the
+        # channel. In that case, block a duplicate and request reconciliation.
+        return None
+    lower_bound = intent - timedelta(minutes=10)
+    # O upload pode ser reconciliado até 24h depois da intenção; depois disso
+    # a confirmação automática fica ambígua demais e exige revisão manual.
+    upper_bound = intent + timedelta(hours=24)
+    for item in response.get("items", []):
+        snippet = item.get("snippet", {})
+        if snippet.get("title", "").strip() != title.strip():
+            continue
+        published_at = _parse_utc(snippet.get("publishedAt", ""))
+        video_id = (item.get("id") or {}).get("videoId")
+        if video_id and published_at and lower_bound <= published_at <= upper_bound:
+            return video_id
+    return None
 
 
 def marker(drive, file_id: str, values: dict[str, str]) -> None:
@@ -259,9 +311,43 @@ def publish_youtube(manifest: dict, dry_run: bool = False) -> list[dict]:
         description = truncate_utf8(clip["copy"]["youtube_description"], 5000)
         tags = clip["copy"].get("youtube_tags", [])
 
+        if properties.get("cf_youtube_upload_status") == "PENDING":
+            if dry_run:
+                results.append({"index": clip["index"], "status": "recovery_required", "title": title})
+                continue
+            recovered_id = reconcile_youtube_upload(
+                youtube,
+                title,
+                properties.get("cf_youtube_intent_at", ""),
+            )
+            if not recovered_id:
+                raise RuntimeError(
+                    f"Upload YouTube do corte {clip['index']:02d} ficou pendente sem reconciliação segura; "
+                    "o envio foi bloqueado para evitar duplicidade."
+                )
+            marker(
+                drive,
+                clip["drive_id"],
+                {
+                    "cf_youtube_video_id": recovered_id,
+                    "cf_youtube_upload_status": "SCHEDULED",
+                    "cf_youtube_publish_at": publish_at,
+                    "cf_youtube_date": manifest["date"],
+                },
+            )
+            results.append({"index": clip["index"], "status": "reconciled", "video_id": recovered_id, "publish_at": publish_at})
+            continue
+
         if dry_run:
             results.append({"index": clip["index"], "status": "dry_run", "publish_at": publish_at, "title": title, "tags": tags})
             continue
+
+        publish_dt = _parse_utc(publish_at)
+        if publish_dt and publish_dt <= _utc_now():
+            raise RuntimeError(
+                f"Horário do YouTube para o corte {clip['index']:02d} já passou ({publish_at}); "
+                "gere um manifesto com --target-date futuro para recuperar."
+            )
 
         from googleapiclient.http import MediaFileUpload
 
@@ -284,6 +370,18 @@ def publish_youtube(manifest: dict, dry_run: bool = False) -> list[dict]:
                     "containsSyntheticMedia": False,
                 },
             }
+            intent_at = _utc_now().isoformat().replace("+00:00", "Z")
+            marker(
+                drive,
+                clip["drive_id"],
+                {
+                    "cf_youtube_upload_status": "PENDING",
+                    "cf_youtube_intent_at": intent_at,
+                    "cf_youtube_title": title,
+                    "cf_youtube_publish_at": publish_at,
+                    "cf_youtube_date": manifest["date"],
+                },
+            )
             response = youtube.videos().insert(
                 part="snippet,status",
                 body=body,
@@ -297,6 +395,7 @@ def publish_youtube(manifest: dict, dry_run: bool = False) -> list[dict]:
             clip["drive_id"],
             {
                 "cf_youtube_video_id": video_id,
+                "cf_youtube_upload_status": "SCHEDULED",
                 "cf_youtube_publish_at": publish_at,
                 "cf_youtube_date": manifest["date"],
             },

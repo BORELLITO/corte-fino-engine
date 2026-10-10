@@ -204,14 +204,15 @@ def hashtag(word: str) -> str:
 def build_hashtags(topic: str, keywords: list[str], platform: str = "youtube") -> list[str]:
     tags = [TOPIC_TAGS.get(topic, TOPIC_TAGS["geral"])]
     allowed = TOPIC_KEYWORDS.get(topic, set())
-    for word in keywords[:5]:
+    for word in keywords[:3]:
         if not allowed or word not in allowed:
             continue
         if word not in COPY_NOISE:
             tags.append(hashtag(KEYWORD_ALIASES.get(word, word)))
     platform_tag = "#TikTok" if platform.casefold() == "tiktok" else "#Shorts"
     tags.extend(("#CorteFino", platform_tag))
-    return list(dict.fromkeys(tag for tag in tags if tag))[:7]
+    limit = 5 if platform.casefold() == "tiktok" else 6
+    return list(dict.fromkeys(tag for tag in tags if tag))[:limit]
 
 
 def build_youtube_tags(topic: str, keywords: list[str]) -> list[str]:

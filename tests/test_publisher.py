@@ -1,8 +1,9 @@
 from datetime import date, datetime
 from zoneinfo import ZoneInfo
 
+from publisher.cli import report
 from publisher.core import YOUTUBE_HOURS, TIKTOK_HOURS, assign_slots, detect_topic, local_publish_at, make_copy, natural_index
-from publisher.google_io import publication_day
+from publisher.google_io import publication_day, reconcile_youtube_upload
 from publisher.tiktok_io import choose_privacy_level, publish_tiktok
 import publisher.tiktok_io as tiktok_io
 
@@ -105,6 +106,59 @@ def test_tiktok_existing_processing_id_is_reconciled_without_duplicate(monkeypat
     result = publish_tiktok(manifest, due_only=True)
     assert result == [{"index": 1, "status": "PROCESSING", "publish_id": "publish-1"}]
     assert markers == [{"cf_tiktok_status": "PROCESSING", "cf_tiktok_date": "2026-10-10"}]
+
+
+def test_youtube_reconciliation_finds_recent_exact_title():
+    class Request:
+        def execute(self, **kwargs):
+            return {"items": [{
+                "id": {"videoId": "youtube-1"},
+                "snippet": {"title": "TÍTULO FORTE", "publishedAt": "2026-10-10T12:00:00Z"},
+            }]}
+
+    class Search:
+        def list(self, **kwargs):
+            return Request()
+
+    class YouTube:
+        def search(self):
+            return Search()
+
+    assert reconcile_youtube_upload(YouTube(), "TÍTULO FORTE", "2026-10-10T11:55:00Z") == "youtube-1"
+
+
+def test_report_exposes_remote_states_and_attention_count():
+    class Request:
+        def __init__(self, data):
+            self.data = data
+
+        def execute(self, **kwargs):
+            return self.data
+
+    class Files:
+        def get(self, **kwargs):
+            states = {
+                "drive-y": {"cf_youtube_video_id": "youtube-1", "cf_youtube_upload_status": "SCHEDULED"},
+                "drive-t": {"cf_tiktok_publish_id": "tiktok-1", "cf_tiktok_status": "PROCESSING"},
+            }
+            return Request({"appProperties": states[kwargs["fileId"]]})
+
+    class Drive:
+        def files(self):
+            return Files()
+
+    manifest = {
+        "date": "2026-10-10",
+        "timezone": "America/Sao_Paulo",
+        "clips": [
+            {"index": 1, "drive_id": "drive-y", "schedule": {"youtube_hour": 10, "tiktok_hour": 10}, "copy": {"youtube_title": "Título", "tiktok_caption": "Legenda"}},
+            {"index": 2, "drive_id": "drive-t", "schedule": {"youtube_hour": 12, "tiktok_hour": 12}, "copy": {"youtube_title": "Título 2", "tiktok_caption": "Legenda 2"}},
+        ],
+    }
+    data = report(manifest, drive=Drive())
+    assert data["youtube"][0]["status"] == "scheduled"
+    assert data["tiktok"][1]["status"] == "PROCESSING"
+    assert data["summary"]["attention"] == 0
 
 
 def test_timezone():

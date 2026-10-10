@@ -1,4 +1,4 @@
-# Corte Fino Publisher 1.2
+# Corte Fino Publisher 1.3
 
 Módulo separado do gerador de cortes. Lê os 5 MP4 prontos no Google Drive, transcreve localmente com `faster-whisper`, cria copy completa para TikTok/YouTube, ranqueia os cortes e agenda os Shorts pela YouTube Data API.
 
@@ -56,6 +56,22 @@ O modo `tiktok --dry-run` não acessa a API e valida os cinco horários e captio
 
 Antes de ativar a publicação, rode `python -m publisher.cli verify-tiktok`. Esse comando renova o OAuth, consulta o perfil autorizado e não publica nem envia vídeo. Se `PUBLISHER_TIKTOK_EXPECTED_USERNAME` estiver configurado, a execução falha quando o token pertence a outro perfil.
 
+## Reconciliação e preflight
+
+Antes do upload para o YouTube, o Publisher grava uma intenção pendente no Drive. Se o processo cair depois do upload e antes do marcador final, a próxima execução procura o vídeo recém-criado por título e janela de horário. Quando não consegue confirmar com segurança, bloqueia o reenvio para evitar duplicidade.
+
+O comando `preflight` valida, sem publicar, os cinco arquivos do Drive, as credenciais Google e a conta TikTok autorizada:
+
+```
+python -m publisher.cli preflight
+```
+
+Para consultar estados persistidos no Drive:
+
+```
+python -m publisher.cli report --remote
+```
+
 ## Comandos
 
 ```
@@ -68,6 +84,8 @@ python -m publisher.cli tiktok --due-only
 python -m publisher.cli tiktok
 python -m publisher.cli verify-tiktok
 python -m publisher.cli verify-google
+python -m publisher.cli preflight
+python -m publisher.cli report --remote
 python -m publisher.cli prepare --target-date 2026-10-07
 ```
 
@@ -79,6 +97,7 @@ python -m publisher.cli prepare --target-date 2026-10-07
 - sem Metricool;
 - copy completa com limites de caracteres/bytes;
 - anti-duplicidade via Drive;
+- intenção pendente e reconciliação do upload do YouTube;
 - estados TikTok pendente, processando, concluído e falho persistidos no Drive;
 - preflight read-only separado para Google e TikTok;
 - publicação automática desativada até `PUBLISHER_ENABLED=1`.
