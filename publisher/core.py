@@ -88,6 +88,8 @@ SAFE_TRANSCRIPT_CORRECTIONS = {
     "danapolítica": "na política",
     "coneste": "conhece",
     "pim": "PIB",
+    "a casino": "o cassino",
+    "a cassino": "o cassino",
     "casino": "cassino",
     "crianca": "criança",
     "politica": "política",
