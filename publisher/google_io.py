@@ -3,7 +3,7 @@ from __future__ import annotations
 import json
 import os
 import tempfile
-from datetime import date, datetime
+from datetime import date, datetime, timedelta
 from pathlib import Path
 
 from publisher.core import TIMEZONE, YOUTUBE_HOURS, TIKTOK_HOURS, assign_slots, copy_dict, local_publish_at, make_copy, natural_index, truncate
@@ -60,6 +60,14 @@ def transcribe(path: Path) -> str:
     return " ".join(s.text.strip() for s in segments if s.text.strip()).strip()
 
 
+def publication_day(now: datetime | None = None) -> date:
+    current = now or datetime.now(TIMEZONE)
+    if current.tzinfo is None:
+        current = current.replace(tzinfo=TIMEZONE)
+    # Preserva os 5 slots completos. Execuções a partir das 09:00 preparam o dia seguinte.
+    return current.date() + (timedelta(days=1) if current.hour >= 9 else timedelta())
+
+
 def prepare(folder_id: str, output: Path) -> dict:
     drive = drive_service()
     files = list_videos(drive, folder_id)
@@ -78,7 +86,7 @@ def prepare(folder_id: str, output: Path) -> dict:
                 raise RuntimeError(f"Transcrição insuficiente no corte {index:02d}.")
             clips.append({"index": index, "drive_id": item["id"], "name": item["name"], "size": int(item.get("size") or 0), "transcript": transcript, "copy": copy_dict(make_copy(transcript)), "schedule": {}})
     assign_slots(clips)
-    manifest = {"version": 1, "date": datetime.now(TIMEZONE).date().isoformat(), "timezone": "America/Sao_Paulo", "drive_folder_id": folder_id, "youtube_hours": list(YOUTUBE_HOURS), "tiktok_hours": list(TIKTOK_HOURS), "clips": clips}
+    manifest = {"version": 1, "date": publication_day().isoformat(), "timezone": "America/Sao_Paulo", "drive_folder_id": folder_id, "youtube_hours": list(YOUTUBE_HOURS), "tiktok_hours": list(TIKTOK_HOURS), "clips": clips}
     output.parent.mkdir(parents=True, exist_ok=True)
     output.write_text(json.dumps(manifest, ensure_ascii=False, indent=2), encoding="utf-8")
     return manifest
