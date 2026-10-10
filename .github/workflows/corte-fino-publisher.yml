@@ -19,6 +19,13 @@ on:
         required: false
         default: ""
         type: string
+
+      tiktok_env:
+        description: "Credenciais TikTok usadas nesta execução manual"
+        required: true
+        default: "production"
+        type: choice
+        options: [production, sandbox]
   schedule:
     - cron: "30 11 * * *" # 08:30 — prepara o manifesto e agenda o YouTube
     - cron: "0 13 * * *" # 10:00 — TikTok 01
@@ -49,6 +56,10 @@ jobs:
       PUBLISHER_TIKTOK_CLIENT_KEY: ${{ secrets.PUBLISHER_TIKTOK_CLIENT_KEY }}
       PUBLISHER_TIKTOK_CLIENT_SECRET: ${{ secrets.PUBLISHER_TIKTOK_CLIENT_SECRET }}
       PUBLISHER_TIKTOK_REFRESH_TOKEN: ${{ secrets.PUBLISHER_TIKTOK_REFRESH_TOKEN }}
+      PUBLISHER_TIKTOK_SANDBOX_CLIENT_KEY: ${{ secrets.TIKTOK_SANDBOX_CLIENT_KEY }}
+      PUBLISHER_TIKTOK_SANDBOX_CLIENT_SECRET: ${{ secrets.TIKTOK_SANDBOX_CLIENT_SECRET }}
+      PUBLISHER_TIKTOK_SANDBOX_REFRESH_TOKEN: ${{ secrets.TIKTOK_SANDBOX_REFRESH_TOKEN }}
+      PUBLISHER_TIKTOK_ENV: ${{ github.event_name == 'workflow_dispatch' && inputs.tiktok_env || 'production' }}
       PUBLISHER_TIKTOK_EXPECTED_USERNAME: ${{ secrets.PUBLISHER_TIKTOK_EXPECTED_USERNAME }}
       PUBLISHER_TIKTOK_PRIVACY_LEVEL: PUBLIC_TO_EVERYONE
       PUBLISHER_ENABLED: ${{ secrets.PUBLISHER_ENABLED }}
