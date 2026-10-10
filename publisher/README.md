@@ -8,9 +8,10 @@ Pasta: `15UJh2z5hBRKB8q_JpNpH1rcZZUANO6Da`
 
 Na ativação manual, o campo `drive_folder` aceita diretamente o link compartilhado
 da pasta. O Publisher extrai o ID, valida a pasta e só então inicia a preparação.
-Se o link apontar para a pasta-mãe de saída, ele localiza a subpasta mais recente
-que contenha exatamente os cinco MP4s 01..05. O ID fixo acima continua sendo o
-padrão das execuções agendadas.
+O link é uma fronteira rígida: somente os arquivos diretamente dentro da pasta
+indicada são considerados. O Publisher nunca procura subpastas, lotes anteriores,
+pastas vizinhas ou outro conteúdo. O ID fixo acima continua sendo o padrão das
+execuções agendadas.
 
 Contrato: exatamente 5 MP4 identificáveis como 01, 02, 03, 04 e 05. O Publisher não cria, recorta, reprocessa nem altera o motor que gera os cinco cortes diários.
 

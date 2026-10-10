@@ -75,7 +75,7 @@ def test_drive_folder_accepts_url_or_id():
     assert normalize_folder_id("abc_123") == "abc_123"
 
 
-def test_drive_parent_resolves_latest_complete_batch():
+def test_drive_link_is_hard_content_boundary():
     class Request:
         def __init__(self, data):
             self.data = data
@@ -86,17 +86,36 @@ def test_drive_parent_resolves_latest_complete_batch():
     class Files:
         def list(self, **kwargs):
             query = kwargs["q"]
-            if "mimeType = 'application/vnd.google-apps.folder'" in query:
-                return Request({"files": [{"id": "batch-1", "name": "fonte - lote", "modifiedTime": "2026-10-10T10:00:00Z"}]})
-            if "'batch-1' in parents" in query:
+            if "mimeType = 'video/mp4'" in query:
                 return Request({"files": [{"id": f"video-{index}", "name": f"fonte - {index:02d}.mp4"} for index in range(1, 6)]})
-            return Request({"files": []})
+            raise AssertionError("o Publisher não pode procurar subpastas")
 
     class Drive:
         def files(self):
             return Files()
 
-    assert resolve_publication_folder(Drive(), "parent-folder") == "batch-1"
+    assert resolve_publication_folder(Drive(), "exact-folder") == "exact-folder"
+
+
+def test_drive_parent_without_direct_videos_is_rejected():
+    class Request:
+        def execute(self, **kwargs):
+            return {"files": []}
+
+    class Files:
+        def list(self, **kwargs):
+            return Request()
+
+    class Drive:
+        def files(self):
+            return Files()
+
+    try:
+        resolve_publication_folder(Drive(), "parent-folder")
+    except RuntimeError as error:
+        assert "diretamente exatamente os 5 vídeos" in str(error)
+    else:
+        raise AssertionError("uma pasta sem os cinco MP4s diretos deve bloquear a publicação")
 
 
 def test_publication_day_supports_boundary_and_manual_recovery_date():

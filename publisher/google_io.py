@@ -13,7 +13,6 @@ from publisher.core import TIMEZONE, YOUTUBE_HOURS, TIKTOK_HOURS, assign_slots, 
 
 
 FOLDER_ID = "15UJh2z5hBRKB8q_JpNpH1rcZZUANO6Da"
-FOLDER_MIME = "application/vnd.google-apps.folder"
 YOUTUBE_PROCESSING_ATTEMPTS = 12
 YOUTUBE_PROCESSING_INTERVAL = 5
 
@@ -94,7 +93,7 @@ def drive_service():
 
 def list_videos(drive, folder_id: str) -> list[dict]:
     folder_id = normalize_folder_id(folder_id)
-    q = f"'{folder_id}' in parents and trashed = false and mimeType contains 'video/'"
+    q = f"'{folder_id}' in parents and trashed = false and mimeType = 'video/mp4'"
     files = (
         drive.files()
         .list(
@@ -110,50 +109,23 @@ def list_videos(drive, folder_id: str) -> list[dict]:
     return files
 
 
-def list_folders(drive, parent_id: str) -> list[dict]:
-    parent_id = normalize_folder_id(parent_id)
-    folders = (
-        drive.files()
-        .list(
-            q=f"'{parent_id}' in parents and trashed = false and mimeType = '{FOLDER_MIME}'",
-            pageSize=100,
-            orderBy="modifiedTime desc",
-            fields="files(id,name,mimeType,modifiedTime)",
-        )
-        .execute(num_retries=4)
-        .get("files", [])
-    )
-    return folders
-
-
 def _is_complete_batch(files: list[dict]) -> bool:
     return len(files) == 5 and [natural_index(item.get("name", "")) for item in files] == [1, 2, 3, 4, 5]
 
 
 def resolve_publication_folder(drive, folder_id: str) -> str:
-    """Resolve either a batch folder or its parent output folder.
+    """Resolve only the exact folder supplied by the user.
 
-    The daily generator creates one dated/source subfolder under the output
-    folder. Manual activation may point directly at that subfolder, while the
-    scheduled publisher may keep using the stable parent ID.
+    The link is a hard content boundary: no child folder, neighboring batch or
+    fallback source may be searched.
     """
     requested = normalize_folder_id(folder_id)
     direct = list_videos(drive, requested)
     if _is_complete_batch(direct):
         return requested
-    if direct:
-        raise RuntimeError(
-            f"Pasta do Publisher possui vídeos, mas não um lote completo 01..05: encontrados {len(direct)}."
-        )
-
-    candidates: list[dict] = []
-    for child in list_folders(drive, requested):
-        videos = list_videos(drive, child["id"])
-        if _is_complete_batch(videos):
-            candidates.append(child)
-    if not candidates:
-        raise RuntimeError("Nenhuma subpasta da pasta informada contém exatamente os 5 vídeos 01..05.")
-    return candidates[0]["id"]
+    raise RuntimeError(
+        f"A pasta indicada precisa conter diretamente exatamente os 5 vídeos 01..05; encontrados: {len(direct)}."
+    )
 
 
 def download(drive, file_id: str, target: Path) -> None:
