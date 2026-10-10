@@ -7,11 +7,13 @@ from dataclasses import asdict, dataclass
 from datetime import date, datetime, time, timezone
 from zoneinfo import ZoneInfo
 
+
 TIMEZONE = ZoneInfo("America/Sao_Paulo")
 YOUTUBE_HOURS = (10, 12, 14, 16, 18)
 TIKTOK_HOURS = (10, 12, 16, 18, 20)
 YOUTUBE_PRIORITY = (16, 14, 10, 12, 18)
 TIKTOK_PRIORITY = (18, 10, 12, 16, 20)
+
 
 STOPWORDS = set("a o as os um uma uns umas de da do das dos e em no na nos nas para pra por com sem que quem qual quando onde como porque isso isto essa esse essas esses eu voce voces ele ela eles elas me te se meu minha seu sua mais menos muito muita muitos muitas ja nao sim so tambem aqui ali la tem ter vai vou foi ser sao era esta estao ta tao entao ne tipo cara gente acho fica ficar fazer faz fez pode poder todo toda todos todas num numa ate ai bem".split())
 TOPIC_RULES = {
@@ -27,6 +29,21 @@ CTA = {
     "midia": "Informar ou explorar o impacto emocional: onde você colocaria o limite?",
     "geral": "Você concorda com esse ponto ou enxerga de outra forma?",
 }
+EMOTIONAL_BRIDGE = {
+    "apostas": "Por trás de uma aposta que parece inofensiva, existe uma discussão que pode atingir qualquer família.",
+    "politica": "Mais do que uma opinião política, este trecho expõe uma disputa de narrativas que divide o país.",
+    "seguranca": "Quando a segurança falha, o problema deixa de ser manchete e passa a fazer parte da vida de alguém.",
+    "midia": "Quando uma tragédia vira conteúdo, a pergunta deixa de ser apenas o que aconteceu — e passa a ser quem se beneficia.",
+    "geral": "Às vezes, uma frase resume um problema que muita gente sente, mas quase ninguém consegue explicar.",
+}
+TOPIC_TAGS = {
+    "apostas": "#Apostas",
+    "politica": "#Politica",
+    "seguranca": "#Seguranca",
+    "midia": "#Midia",
+    "geral": "#Debate",
+}
+
 
 @dataclass
 class CopyPack:
@@ -37,6 +54,7 @@ class CopyPack:
     tiktok_caption: str
     youtube_title: str
     youtube_description: str
+    youtube_tags: list[str]
 
 
 def fold(text: str) -> str:
@@ -50,6 +68,16 @@ def truncate(text: str, limit: int) -> str:
         return text
     cut = text[: limit - 1].rsplit(" ", 1)[0].rstrip(" ,.;:-")
     return (cut or text[: limit - 1]).rstrip() + "…"
+
+
+def truncate_utf8(text: str, limit: int) -> str:
+    text = re.sub(r"\s+", " ", text).strip()
+    if len(text.encode("utf-8")) <= limit:
+        return text
+    candidate = text
+    while candidate and len((candidate + "…").encode("utf-8")) > limit:
+        candidate = candidate[:-1].rstrip()
+    return candidate.rstrip(" ,.;:-") + "…"
 
 
 def natural_index(name: str) -> int:
@@ -113,17 +141,55 @@ def hashtag(word: str) -> str:
     return f"#{clean.title()}" if clean else ""
 
 
+def build_hashtags(topic: str, keywords: list[str]) -> list[str]:
+    tags = [TOPIC_TAGS.get(topic, TOPIC_TAGS["geral"])]
+    tags.extend(hashtag(word) for word in keywords[:4])
+    tags.append("#CorteFino")
+    tags.append("#Shorts")
+    return list(dict.fromkeys(tag for tag in tags if tag))
+
+
+def build_youtube_tags(topic: str, keywords: list[str]) -> list[str]:
+    candidates = [topic.replace("_", " "), *keywords[:5], "corte fino", "cortes de podcast", "shorts"]
+    tags: list[str] = []
+    seen: set[str] = set()
+    total = 0
+    for raw in candidates:
+        tag = re.sub(r"\s+", " ", raw).strip()
+        key = fold(tag)
+        if not tag or key in seen:
+            continue
+        addition = len(tag) + (2 if tags else 0)
+        if total + addition > 490:
+            break
+        tags.append(tag)
+        seen.add(key)
+        total += addition
+    return tags or ["corte fino"]
+
+
 def make_copy(transcript: str) -> CopyPack:
     topic = detect_topic(transcript)
     keys = get_keywords(transcript)
     hook = choose_hook(transcript)
     title = truncate(hook.upper(), 96)
-    topic_tag = {"apostas": "#Apostas", "politica": "#Politica", "seguranca": "#Seguranca", "midia": "#Midia", "geral": "#Debate"}[topic]
-    tags = " ".join(dict.fromkeys([topic_tag, *[hashtag(k) for k in keys[:3]], "#CorteFino"]))
     subject = ", ".join(keys[:3]) if keys else "esse assunto"
-    tiktok = f"{title}\n\nO corte coloca {subject} no centro da conversa. {CTA[topic]}\n\n{tags}"
-    yt_desc = f"{hook}\n\nO trecho levanta uma discussão sobre {subject}. {CTA[topic]}\n\n{tags} #Shorts"
-    return CopyPack(topic, hook, keys, viral_score(transcript), truncate(tiktok, 1800), title, truncate(yt_desc, 4500))
+    hashtags = build_hashtags(topic, keys)
+    hashtag_text = " ".join(hashtags)
+    bridge = EMOTIONAL_BRIDGE.get(topic, EMOTIONAL_BRIDGE["geral"])
+    cta = CTA[topic]
+    tiktok = f"{title}\n\n{bridge} O trecho coloca {subject} no centro da conversa.\n\n{cta}\n\n{hashtag_text}"
+    yt_desc = f"{hook}\n\n{bridge} O trecho coloca {subject} no centro da conversa.\n\n{cta}\n\nCorte Fino — recortes que transformam falas em debates.\n\n{hashtag_text}"
+    return CopyPack(
+        topic,
+        hook,
+        keys,
+        viral_score(transcript),
+        truncate(tiktok, 3500),
+        title,
+        truncate_utf8(yt_desc, 5000),
+        build_youtube_tags(topic, keys),
+    )
 
 
 def assign_slots(clips: list[dict]) -> None:
