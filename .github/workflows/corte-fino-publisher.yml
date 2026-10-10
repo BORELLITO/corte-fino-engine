@@ -1,0 +1,100 @@
+name: Corte Fino Publisher
+
+on:
+  workflow_dispatch:
+    inputs:
+      mode:
+        description: "prepare, dry-run ou youtube"
+        required: true
+        default: "dry-run"
+        type: choice
+        options: [dry-run, prepare, youtube]
+  schedule:
+    - cron: "30 11 * * *" # 08:30 em America/Sao_Paulo
+
+permissions:
+  contents: write
+
+concurrency:
+  group: corte-fino-publisher
+  cancel-in-progress: false
+
+jobs:
+  publisher:
+    runs-on: ubuntu-22.04
+    timeout-minutes: 90
+    env:
+      PYTHONUNBUFFERED: "1"
+      PUBLISHER_DRIVE_FOLDER_ID: "15UJh2z5hBRKB8q_JpNpH1rcZZUANO6Da"
+      PUBLISHER_WHISPER_MODEL: small
+      GOOGLE_CLIENT_ID: ${{ secrets.GOOGLE_CLIENT_ID }}
+      GOOGLE_CLIENT_SECRET: ${{ secrets.GOOGLE_CLIENT_SECRET }}
+      GOOGLE_REFRESH_TOKEN: ${{ secrets.GOOGLE_REFRESH_TOKEN }}
+      YOUTUBE_REFRESH_TOKEN: ${{ secrets.YOUTUBE_REFRESH_TOKEN }}
+      PUBLISHER_ENABLED: ${{ secrets.PUBLISHER_ENABLED }}
+
+    steps:
+      - name: Guard automático
+        id: guard
+        run: |
+          if [ "${{ github.event_name }}" = "schedule" ] && [ "${PUBLISHER_ENABLED:-0}" != "1" ]; then
+            echo "run=0" >> "$GITHUB_OUTPUT"
+          else
+            echo "run=1" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Checkout
+        if: steps.guard.outputs.run == '1'
+        uses: actions/checkout@v7
+
+      - name: Python
+        if: steps.guard.outputs.run == '1'
+        uses: actions/setup-python@v7
+        with:
+          python-version: "3.11"
+          cache: pip
+
+      - name: Dependências
+        if: steps.guard.outputs.run == '1'
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install -r requirements.txt
+
+      - name: Cache Whisper
+        if: steps.guard.outputs.run == '1'
+        uses: actions/cache@v6
+        with:
+          path: ~/.cache/huggingface
+          key: publisher-whisper-${{ runner.os }}-${{ env.PUBLISHER_WHISPER_MODEL }}
+          restore-keys: publisher-whisper-${{ runner.os }}-
+
+      - name: Testes
+        if: steps.guard.outputs.run == '1'
+        run: python -m pytest -q tests/test_publisher.py
+
+      - name: Preparar
+        if: steps.guard.outputs.run == '1'
+        run: python -m publisher.cli prepare
+
+      - name: Relatório
+        if: steps.guard.outputs.run == '1'
+        run: python -m publisher.cli report | tee publisher/state/report.json
+
+      - name: Dry-run YouTube
+        if: steps.guard.outputs.run == '1' && github.event_name == 'workflow_dispatch' && inputs.mode == 'dry-run'
+        run: python -m publisher.cli youtube --dry-run
+
+      - name: Agendar YouTube
+        if: steps.guard.outputs.run == '1' && ((github.event_name == 'workflow_dispatch' && inputs.mode == 'youtube') || (github.event_name == 'schedule' && env.PUBLISHER_ENABLED == '1'))
+        run: python -m publisher.cli youtube
+
+      - name: Persistir manifesto
+        if: steps.guard.outputs.run == '1'
+        run: |
+          git config user.name "corte-fino-publisher[bot]"
+          git config user.email "corte-fino-publisher[bot]@users.noreply.github.com"
+          git add publisher/state/current.json publisher/state/report.json
+          if ! git diff --cached --quiet; then
+            git commit -m "chore(publisher): atualizar manifesto diário"
+            git push
+          fi
