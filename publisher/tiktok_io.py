@@ -19,6 +19,8 @@ TOKEN_URL = "https://open.tiktokapis.com/v2/oauth/token/"
 CHUNK_SIZE = 10 * 1024 * 1024
 POLL_SECONDS = 5
 POLL_ATTEMPTS = 24
+UPLOAD_ATTEMPTS = 3
+TERMINAL_STATUSES = {"PUBLISH_COMPLETE", "FAILED", "CANCELED"}
 
 
 class TikTokError(RuntimeError):
@@ -76,6 +78,12 @@ def _refresh_access_token() -> str:
     token = result.get("access_token", "")
     if not token:
         raise TikTokError("TikTok não retornou access_token.")
+    rotated_refresh = result.get("refresh_token")
+    if rotated_refresh and rotated_refresh != env("PUBLISHER_TIKTOK_REFRESH_TOKEN"):
+        raise TikTokError(
+            "TikTok rotacionou o refresh token; atualize PUBLISHER_TIKTOK_REFRESH_TOKEN "
+            "antes de publicar novamente."
+        )
     return token
 
 
@@ -107,11 +115,22 @@ def verify_tiktok_account() -> dict:
         "creator_username": username or None,
         "creator_nickname": creator.get("creator_nickname") or None,
         "privacy_levels": creator.get("privacy_level_options", []),
+        "selected_privacy_level": choose_privacy_level(creator),
         "comment_disabled": bool(creator.get("comment_disabled", False)),
         "duet_disabled": bool(creator.get("duet_disabled", False)),
         "stitch_disabled": bool(creator.get("stitch_disabled", False)),
         "expected_username_check": bool(expected),
     }
+
+
+def choose_privacy_level(creator: dict, desired: str | None = None) -> str:
+    options = [str(option) for option in creator.get("privacy_level_options", [])]
+    desired = desired or env("PUBLISHER_TIKTOK_PRIVACY_LEVEL", "PUBLIC_TO_EVERYONE")
+    if desired not in options:
+        raise TikTokError(
+            f"Privacidade TikTok indisponível: {desired}. Opções retornadas: {', '.join(options) or 'nenhuma'}"
+        )
+    return desired
 
 
 def _upload_file(upload_url: str, path: Path) -> None:
@@ -129,13 +148,23 @@ def _upload_file(upload_url: str, path: Path) -> None:
                 headers={"Content-Type": "video/mp4", "Content-Length": str(len(chunk)), "Content-Range": f"bytes {start}-{end}/{size}"},
                 method="PUT",
             )
-            try:
-                with urllib.request.urlopen(request, timeout=120) as response:
-                    if response.status not in (200, 201, 204):
-                        raise TikTokError(f"Upload TikTok HTTP {response.status}.")
-            except urllib.error.HTTPError as exc:
-                detail = exc.read().decode("utf-8", errors="replace")
-                raise TikTokError(f"Upload TikTok HTTP {exc.code}: {detail[:500]}") from exc
+            last_error: Exception | None = None
+            for attempt in range(UPLOAD_ATTEMPTS):
+                try:
+                    with urllib.request.urlopen(request, timeout=120) as response:
+                        if response.status not in (200, 201, 204):
+                            raise TikTokError(f"Upload TikTok HTTP {response.status}.")
+                    last_error = None
+                    break
+                except urllib.error.HTTPError as exc:
+                    detail = exc.read().decode("utf-8", errors="replace")
+                    last_error = TikTokError(f"Upload TikTok HTTP {exc.code}: {detail[:500]}")
+                except urllib.error.URLError as exc:
+                    last_error = TikTokError(f"Falha de rede no upload TikTok: {exc.reason}")
+                if attempt < UPLOAD_ATTEMPTS - 1:
+                    time.sleep(2**attempt)
+            if last_error:
+                raise last_error
             start = end + 1
 
 
@@ -144,11 +173,23 @@ def _status(token: str, publish_id: str) -> dict:
     return result.get("data", {})
 
 
-def _post_clip(token: str, creator: dict, clip: dict, source: Path) -> dict:
+def _wait_for_publish(token: str, publish_id: str) -> tuple[str, dict]:
+    latest: dict = {}
+    for attempt in range(POLL_ATTEMPTS):
+        latest = _status(token, publish_id)
+        state = str(latest.get("status", "PROCESSING")).upper()
+        if state in TERMINAL_STATUSES:
+            return state, latest
+        if attempt < POLL_ATTEMPTS - 1:
+            time.sleep(POLL_SECONDS)
+    return str(latest.get("status", "PROCESSING")).upper(), latest
+
+
+def _post_clip(token: str, creator: dict, clip: dict, source: Path, on_initialized=None) -> dict:
     size = source.stat().st_size
     post_info = {
         "title": truncate_utf8(clip["copy"]["tiktok_caption"], 2200),
-        "privacy_level": creator["privacy_level_options"][0],
+        "privacy_level": choose_privacy_level(creator),
         "disable_comment": bool(creator.get("comment_disabled", False)),
         "disable_duet": bool(creator.get("duet_disabled", False)),
         "disable_stitch": bool(creator.get("stitch_disabled", False)),
@@ -167,18 +208,11 @@ def _post_clip(token: str, creator: dict, clip: dict, source: Path) -> dict:
     publish_id, upload_url = data.get("publish_id", ""), data.get("upload_url", "")
     if not publish_id or not upload_url:
         raise TikTokError("TikTok não retornou publish_id e upload_url.")
+    if on_initialized:
+        on_initialized(publish_id)
     _upload_file(upload_url, source)
-    final_status = {}
-    for _ in range(POLL_ATTEMPTS):
-        final_status = _status(token, publish_id)
-        state = final_status.get("status", "").upper()
-        if state in {"PUBLISH_COMPLETE", "FAILED", "CANCELED"}:
-            break
-        time.sleep(POLL_SECONDS)
-    state = final_status.get("status", "PROCESSING")
-    if state.upper() in {"FAILED", "CANCELED"}:
-        raise TikTokError(f"TikTok falhou no publish_id {publish_id}: {final_status}")
-    return {"publish_id": publish_id, "status": state}
+    state, status_data = _wait_for_publish(token, publish_id)
+    return {"publish_id": publish_id, "status": state, "status_data": status_data}
 
 
 def _due_clips(manifest: dict, now: datetime | None = None) -> list[dict]:
@@ -214,14 +248,67 @@ def publish_tiktok(manifest: dict, dry_run: bool = False, due_only: bool = False
     for clip in clips:
         item = drive.files().get(fileId=clip["drive_id"], fields="id,name,appProperties").execute(num_retries=4)
         properties = item.get("appProperties", {})
-        if properties.get("cf_tiktok_publish_id"):
-            results.append({"index": clip["index"], "status": "already_published", "publish_id": properties["cf_tiktok_publish_id"]})
-            continue
+        existing_id = properties.get("cf_tiktok_publish_id", "").strip()
+        if existing_id:
+            state, status_data = _wait_for_publish(token, existing_id)
+            if state == "PUBLISH_COMPLETE":
+                marker(drive, clip["drive_id"], {"cf_tiktok_status": state, "cf_tiktok_date": manifest["date"]})
+                results.append({"index": clip["index"], "status": "already_published", "publish_id": existing_id})
+                continue
+            if state not in {"FAILED", "CANCELED"}:
+                marker(drive, clip["drive_id"], {"cf_tiktok_status": state, "cf_tiktok_date": manifest["date"]})
+                results.append({"index": clip["index"], "status": state, "publish_id": existing_id})
+                continue
+            marker(
+                drive,
+                clip["drive_id"],
+                {
+                    "cf_tiktok_last_publish_id": existing_id,
+                    "cf_tiktok_publish_id": "",
+                    "cf_tiktok_status": state,
+                    "cf_tiktok_date": manifest["date"],
+                },
+            )
+            raise TikTokError(f"TikTok falhou no publish_id {existing_id}: {status_data}")
         with tempfile.TemporaryDirectory(prefix="corte-fino-tiktok-") as temp_dir:
             source = Path(temp_dir) / f"{clip['index']:02d}.mp4"
             download(drive, clip["drive_id"], source)
-            outcome = _post_clip(token, creator, clip, source)
-        marker(drive, clip["drive_id"], {"cf_tiktok_publish_id": outcome["publish_id"], "cf_tiktok_status": outcome["status"], "cf_tiktok_date": manifest["date"]})
+            outcome = _post_clip(
+                token,
+                creator,
+                clip,
+                source,
+                on_initialized=lambda publish_id: marker(
+                    drive,
+                    clip["drive_id"],
+                    {
+                        "cf_tiktok_publish_id": publish_id,
+                        "cf_tiktok_status": "PENDING",
+                        "cf_tiktok_date": manifest["date"],
+                    },
+                ),
+            )
+        if outcome["status"] in {"FAILED", "CANCELED"}:
+            marker(
+                drive,
+                clip["drive_id"],
+                {
+                    "cf_tiktok_last_publish_id": outcome["publish_id"],
+                    "cf_tiktok_publish_id": "",
+                    "cf_tiktok_status": outcome["status"],
+                    "cf_tiktok_date": manifest["date"],
+                },
+            )
+            raise TikTokError(f"TikTok falhou no publish_id {outcome['publish_id']}: {outcome.get('status_data', {})}")
+        marker(
+            drive,
+            clip["drive_id"],
+            {
+                "cf_tiktok_publish_id": outcome["publish_id"],
+                "cf_tiktok_status": outcome["status"],
+                "cf_tiktok_date": manifest["date"],
+            },
+        )
         results.append({"index": clip["index"], **outcome})
         if due_only:
             break

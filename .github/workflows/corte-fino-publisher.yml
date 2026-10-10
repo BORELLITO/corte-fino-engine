@@ -4,11 +4,16 @@ on:
   workflow_dispatch:
     inputs:
       mode:
-        description: "prepare, dry-run, verify-tiktok, youtube, tiktok ou all"
+        description: "prepare, dry-run, verify-google, verify-tiktok, youtube, tiktok ou all"
         required: true
         default: "dry-run"
         type: choice
-        options: [dry-run, prepare, verify-tiktok, youtube, tiktok, all]
+        options: [dry-run, prepare, verify-google, verify-tiktok, youtube, tiktok, all]
+      target_date:
+        description: "data ISO opcional para recovery manual (AAAA-MM-DD)"
+        required: false
+        default: ""
+        type: string
   schedule:
     - cron: "30 11 * * *" # 08:30 — prepara o manifesto e agenda o YouTube
     - cron: "0 13 * * *" # 10:00 — TikTok 01
@@ -40,6 +45,7 @@ jobs:
       PUBLISHER_TIKTOK_CLIENT_SECRET: ${{ secrets.PUBLISHER_TIKTOK_CLIENT_SECRET }}
       PUBLISHER_TIKTOK_REFRESH_TOKEN: ${{ secrets.PUBLISHER_TIKTOK_REFRESH_TOKEN }}
       PUBLISHER_TIKTOK_EXPECTED_USERNAME: ${{ secrets.PUBLISHER_TIKTOK_EXPECTED_USERNAME }}
+      PUBLISHER_TIKTOK_PRIVACY_LEVEL: PUBLIC_TO_EVERYONE
       PUBLISHER_ENABLED: ${{ secrets.PUBLISHER_ENABLED }}
 
     steps:
@@ -79,14 +85,14 @@ jobs:
 
       - name: Testes
         if: steps.guard.outputs.run == '1'
-        run: python -m pytest -q tests/test_publisher.py
+        run: python -m pytest -q tests/test_publisher.py tests/test_quality_guards.py
 
       - name: Preparar
-        if: steps.guard.outputs.run == '1' && (github.event_name != 'schedule' || github.event.schedule == '30 11 * * *') && (github.event_name != 'workflow_dispatch' || inputs.mode != 'verify-tiktok')
-        run: python -m publisher.cli prepare
+        if: steps.guard.outputs.run == '1' && (github.event_name != 'schedule' || github.event.schedule == '30 11 * * *') && (github.event_name != 'workflow_dispatch' || (inputs.mode != 'verify-tiktok' && inputs.mode != 'verify-google'))
+        run: python -m publisher.cli prepare --target-date "${{ inputs.target_date }}"
 
       - name: Relatório
-        if: steps.guard.outputs.run == '1' && (github.event_name != 'schedule' || github.event.schedule == '30 11 * * *') && (github.event_name != 'workflow_dispatch' || inputs.mode != 'verify-tiktok')
+        if: steps.guard.outputs.run == '1' && (github.event_name != 'schedule' || github.event.schedule == '30 11 * * *') && (github.event_name != 'workflow_dispatch' || (inputs.mode != 'verify-tiktok' && inputs.mode != 'verify-google'))
         run: python -m publisher.cli report | tee publisher/state/report.json
 
       - name: Dry-run YouTube
@@ -100,6 +106,10 @@ jobs:
       - name: Verificar conta TikTok
         if: steps.guard.outputs.run == '1' && github.event_name == 'workflow_dispatch' && inputs.mode == 'verify-tiktok'
         run: python -m publisher.cli verify-tiktok
+
+      - name: Verificar Google
+        if: steps.guard.outputs.run == '1' && github.event_name == 'workflow_dispatch' && inputs.mode == 'verify-google'
+        run: python -m publisher.cli verify-google
 
       - name: Agendar YouTube
         if: steps.guard.outputs.run == '1' && ((github.event_name == 'workflow_dispatch' && (inputs.mode == 'youtube' || inputs.mode == 'all')) || (github.event_name == 'schedule' && github.event.schedule == '30 11 * * *' && env.PUBLISHER_ENABLED == '1'))

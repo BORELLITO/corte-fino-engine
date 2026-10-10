@@ -77,6 +77,24 @@ TITLE_TEMPLATES = {
     "geral": "ESSA FALA ABRIU UM DEBATE INCÔMODO",
 }
 
+# Correções deliberadamente pequenas e verificadas no motor de legendas. O
+# Publisher não tenta "embelezar" nomes, marcas ou gírias desconhecidas.
+SAFE_TRANSCRIPT_CORRECTIONS = {
+    "médo": "medo",
+    "divestindo": "desistindo",
+    "violins": "Aviões",
+    "revindicando": "reivindicando",
+    "bradão": "Brasil",
+    "bradio": "Brasil",
+    "idô": "segundo",
+    "crescentos": "crescendo",
+    "dilhé": "devia",
+    "latrão": "ladrão",
+    "danapolítica": "na política",
+    "coneste": "conhece",
+    "pim": "PIB",
+}
+
 
 @dataclass
 class CopyPack:
@@ -111,6 +129,15 @@ def truncate_utf8(text: str, limit: int) -> str:
     while candidate and len((candidate + "…").encode("utf-8")) > limit:
         candidate = candidate[:-1].rstrip()
     return candidate.rstrip(" ,.;:-") + "…"
+
+
+def normalize_transcript(text: str) -> str:
+    """Apply only explicit ASR corrections already validated by the engine."""
+    normalized = re.sub(r"\s+", " ", text or "").strip()
+    for source, replacement in SAFE_TRANSCRIPT_CORRECTIONS.items():
+        pattern = rf"(?<![\wÀ-ÿ]){re.escape(source)}(?![\wÀ-ÿ])"
+        normalized = re.sub(pattern, replacement, normalized, flags=re.IGNORECASE)
+    return normalized
 
 
 def natural_index(name: str) -> int:
@@ -174,7 +201,7 @@ def hashtag(word: str) -> str:
     return f"#{clean.title()}" if clean else ""
 
 
-def build_hashtags(topic: str, keywords: list[str]) -> list[str]:
+def build_hashtags(topic: str, keywords: list[str], platform: str = "youtube") -> list[str]:
     tags = [TOPIC_TAGS.get(topic, TOPIC_TAGS["geral"])]
     allowed = TOPIC_KEYWORDS.get(topic, set())
     for word in keywords[:5]:
@@ -182,7 +209,8 @@ def build_hashtags(topic: str, keywords: list[str]) -> list[str]:
             continue
         if word not in COPY_NOISE:
             tags.append(hashtag(KEYWORD_ALIASES.get(word, word)))
-    tags.extend(("#CorteFino", "#Shorts"))
+    platform_tag = "#TikTok" if platform.casefold() == "tiktok" else "#Shorts"
+    tags.extend(("#CorteFino", platform_tag))
     return list(dict.fromkeys(tag for tag in tags if tag))[:7]
 
 
@@ -208,17 +236,19 @@ def build_youtube_tags(topic: str, keywords: list[str]) -> list[str]:
 
 
 def make_copy(transcript: str) -> CopyPack:
+    transcript = normalize_transcript(transcript)
     topic = detect_topic(transcript)
     keys = get_keywords(transcript)
     hook = choose_hook(transcript)
-    title = truncate(TITLE_TEMPLATES.get(topic, TITLE_TEMPLATES["geral"]), 100)
-    hashtags = build_hashtags(topic, keys)
-    hashtag_text = " ".join(hashtags)
+    title = truncate(hook.upper(), 100)
+    if len(title) < 24:
+        title = truncate(TITLE_TEMPLATES.get(topic, TITLE_TEMPLATES["geral"]), 100)
+    tiktok_hashtag_text = " ".join(build_hashtags(topic, keys, "tiktok"))
+    youtube_hashtag_text = " ".join(build_hashtags(topic, keys, "youtube"))
     bridge = EMOTIONAL_BRIDGE.get(topic, EMOTIONAL_BRIDGE["geral"])
-    context = "A fala coloca esse tema no centro e abre espaço para uma reflexão que não passa despercebida."
     cta = CTA[topic]
-    tiktok = f"{title}\n\n{bridge} {context}\n\n{cta}\n\n{hashtag_text}"
-    youtube_description = f"{hook}\n\n{bridge} {context}\n\n{cta}\n\nCorte Fino — recortes que transformam falas em debates.\n\n{hashtag_text}"
+    tiktok = f"{title}\n\n{bridge}\n\n{cta}\n\n{tiktok_hashtag_text}"
+    youtube_description = f"{hook}\n\n{bridge}\n\n{cta}\n\nCorte Fino — recortes que transformam falas em debates.\n\n{youtube_hashtag_text}"
     return CopyPack(
         topic,
         hook,

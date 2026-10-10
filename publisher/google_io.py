@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import json
 import os
+import subprocess
 import tempfile
 from datetime import date, datetime, timedelta
 from pathlib import Path
@@ -22,8 +23,6 @@ def credentials(refresh_name: str, scopes: list[str]):
     from google.oauth2.credentials import Credentials
 
     refresh = env(refresh_name)
-    if not refresh and refresh_name == "PUBLISHER_YOUTUBE_REFRESH_TOKEN":
-        refresh = env("PUBLISHER_GOOGLE_REFRESH_TOKEN")
     missing = [
         n
         for n in ("PUBLISHER_GOOGLE_CLIENT_ID", "PUBLISHER_GOOGLE_CLIENT_SECRET")
@@ -105,14 +104,57 @@ def transcribe(path: Path) -> str:
     return " ".join(s.text.strip() for s in segments if s.text.strip()).strip()
 
 
-def publication_day(now: datetime | None = None) -> date:
+def probe_video(path: Path) -> dict:
+    """Fail early when a Drive file is not the contract's 9:16 MP4."""
+    try:
+        result = subprocess.run(
+            ["ffprobe", "-v", "error", "-print_format", "json", "-show_streams", "-show_format", str(path)],
+            check=True,
+            capture_output=True,
+            text=True,
+        )
+    except FileNotFoundError as exc:
+        raise RuntimeError("ffprobe não está disponível no runner; não foi possível validar o vídeo.") from exc
+    except subprocess.CalledProcessError as exc:
+        raise RuntimeError(f"Vídeo inválido para o Publisher: {path.name}.") from exc
+
+    try:
+        metadata = json.loads(result.stdout)
+    except json.JSONDecodeError as exc:
+        raise RuntimeError(f"ffprobe devolveu metadados inválidos para {path.name}.") from exc
+    streams = metadata.get("streams", [])
+    video = next((stream for stream in streams if stream.get("codec_type") == "video"), None)
+    audio = next((stream for stream in streams if stream.get("codec_type") == "audio"), None)
+    errors: list[str] = []
+    if not video:
+        errors.append("sem stream de vídeo")
+    else:
+        if (video.get("width"), video.get("height")) != (1080, 1920):
+            errors.append(f"resolução {video.get('width')}x{video.get('height')} (esperado 1080x1920)")
+        if video.get("codec_name") != "h264":
+            errors.append(f"codec de vídeo {video.get('codec_name')} (esperado h264)")
+    if not audio:
+        errors.append("sem stream de áudio")
+    elif audio.get("codec_name") != "aac":
+        errors.append(f"codec de áudio {audio.get('codec_name')} (esperado aac)")
+    duration = float((metadata.get("format") or {}).get("duration") or 0)
+    if duration <= 0:
+        errors.append("duração inválida")
+    if errors:
+        raise RuntimeError(f"{path.name}: " + "; ".join(errors))
+    return {"width": video["width"], "height": video["height"], "video_codec": video["codec_name"], "audio_codec": audio["codec_name"], "duration": duration}
+
+
+def publication_day(now: datetime | None = None, target_date: date | str | None = None) -> date:
+    if target_date:
+        return date.fromisoformat(target_date) if isinstance(target_date, str) else target_date
     current = now or datetime.now(TIMEZONE)
     if current.tzinfo is None:
         current = current.replace(tzinfo=TIMEZONE)
     return current.date() + (timedelta(days=1) if current.hour >= 9 else timedelta())
 
 
-def prepare(folder_id: str, output: Path) -> dict:
+def prepare(folder_id: str, output: Path, target_date: date | str | None = None) -> dict:
     drive = drive_service()
     files = list_videos(drive, folder_id)
     if len(files) != 5:
@@ -127,6 +169,7 @@ def prepare(folder_id: str, output: Path) -> dict:
         for index, item in zip(indexed, files):
             source = Path(temp_dir) / f"{index:02d}.mp4"
             download(drive, item["id"], source)
+            profile = probe_video(source)
             transcript = transcribe(source)
             if len(transcript.split()) < 6:
                 raise RuntimeError(f"Transcrição insuficiente para o corte {index:02d}.")
@@ -138,6 +181,7 @@ def prepare(folder_id: str, output: Path) -> dict:
                     "size": int(item.get("size", 0) or 0),
                     "mime_type": item.get("mimeType", "video/mp4"),
                     "modified_time": item.get("modifiedTime", ""),
+                    "video_profile": profile,
                     "transcript": transcript,
                     "copy": copy_dict(make_copy(transcript)),
                     "schedule": {},
@@ -147,7 +191,7 @@ def prepare(folder_id: str, output: Path) -> dict:
     assign_slots(clips)
     manifest = {
         "version": 1,
-        "date": publication_day().isoformat(),
+        "date": publication_day(target_date=target_date).isoformat(),
         "timezone": "America/Sao_Paulo",
         "drive_folder_id": folder_id,
         "youtube_hours": list(YOUTUBE_HOURS),
@@ -157,6 +201,23 @@ def prepare(folder_id: str, output: Path) -> dict:
     output.parent.mkdir(parents=True, exist_ok=True)
     output.write_text(json.dumps(manifest, ensure_ascii=False, indent=2), encoding="utf-8")
     return manifest
+
+
+def verify_google_accounts(folder_id: str) -> dict:
+    """Read-only preflight for Drive and the OAuth credentials used by Publisher."""
+    drive = drive_service()
+    files = list_videos(drive, folder_id)
+    indexed = [natural_index(item.get("name", "")) for item in files]
+    if len(files) != 5 or indexed != [1, 2, 3, 4, 5]:
+        raise RuntimeError(f"Preflight Drive falhou: esperados 5 vídeos 01..05, encontrados {indexed}.")
+    # Apenas renova o token: consultar canais exigiria um escopo adicional e
+    # não deve invalidar um refresh token emitido originalmente para upload.
+    credentials("PUBLISHER_YOUTUBE_REFRESH_TOKEN", ["https://www.googleapis.com/auth/youtube.upload"])
+    return {
+        "status": "ok",
+        "drive_videos": [{"index": index, "name": item.get("name", "")} for index, item in zip(indexed, files)],
+        "youtube_credentials": "ok",
+    }
 
 
 def marker(drive, file_id: str, values: dict[str, str]) -> None:

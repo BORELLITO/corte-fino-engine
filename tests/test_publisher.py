@@ -2,7 +2,9 @@ from datetime import date, datetime
 from zoneinfo import ZoneInfo
 
 from publisher.core import YOUTUBE_HOURS, TIKTOK_HOURS, assign_slots, detect_topic, local_publish_at, make_copy, natural_index
-from publisher.tiktok_io import publish_tiktok
+from publisher.google_io import publication_day
+from publisher.tiktok_io import choose_privacy_level, publish_tiktok
+import publisher.tiktok_io as tiktok_io
 
 
 def test_numbering():
@@ -19,6 +21,8 @@ def test_bets_copy():
     assert pack.youtube_title == pack.youtube_title.upper()
     assert "#Apostas" in pack.tiktok_caption
     assert "#CorteFino" in pack.tiktok_caption
+    assert "#TikTok" in pack.tiktok_caption
+    assert "#Shorts" not in pack.tiktok_caption
     assert "#Shorts" in pack.youtube_description
     assert "#Problema" not in pack.tiktok_caption
     assert pack.youtube_tags
@@ -44,8 +48,63 @@ def test_politics():
 def test_general_copy_does_not_turn_transcription_noise_into_tags():
     pack = make_copy("E falo mais, Jikei, você tem sangue nas mãos, tá?")
     assert pack.topic == "geral"
-    assert pack.tiktok_caption.endswith("#Debate #CorteFino #Shorts")
+    assert pack.tiktok_caption.endswith("#Debate #CorteFino #TikTok")
     assert all("jikei" not in tag.lower() for tag in pack.youtube_tags)
+
+
+def test_title_uses_the_strongest_hook():
+    pack = make_copy("A casa sempre ganha. O problema é quando a pessoa perde tudo no vício de aposta.")
+    assert "PERDE TUDO" in pack.youtube_title
+
+
+def test_publication_day_supports_boundary_and_manual_recovery_date():
+    sao_paulo = ZoneInfo("America/Sao_Paulo")
+    assert publication_day(datetime(2026, 10, 10, 8, 59, tzinfo=sao_paulo)) == date(2026, 10, 10)
+    assert publication_day(datetime(2026, 10, 10, 9, 0, tzinfo=sao_paulo)) == date(2026, 10, 11)
+    assert publication_day(target_date="2026-10-07") == date(2026, 10, 7)
+
+
+def test_tiktok_privacy_level_is_explicit_and_available():
+    creator = {"privacy_level_options": ["SELF_ONLY", "PUBLIC_TO_EVERYONE"]}
+    assert choose_privacy_level(creator) == "PUBLIC_TO_EVERYONE"
+
+
+def test_tiktok_existing_processing_id_is_reconciled_without_duplicate(monkeypatch):
+    class Request:
+        def __init__(self, data):
+            self.data = data
+
+        def execute(self, **kwargs):
+            return self.data
+
+    class Files:
+        def get(self, **kwargs):
+            return Request({"id": "drive-1", "appProperties": {"cf_tiktok_publish_id": "publish-1"}})
+
+    class Drive:
+        def files(self):
+            return Files()
+
+    manifest = {
+        "date": "2026-10-10",
+        "clips": [{
+            "index": 1,
+            "drive_id": "drive-1",
+            "schedule": {"tiktok_hour": 10},
+            "copy": {"tiktok_caption": "Legenda de teste"},
+        }],
+    }
+    markers = []
+    monkeypatch.setattr(tiktok_io, "_refresh_access_token", lambda: "token")
+    monkeypatch.setattr(tiktok_io, "_creator_info", lambda token: {"privacy_level_options": ["PUBLIC_TO_EVERYONE"]})
+    monkeypatch.setattr(tiktok_io, "drive_service", lambda: Drive())
+    monkeypatch.setattr(tiktok_io, "_wait_for_publish", lambda token, publish_id: ("PROCESSING", {"status": "PROCESSING"}))
+    monkeypatch.setattr(tiktok_io, "marker", lambda drive, file_id, values: markers.append(values))
+    monkeypatch.setattr(tiktok_io, "_post_clip", lambda *args, **kwargs: (_ for _ in ()).throw(AssertionError("não deve criar outro post")))
+
+    result = publish_tiktok(manifest, due_only=True)
+    assert result == [{"index": 1, "status": "PROCESSING", "publish_id": "publish-1"}]
+    assert markers == [{"cf_tiktok_status": "PROCESSING", "cf_tiktok_date": "2026-10-10"}]
 
 
 def test_timezone():
