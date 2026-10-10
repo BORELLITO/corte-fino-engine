@@ -628,7 +628,10 @@ def select_candidates(
             )
     else:
         for candidate in all_candidates:
-            if candidate.score < MIN_EDITORIAL_SCORE:
+            if candidate.score >= MIN_EDITORIAL_SCORE:
+                candidate.accepted = True
+                candidate.rejection = ""
+            else:
                 candidate.accepted = False
                 candidate.rejection = f"nota abaixo do mínimo editorial ({candidate.score:.2f} < {MIN_EDITORIAL_SCORE:.2f})"
         pool = [candidate for candidate in all_candidates if candidate.accepted and candidate.score >= MIN_EDITORIAL_SCORE]
