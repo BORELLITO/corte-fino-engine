@@ -2,6 +2,15 @@
 
 Motor de produção para preparar exatamente cinco cortes verticais por rodada aprovada, com transcrição local, seleção editorial fechada, renderização em 9:16 e entrega dos vídeos no Google Drive.
 
+## Fluxo operacional em dois motores
+
+- **Motor 1 — Corte Fino Diário:** lê o vídeo mais recente da pasta de entrada, gera exatamente cinco MP4 verticais e entrega os arquivos em uma única pasta de lote no Drive.
+- **Handoff automático:** após o upload validado, o motor registra o lote exato em `publisher/state/latest_batch.json`.
+- **Motor 2 — Corte Fino Publisher:** usa esse lote, valida os cinco arquivos, cria as copies, agenda o YouTube e publica o TikTok em janelas separadas, com anti-duplicidade.
+- O link da pasta pode ser informado manualmente no Publisher, mas não é obrigatório quando o lote foi registrado pelo Motor 1.
+- O TikTok Sandbox possui um modo de teste real controlado; a Produção permanece bloqueada até a autorização e aprovação necessárias.
+
+
 ## Contrato de entrega
 
 Cada rodada aprovada entrega exatamente cinco arquivos na mesma pasta da rodada:
