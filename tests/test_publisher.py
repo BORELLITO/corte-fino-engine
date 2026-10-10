@@ -189,9 +189,12 @@ def test_publication_day_supports_boundary_and_manual_recovery_date():
     assert publication_day(target_date="2026-10-07") == date(2026, 10, 7)
 
 
-def test_tiktok_privacy_level_is_explicit_and_available():
+def test_tiktok_privacy_level_is_explicit_and_available(monkeypatch):
     creator = {"privacy_level_options": ["SELF_ONLY", "PUBLIC_TO_EVERYONE"]}
     assert choose_privacy_level(creator) == "PUBLIC_TO_EVERYONE"
+    monkeypatch.setenv("PUBLISHER_TIKTOK_ENV", "sandbox")
+    monkeypatch.setenv("PUBLISHER_TIKTOK_PRIVACY_LEVEL", "PUBLIC_TO_EVERYONE")
+    assert choose_privacy_level(creator) == "SELF_ONLY"
 
 
 def test_tiktok_existing_processing_id_is_reconciled_without_duplicate(monkeypatch):
