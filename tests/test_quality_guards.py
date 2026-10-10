@@ -87,6 +87,29 @@ def test_top_five_is_closed():
     assert REQUIRE_EXACT_TOP_FIVE is True
     assert MAX_CLIPS == 5
 
+def test_editorial_score_gate_keeps_candidates_above_threshold():
+    from main import Candidate, select_candidates
+    import main as engine
+
+    previous_gate = engine.USE_EDITORIAL_SCORE_GATE
+    previous_minimum = engine.MIN_EDITORIAL_SCORE
+    try:
+        engine.USE_EDITORIAL_SCORE_GATE = True
+        engine.MIN_EDITORIAL_SCORE = 78.0
+        segments = [
+            Segment(0, 50, "Essa é uma fala forte sobre política e responsabilidade.", []),
+            Segment(50, 100, "O contexto continua e explica a consequência pública.", []),
+            Segment(100, 150, "Essa fala tem uma conclusão importante sobre o assunto.", []),
+        ]
+        selected, candidates = select_candidates(segments, {})
+        assert candidates
+        assert all(candidate.accepted or candidate.score < 78.0 for candidate in candidates)
+    finally:
+        engine.USE_EDITORIAL_SCORE_GATE = previous_gate
+        engine.MIN_EDITORIAL_SCORE = previous_minimum
+
+
+
 
 def test_visual_identity_uses_off_white_and_copper_caption_tokens(tmp_path):
     from main import Segment, Candidate, write_ass
