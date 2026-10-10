@@ -10,7 +10,7 @@ from datetime import date, datetime, timedelta, timezone
 from pathlib import Path
 from urllib.parse import parse_qs, urlparse
 
-from publisher.core import TIMEZONE, YOUTUBE_HOURS, TIKTOK_HOURS, assign_slots, copy_dict, local_publish_at, make_copy, natural_index, truncate, truncate_utf8
+from publisher.core import TIMEZONE, YOUTUBE_DESCRIPTION_LIMIT, YOUTUBE_HOURS, YOUTUBE_TITLE_LIMIT, TIKTOK_HOURS, assign_slots, copy_dict, local_publish_at, make_copy, natural_index, truncate, truncate_utf8
 
 
 FOLDER_ID = os.environ.get("PUBLISHER_DRIVE_FOLDER_ID", "").strip()
@@ -495,8 +495,8 @@ def publish_youtube(manifest: dict, dry_run: bool = False) -> list[dict]:
 
         hour = int(clip["schedule"]["youtube_hour"])
         publish_at = local_publish_at(day, hour)
-        title = truncate(clip["copy"]["youtube_title"], 100)
-        description = truncate_utf8(clip["copy"]["youtube_description"], 5000)
+        title = truncate(clip["copy"]["youtube_title"], YOUTUBE_TITLE_LIMIT)
+        description = truncate_utf8(clip["copy"]["youtube_description"], YOUTUBE_DESCRIPTION_LIMIT)
         tags = clip["copy"].get("youtube_tags", [])
 
         if properties.get("cf_youtube_upload_status") == "PENDING":
