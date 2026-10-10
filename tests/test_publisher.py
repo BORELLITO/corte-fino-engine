@@ -2,7 +2,7 @@ from datetime import date, datetime
 from zoneinfo import ZoneInfo
 
 from publisher.cli import report
-from publisher.core import YOUTUBE_HOURS, TIKTOK_HOURS, assign_slots, build_title, copy_quality_issues, detect_topic, local_publish_at, make_copy, natural_index, normalize_transcript
+from publisher.core import (TIKTOK_CAPTION_LIMIT, TIKTOK_HOURS, YOUTUBE_DESCRIPTION_LIMIT, YOUTUBE_HOURS, YOUTUBE_TITLE_LIMIT, assign_slots, build_title, copy_quality_issues, detect_topic, format_copy_text, local_publish_at, make_copy, natural_index, normalize_transcript)
 from publisher.google_io import normalize_folder_id, publication_day, reconcile_youtube_upload, resolve_publication_folder, verify_manifest_clip, wait_youtube_processing
 from publisher.tiktok_io import TikTokError, choose_privacy_level, publish_tiktok
 import publisher.tiktok_io as tiktok_io
@@ -75,6 +75,24 @@ def test_copy_editorial_qa_normalizes_casino_gender_without_blocking():
     )
     assert normalized.startswith("O cassino")
     assert copy_quality_issues(make_copy(normalized)) == []
+
+
+def test_copy_formatting_enforces_sentence_case_and_platform_limits():
+    formatted = format_copy_text(
+        "a frase começa,com erro . outra frase sem ponto",
+        final_punctuation=True,
+    )
+    assert formatted == "A frase começa, com erro. Outra frase sem ponto."
+
+    pack = make_copy(
+        "A casa sempre ganha. O problema é quando a pessoa entra no vício de aposta e cassino. Até onde vai a responsabilidade de quem divulga isso?"
+    )
+    assert pack.youtube_title == pack.youtube_title.upper()
+    assert len(pack.youtube_title) <= YOUTUBE_TITLE_LIMIT
+    assert len(pack.tiktok_caption) <= TIKTOK_CAPTION_LIMIT
+    assert len(pack.youtube_description) <= YOUTUBE_DESCRIPTION_LIMIT
+    assert "  " not in pack.tiktok_caption
+    assert "  " not in pack.youtube_description
 
 
 def test_drive_folder_accepts_url_or_id():
