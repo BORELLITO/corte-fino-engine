@@ -22,7 +22,7 @@ def credentials(refresh_name: str, scopes: list[str]):
     from google.oauth2.credentials import Credentials
 
     refresh = env(refresh_name)
-    if not refresh and refresh_name == "YOUTUBE_REFRESH_TOKEN":
+    if not refresh and refresh_name == "":
         refresh = env("GOOGLE_REFRESH_TOKEN")
     missing = [n for n in ("GOOGLE_CLIENT_ID", "GOOGLE_CLIENT_SECRET") if not env(n)]
     if not refresh:
@@ -176,7 +176,7 @@ def publish_youtube(manifest: dict, dry_run: bool = False) -> list[dict]:
         youtube = build(
             "youtube",
             "v3",
-            credentials=credentials("YOUTUBE_REFRESH_TOKEN", ["https://www.googleapis.com/auth/youtube.upload"]),
+            credentials=credentials("", ["https://www.googleapis.com/auth/youtube.upload"]),
             cache_discovery=False,
         )
 
