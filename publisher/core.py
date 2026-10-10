@@ -30,6 +30,13 @@ TOPIC_TERMS = {
     "midia": ("midia", "jornalismo", "noticias", "audiencia"),
     "geral": ("debate",),
 }
+TOPIC_KEYWORDS = {
+    "apostas": set("aposta apostas bet bets cassino cassinos tigrinho jogo jogos vicio apostar".split()),
+    "politica": set("lula bolsonaro stf moraes governo presidente congresso senado politica esquerda direita".split()),
+    "seguranca": set("crime crimes policia bandido bandidos seguranca prisao roubo assalto".split()),
+    "midia": set("midia noticia jornalista jornalismo tragedia audiencia".split()),
+    "geral": set(),
+}
 KEYWORD_ALIASES = {
     "stf": "Supremo Tribunal Federal",
     "moraes": "Alexandre de Moraes",
@@ -162,7 +169,10 @@ def hashtag(word: str) -> str:
 
 def build_hashtags(topic: str, keywords: list[str]) -> list[str]:
     tags = [TOPIC_TAGS.get(topic, TOPIC_TAGS["geral"])]
-    for word in keywords[:3]:
+    allowed = TOPIC_KEYWORDS.get(topic, set())
+    for word in keywords[:5]:
+        if allowed and word not in allowed:
+            continue
         if word not in COPY_NOISE:
             tags.append(hashtag(KEYWORD_ALIASES.get(word, word)))
     tags.extend(("#CorteFino", "#Shorts"))
@@ -170,8 +180,10 @@ def build_hashtags(topic: str, keywords: list[str]) -> list[str]:
 
 
 def build_youtube_tags(topic: str, keywords: list[str]) -> list[str]:
+    allowed = TOPIC_KEYWORDS.get(topic, set())
+    relevant = [word for word in keywords if not allowed or word in allowed]
     candidates = [*TOPIC_TERMS.get(topic, TOPIC_TERMS["geral"])]
-    candidates.extend(KEYWORD_ALIASES.get(word, word) for word in keywords[:5])
+    candidates.extend(KEYWORD_ALIASES.get(word, word) for word in relevant[:5])
     candidates.extend(("corte fino", "cortes de podcast", "shorts"))
     tags: list[str] = []
     seen: set[str] = set()
