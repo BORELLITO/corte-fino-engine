@@ -1,4 +1,5 @@
 from datetime import date
+
 from publisher.core import detect_topic, local_publish_at, make_copy, natural_index
 
 
@@ -8,10 +9,16 @@ def test_numbering():
 
 
 def test_bets_copy():
-    pack = make_copy("A casa sempre ganha. O problema é quando a pessoa entra no vício de aposta e cassino. Até onde vai a responsabilidade de quem divulga isso?")
+    pack = make_copy(
+        "A casa sempre ganha. O problema é quando a pessoa entra no vício de aposta e cassino. Até onde vai a responsabilidade de quem divulga isso?"
+    )
     assert pack.topic == "apostas"
     assert len(pack.youtube_title) <= 100
+    assert pack.youtube_title == pack.youtube_title.upper()
     assert "#CorteFino" in pack.tiktok_caption
+    assert "#Shorts" in pack.youtube_description
+    assert pack.youtube_tags
+    assert sum(len(tag) for tag in pack.youtube_tags) + max(0, 2 * (len(pack.youtube_tags) - 1)) <= 500
 
 
 def test_politics():
