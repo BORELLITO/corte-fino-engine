@@ -68,6 +68,9 @@ GENERIC_COPY_PATTERNS = (
     "uma fala aparentemente simples",
     "recortes que transformam falas em debates",
 )
+SUSPICIOUS_ORTHOGRAPHY_PATTERNS = (
+    (r"\ba cassino\b", "concordância suspeita em 'a cassino'"),
+)
 
 # Correções deliberadamente pequenas e verificadas no motor de legendas. O
 # Publisher não tenta "embelezar" nomes, marcas ou gírias desconhecidas.
@@ -272,6 +275,9 @@ def copy_quality_issues(pack: CopyPack) -> list[str]:
     for phrase in GENERIC_COPY_PATTERNS:
         if phrase in combined:
             issues.append(f"frase genérica proibida: {phrase}")
+    for pattern, label in SUSPICIOUS_ORTHOGRAPHY_PATTERNS:
+        if re.search(pattern, combined):
+            issues.append(label)
     if "#shorts" in fold(pack.tiktok_caption):
         issues.append("TikTok não pode conter #Shorts")
     if "#tiktok" in fold(pack.youtube_description):
