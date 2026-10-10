@@ -58,6 +58,7 @@ python -m publisher.cli report
 python -m publisher.cli youtube --dry-run
 python -m publisher.cli youtube
 python -m publisher.cli tiktok --dry-run
+python -m publisher.cli tiktok --due-only
 python -m publisher.cli tiktok
 ```
 

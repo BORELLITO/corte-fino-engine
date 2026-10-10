@@ -178,12 +178,12 @@ def publish_tiktok(manifest: dict, dry_run: bool = False, due_only: bool = False
         if due_only:
             clips = clips[:1]
         return [{"index": clip["index"], "status": "dry_run", "publish_at": local_publish_at(day, int(clip["schedule"]["tiktok_hour"])), "caption": truncate_utf8(clip["copy"]["tiktok_caption"], 2200)} for clip in clips]
+    if due_only and not clips:
+        return [{"status": "nothing_due"}]
     token, creator, drive = _refresh_access_token(), None, None
     creator = _creator_info(token)
     drive = drive_service()
     results: list[dict] = []
-    if due_only and not clips:
-        return [{"status": "nothing_due"}]
     for clip in clips:
         item = drive.files().get(fileId=clip["drive_id"], fields="id,name,appProperties").execute(num_retries=4)
         properties = item.get("appProperties", {})
