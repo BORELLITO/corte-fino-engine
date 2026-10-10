@@ -126,6 +126,7 @@ def _post_clip(token: str, creator: dict, clip: dict, source: Path) -> dict:
         "disable_duet": bool(creator.get("duet_disabled", False)),
         "disable_stitch": bool(creator.get("stitch_disabled", False)),
         "video_cover_timestamp_ms": 0,
+        "is_aigc": False,
     }
     init = _json_request(
         f"{API_ROOT}/post/publish/video/init/",
