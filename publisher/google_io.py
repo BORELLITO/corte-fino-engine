@@ -6,6 +6,7 @@ import subprocess
 import tempfile
 from datetime import date, datetime, timedelta, timezone
 from pathlib import Path
+from urllib.parse import parse_qs, urlparse
 
 from publisher.core import TIMEZONE, YOUTUBE_HOURS, TIKTOK_HOURS, assign_slots, copy_dict, local_publish_at, make_copy, natural_index, truncate, truncate_utf8
 
@@ -15,6 +16,30 @@ FOLDER_ID = "15UJh2z5hBRKB8q_JpNpH1rcZZUANO6Da"
 
 def env(name: str, default: str = "") -> str:
     return os.environ.get(name, default).strip()
+
+
+def normalize_folder_id(value: str) -> str:
+    """Accept a Drive folder ID or a standard Drive folder URL."""
+    raw = (value or "").strip()
+    if not raw:
+        raise RuntimeError("Informe o ID ou o link da pasta do Google Drive.")
+
+    parsed = urlparse(raw)
+    if parsed.scheme and parsed.netloc:
+        marker = "/folders/"
+        if marker in parsed.path:
+            candidate = parsed.path.split(marker, 1)[1].split("/", 1)[0]
+        else:
+            candidate = parse_qs(parsed.query).get("id", [""])[0]
+        if not candidate:
+            raise RuntimeError("Link do Drive inválido: use o link de uma pasta (/folders/ID).")
+    else:
+        candidate = raw
+
+    candidate = candidate.strip().strip("/")
+    if not candidate or "/" in candidate or any(char.isspace() for char in candidate):
+        raise RuntimeError("ID da pasta do Drive inválido.")
+    return candidate
 
 
 def credentials(refresh_name: str, scopes: list[str]):
@@ -64,6 +89,7 @@ def drive_service():
 
 
 def list_videos(drive, folder_id: str) -> list[dict]:
+    folder_id = normalize_folder_id(folder_id)
     q = f"'{folder_id}' in parents and trashed = false and mimeType contains 'video/'"
     files = (
         drive.files()
@@ -155,6 +181,7 @@ def publication_day(now: datetime | None = None, target_date: date | str | None 
 
 
 def prepare(folder_id: str, output: Path, target_date: date | str | None = None) -> dict:
+    folder_id = normalize_folder_id(folder_id)
     drive = drive_service()
     files = list_videos(drive, folder_id)
     if len(files) != 5:
@@ -205,6 +232,7 @@ def prepare(folder_id: str, output: Path, target_date: date | str | None = None)
 
 def verify_google_accounts(folder_id: str) -> dict:
     """Read-only preflight for Drive and the OAuth credentials used by Publisher."""
+    folder_id = normalize_folder_id(folder_id)
     drive = drive_service()
     files = list_videos(drive, folder_id)
     indexed = [natural_index(item.get("name", "")) for item in files]

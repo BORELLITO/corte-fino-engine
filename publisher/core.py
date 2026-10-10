@@ -48,19 +48,59 @@ KEYWORD_ALIASES = {
     "tragedia": "tragédia",
     "vicio": "vício",
 }
-CTA = {
-    "apostas": "Onde termina a escolha individual e começa a responsabilidade de quem influencia?",
-    "politica": "Você concorda com esse argumento ou vê a situação de outra forma?",
-    "seguranca": "Na prática, qual seria a resposta mais justa para esse problema?",
-    "midia": "Informar ou explorar o impacto emocional: onde você colocaria o limite?",
-    "geral": "Você concorda com esse ponto ou enxerga de outra forma?",
+CTA_VARIANTS = {
+    "apostas": (
+        "Onde termina a escolha individual e começa a responsabilidade de quem influencia?",
+        "Você acha que o problema está apenas em apostar ou também em estimular esse comportamento?",
+        "Ganhar uma vez muda sua visão sobre o risco?",
+    ),
+    "politica": (
+        "Você concorda com esse argumento ou vê a situação de outra forma?",
+        "Esse raciocínio explica o problema ou simplifica demais o debate?",
+        "Qual consequência dessa posição costuma ser ignorada?",
+    ),
+    "seguranca": (
+        "Na prática, qual seria a resposta mais justa para esse problema?",
+        "Punir, prevenir ou mudar a estrutura: por onde esse debate deveria começar?",
+        "Qual parte dessa discussão costuma ficar fora do discurso público?",
+    ),
+    "midia": (
+        "Informar ou explorar o impacto emocional: onde você colocaria o limite?",
+        "Quando a informação vira espetáculo, quem assume a responsabilidade?",
+        "Você acha que a audiência justifica esse tipo de exposição?",
+    ),
+    "geral": (
+        "Você concorda com esse ponto ou enxerga de outra forma?",
+        "Esse argumento convence ou deixa uma contradição importante de fora?",
+        "Qual é a sua leitura sobre essa fala?",
+    ),
 }
-EMOTIONAL_BRIDGE = {
-    "apostas": "O trecho transforma uma escolha aparentemente individual em uma discussão sobre impacto e responsabilidade.",
-    "politica": "A fala toca em um ponto sensível do debate público e convida a olhar para as consequências do argumento.",
-    "seguranca": "Quando esse assunto entra em pauta, o debate deixa de ser abstrato e encosta na vida real.",
-    "midia": "O trecho provoca uma reflexão incômoda sobre informação, audiência e o limite da exposição.",
-    "geral": "Uma fala curta pode revelar uma discussão muito maior do que parece.",
+EMOTIONAL_BRIDGE_VARIANTS = {
+    "apostas": (
+        "Quando a recompensa vira vício, a discussão deixa de ser apenas sobre dinheiro.",
+        "Por trás da promessa de ganho existe uma discussão sobre comportamento e responsabilidade.",
+        "Ganhar uma vez não apaga o risco de perder no longo prazo.",
+    ),
+    "politica": (
+        "A fala toca em uma consequência concreta de um debate que costuma ficar preso aos slogans.",
+        "O argumento parece simples, mas muda de peso quando observamos quem será afetado por ele.",
+        "Mais do que uma disputa de opiniões, essa fala expõe uma escolha com consequências reais.",
+    ),
+    "seguranca": (
+        "Quando esse assunto entra em pauta, o debate deixa de ser abstrato e encosta na vida real.",
+        "A discussão sobre segurança muda quando colocamos as pessoas afetadas no centro da análise.",
+        "Entre a reação imediata e a solução duradoura existe um debate que quase sempre é simplificado.",
+    ),
+    "midia": (
+        "A questão não é apenas mostrar o fato, mas decidir como a dor será apresentada ao público.",
+        "Informação e audiência podem caminhar juntas, mas nem sempre sem conflito.",
+        "O impacto de uma notícia também depende da forma como ela é enquadrada e repetida.",
+    ),
+    "geral": (
+        "Uma fala aparentemente simples pode revelar uma discussão muito maior.",
+        "O ponto central não está apenas no que foi dito, mas na consequência desse raciocínio.",
+        "É uma opinião curta, mas com espaço suficiente para abrir um debate importante.",
+    ),
 }
 TOPIC_TAGS = {
     "apostas": "#Apostas",
@@ -93,7 +133,28 @@ SAFE_TRANSCRIPT_CORRECTIONS = {
     "danapolítica": "na política",
     "coneste": "conhece",
     "pim": "PIB",
+    "casino": "cassino",
+    "crianca": "criança",
+    "politica": "política",
+    "seguranca": "segurança",
+    "policia": "polícia",
+    "midia": "mídia",
+    "vicio": "vício",
+    "publico": "público",
+    "audiencia": "audiência",
+    "tragedia": "tragédia",
+    "milhoes": "milhões",
 }
+UNRESOLVED_ASR_TOKENS = {
+    "revindicando", "bradão", "bradio", "idô", "crescentos", "dilhé", "pim",
+    "trefa", "jambos", "lulia", "latrão", "divestindo", "danapolítica", "coneste",
+    "vítimo",
+}
+LEADING_FILLER_RE = re.compile(
+    r"^(?:(?:e\s+)?falo\s+mais|bom\s*,?\s*pessoal|pessoal|então|entao|olha|cara|gente)\s*[,;:–—-]?\s*",
+    re.IGNORECASE,
+)
+BAD_TITLE_ENDINGS = (" DE", " DA", " DO", " EM", " PARA", " COM", " E", " OU", " MAS")
 
 
 @dataclass
@@ -131,12 +192,25 @@ def truncate_utf8(text: str, limit: int) -> str:
     return candidate.rstrip(" ,.;:-") + "…"
 
 
+def _preserve_case(replacement: str, original: str) -> str:
+    if original.isupper():
+        return replacement.upper()
+    if original[:1].isupper():
+        return replacement[:1].upper() + replacement[1:]
+    return replacement
+
+
 def normalize_transcript(text: str) -> str:
     """Apply only explicit ASR corrections already validated by the engine."""
     normalized = re.sub(r"\s+", " ", text or "").strip()
     for source, replacement in SAFE_TRANSCRIPT_CORRECTIONS.items():
         pattern = rf"(?<![\wÀ-ÿ]){re.escape(source)}(?![\wÀ-ÿ])"
-        normalized = re.sub(pattern, replacement, normalized, flags=re.IGNORECASE)
+        normalized = re.sub(
+            pattern,
+            lambda match: _preserve_case(replacement, match.group(0)),
+            normalized,
+            flags=re.IGNORECASE,
+        )
     return normalized
 
 
@@ -179,6 +253,8 @@ def sentence_score(sentence: str) -> float:
     score += min(len(sentence.split()), 18) / 20
     if 5 <= len(sentence.split()) <= 16:
         score += 1
+    if LEADING_FILLER_RE.match(sentence):
+        score -= 1.5
     return score
 
 
@@ -187,6 +263,26 @@ def choose_hook(text: str) -> str:
     if not sentences:
         return truncate(text or "Esse trecho levanta uma discussão importante", 92)
     return truncate(max(sentences[:18], key=sentence_score), 92).strip('"“”')
+
+
+def clean_hook(text: str) -> str:
+    cleaned = re.sub(r"\s+", " ", text or "").strip('"“” ')
+    previous = ""
+    while cleaned and cleaned != previous:
+        previous = cleaned
+        cleaned = LEADING_FILLER_RE.sub("", cleaned).strip()
+    return cleaned[:1].upper() + cleaned[1:] if cleaned else "Esse trecho levanta uma discussão importante"
+
+
+def build_title(hook: str, topic: str) -> str:
+    candidate = clean_hook(hook)
+    if len(candidate) > 100 or candidate.upper().endswith(BAD_TITLE_ENDINGS) or "…" in candidate:
+        clauses = [part.strip(" ,;:-") for part in re.split(r"[,;:!?]", candidate)]
+        clauses = [part for part in clauses if len(part) >= 24 and not part.upper().endswith(BAD_TITLE_ENDINGS)]
+        candidate = max(clauses, key=len, default="")
+    if len(candidate) < 24 or len(candidate) > 100 or candidate.upper().endswith(BAD_TITLE_ENDINGS):
+        candidate = TITLE_TEMPLATES.get(topic, TITLE_TEMPLATES["geral"])
+    return candidate.upper().strip(" .,!?:;")
 
 
 def viral_score(text: str) -> float:
@@ -199,6 +295,24 @@ def viral_score(text: str) -> float:
 def hashtag(word: str) -> str:
     clean = re.sub(r"[^a-z0-9]", "", fold(word))
     return f"#{clean.title()}" if clean else ""
+
+
+def copy_quality_issues(pack: CopyPack) -> list[str]:
+    texts = [pack.youtube_title, pack.tiktok_caption, pack.youtube_description]
+    combined = fold(" ".join(texts))
+    issues: list[str] = []
+    for token in UNRESOLVED_ASR_TOKENS:
+        if re.search(rf"(?<![a-zà-ÿ]){re.escape(fold(token))}(?![a-zà-ÿ])", combined):
+            issues.append(f"token ASR não resolvido: {token}")
+    if "#shorts" in fold(pack.tiktok_caption):
+        issues.append("TikTok não pode conter #Shorts")
+    if "…" in pack.youtube_title or pack.youtube_title.upper().endswith(BAD_TITLE_ENDINGS):
+        issues.append("título incompleto ou truncado")
+    for text in texts:
+        if re.search(r"\s{2,}", text) or re.search(r"\s+[,.!?;:]", text):
+            issues.append("pontuação ou espaçamento inválido")
+            break
+    return list(dict.fromkeys(issues))
 
 
 def build_hashtags(topic: str, keywords: list[str], platform: str = "youtube") -> list[str]:
@@ -240,17 +354,16 @@ def make_copy(transcript: str) -> CopyPack:
     transcript = normalize_transcript(transcript)
     topic = detect_topic(transcript)
     keys = get_keywords(transcript)
-    hook = choose_hook(transcript)
-    title = truncate(hook.upper(), 100)
-    if len(title) < 24:
-        title = truncate(TITLE_TEMPLATES.get(topic, TITLE_TEMPLATES["geral"]), 100)
+    hook = clean_hook(choose_hook(transcript))
+    title = build_title(hook, topic)
     tiktok_hashtag_text = " ".join(build_hashtags(topic, keys, "tiktok"))
     youtube_hashtag_text = " ".join(build_hashtags(topic, keys, "youtube"))
-    bridge = EMOTIONAL_BRIDGE.get(topic, EMOTIONAL_BRIDGE["geral"])
-    cta = CTA[topic]
+    variants_index = int(viral_score(transcript) * 100) % len(EMOTIONAL_BRIDGE_VARIANTS[topic])
+    bridge = EMOTIONAL_BRIDGE_VARIANTS[topic][variants_index]
+    cta = CTA_VARIANTS[topic][variants_index]
     tiktok = f"{title}\n\n{bridge}\n\n{cta}\n\n{tiktok_hashtag_text}"
     youtube_description = f"{hook}\n\n{bridge}\n\n{cta}\n\nCorte Fino — recortes que transformam falas em debates.\n\n{youtube_hashtag_text}"
-    return CopyPack(
+    pack = CopyPack(
         topic,
         hook,
         keys,
@@ -260,6 +373,10 @@ def make_copy(transcript: str) -> CopyPack:
         truncate_utf8(youtube_description, 5000),
         build_youtube_tags(topic, keys),
     )
+    issues = copy_quality_issues(pack)
+    if issues:
+        raise ValueError("Copy reprovada no QA: " + "; ".join(issues))
+    return pack
 
 
 def assign_slots(clips: list[dict]) -> None:

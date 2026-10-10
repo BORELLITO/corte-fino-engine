@@ -2,8 +2,8 @@ from datetime import date, datetime
 from zoneinfo import ZoneInfo
 
 from publisher.cli import report
-from publisher.core import YOUTUBE_HOURS, TIKTOK_HOURS, assign_slots, detect_topic, local_publish_at, make_copy, natural_index
-from publisher.google_io import publication_day, reconcile_youtube_upload
+from publisher.core import YOUTUBE_HOURS, TIKTOK_HOURS, assign_slots, build_title, copy_quality_issues, detect_topic, local_publish_at, make_copy, natural_index, normalize_transcript
+from publisher.google_io import normalize_folder_id, publication_day, reconcile_youtube_upload
 from publisher.tiktok_io import choose_privacy_level, publish_tiktok
 import publisher.tiktok_io as tiktok_io
 
@@ -56,6 +56,21 @@ def test_general_copy_does_not_turn_transcription_noise_into_tags():
 def test_title_uses_the_strongest_hook():
     pack = make_copy("A casa sempre ganha. O problema é quando a pessoa perde tudo no vício de aposta.")
     assert "PERDE TUDO" in pack.youtube_title
+
+
+def test_copy_editorial_qa_cleans_fillers_and_safe_spelling_errors():
+    normalized = normalize_transcript("Bom, pessoal, a politica e o casino prejudicam a audiencia.")
+    assert normalized == "Bom, pessoal, a política e o cassino prejudicam a audiência."
+    title = build_title("Bom, pessoal, essa é a verdade sobre responsabilidade", "geral")
+    assert not title.startswith("BOM, PESSOAL")
+    assert "…" not in title
+    assert copy_quality_issues(make_copy(normalized)) == []
+
+
+def test_drive_folder_accepts_url_or_id():
+    url = "https://drive.google.com/drive/folders/abc_123?usp=sharing"
+    assert normalize_folder_id(url) == "abc_123"
+    assert normalize_folder_id("abc_123") == "abc_123"
 
 
 def test_publication_day_supports_boundary_and_manual_recovery_date():

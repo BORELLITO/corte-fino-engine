@@ -14,6 +14,11 @@ on:
         required: false
         default: ""
         type: string
+      drive_folder:
+        description: "URL ou ID da pasta do Google Drive com os 5 MP4"
+        required: false
+        default: ""
+        type: string
   schedule:
     - cron: "30 11 * * *" # 08:30 — prepara o manifesto e agenda o YouTube
     - cron: "0 13 * * *" # 10:00 — TikTok 01
@@ -58,6 +63,20 @@ jobs:
             echo "run=1" >> "$GITHUB_OUTPUT"
           fi
 
+      - name: Resolver pasta do Drive
+        id: folder
+        if: steps.guard.outputs.run == '1'
+        env:
+          DEFAULT_FOLDER: ${{ env.PUBLISHER_DRIVE_FOLDER_ID }}
+          REQUESTED_FOLDER: ${{ inputs.drive_folder }}
+        run: |
+          folder="${REQUESTED_FOLDER:-$DEFAULT_FOLDER}"
+          if [ -z "$folder" ]; then
+            echo "Nenhuma pasta do Drive foi informada." >&2
+            exit 1
+          fi
+          echo "value=$folder" >> "$GITHUB_OUTPUT"
+
       - name: Checkout
         if: steps.guard.outputs.run == '1'
         uses: actions/checkout@v7
@@ -89,7 +108,7 @@ jobs:
 
       - name: Preparar
         if: steps.guard.outputs.run == '1' && (github.event_name != 'schedule' || github.event.schedule == '30 11 * * *') && (github.event_name != 'workflow_dispatch' || (inputs.mode != 'verify-tiktok' && inputs.mode != 'verify-google' && inputs.mode != 'preflight'))
-        run: python -m publisher.cli prepare --target-date "${{ inputs.target_date }}"
+        run: python -m publisher.cli prepare --folder-id "${{ steps.folder.outputs.value }}" --target-date "${{ inputs.target_date }}"
 
       - name: Dry-run YouTube
         if: steps.guard.outputs.run == '1' && github.event_name == 'workflow_dispatch' && inputs.mode == 'dry-run'
@@ -105,11 +124,11 @@ jobs:
 
       - name: Verificar Google
         if: steps.guard.outputs.run == '1' && github.event_name == 'workflow_dispatch' && inputs.mode == 'verify-google'
-        run: python -m publisher.cli verify-google
+        run: python -m publisher.cli verify-google --folder-id "${{ steps.folder.outputs.value }}"
 
       - name: Preflight de produção
         if: steps.guard.outputs.run == '1' && github.event_name == 'workflow_dispatch' && inputs.mode == 'preflight'
-        run: python -m publisher.cli preflight
+        run: python -m publisher.cli preflight --folder-id "${{ steps.folder.outputs.value }}"
 
       - name: Agendar YouTube
         if: steps.guard.outputs.run == '1' && ((github.event_name == 'workflow_dispatch' && (inputs.mode == 'youtube' || inputs.mode == 'all')) || (github.event_name == 'schedule' && github.event.schedule == '30 11 * * *' && env.PUBLISHER_ENABLED == '1'))

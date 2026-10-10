@@ -1,4 +1,4 @@
-# Corte Fino Publisher 1.3
+# Corte Fino Publisher 1.4
 
 Módulo separado do gerador de cortes. Lê os 5 MP4 prontos no Google Drive, transcreve localmente com `faster-whisper`, cria copy completa para TikTok/YouTube, ranqueia os cortes e agenda os Shorts pela YouTube Data API.
 
@@ -6,16 +6,23 @@ Módulo separado do gerador de cortes. Lê os 5 MP4 prontos no Google Drive, tra
 
 Pasta: `15UJh2z5hBRKB8q_JpNpH1rcZZUANO6Da`
 
+Na ativação manual, o campo `drive_folder` aceita diretamente o link compartilhado
+da pasta. O Publisher extrai o ID, valida a pasta e só então inicia a preparação.
+O ID fixo acima continua sendo o padrão das execuções agendadas.
+
 Contrato: exatamente 5 MP4 identificáveis como 01, 02, 03, 04 e 05. O Publisher não cria, recorta, reprocessa nem altera o motor que gera os cinco cortes diários.
 
 ## Copy completa
 
+- Copy Editorial 2.0: variação controlada de gancho, contexto e CTA por tema, sem texto genérico repetido.
 - Título em CAIXA ALTA, baseado na fala mais forte do trecho, com fallback editorial apenas quando a fala é curta demais.
 - Legenda com apelo emocional, contexto humano, pergunta de conversa e hashtags.
 - Hashtags próprias por plataforma: TikTok não recebe `#Shorts` e YouTube não recebe `#TikTok`.
 - Descrição do YouTube com a mesma linha editorial, CTA e bloco de hashtags.
 - Tags do YouTube também são enviadas no campo nativo `snippet.tags[]`, além das hashtags na descrição.
 - O texto é normalizado para respeitar 100 caracteres no título, 5.000 bytes UTF-8 na descrição e 500 caracteres nas tags.
+- Correções ortográficas seguras são aplicadas antes da copy; tokens de transcrição conhecidos como suspeitos reprovam a rodada em vez de serem inventados.
+- O QA bloqueia título truncado, hashtag de plataforma incorreta, espaçamento inválido e erros ASR não resolvidos antes de qualquer publicação.
 
 ## Horários base — America/Sao_Paulo
 
@@ -64,6 +71,7 @@ O comando `preflight` valida, sem publicar, os cinco arquivos do Drive, as crede
 
 ```
 python -m publisher.cli preflight
+python -m publisher.cli preflight --folder-id "https://drive.google.com/drive/folders/ID_DA_PASTA"
 ```
 
 Para consultar estados persistidos no Drive:
@@ -96,6 +104,7 @@ python -m publisher.cli prepare --target-date 2026-10-07
 - transcrição local;
 - sem Metricool;
 - copy completa com limites de caracteres/bytes;
+- QA editorial bloqueante para ortografia, truncamento e tokens ASR suspeitos;
 - anti-duplicidade via Drive;
 - intenção pendente e reconciliação do upload do YouTube;
 - estados TikTok pendente, processando, concluído e falho persistidos no Drive;
