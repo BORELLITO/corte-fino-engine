@@ -16,11 +16,30 @@ TIKTOK_PRIORITY = (18, 10, 12, 16, 20)
 
 
 STOPWORDS = set("a o as os um uma uns umas de da do das dos e em no na nos nas para pra por com sem que quem qual quando onde como porque isso isto essa esse essas esses eu voce voces ele ela eles elas me te se meu minha seu sua mais menos muito muita muitos muitas ja nao sim so tambem aqui ali la tem ter vai vou foi ser sao era esta estao ta tao entao ne tipo cara gente acho fica ficar fazer faz fez pode poder todo toda todos todas num numa ate ai bem".split())
+COPY_NOISE = set("assunto assuntos coisa coisas pessoa pessoas parte jeito forma fala falas trecho trechos video videos canal corte cortes sempre nunca agora hoje casa ganha ganhou divulga divulgar".split())
 TOPIC_RULES = {
     "apostas": "aposta apostas bet bets cassino cassinos tigrinho jogo jogos vicio apostar".split(),
     "politica": "lula bolsonaro stf moraes governo presidente congresso senado politica esquerda direita".split(),
     "seguranca": "crime crimes policia bandido bandidos seguranca prisao roubo assalto".split(),
     "midia": "midia noticia jornalista jornalismo tragedia audiencia".split(),
+}
+TOPIC_TERMS = {
+    "apostas": ("apostas", "bet", "cassino", "jogos de aposta"),
+    "politica": ("politica", "politica brasileira", "governo", "debate publico"),
+    "seguranca": ("seguranca", "seguranca publica", "crime", "policia"),
+    "midia": ("midia", "jornalismo", "noticias", "audiencia"),
+    "geral": ("debate",),
+}
+KEYWORD_ALIASES = {
+    "stf": "Supremo Tribunal Federal",
+    "moraes": "Alexandre de Moraes",
+    "tigrinho": "Jogo do Tigrinho",
+    "policia": "polícia",
+    "seguranca": "segurança",
+    "politica": "política",
+    "midia": "mídia",
+    "tragedia": "tragédia",
+    "vicio": "vício",
 }
 CTA = {
     "apostas": "Onde termina a escolha individual e começa a responsabilidade de quem influencia?",
@@ -30,16 +49,16 @@ CTA = {
     "geral": "Você concorda com esse ponto ou enxerga de outra forma?",
 }
 EMOTIONAL_BRIDGE = {
-    "apostas": "Por trás de uma aposta que parece inofensiva, existe uma discussão que pode atingir qualquer família.",
-    "politica": "Mais do que uma opinião política, este trecho expõe uma disputa de narrativas que divide o país.",
-    "seguranca": "Quando a segurança falha, o problema deixa de ser manchete e passa a fazer parte da vida de alguém.",
-    "midia": "Quando uma tragédia vira conteúdo, a pergunta deixa de ser apenas o que aconteceu — e passa a ser quem se beneficia.",
-    "geral": "Às vezes, uma frase resume um problema que muita gente sente, mas quase ninguém consegue explicar.",
+    "apostas": "O trecho transforma uma escolha aparentemente individual em uma discussão sobre impacto e responsabilidade.",
+    "politica": "A fala toca em um ponto sensível do debate público e convida a olhar para as consequências do argumento.",
+    "seguranca": "Quando esse assunto entra em pauta, o debate deixa de ser abstrato e encosta na vida real.",
+    "midia": "O trecho provoca uma reflexão incômoda sobre informação, audiência e o limite da exposição.",
+    "geral": "Uma fala curta pode revelar uma discussão muito maior do que parece.",
 }
 TOPIC_TAGS = {
     "apostas": "#Apostas",
     "politica": "#Politica",
-    "seguranca": "#Seguranca",
+    "seguranca": "#SegurancaPublica",
     "midia": "#Midia",
     "geral": "#Debate",
 }
@@ -81,8 +100,8 @@ def truncate_utf8(text: str, limit: int) -> str:
 
 
 def natural_index(name: str) -> int:
-    m = re.search(r"(?:^|[_\-\s])(0?[1-5])(?:[_\-\s.]|$)", name)
-    return int(m.group(1)) if m else 999
+    match = re.search(r"(?:^|[_\-\s])(0?[1-5])(?:[_\-\s.]|$)", name)
+    return int(match.group(1)) if match else 999
 
 
 def tokens(text: str) -> list[str]:
@@ -93,10 +112,10 @@ def get_keywords(text: str, limit: int = 4) -> list[str]:
     counts = Counter()
     for word in tokens(text):
         base = fold(word)
-        if base in STOPWORDS or base.isdigit() or len(base) < 4:
+        if base in STOPWORDS or base in COPY_NOISE or base.isdigit() or len(base) < 4:
             continue
         counts[base] += 1
-    return [w for w, _ in counts.most_common(limit)]
+    return [word for word, _ in counts.most_common(limit)]
 
 
 def detect_topic(text: str) -> str:
@@ -108,13 +127,13 @@ def detect_topic(text: str) -> str:
 
 def split_sentences(text: str) -> list[str]:
     parts = re.split(r"(?<=[.!?])\s+|\n+", re.sub(r"\s+", " ", text).strip())
-    return [s.strip(" -–—") for s in parts if 18 <= len(s.strip()) <= 220]
+    return [sentence.strip(" -–—") for sentence in parts if 18 <= len(sentence.strip()) <= 220]
 
 
 def sentence_score(sentence: str) -> float:
-    s = fold(sentence)
+    normalized = fold(sentence)
     hot = ("absurdo", "problema", "responsabilidade", "verdade", "mentira", "sangue", "vicio", "crime", "morte", "dinheiro", "milhoes", "jovem", "perde", "ganha", "sempre", "nunca", "pior", "grave", "risco", "erro", "escandalo", "polemica")
-    score = sum(1.5 for word in hot if word in s)
+    score = sum(1.5 for word in hot if word in normalized)
     score += 1.2 if "?" in sentence else 0
     score += min(len(sentence.split()), 18) / 20
     if 5 <= len(sentence.split()) <= 16:
@@ -133,7 +152,7 @@ def viral_score(text: str) -> float:
     sentences = split_sentences(text)
     if not sentences:
         return 0.0
-    return round(max(sentence_score(s) for s in sentences) + text.count("?") * 0.25, 2)
+    return round(max(sentence_score(sentence) for sentence in sentences) + text.count("?") * 0.25, 2)
 
 
 def hashtag(word: str) -> str:
@@ -143,25 +162,26 @@ def hashtag(word: str) -> str:
 
 def build_hashtags(topic: str, keywords: list[str]) -> list[str]:
     tags = [TOPIC_TAGS.get(topic, TOPIC_TAGS["geral"])]
-    tags.extend(hashtag(word) for word in keywords[:4])
-    tags.append("#CorteFino")
-    tags.append("#Shorts")
-    return list(dict.fromkeys(tag for tag in tags if tag))
+    for word in keywords[:3]:
+        if word not in COPY_NOISE:
+            tags.append(hashtag(KEYWORD_ALIASES.get(word, word)))
+    tags.extend(("#CorteFino", "#Shorts"))
+    return list(dict.fromkeys(tag for tag in tags if tag))[:7]
 
 
 def build_youtube_tags(topic: str, keywords: list[str]) -> list[str]:
-    candidates = [topic.replace("_", " "), *keywords[:5], "corte fino", "cortes de podcast", "shorts"]
+    candidates = [*TOPIC_TERMS.get(topic, TOPIC_TERMS["geral"])]
+    candidates.extend(KEYWORD_ALIASES.get(word, word) for word in keywords[:5])
+    candidates.extend(("corte fino", "cortes de podcast", "shorts"))
     tags: list[str] = []
     seen: set[str] = set()
     total = 0
     for raw in candidates:
         tag = re.sub(r"\s+", " ", raw).strip()
         key = fold(tag)
-        if not tag or key in seen:
-            continue
         addition = len(tag) + (2 if tags else 0)
-        if total + addition > 490:
-            break
+        if not tag or key in seen or total + addition > 490:
+            continue
         tags.append(tag)
         seen.add(key)
         total += addition
@@ -173,13 +193,14 @@ def make_copy(transcript: str) -> CopyPack:
     keys = get_keywords(transcript)
     hook = choose_hook(transcript)
     title = truncate(hook.upper(), 96)
-    subject = ", ".join(keys[:3]) if keys else "esse assunto"
+    subject = ", ".join(KEYWORD_ALIASES.get(word, word) for word in keys[:3]) or "o tema central"
     hashtags = build_hashtags(topic, keys)
     hashtag_text = " ".join(hashtags)
     bridge = EMOTIONAL_BRIDGE.get(topic, EMOTIONAL_BRIDGE["geral"])
+    context = f"A conversa coloca {subject} no centro e abre espaço para uma reflexão que não passa despercebida."
     cta = CTA[topic]
-    tiktok = f"{title}\n\n{bridge} O trecho coloca {subject} no centro da conversa.\n\n{cta}\n\n{hashtag_text}"
-    yt_desc = f"{hook}\n\n{bridge} O trecho coloca {subject} no centro da conversa.\n\n{cta}\n\nCorte Fino — recortes que transformam falas em debates.\n\n{hashtag_text}"
+    tiktok = f"{title}\n\n{bridge} {context}\n\n{cta}\n\n{hashtag_text}"
+    youtube_description = f"{hook}\n\n{bridge} {context}\n\n{cta}\n\nCorte Fino — recortes que transformam falas em debates.\n\n{hashtag_text}"
     return CopyPack(
         topic,
         hook,
@@ -187,13 +208,13 @@ def make_copy(transcript: str) -> CopyPack:
         viral_score(transcript),
         truncate(tiktok, 3500),
         title,
-        truncate_utf8(yt_desc, 5000),
+        truncate_utf8(youtube_description, 5000),
         build_youtube_tags(topic, keys),
     )
 
 
 def assign_slots(clips: list[dict]) -> None:
-    ranked = sorted(clips, key=lambda c: (-c["copy"]["viral_score"], c["index"]))
+    ranked = sorted(clips, key=lambda clip: (-clip["copy"]["viral_score"], clip["index"]))
     for clip, hour in zip(ranked, YOUTUBE_PRIORITY):
         clip.setdefault("schedule", {})["youtube_hour"] = hour
     for clip, hour in zip(ranked, TIKTOK_PRIORITY):
