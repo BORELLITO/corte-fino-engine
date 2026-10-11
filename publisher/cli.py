@@ -5,16 +5,14 @@ import json
 import os
 from pathlib import Path
 
+from publisher.core import validate_manifest
 from publisher.google_io import FOLDER_ID, drive_service, prepare, publish_youtube, verify_google_accounts
 from publisher.tiktok_io import publish_tiktok, verify_tiktok_account
 
 
 def load(path: Path) -> dict:
     data = json.loads(path.read_text(encoding="utf-8"))
-    if int(data.get("version", 0) or 0) < 3:
-        raise RuntimeError("Manifesto antigo ou incompatível; execute prepare novamente antes de publicar.")
-    if len(data.get("clips", [])) != 5:
-        raise RuntimeError("Manifesto inválido: precisa conter 5 cortes.")
+    validate_manifest(data)
     return data
 
 
@@ -75,6 +73,7 @@ def main() -> int:
     parser.add_argument("--due-only", action="store_true", help="publica no máximo um TikTok já vencido no horário local")
     parser.add_argument("--allow-immediate", action="store_true", help="confirma publicação imediata de todos os TikToks")
     parser.add_argument("--target-date", default="", help="data ISO do manifesto; útil para recuperação manual (AAAA-MM-DD)")
+    parser.add_argument("--confirm-rights", action="store_true", help="confirma que a fonte está autorizada para publicação")
     parser.add_argument("--remote", action="store_true", help="inclui estados persistidos no Drive no relatório")
     args = parser.parse_args()
     path = Path(args.manifest)
@@ -88,7 +87,12 @@ def main() -> int:
         print(json.dumps({"google": verify_google_accounts(args.folder_id), "tiktok": verify_tiktok_account()}, ensure_ascii=False, indent=2))
         return 0
     if args.command == "prepare":
-        data = prepare(args.folder_id, path, target_date=args.target_date or None)
+        data = prepare(
+            args.folder_id,
+            path,
+            target_date=args.target_date or None,
+            rights_authorized=args.confirm_rights or os.environ.get("PUBLISHER_RIGHTS_AUTHORIZED", "").casefold() in {"1", "true", "yes", "sim", "on"},
+        )
         print(json.dumps({"status": "prepared", "date": data["date"], "clips": 5}, ensure_ascii=False))
         return 0
     data = load(path)

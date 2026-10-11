@@ -10,7 +10,7 @@ import urllib.request
 from datetime import date, datetime, time
 from pathlib import Path
 
-from publisher.core import TIKTOK_CAPTION_LIMIT, TIMEZONE, local_publish_at, truncate_utf8
+from publisher.core import TIKTOK_CAPTION_LIMIT, TIMEZONE, as_bool, local_publish_at, truncate_utf8
 from publisher.google_io import download, drive_service, env, marker, verify_manifest_clip
 
 
@@ -249,19 +249,44 @@ def publish_tiktok(
             "Publicação imediata dos cinco TikToks está bloqueada. Use --due-only ou confirme explicitamente a execução imediata."
         )
     day = date.fromisoformat(manifest["date"])
-    clips = _due_clips(manifest, now) if due_only else sorted(manifest["clips"], key=lambda item: item["index"])
+    all_clips = sorted(manifest["clips"], key=lambda item: item["index"])
+    clips = _due_clips(manifest, now) if due_only else all_clips
     if dry_run:
         if due_only:
             clips = clips[:1]
         return [{"index": clip["index"], "status": "dry_run", "publish_at": local_publish_at(day, int(clip["schedule"]["tiktok_hour"])), "caption": truncate_utf8(clip["copy"]["tiktok_caption"], 2200)} for clip in clips]
-    if due_only and not clips:
-        return [{"status": "nothing_due"}]
-    token, creator, drive = _refresh_access_token(), None, None
-    creator = _creator_info(token)
+    if not dry_run:
+        rights = manifest.get("rights") or {}
+        sandbox = env("PUBLISHER_TIKTOK_ENV").casefold() == "sandbox"
+        if not as_bool(rights.get("authorized")) and not sandbox:
+            raise TikTokError(
+                "Publicação bloqueada: os direitos da fonte não foram confirmados no manifesto."
+            )
+
+    # O estado de um publish_id precisa ser reconciliado mesmo quando o
+    # manifesto já não está na data original. Assim uma execução pendente não
+    # desaparece simplesmente quando o calendário vira o dia.
+    prefetched: dict[int, dict] = {}
     drive = drive_service()
+    if due_only:
+        due = _due_clips(manifest, now)
+        due_indexes = {int(clip["index"]) for clip in due}
+        pending: list[dict] = []
+        for candidate in all_clips:
+            item = verify_manifest_clip(drive, manifest, candidate)
+            prefetched[int(candidate["index"])] = item
+            properties = item.get("appProperties", {})
+            if int(candidate["index"]) not in due_indexes and properties.get("cf_tiktok_publish_id", "").strip():
+                pending.append(candidate)
+        clips = pending + [clip for clip in due if int(clip["index"]) not in {int(item["index"]) for item in pending}][:1]
+        if not clips:
+            return [{"status": "nothing_due"}]
+
+    token, creator = _refresh_access_token(), None
+    creator = _creator_info(token)
     results: list[dict] = []
     for clip in clips:
-        item = verify_manifest_clip(drive, manifest, clip)
+        item = prefetched.get(int(clip["index"])) or verify_manifest_clip(drive, manifest, clip)
         properties = item.get("appProperties", {})
         existing_id = properties.get("cf_tiktok_publish_id", "").strip()
         if existing_id:

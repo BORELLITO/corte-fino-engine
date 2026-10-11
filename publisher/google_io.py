@@ -10,7 +10,27 @@ from datetime import date, datetime, timedelta, timezone
 from pathlib import Path
 from urllib.parse import parse_qs, urlparse
 
-from publisher.core import TIMEZONE, YOUTUBE_DESCRIPTION_LIMIT, YOUTUBE_HOURS, YOUTUBE_TITLE_LIMIT, TIKTOK_HOURS, assign_slots, copy_dict, local_publish_at, make_copy, natural_index, truncate, truncate_utf8
+from publisher.core import (
+    BRANDING_CAPTION_MARGIN_V,
+    BRANDING_FORMAT,
+    BRANDING_VERSION,
+    BRANDING_LOGO_POSITION,
+    MANIFEST_VERSION,
+    TIMEZONE,
+    YOUTUBE_DESCRIPTION_LIMIT,
+    YOUTUBE_HOURS,
+    YOUTUBE_TITLE_LIMIT,
+    TIKTOK_HOURS,
+    as_bool,
+    assign_slots,
+    copy_dict,
+    local_publish_at,
+    make_copy,
+    natural_index,
+    truncate,
+    truncate_utf8,
+    validate_manifest,
+)
 
 
 FOLDER_ID = os.environ.get("PUBLISHER_DRIVE_FOLDER_ID", "").strip()
@@ -19,11 +39,17 @@ YOUTUBE_PROCESSING_INTERVAL = 5
 PUBLISHER_MIN_CLIP_SECONDS = 45.0
 PUBLISHER_MAX_CLIP_SECONDS = 90.0
 PUBLISHER_MIN_FILE_BYTES = 50_000
+PUBLISHER_MIN_AUDIO_BITRATE = 128_000
 _WHISPER_MODEL = None
 
 
 def env(name: str, default: str = "") -> str:
     return os.environ.get(name, default).strip()
+
+
+def env_bool(name: str, default: bool = False) -> bool:
+    value = env(name, "1" if default else "0").casefold()
+    return value in {"1", "true", "yes", "sim", "on"}
 
 
 def normalize_folder_id(value: str) -> str:
@@ -96,6 +122,27 @@ def drive_service():
     )
 
 
+def list_children(drive, folder_id: str) -> list[dict]:
+    folder_id = normalize_folder_id(folder_id)
+    q = f"'{folder_id}' in parents and trashed = false"
+    files: list[dict] = []
+    page_token = None
+    while True:
+        kwargs = {
+            "q": q,
+            "pageSize": 100,
+            "orderBy": "name",
+            "fields": "nextPageToken,files(id,name,size,mimeType,md5Checksum,appProperties,modifiedTime,parents)",
+        }
+        if page_token:
+            kwargs["pageToken"] = page_token
+        response = drive.files().list(**kwargs).execute(num_retries=4)
+        files.extend(response.get("files", []))
+        page_token = response.get("nextPageToken")
+        if not page_token:
+            return files
+
+
 def list_videos(drive, folder_id: str) -> list[dict]:
     folder_id = normalize_folder_id(folder_id)
     q = f"'{folder_id}' in parents and trashed = false and mimeType = 'video/mp4'"
@@ -130,11 +177,14 @@ def resolve_publication_folder(drive, folder_id: str) -> str:
     fallback source may be searched.
     """
     requested = normalize_folder_id(folder_id)
-    direct = list_videos(drive, requested)
-    if _is_complete_batch(direct):
+    children = list_children(drive, requested)
+    direct = [item for item in children if item.get("mimeType") == "video/mp4"]
+    unexpected = [item.get("name", "") for item in children if item.get("mimeType") != "video/mp4"]
+    if _is_complete_batch(direct) and not unexpected:
         return requested
     raise RuntimeError(
-        f"A pasta indicada precisa conter diretamente exatamente os 5 vídeos 01..05; encontrados: {len(direct)}."
+        "A pasta indicada precisa conter diretamente exatamente os 5 vídeos 01..05, "
+        f"sem subpastas ou arquivos extras; vídeos={len(direct)}, extras={unexpected}."
     )
 
 
@@ -199,6 +249,12 @@ def probe_video(path: Path) -> dict:
             errors.append(f"resolução {video.get('width')}x{video.get('height')} (esperado 1080x1920)")
         if video.get("codec_name") != "h264":
             errors.append(f"codec de vídeo {video.get('codec_name')} (esperado h264)")
+        if str(video.get("profile") or "").lower() != "high":
+            errors.append(f"perfil de vídeo {video.get('profile')} (esperado High)")
+        if str(video.get("pix_fmt") or "") != "yuv420p":
+            errors.append(f"pixel format {video.get('pix_fmt')} (esperado yuv420p)")
+        if str(video.get("sample_aspect_ratio") or "") not in {"1:1", "1/1"}:
+            errors.append(f"sample aspect ratio {video.get('sample_aspect_ratio')} (esperado 1:1)")
     if not audio:
         errors.append("sem stream de áudio")
     elif audio.get("codec_name") != "aac":
@@ -223,6 +279,15 @@ def probe_video(path: Path) -> dict:
         errors.append(f"frame rate {frame_rate:.3f} (esperado 30)")
     if audio and str(audio.get("sample_rate") or "") != "48000":
         errors.append(f"sample rate {audio.get('sample_rate')} (esperado 48000)")
+    if audio:
+        try:
+            audio_bitrate = int(audio.get("bit_rate") or 0)
+        except (TypeError, ValueError):
+            audio_bitrate = 0
+        if not audio_bitrate:
+            errors.append("bitrate de áudio ausente (não foi possível verificar o piso de qualidade)")
+        elif audio_bitrate < PUBLISHER_MIN_AUDIO_BITRATE:
+            errors.append(f"bitrate de áudio {audio_bitrate} (mínimo {PUBLISHER_MIN_AUDIO_BITRATE})")
     if not path.is_file() or path.stat().st_size <= PUBLISHER_MIN_FILE_BYTES:
         errors.append("arquivo vazio ou pequeno demais")
     try:
@@ -243,8 +308,11 @@ def probe_video(path: Path) -> dict:
         "video_codec": video["codec_name"],
         "audio_codec": audio["codec_name"],
         "pixel_format": video.get("pix_fmt"),
+        "video_profile": video.get("profile"),
+        "sample_aspect_ratio": video.get("sample_aspect_ratio"),
         "frame_rate": round(frame_rate, 3),
         "audio_sample_rate": audio.get("sample_rate"),
+        "audio_bitrate": audio.get("bit_rate"),
         "duration": duration,
     }
 
@@ -258,7 +326,14 @@ def publication_day(now: datetime | None = None, target_date: date | str | None 
     return current.date() + (timedelta(days=1) if current.hour >= 9 else timedelta())
 
 
-def prepare(folder_id: str, output: Path, target_date: date | str | None = None) -> dict:
+def prepare(
+    folder_id: str,
+    output: Path,
+    target_date: date | str | None = None,
+    *,
+    rights_authorized: bool | None = None,
+    rights_status: str | None = None,
+) -> dict:
     drive = drive_service()
     folder_id = resolve_publication_folder(drive, folder_id)
     files = list_videos(drive, folder_id)
@@ -295,8 +370,10 @@ def prepare(folder_id: str, output: Path, target_date: date | str | None = None)
             )
 
     assign_slots(clips)
+    if rights_authorized is None:
+        rights_authorized = env_bool("PUBLISHER_RIGHTS_AUTHORIZED")
     manifest = {
-        "version": 3,
+        "version": MANIFEST_VERSION,
         "run_id": uuid.uuid4().hex,
         "created_at_utc": _utc_now().isoformat().replace("+00:00", "Z"),
         "date": publication_day(target_date=target_date).isoformat(),
@@ -304,8 +381,19 @@ def prepare(folder_id: str, output: Path, target_date: date | str | None = None)
         "drive_folder_id": folder_id,
         "youtube_hours": list(YOUTUBE_HOURS),
         "tiktok_hours": list(TIKTOK_HOURS),
+        "rights": {
+            "authorized": bool(rights_authorized),
+            "status": (rights_status or env("PUBLISHER_RIGHTS_STATUS", "revisão manual necessária")).strip(),
+        },
+        "branding": {
+            "version": BRANDING_VERSION,
+            "format": BRANDING_FORMAT,
+            "logo_position": BRANDING_LOGO_POSITION,
+            "caption_margin_v": BRANDING_CAPTION_MARGIN_V,
+        },
         "clips": clips,
     }
+    validate_manifest(manifest, require_transcripts=True)
     output.parent.mkdir(parents=True, exist_ok=True)
     output.write_text(json.dumps(manifest, ensure_ascii=False, indent=2), encoding="utf-8")
     return manifest
@@ -440,9 +528,42 @@ def verify_manifest_clip(drive, manifest: dict, clip: dict) -> dict:
         raise RuntimeError(f"Tamanho do corte {clip['index']:02d} mudou desde o preflight; publicação bloqueada.")
     expected_md5 = str(clip.get("md5_checksum", "") or "").strip()
     current_md5 = str(item.get("md5Checksum", "") or "").strip()
-    if expected_md5 and current_md5 and expected_md5 != current_md5:
-        raise RuntimeError(f"Checksum do corte {clip['index']:02d} mudou desde o preflight; publicação bloqueada.")
+    if expected_md5 and current_md5 != expected_md5:
+        raise RuntimeError(f"Checksum do corte {clip['index']:02d} mudou ou não pôde ser confirmado; publicação bloqueada.")
     return item
+
+
+def _require_publish_rights(manifest: dict) -> None:
+    rights = manifest.get("rights") or {}
+    if not as_bool(rights.get("authorized")):
+        raise RuntimeError(
+            "Publicação bloqueada: os direitos da fonte não foram confirmados no manifesto. "
+            "Faça a revisão e execute o Publisher com a confirmação explícita."
+        )
+
+
+def _preflight_youtube_schedule(drive, manifest: dict) -> None:
+    """Check every new slot before the first YouTube upload can occur."""
+    now = _utc_now()
+    expired: list[str] = []
+    for clip in sorted(manifest["clips"], key=lambda item: item["index"]):
+        item = verify_manifest_clip(drive, manifest, clip)
+        properties = item.get("appProperties", {})
+        if properties.get("cf_youtube_video_id") or properties.get("cf_youtube_upload_status") == "PENDING":
+            continue
+        publish_at = local_publish_at(
+            date.fromisoformat(manifest["date"]),
+            int(clip["schedule"]["youtube_hour"]),
+        )
+        publish_dt = _parse_utc(publish_at)
+        if publish_dt and publish_dt <= now:
+            expired.append(f"{clip['index']:02d} ({publish_at})")
+    if expired:
+        raise RuntimeError(
+            "Pré-flight YouTube bloqueado antes de qualquer upload: horários vencidos — "
+            + ", ".join(expired)
+            + ". Gere um manifesto com data futura."
+        )
 
 
 def publish_youtube(manifest: dict, dry_run: bool = False) -> list[dict]:
@@ -450,6 +571,8 @@ def publish_youtube(manifest: dict, dry_run: bool = False) -> list[dict]:
     drive = drive_service()
     youtube = None
     if not dry_run:
+        _require_publish_rights(manifest)
+        _preflight_youtube_schedule(drive, manifest)
         from googleapiclient.discovery import build
 
         youtube = build(
@@ -583,6 +706,19 @@ def publish_youtube(manifest: dict, dry_run: bool = False) -> list[dict]:
             ).execute(num_retries=4)
 
         video_id = response["id"]
+        # O ID precisa ser persistido imediatamente após o insert. Se o runner
+        # cair durante o polling, a próxima execução consulta esse ID em vez de
+        # tentar um upload duplicado por busca aproximada de título.
+        marker(
+            drive,
+            clip["drive_id"],
+            {
+                "cf_youtube_video_id": video_id,
+                "cf_youtube_upload_status": "PROCESSING",
+                "cf_youtube_publish_at": publish_at,
+                "cf_youtube_date": manifest["date"],
+            },
+        )
         processing = wait_youtube_processing(youtube, video_id)
         if processing == "failed":
             marker(
