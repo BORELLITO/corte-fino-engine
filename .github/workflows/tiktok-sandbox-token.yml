@@ -21,6 +21,13 @@ jobs:
       TIKTOK_AUTHORIZATION_CODE: ${{ inputs.authorization_code }}
       TIKTOK_REDIRECT_URI: https://borellito.github.io/corte-fino-engine/tiktok-callback/
     steps:
+      - name: Bloquear troca de token em repositório não privado
+        if: github.event.repository.visibility != 'private'
+        run: |
+          echo "Troca bloqueada: o refresh token só pode ser entregue como artefato de um repositório privado."
+          echo "Em repositório público, use um token já revogado/rotacionado e configure o secret manualmente."
+          exit 1
+
       - name: Trocar código por token
         shell: bash
         run: |
@@ -58,10 +65,11 @@ jobs:
               raise SystemExit("TikTok não retornou refresh_token.")
           output = Path(os.environ["RUNNER_TEMP"]) / "tiktok-sandbox-refresh-token.txt"
           output.write_text(refresh + "\n", encoding="utf-8")
-          print("Refresh token criado. Ele foi colocado apenas no artefato protegido.")
+          print("Refresh token criado para entrega em artefato de repositório privado.")
           PY
 
-      - name: Disponibilizar token como artefato protegido
+      - name: Disponibilizar token como artefato privado de curta duração
+        if: github.event.repository.visibility == 'private'
         uses: actions/upload-artifact@v4
         with:
           name: tiktok-sandbox-refresh-token

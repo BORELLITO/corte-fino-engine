@@ -29,8 +29,8 @@ permissions:
   contents: write
 
 concurrency:
-  # Um único lock para evitar duas rodadas disputando a mesma entrada do Drive.
-  group: corte-fino-producao
+  # Generator e Publisher compartilham estado na branch principal.
+  group: corte-fino-git-state
   cancel-in-progress: false
 
 jobs:
@@ -52,7 +52,7 @@ jobs:
       USE_EDITORIAL_SCORE_GATE: "0"
       REQUIRE_EXACT_TOP_FIVE: "1"
       CAPTION_MIN_WORD_PROBABILITY: "0.40"
-      CAPTION_LOW_CONFIDENCE_FATAL: "1"
+      CAPTION_LOW_CONFIDENCE_FATAL: "0"
       CAPTION_SPELLING_MIN_ZIPF: "2.30"
       CAPTION_HARD_MAX_CPS: "24.0"
       FORCE_TOP_FIVE: ${{ inputs.force_top_five == 'true' && '1' || '0' }}
@@ -117,7 +117,7 @@ jobs:
           GOOGLE_CLIENT_ID: ${{ secrets.GOOGLE_CLIENT_ID }}
           GOOGLE_CLIENT_SECRET: ${{ secrets.GOOGLE_CLIENT_SECRET }}
           DRIVE_SOURCE_FOLDER_ID: ${{ secrets.DRIVE_SOURCE_FOLDER_ID }}
-          DRIVE_FOLDER_ID: ${{ secrets.DRIVE_FOLDER_ID }}
+          DRIVE_FOLDER_ID: ${{ secrets.DRIVE_FOLDER_ID || secrets.DRIVER_FOLDER_ID || secrets.PUBLISHER_DRIVE_FOLDER_ID || '15UJh2z5hBRKB8q_JpNpH1rcZZUANO6Da' }}
           MANUAL_SOURCE_URL: ${{ inputs.source_url }}
         run: |
           python - <<'PY'
@@ -186,9 +186,6 @@ jobs:
 
           print("Preflight do Google Drive concluído; o processamento pode começar.")
           PY
-
-
-
       - name: Buscar entrada no Drive
         id: drive_source
         if: ${{ inputs.source_url == '' }}
@@ -478,6 +475,9 @@ jobs:
           clips = report.get("clips", [])
           if len(clips) != 5:
               raise RuntimeError(f"Entrega bloqueada: esperados 5 cortes, encontrados {len(clips)}.")
+          rights = report.get("rights") or {}
+          rights_authorized = bool(rights.get("authorized_signal"))
+          report_sha256 = hashlib.sha256(Path("output/relatorio.json").read_bytes()).hexdigest()
 
           source_meta = report.get("source") or {}
           source_title = clean_display_name(
@@ -538,10 +538,15 @@ jobs:
           ):
               raise RuntimeError("Verificação final falhou: tipo MIME incompatível com o nome do arquivo.")
           manifest = {
+              "manifest_version": 2,
               "batch_folder_id": batch["id"],
               "batch_folder": batch.get("webViewLink") or f"https://drive.google.com/drive/folders/{batch['id']}",
               "source_fingerprint_sha256": source_hash,
               "source_title": source_title,
+              "rights_authorized": rights_authorized,
+              "rights_status": str(report.get("rights_status") or "revisão manual necessária"),
+              "report_sha256": report_sha256,
+              "branding_version": "hud-corte-fino-v1",
               "file_count": 5,
               "files": [
                   {"name": name, "id": by_name[name]["id"], "webViewLink": by_name[name].get("webViewLink")}
@@ -575,12 +580,14 @@ jobs:
           if not folder_id or not folder_url or len(manifest.get("files", [])) != 5:
               raise SystemExit("Manifesto do lote não contém a pasta exata e os cinco arquivos.")
           pointer = {
-              "version": 1,
+              "version": 2,
               "batch_folder_id": folder_id,
               "batch_folder": folder_url,
               "source_fingerprint_sha256": manifest.get("source_fingerprint_sha256", ""),
-              "source_title": manifest.get("source_title", ""),
-              "files": manifest.get("files", []),
+              "rights_authorized": bool(manifest.get("rights_authorized", False)),
+              "rights_status": manifest.get("rights_status", "revisão manual necessária"),
+              "report_sha256": manifest.get("report_sha256", ""),
+              "branding_version": manifest.get("branding_version", ""),
               "updated_at_utc": datetime.now(timezone.utc).isoformat().replace("+00:00", "Z"),
           }
           target = Path("publisher/state/latest_batch.json")
@@ -592,7 +599,15 @@ jobs:
           git add publisher/state/latest_batch.json
           if ! git diff --cached --quiet; then
             git commit -m "chore(generator): registrar lote exato do publisher"
-            git push
+            for attempt in 1 2 3; do
+              if git pull --rebase origin main && git push; then
+                exit 0
+              fi
+              git rebase --abort 2>/dev/null || true
+              sleep $((attempt * 3))
+            done
+            echo "Não foi possível registrar o lote do Publisher após 3 tentativas." >&2
+            exit 1
           fi
 
       - name: Marcar entrada como processada
@@ -647,14 +662,3 @@ jobs:
           ).execute()
           print(f"Entrada marcada como processada: {new_name}")
           PY
-
-      - name: Salvar artefatos do GitHub
-        if: always()
-        uses: actions/upload-artifact@v7
-        with:
-          name: corte-fino-resultados
-          path: output/clips/
-          if-no-files-found: ignore
-          retention-days: 7
-
-

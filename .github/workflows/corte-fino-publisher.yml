@@ -19,6 +19,11 @@ on:
         required: false
         default: ""
         type: string
+      rights_confirmed:
+        description: "Confirme true somente após revisar a autorização da fonte"
+        required: false
+        default: false
+        type: boolean
 
       tiktok_env:
         description: "Credenciais TikTok usadas nesta execução manual"
@@ -38,7 +43,9 @@ permissions:
   contents: write
 
 concurrency:
-  group: corte-fino-publisher
+  # Generator e Publisher compartilham os arquivos de estado no git; o mesmo
+  # lock evita dois workflows fazendo push concorrente na branch principal.
+  group: corte-fino-git-state
   cancel-in-progress: false
 
 jobs:
@@ -47,7 +54,9 @@ jobs:
     timeout-minutes: 90
     env:
       PYTHONUNBUFFERED: "1"
-      PUBLISHER_DRIVE_FOLDER_ID: ""
+      # Compatibilidade com os nomes que já existem no repositório; o link
+      # manual informado na execução continua tendo prioridade.
+      PUBLISHER_DRIVE_FOLDER_ID: ${{ secrets.PUBLISHER_DRIVE_FOLDER_ID || secrets.DRIVE_FOLDER_ID || secrets.DRIVER_FOLDER_ID || '15UJh2z5hBRKB8q_JpNpH1rcZZUANO6Da' }}
       PUBLISHER_WHISPER_MODEL: small
       PUBLISHER_GOOGLE_CLIENT_ID: ${{ secrets.PUBLISHER_GOOGLE_CLIENT_ID }}
       PUBLISHER_GOOGLE_CLIENT_SECRET: ${{ secrets.PUBLISHER_GOOGLE_CLIENT_SECRET }}
@@ -63,6 +72,8 @@ jobs:
       PUBLISHER_TIKTOK_EXPECTED_USERNAME: ${{ github.event_name == 'workflow_dispatch' && inputs.tiktok_env == 'sandbox' && 'absurdodocumentado' || secrets.PUBLISHER_TIKTOK_EXPECTED_USERNAME }}
       PUBLISHER_TIKTOK_PRIVACY_LEVEL: PUBLIC_TO_EVERYONE
       PUBLISHER_ENABLED: ${{ secrets.PUBLISHER_ENABLED }}
+      PUBLISHER_RIGHTS_AUTHORIZED: ${{ secrets.PUBLISHER_RIGHTS_AUTHORIZED }}
+      PUBLISHER_RIGHTS_STATUS: ${{ secrets.PUBLISHER_RIGHTS_STATUS }}
 
     steps:
       - name: Guard automático
@@ -100,26 +111,48 @@ jobs:
         if: steps.guard.outputs.run == '1' && (github.event_name != 'workflow_dispatch' || inputs.mode != 'verify-tiktok')
         env:
           DEFAULT_FOLDER: ${{ env.PUBLISHER_DRIVE_FOLDER_ID }}
+          DEFAULT_RIGHTS: ${{ env.PUBLISHER_RIGHTS_AUTHORIZED }}
+          DEFAULT_RIGHTS_STATUS: ${{ env.PUBLISHER_RIGHTS_STATUS }}
           REQUESTED_FOLDER: ${{ inputs.drive_folder }}
+          REQUESTED_RIGHTS: ${{ inputs.rights_confirmed }}
         run: |
           folder="${REQUESTED_FOLDER:-}"
+          rights="${DEFAULT_RIGHTS:-0}"
+          rights_status="${DEFAULT_RIGHTS_STATUS:-revisão manual necessária}"
           if [ -z "$folder" ] && [ -f publisher/state/latest_batch.json ]; then
-            folder="$(python - <<'PY'
+            pointer="$(python - <<'PY'
           import json
           from pathlib import Path
           data = json.loads(Path('publisher/state/latest_batch.json').read_text(encoding='utf-8'))
-          print(data.get('batch_folder_id', '').strip())
+          print(json.dumps({
+              'folder': str(data.get('batch_folder_id', '')).strip(),
+              'rights': data.get('rights_authorized', ''),
+              'rights_status': str(data.get('rights_status', '')).strip(),
+          }))
           PY
             )"
+            folder="$(python -c 'import json,sys; print(json.loads(sys.argv[1]).get("folder", ""))' "$pointer")"
+            pointer_rights="$(python -c 'import json,sys; print(json.loads(sys.argv[1]).get("rights", ""))' "$pointer")"
+            pointer_rights_status="$(python -c 'import json,sys; print(json.loads(sys.argv[1]).get("rights_status", ""))' "$pointer")"
+            if [ -n "$pointer_rights" ]; then rights="$pointer_rights"; fi
+            if [ -n "$pointer_rights_status" ]; then rights_status="$pointer_rights_status"; fi
           fi
           if [ -z "$folder" ]; then
             folder="${DEFAULT_FOLDER:-}"
+          fi
+          if [ "$REQUESTED_RIGHTS" = "true" ]; then
+            rights="1"
+            rights_status="AUTORIZADO — confirmação manual do proprietário/licenciante"
+          elif [ "$rights" = "1" ] && { [ -z "${rights_status// }" ] || [ "$rights_status" = "revisão manual necessária" ]; }; then
+            rights_status="AUTORIZADO — configuração persistente do Publisher"
           fi
           if [ -z "$folder" ]; then
             echo "Nenhuma pasta exata do lote foi informada." >&2
             exit 1
           fi
           echo "value=$folder" >> "$GITHUB_OUTPUT"
+          echo "rights_authorized=$rights" >> "$GITHUB_OUTPUT"
+          echo "rights_status=$rights_status" >> "$GITHUB_OUTPUT"
 
       - name: Cache Whisper
         if: steps.guard.outputs.run == '1'
@@ -148,7 +181,17 @@ jobs:
               print(0)
           PY
             )"
-            if [ "$version" -ge 3 ] 2>/dev/null; then
+            if [ "$version" -ge 4 ] 2>/dev/null && python - <<'PY'
+          import json
+          from pathlib import Path
+          from publisher.core import validate_manifest
+
+          try:
+              validate_manifest(json.loads(Path('publisher/state/current.json').read_text(encoding='utf-8')))
+          except Exception:
+              raise SystemExit(1)
+          PY
+            then
               needs_prepare=0
             fi
           fi
@@ -166,6 +209,9 @@ jobs:
       - name: Preparar
         id: prepare
         if: steps.guard.outputs.run == '1' && steps.state.outputs.needs_prepare == '1' && (github.event_name != 'workflow_dispatch' || (inputs.mode != 'verify-tiktok' && inputs.mode != 'verify-google' && inputs.mode != 'preflight'))
+        env:
+          PUBLISHER_RIGHTS_AUTHORIZED: ${{ steps.folder.outputs.rights_authorized }}
+          PUBLISHER_RIGHTS_STATUS: ${{ steps.folder.outputs.rights_status }}
         run: python -m publisher.cli prepare --folder-id "${{ steps.folder.outputs.value }}" --target-date "${{ inputs.target_date }}"
 
       - name: Dry-run YouTube
@@ -233,10 +279,34 @@ jobs:
       - name: Persistir manifesto
         if: always() && steps.guard.outputs.run == '1' && (steps.prepare.outcome == 'success' || (github.event_name == 'schedule' && github.event.schedule != '30 11 * * *')) && (github.event_name != 'workflow_dispatch' || (inputs.mode != 'verify-tiktok' && inputs.mode != 'verify-google' && inputs.mode != 'preflight'))
         run: |
+          python - <<'PY'
+          import json
+          from pathlib import Path
+
+          # current.json atravessa um repositório público e só precisa de copy,
+          # horários e IDs para reconciliar publicações. Não persista a
+          # transcrição integral, que pode conter conteúdo protegido ou pessoal.
+          path = Path("publisher/state/current.json")
+          if path.exists():
+              data = json.loads(path.read_text(encoding="utf-8"))
+              for clip in data.get("clips", []):
+                  if isinstance(clip, dict):
+                      clip.pop("transcript", None)
+              data["transcripts"] = "redacted"
+              path.write_text(json.dumps(data, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+          PY
           git config user.name "corte-fino-publisher[bot]"
           git config user.email "corte-fino-publisher[bot]@users.noreply.github.com"
           git add publisher/state/current.json publisher/state/report.json
           if ! git diff --cached --quiet; then
             git commit -m "chore(publisher): atualizar manifesto diário"
-            git push
+            for attempt in 1 2 3; do
+              if git pull --rebase origin main && git push; then
+                exit 0
+              fi
+              git rebase --abort 2>/dev/null || true
+              sleep $((attempt * 3))
+            done
+            echo "Não foi possível sincronizar o estado do Publisher após 3 tentativas." >&2
+            exit 1
           fi
