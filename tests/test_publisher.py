@@ -243,7 +243,11 @@ def test_tiktok_existing_processing_id_is_reconciled_without_duplicate(monkeypat
     monkeypatch.setattr(tiktok_io, "marker", lambda drive, file_id, values: markers.append(values))
     monkeypatch.setattr(tiktok_io, "_post_clip", lambda *args, **kwargs: (_ for _ in ()).throw(AssertionError("não deve criar outro post")))
 
-    result = publish_tiktok(manifest, due_only=True)
+    result = publish_tiktok(
+        manifest,
+        due_only=True,
+        now=datetime(2026, 10, 10, 10, 30, tzinfo=ZoneInfo("America/Sao_Paulo")),
+    )
     assert result == [{"index": 1, "status": "PROCESSING", "publish_id": "publish-1"}]
     assert markers == [{"cf_tiktok_status": "PROCESSING", "cf_tiktok_date": "2026-10-10"}]
 
