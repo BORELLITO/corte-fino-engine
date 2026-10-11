@@ -140,8 +140,18 @@ def fold(text: str) -> str:
     return "".join(ch for ch in text if not unicodedata.combining(ch)).lower()
 
 
+def compact_paragraphs(text: str) -> str:
+    """Normalize horizontal whitespace while preserving paragraph breaks."""
+    paragraphs = []
+    for paragraph in re.split(r"\n\s*\n", text or ""):
+        clean = re.sub(r"[ \t\r\f\v]+", " ", paragraph).strip()
+        if clean:
+            paragraphs.append(clean)
+    return "\n\n".join(paragraphs)
+
+
 def truncate(text: str, limit: int) -> str:
-    text = re.sub(r"\s+", " ", text).strip()
+    text = compact_paragraphs(text)
     if len(text) <= limit:
         return text
     cut = text[: limit - 1].rsplit(" ", 1)[0].rstrip(" ,.;:-")
@@ -149,7 +159,7 @@ def truncate(text: str, limit: int) -> str:
 
 
 def truncate_utf8(text: str, limit: int) -> str:
-    text = re.sub(r"\s+", " ", text).strip()
+    text = compact_paragraphs(text)
     if len(text.encode("utf-8")) <= limit:
         return text
     candidate = text
@@ -186,7 +196,7 @@ def format_copy_text(text: str, *, final_punctuation: bool = False) -> str:
 
 def truncate_chars(text: str, limit: int) -> str:
     """Truncate by characters, without exceeding a platform limit."""
-    text = re.sub(r"\s+", " ", text or "").strip()
+    text = compact_paragraphs(text)
     if len(text) <= limit:
         return text
     cut = text[: limit - 1].rsplit(" ", 1)[0].rstrip(" ,.;:-")
@@ -336,7 +346,7 @@ def copy_quality_issues(pack: CopyPack) -> list[str]:
     if "…" in pack.youtube_title or pack.youtube_title.upper().endswith(BAD_TITLE_ENDINGS):
         issues.append("título incompleto ou truncado")
     for text in texts:
-        if re.search(r"\s{2,}", text) or re.search(r"\s+[,.!?;:]", text):
+        if re.search(r"[ \t]{2,}", text) or re.search(r"[ \t]+[,.!?;:]", text):
             issues.append("pontuação ou espaçamento inválido")
             break
     return list(dict.fromkeys(issues))
