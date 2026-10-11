@@ -36,6 +36,9 @@ VIDEO_PRESET = os.environ.get("VIDEO_PRESET", "medium").strip() or "medium"
 if VIDEO_PRESET not in {"fast", "veryfast", "medium", "slow"}:
     VIDEO_PRESET = "medium"
 VIDEO_AUDIO_BITRATE = os.environ.get("VIDEO_AUDIO_BITRATE", "192k").strip() or "192k"
+# AAC pode ser reportado com bitrate variável abaixo do alvo nominal. O piso
+# evita reprovar falsos negativos sem abrir mão de uma trilha de boa qualidade.
+VIDEO_AUDIO_MIN_BITRATE = int(os.environ.get("VIDEO_AUDIO_MIN_BITRATE", "128000"))
 CAPTION_MIN_WORDS = 3
 CAPTION_MAX_WORDS = 8
 # Pequenas partículas finais (ex.: “né?”, “tá?”) podem durar menos que o mínimo
@@ -56,10 +59,10 @@ CAPTION_MAX_CPS = float(os.environ.get("CAPTION_MAX_CPS", "18.0"))
 # 18 cps é o alvo confortável; 24 cps é o limite duro para vídeos curtos,
 # onde a legenda ainda precisa acompanhar uma fala naturalmente acelerada.
 CAPTION_HARD_MAX_CPS = float(os.environ.get("CAPTION_HARD_MAX_CPS", "24.0"))
-# Baixa confiança do ASR bloqueia por padrão; palavras comuns podem receber
-# probabilidade baixa sem estarem erradas, mas a rodada precisa ser reavaliada
-# antes de qualquer entrega automática.
-CAPTION_LOW_CONFIDENCE_FATAL = os.environ.get("CAPTION_LOW_CONFIDENCE_FATAL", "1").strip().lower() in {"1", "true", "yes", "sim"}
+# Baixa confiança isolada do ASR vira alerta; erros conhecidos e limites de
+# leitura continuam fatais. Isso evita reprovar palavras comuns por uma
+# probabilidade baixa sem evidência de transcrição incorreta.
+CAPTION_LOW_CONFIDENCE_FATAL = os.environ.get("CAPTION_LOW_CONFIDENCE_FATAL", "0").strip().lower() in {"1", "true", "yes", "sim"}
 CAPTION_SUSPECT_TOKENS = {
     # Erros recorrentes de ASR observados em revisões anteriores. Os termos sem
     # correção segura continuam reprovando o candidato; os termos com correção
@@ -97,6 +100,7 @@ ROOT = Path(__file__).resolve().parent
 WORK = ROOT / "work"
 OUTPUT = ROOT / "output"
 SOURCE_DIR = WORK / "source"
+DOWNLOAD_DIR = WORK / "downloads"
 CLIPS_DIR = OUTPUT / "clips"
 ASSETS_DIR = ROOT / "assets"
 LOGO_PATH = ASSETS_DIR / "corte_fino_logo.png"
@@ -223,9 +227,16 @@ def run(cmd: list[str], capture: bool = False, timeout: int | None = None) -> su
 
 
 def clean() -> None:
-    for path in (WORK, OUTPUT):
-        if path.exists():
-            shutil.rmtree(path)
+    # work/source é a entrada local documentada. Apagá-la antes de ler
+    # SOURCE_FILE fazia o vídeo colocado manualmente desaparecer.
+    WORK.mkdir(parents=True, exist_ok=True)
+    if DOWNLOAD_DIR.exists():
+        shutil.rmtree(DOWNLOAD_DIR)
+    if OUTPUT.exists():
+        shutil.rmtree(OUTPUT)
+    for stale_caption in WORK.glob("vertical_*.ass"):
+        stale_caption.unlink(missing_ok=True)
+    DOWNLOAD_DIR.mkdir(parents=True, exist_ok=True)
     SOURCE_DIR.mkdir(parents=True, exist_ok=True)
     CLIPS_DIR.mkdir(parents=True, exist_ok=True)
 
@@ -255,7 +266,7 @@ def download_source(url: str) -> tuple[Path, dict[str, Any]]:
     opts = {
         "format": "bv*[height<=1080]+ba/b[height<=1080]/b",
         "merge_output_format": "mp4",
-        "outtmpl": str(SOURCE_DIR / "source.%(ext)s"),
+        "outtmpl": str(DOWNLOAD_DIR / "source.%(ext)s"),
         "noplaylist": True,
         "quiet": False,
         "restrictfilenames": True,
@@ -272,7 +283,7 @@ def download_source(url: str) -> tuple[Path, dict[str, Any]]:
     with YoutubeDL(opts) as ydl:
         info = ydl.extract_info(url, download=True)
         prepared = Path(ydl.prepare_filename(info))
-        candidates = (prepared, prepared.with_suffix(".mp4"), *SOURCE_DIR.glob("*.mp4"))
+        candidates = (prepared, prepared.with_suffix(".mp4"), *DOWNLOAD_DIR.glob("*.mp4"))
         source = next((item for item in candidates if item.exists()), None)
         if source is None:
             raise FileNotFoundError("O download terminou sem produzir um MP4.")
@@ -290,8 +301,24 @@ def obtain_source(source_url: str | None) -> tuple[Path, dict[str, Any]]:
             "channel": os.environ.get("SOURCE_CHANNEL", "Fonte autorizada no Google Drive"),
             "webpage_url": source_url or "",
         }
+    if not local_value:
+        local_sources = sorted(
+            (path for path in SOURCE_DIR.iterdir() if path.is_file() and path.suffix.casefold() == ".mp4"),
+            key=lambda path: path.stat().st_mtime,
+            reverse=True,
+        ) if SOURCE_DIR.is_dir() else []
+        if local_sources:
+            source = local_sources[0]
+            return source, {
+                "title": os.environ.get("SOURCE_TITLE", source.stem),
+                "channel": os.environ.get("SOURCE_CHANNEL", "Entrada local"),
+                "webpage_url": "",
+            }
     if not source_url:
-        raise RuntimeError("Nenhuma fonte autorizada encontrada.")
+        raise RuntimeError(
+            "Nenhuma fonte autorizada encontrada. Coloque um MP4 em work/source "
+            "ou informe SOURCE_FILE/SOURCE_URL."
+        )
     return download_source(source_url)
 
 
@@ -735,6 +762,29 @@ def correct_caption_word(value: str) -> str:
     return f"{prefix}{replacement}{suffix}"
 
 
+def capitalize_caption_sentence_starts(words: list[dict[str, Any]]) -> None:
+    """Capitaliza apenas o início visual de frases, sem reescrever a fala."""
+    capitalize_next = True
+    for item in words:
+        original = str(item.get("word", ""))
+        text = original
+        if not text:
+            continue
+        if capitalize_next:
+            chars = list(text)
+            for index, char in enumerate(chars):
+                if char.isalpha():
+                    chars[index] = char.upper()
+                    text = "".join(chars)
+                    item["word"] = text
+                    if text.casefold() == original.casefold() and text != original:
+                        item["case_only_adjustment"] = True
+                    break
+            capitalize_next = False
+        if re.search(r"[.!?…]$", text):
+            capitalize_next = True
+
+
 def _caption_context_tokens() -> set[str]:
     """Retorna palavras conhecidas pelo contexto da fonte, sem reescrever a fala."""
     allowed = set(CAPTION_ALLOWED_TOKENS)
@@ -1030,6 +1080,8 @@ def caption_chunks(segments: list[Segment], candidate: Candidate) -> list[list[d
                     "probability": word.get("probability"),
                 })
 
+    capitalize_caption_sentence_starts(words)
+
     chunks: list[list[dict[str, Any]]] = []
     current: list[dict[str, Any]] = []
     for word in words:
@@ -1123,7 +1175,7 @@ def validate_captions(segments: list[Segment], candidate: Candidate, margin_v: i
         for item in chunk:
             original = str(item.get("source_word", item.get("word", ""))).strip()
             corrected = str(item.get("word", "")).strip()
-            if original and corrected and original != corrected:
+            if original and corrected and original != corrected and not item.get("case_only_adjustment"):
                 correction = {"block": index, "from": original, "to": corrected}
                 if correction not in corrections:
                     corrections.append(correction)
@@ -1276,14 +1328,14 @@ def build_filter_complex(caption_path: str, logo_path: str | None = None) -> str
         "[0:v]split=2[bg][fg];"
         "[bg]scale=1080:1920:force_original_aspect_ratio=increase:flags=lanczos,crop=1080:1920,gblur=sigma=22[bg];"
         "[fg]scale=1080:1920:force_original_aspect_ratio=decrease:flags=lanczos[fg];"
-        f"[bg][fg]overlay=(W-w)/2:(H-h)/2,subtitles='{caption_path}':original_size=1080x1920[captioned];"
+        f"[bg][fg]overlay=(W-w)/2:(H-h)/2,subtitles='{caption_path}':original_size=1080x1920,setsar=1[captioned];"
         f"movie='{logo_path}',format=rgba,scale={LOGO_WIDTH}:-1:flags=lanczos,loop=loop=-1:size=1:start=0[logo];"
-        f"[captioned][logo]overlay=W-w-{LOGO_MARGIN_RIGHT}:{LOGO_MARGIN_TOP}:eof_action=repeat:shortest=0:format=auto[v]"
+        f"[captioned][logo]overlay=W-w-{LOGO_MARGIN_RIGHT}:{LOGO_MARGIN_TOP}:eof_action=repeat:shortest=0:format=auto,setsar=1[v]"
     )
 
 
 def render_clip(source: Path, captions: Path, candidate: Candidate, output: Path) -> None:
-    caption_path = str(captions).replace(":", "\\:")
+    caption_path = ffmpeg_path(captions)
     if not LOGO_PATH.is_file():
         raise FileNotFoundError(f"Logo oficial não encontrada: {LOGO_PATH}")
     filter_complex = build_filter_complex(caption_path, str(LOGO_PATH))
@@ -1291,7 +1343,7 @@ def render_clip(source: Path, captions: Path, candidate: Candidate, output: Path
         "ffmpeg", "-y", "-ss", f"{candidate.start:.3f}", "-i", str(source), "-t", f"{candidate.duration:.3f}",
         "-filter_complex", filter_complex, "-map", "[v]", "-map", "0:a:0?", "-c:v", "libx264", "-preset", VIDEO_PRESET,
         "-crf", str(VIDEO_CRF), "-profile:v", "high", "-level:v", "4.2", "-pix_fmt", "yuv420p", "-r", "30",
-        "-c:a", "aac", "-b:a", VIDEO_AUDIO_BITRATE, "-ar", "48000",
+        "-c:a", "aac", "-b:a", VIDEO_AUDIO_BITRATE, "-ac", "2", "-ar", "48000",
         "-movflags", "+faststart", "-shortest", "-avoid_negative_ts", "make_zero", str(output),
     ])
 
@@ -1366,7 +1418,8 @@ def validate_video(path: Path, expected_duration: float) -> dict[str, Any]:
         "frame_rate_30": abs(frame_rate - 30.0) < 0.1,
         "audio_aac": bool(audio and audio.get("codec_name") == "aac"),
         "audio_sample_rate_48k": bool(audio and str(audio.get("sample_rate") or "") == "48000"),
-        "audio_quality_target": audio_bitrate >= 160000,
+        "sample_aspect_ratio_1_1": bool(video and str(video.get("sample_aspect_ratio") or "") in {"1:1", "1/1"}),
+        "audio_quality_target": audio_bitrate >= VIDEO_AUDIO_MIN_BITRATE,
         "audio_not_silent": mean_volume is not None and mean_volume > -50.0,
         "audio_not_clipped": max_volume is not None and max_volume < 0.0,
         "duration_reasonable": (
@@ -1394,6 +1447,7 @@ def validate_video(path: Path, expected_duration: float) -> dict[str, Any]:
             "preset": VIDEO_PRESET,
             "scale": "lanczos",
             "audio_bitrate": VIDEO_AUDIO_BITRATE,
+            "audio_min_bitrate": VIDEO_AUDIO_MIN_BITRATE,
         },
         "checks": checks,
         "passed": all(checks.values()),
@@ -1568,7 +1622,7 @@ def write_reports(
                 "minimum_word_probability": CAPTION_MIN_WORD_PROBABILITY,
                 "recommended_characters_per_second": CAPTION_MAX_CPS,
                 "hard_max_characters_per_second": CAPTION_HARD_MAX_CPS,
-                "manual_correction_policy": "aplica somente correções ASR explicitamente catalogadas; demais riscos reprovam para revisão",
+            "manual_correction_policy": "aplica somente correções ASR explicitamente catalogadas; tokens suspeitos reprovam e baixa confiança isolada gera alerta para revisão",
             },
             "framing": "quadro completo com fundo desfocado e cores originais preservadas para proteger rostos e cenário",
             "branding": "HUD CORTE / FINO no canto superior direito; cores da fonte preservadas; sem vinheta e sem música adicionada",

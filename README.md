@@ -9,6 +9,7 @@ Motor de produção para preparar exatamente cinco cortes verticais por rodada a
 - **Motor 2 — Corte Fino Publisher:** usa esse lote, valida os cinco arquivos, cria as copies, agenda o YouTube e publica o TikTok em janelas separadas, com anti-duplicidade.
 - O link da pasta pode ser informado manualmente no Publisher, mas não é obrigatório quando o lote foi registrado pelo Motor 1.
 - O TikTok Sandbox possui um modo de teste real controlado; a Produção permanece bloqueada até a autorização e aprovação necessárias.
+- O workflow de troca de token do Sandbox só entrega refresh token em repositório privado; em repositório público, configure o secret manualmente.
 
 
 ## Contrato de entrega
@@ -51,6 +52,8 @@ O alvo confortável de leitura é 18 caracteres por segundo; até 24 caracteres 
 2. Coloque um vídeo autorizado na pasta de entrada ou informe `source_url` no Run workflow.
 3. Execute o workflow `Corte Fino Diário`.
 4. Revise a pasta da rodada e confirme autorização/licença antes de publicar.
+
+Em uma execução local, coloque o MP4 em `work/source/`; o motor usa automaticamente o arquivo mais recentemente alterado, sem apagar a entrada antes do processamento.
 
 A responsabilidade por autorização, licenças e publicação permanece com o usuário. A seleção editorial usa heurísticas e não promete viralização.
 
