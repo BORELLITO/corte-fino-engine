@@ -14,6 +14,7 @@ from main import (
     rights_info,
     build_filter_complex,
     VIDEO_AUDIO_BITRATE,
+    VIDEO_AUDIO_MIN_BITRATE,
     VIDEO_CRF,
     VIDEO_PRESET,
     LOGO_PATH,
@@ -82,6 +83,24 @@ def test_source_profile_adapts_to_video_context():
     assert profile["lenses"]
 
 
+def test_local_input_folder_uses_the_most_recent_mp4(monkeypatch, tmp_path):
+    import os
+    import main as engine
+
+    old_source = tmp_path / "old.mp4"
+    new_source = tmp_path / "new.mp4"
+    old_source.write_bytes(b"old")
+    new_source.write_bytes(b"new")
+    os.utime(old_source, (100, 100))
+    os.utime(new_source, (200, 200))
+    monkeypatch.setattr(engine, "SOURCE_DIR", tmp_path)
+    monkeypatch.delenv("SOURCE_FILE", raising=False)
+    monkeypatch.delenv("SOURCE_URL", raising=False)
+    source, info = engine.obtain_source(None)
+    assert source == new_source
+    assert info["channel"] == "Entrada local"
+
+
 def test_top_five_is_closed():
     from main import MAX_CLIPS, REQUIRE_EXACT_TOP_FIVE
     assert REQUIRE_EXACT_TOP_FIVE is True
@@ -146,6 +165,7 @@ def test_output_encoding_profile_is_youtube_ready():
     assert VIDEO_CRF == 18
     assert VIDEO_PRESET == "medium"
     assert VIDEO_AUDIO_BITRATE == "192k"
+    assert VIDEO_AUDIO_MIN_BITRATE == 128000
 
 
 def test_source_colors_are_preserved_and_hud_keeps_brand_palette():
@@ -153,6 +173,7 @@ def test_source_colors_are_preserved_and_hud_keeps_brand_palette():
     assert "saturation=0.22" not in filter_complex
     assert "saturation=0.80" not in filter_complex
     assert "gblur=sigma=22" in filter_complex
+    assert "setsar=1" in filter_complex
     assert "flags=lanczos" in filter_complex
     assert "movie='" in filter_complex
     assert "corte_fino_logo.png" in filter_complex
@@ -188,4 +209,22 @@ def test_caption_chunks_never_duplicate_words_when_splitting():
     candidate = Candidate(start=0.0, end=2.0, text=text, score=90)
     chunks = caption_chunks([segment], candidate)
     flattened = [item["word"] for chunk in chunks for item in chunk]
-    assert flattened == [item["word"] for item in words]
+    assert flattened == ["Esta", "é", "uma", "legenda", "de", "teste", "para", "validar", "a", "logo", "oficial"]
+
+
+def test_caption_sentence_after_punctuation_is_capitalized():
+    segment = Segment(
+        start=0.0,
+        end=2.0,
+        text="primeira frase. segunda frase.",
+        words=[
+            {"start": 0.0, "end": 0.8, "word": "primeira"},
+            {"start": 0.8, "end": 1.0, "word": "frase."},
+            {"start": 1.1, "end": 1.7, "word": "segunda"},
+            {"start": 1.7, "end": 2.0, "word": "frase."},
+        ],
+    )
+    chunks = caption_chunks([segment], Candidate(0.0, 2.0, segment.text, 90))
+    assert [item["word"] for chunk in chunks for item in chunk] == [
+        "Primeira", "frase.", "Segunda", "frase."
+    ]
