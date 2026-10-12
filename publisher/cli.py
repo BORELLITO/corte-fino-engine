@@ -70,7 +70,7 @@ def main() -> int:
     parser.add_argument("--folder-id", default=os.environ.get("PUBLISHER_DRIVE_FOLDER_ID", FOLDER_ID))
     parser.add_argument("--manifest", default="publisher/state/current.json")
     parser.add_argument("--dry-run", action="store_true")
-    parser.add_argument("--due-only", action="store_true", help="publica no máximo um TikTok já vencido no horário local")
+    parser.add_argument("--due-only", action="store_true", help="modo legado: publica no máximo um TikTok já vencido no horário local")
     parser.add_argument("--allow-immediate", action="store_true", help="confirma publicação imediata de todos os TikToks")
     parser.add_argument("--target-date", default="", help="data ISO do manifesto; útil para recuperação manual (AAAA-MM-DD)")
     parser.add_argument("--confirm-rights", action="store_true", help="confirma que a fonte está autorizada para publicação")
