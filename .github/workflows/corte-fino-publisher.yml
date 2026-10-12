@@ -1,4 +1,275 @@
-name: Corte Fino Publisher
+name: Corte Fino Motor 2 — Publicar 5 Cortes
+
+on:
+  workflow_dispatch:
+    inputs:
+      mode:
+        description: "prepare, dry-run, preflight, verify-google, verify-tiktok, youtube, tiktok, tiktok-now ou all"
+        required: true
+        default: "dry-run"
+        type: choice
+        options: [dry-run, prepare, preflight, verify-google, verify-tiktok, youtube, tiktok, tiktok-now, all]
+      target_date:
+        description: "data ISO opcional para recovery manual (AAAA-MM-DD)"
+        required: false
+        default: ""
+        type: string
+      drive_folder:
+        description: "URL ou ID exato da pasta do lote com os 5 MP4"
+        required: true
+        default: ""
+        type: string
+      rights_confirmed:
+        description: "Confirme true somente após revisar a autorização da fonte"
+        required: false
+        default: false
+        type: boolean
+
+      tiktok_env:
+        description: "Credenciais TikTok usadas nesta execução manual"
+        required: true
+        default: "production"
+        type: choice
+        options: [production, sandbox]
+permissions:
+  contents: write
+
+concurrency:
+  # O Publisher persiste manifesto e relatório no git; serialize somente suas
+  # próprias execuções para impedir dois lotes publicando ao mesmo tempo.
+  group: corte-fino-motor-2
+  cancel-in-progress: false
+
+jobs:
+  publisher:
+    runs-on: ubuntu-22.04
+    timeout-minutes: 90
+    env:
+      PYTHONUNBUFFERED: "1"
+      PUBLISHER_WHISPER_MODEL: small
+      PUBLISHER_GOOGLE_CLIENT_ID: ${{ secrets.PUBLISHER_GOOGLE_CLIENT_ID }}
+      PUBLISHER_GOOGLE_CLIENT_SECRET: ${{ secrets.PUBLISHER_GOOGLE_CLIENT_SECRET }}
+      PUBLISHER_GOOGLE_REFRESH_TOKEN: ${{ secrets.PUBLISHER_GOOGLE_REFRESH_TOKEN }}
+      PUBLISHER_YOUTUBE_REFRESH_TOKEN: ${{ secrets.PUBLISHER_YOUTUBE_REFRESH_TOKEN }}
+      PUBLISHER_TIKTOK_CLIENT_KEY: ${{ secrets.PUBLISHER_TIKTOK_CLIENT_KEY }}
+      PUBLISHER_TIKTOK_CLIENT_SECRET: ${{ secrets.PUBLISHER_TIKTOK_CLIENT_SECRET }}
+      PUBLISHER_TIKTOK_REFRESH_TOKEN: ${{ secrets.PUBLISHER_TIKTOK_REFRESH_TOKEN }}
+      PUBLISHER_TIKTOK_SANDBOX_CLIENT_KEY: ${{ secrets.TIKTOK_SANDBOX_CLIENT_KEY }}
+      PUBLISHER_TIKTOK_SANDBOX_CLIENT_SECRET: ${{ secrets.TIKTOK_SANDBOX_CLIENT_SECRET }}
+      PUBLISHER_TIKTOK_SANDBOX_REFRESH_TOKEN: ${{ secrets.TIKTOK_SANDBOX_REFRESH_TOKEN }}
+      PUBLISHER_TIKTOK_ENV: ${{ inputs.tiktok_env || 'production' }}
+      PUBLISHER_TIKTOK_EXPECTED_USERNAME: ${{ inputs.tiktok_env == 'sandbox' && 'absurdodocumentado' || secrets.PUBLISHER_TIKTOK_EXPECTED_USERNAME }}
+      PUBLISHER_TIKTOK_PRIVACY_LEVEL: PUBLIC_TO_EVERYONE
+      PUBLISHER_RIGHTS_AUTHORIZED: ${{ secrets.PUBLISHER_RIGHTS_AUTHORIZED }}
+      PUBLISHER_RIGHTS_STATUS: ${{ secrets.PUBLISHER_RIGHTS_STATUS }}
+
+    steps:
+      - name: Confirmar execução manual
+        id: guard
+        run: |
+          if [ "${{ github.event_name }}" != "workflow_dispatch" ]; then
+            echo "O Publisher só aceita acionamento manual com o link exato da pasta." >&2
+            exit 1
+          fi
+          echo "run=1" >> "$GITHUB_OUTPUT"
+
+      - name: Checkout
+        if: steps.guard.outputs.run == '1'
+        uses: actions/checkout@v7
+
+      - name: Python
+        if: steps.guard.outputs.run == '1'
+        uses: actions/setup-python@v7
+        with:
+          python-version: "3.11"
+          cache: pip
+
+      - name: Ferramentas de vídeo
+        if: steps.guard.outputs.run == '1'
+        run: sudo apt-get update && sudo apt-get install -y ffmpeg fonts-dejavu-core
+
+      - name: Dependências
+        if: steps.guard.outputs.run == '1'
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install -r requirements.txt
+
+      - name: Resolver pasta do Drive
+        id: folder
+        if: steps.guard.outputs.run == '1'
+        env:
+          DEFAULT_RIGHTS: ${{ env.PUBLISHER_RIGHTS_AUTHORIZED }}
+          DEFAULT_RIGHTS_STATUS: ${{ env.PUBLISHER_RIGHTS_STATUS }}
+          REQUESTED_FOLDER: ${{ inputs.drive_folder }}
+          REQUESTED_RIGHTS: ${{ inputs.rights_confirmed }}
+        run: |
+          folder="${REQUESTED_FOLDER:-}"
+          rights="${DEFAULT_RIGHTS:-0}"
+          rights_status="${DEFAULT_RIGHTS_STATUS:-revisão manual necessária}"
+          if [ "$REQUESTED_RIGHTS" = "true" ]; then
+            rights="1"
+            rights_status="AUTORIZADO — confirmação manual do proprietário/licenciante"
+          elif [ "$rights" = "1" ] && { [ -z "${rights_status// }" ] || [ "$rights_status" = "revisão manual necessária" ]; }; then
+            rights_status="AUTORIZADO — configuração persistente do Publisher"
+          fi
+          if [ -z "$folder" ]; then
+            echo "O link ou ID exato da pasta do lote é obrigatório." >&2
+            exit 1
+          fi
+          echo "value=$folder" >> "$GITHUB_OUTPUT"
+          echo "rights_authorized=$rights" >> "$GITHUB_OUTPUT"
+          echo "rights_status=$rights_status" >> "$GITHUB_OUTPUT"
+
+      - name: Cache Whisper
+        if: steps.guard.outputs.run == '1'
+        uses: actions/cache@v6
+        with:
+          path: ~/.cache/huggingface
+          key: publisher-whisper-${{ runner.os }}-${{ env.PUBLISHER_WHISPER_MODEL }}
+          restore-keys: publisher-whisper-${{ runner.os }}-
+
+      - name: Testes
+        if: steps.guard.outputs.run == '1'
+        run: python -m pytest -q tests/test_publisher.py tests/test_quality_guards.py
+
+      - name: Verificar manifesto persistido
+        id: state
+        if: steps.guard.outputs.run == '1'
+        run: |
+          needs_prepare=1
+          if [ -f publisher/state/current.json ]; then
+            version="$(python - <<'PY'
+          import json
+          from pathlib import Path
+          try:
+              print(json.loads(Path('publisher/state/current.json').read_text(encoding='utf-8')).get('version', 0))
+          except Exception:
+              print(0)
+          PY
+            )"
+            if [ "$version" -ge 4 ] 2>/dev/null && python - <<'PY'
+          import json
+          from pathlib import Path
+          from publisher.core import validate_manifest
+
+          try:
+              validate_manifest(json.loads(Path('publisher/state/current.json').read_text(encoding='utf-8')))
+          except Exception:
+              raise SystemExit(1)
+          PY
+            then
+              needs_prepare=0
+            fi
+          fi
+          if [ "${{ inputs.mode }}" = "verify-tiktok" ] || [ "${{ inputs.mode }}" = "verify-google" ] || [ "${{ inputs.mode }}" = "preflight" ]; then
+            needs_prepare=0
+          fi
+          echo "needs_prepare=$needs_prepare" >> "$GITHUB_OUTPUT"
+
+      - name: Preparar
+        id: prepare
+        if: steps.guard.outputs.run == '1' && steps.state.outputs.needs_prepare == '1' && inputs.mode != 'verify-tiktok' && inputs.mode != 'verify-google' && inputs.mode != 'preflight'
+        env:
+          PUBLISHER_RIGHTS_AUTHORIZED: ${{ steps.folder.outputs.rights_authorized }}
+          PUBLISHER_RIGHTS_STATUS: ${{ steps.folder.outputs.rights_status }}
+        run: python -m publisher.cli prepare --folder-id "${{ steps.folder.outputs.value }}" --target-date "${{ inputs.target_date }}"
+
+      - name: Dry-run YouTube
+        if: steps.guard.outputs.run == '1' && inputs.mode == 'dry-run'
+        run: python -m publisher.cli youtube --dry-run
+
+      - name: Dry-run TikTok
+        if: steps.guard.outputs.run == '1' && inputs.mode == 'dry-run'
+        run: python -m publisher.cli tiktok --dry-run
+
+      - name: Verificar conta TikTok
+        if: steps.guard.outputs.run == '1' && inputs.mode == 'verify-tiktok'
+        run: python -m publisher.cli verify-tiktok
+
+      - name: Verificar Google
+        if: steps.guard.outputs.run == '1' && inputs.mode == 'verify-google'
+        run: python -m publisher.cli verify-google --folder-id "${{ steps.folder.outputs.value }}"
+
+      - name: Preflight de produção
+        if: steps.guard.outputs.run == '1' && inputs.mode == 'preflight'
+        run: python -m publisher.cli preflight --folder-id "${{ steps.folder.outputs.value }}"
+
+      - name: Agendar YouTube
+        if: steps.guard.outputs.run == '1' && (inputs.mode == 'youtube' || inputs.mode == 'all')
+        run: python -m publisher.cli youtube
+
+      - name: Publicar TikTok
+        if: steps.guard.outputs.run == '1' && (inputs.mode == 'tiktok' || inputs.mode == 'all')
+        run: python -m publisher.cli tiktok --allow-immediate
+
+      - name: Bloquear publicação imediata fora do Sandbox
+        if: steps.guard.outputs.run == '1' && inputs.mode == 'tiktok-now' && inputs.tiktok_env != 'sandbox'
+        run: |
+          echo "O modo tiktok-now é exclusivo do Sandbox; use tiktok para a publicação controlada em Produção."
+          exit 1
+
+      - name: Teste de publicação TikTok no Sandbox
+        if: steps.guard.outputs.run == '1' && inputs.mode == 'tiktok-now' && inputs.tiktok_env == 'sandbox'
+        env:
+          # Apps Sandbox não auditados só podem publicar como privado.
+          PUBLISHER_TIKTOK_PRIVACY_LEVEL: SELF_ONLY
+        run: python -m publisher.cli tiktok --allow-immediate
+
+      - name: Relatório final
+        if: always() && steps.guard.outputs.run == '1' && steps.prepare.outcome == 'success' && inputs.mode != 'verify-tiktok' && inputs.mode != 'verify-google' && inputs.mode != 'preflight'
+        run: python -m publisher.cli report --remote | tee publisher/state/report.json
+
+      - name: Guard de falhas parciais
+        if: always() && steps.guard.outputs.run == '1' && (steps.prepare.outcome == 'success' || (github.event_name == 'schedule' && github.event.schedule != '30 11 * * *')) && (github.event_name != 'workflow_dispatch' || (inputs.mode != 'verify-tiktok' && inputs.mode != 'verify-google' && inputs.mode != 'preflight'))
+        run: |
+          python - <<'PY'
+          import json
+          from pathlib import Path
+
+          path = Path("publisher/state/report.json")
+          if not path.exists():
+              raise SystemExit(0)
+          report = json.loads(path.read_text(encoding="utf-8"))
+          attention = report.get("summary", {}).get("attention", 0)
+          if attention:
+              print(f"Publisher encontrou {attention} item(ns) que exigem reconciliação.")
+              raise SystemExit(1)
+          PY
+
+      - name: Persistir manifesto
+        if: always() && steps.guard.outputs.run == '1' && (steps.prepare.outcome == 'success' || (github.event_name == 'schedule' && github.event.schedule != '30 11 * * *')) && (github.event_name != 'workflow_dispatch' || (inputs.mode != 'verify-tiktok' && inputs.mode != 'verify-google' && inputs.mode != 'preflight'))
+        run: |
+          python - <<'PY'
+          import json
+          from pathlib import Path
+
+          # current.json atravessa um repositório público e só precisa de copy,
+          # horários e IDs para reconciliar publicações. Não persista a
+          # transcrição integral, que pode conter conteúdo protegido ou pessoal.
+          path = Path("publisher/state/current.json")
+          if path.exists():
+              data = json.loads(path.read_text(encoding="utf-8"))
+              for clip in data.get("clips", []):
+                  if isinstance(clip, dict):
+                      clip.pop("transcript", None)
+              data["transcripts"] = "redacted"
+              path.write_text(json.dumps(data, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+          PY
+          git config user.name "corte-fino-publisher[bot]"
+          git config user.email "corte-fino-publisher[bot]@users.noreply.github.com"
+          git add publisher/state/current.json publisher/state/report.json
+          if ! git diff --cached --quiet; then
+            git commit -m "chore(publisher): atualizar manifesto do lote"
+            for attempt in 1 2 3; do
+              if git pull --rebase origin main && git push; then
+                exit 0
+              fi
+              git rebase --abort 2>/dev/null || true
+              sleep $((attempt * 3))
+            done
+            echo "Não foi possível sincronizar o estado do Publisher após 3 tentativas." >&2
+            exit 1
+          finame: Corte Fino Publisher
 
 on:
   workflow_dispatch:
