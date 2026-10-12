@@ -19,49 +19,6 @@ def test_publisher_is_manual_only_and_requires_the_exact_drive_folder():
 def test_both_motors_require_manual_dispatch():
     generator = GENERATOR_WORKFLOW.read_text(encoding="utf-8")
     publisher = PUBLISHER_WORKFLOW.read_text(encoding="utf-8")
-from pathlib import Path
-
-
-ROOT = Path(__file__).resolve().parents[1]
-PUBLISHER_WORKFLOW = ROOT / ".github" / "workflows" / "corte-fino-publisher.yml"
-GENERATOR_WORKFLOW = ROOT / ".github" / "workflows" / "corte-fino.yml"
-
-
-def test_publisher_is_manual_only_and_requires_the_exact_drive_folder():
-    text = PUBLISHER_WORKFLOW.read_text(encoding="utf-8")
-
-    assert "  schedule:" not in text
-    assert 'drive_folder:\n        description: "URL ou ID exato da pasta do lote com os 5 MP4"\n        required: true' in text
-    assert "latest_batch.json" not in text
-    assert "github.event.schedule" not in text
-    assert "PUBLISHER_ENABLED" not in text
-
-
-def test_both_motors_require_manual_dispatch():
-    generator = GENERATOR_WORKFLOW.read_text(encoding="utf-8")
-    publisher = PUBLISHER_WORKFLOW.read_text(encoding="utf-8")
-
-    assert "workflow_dispatch:" in generator
-    assert "  schedule:" not in generator
-    assert "workflow_dispatch:" in publisher
-    assert "  schedule:" not in publisher
-    assert "group: corte-fino-motor-1" in generator
-    assert "group: corte-fino-motor-2" in publisher
-
-
-def test_publisher_manual_tiktok_mode_is_explicit():
-    text = PUBLISHER_WORKFLOW.read_text(encoding="utf-8")
-
-    assert "inputs.mode == 'tiktok' || inputs.mode == 'all'" in text
-    assert "python -m publisher.cli tiktok --allow-immediate" in text
-
-
-def test_generator_does_not_trigger_or_register_the_publisher():
-    text = GENERATOR_WORKFLOW.read_text(encoding="utf-8")
-
-    assert "latest_batch.json" not in text
-    assert "Registrar lote exato do Publisher" not in text
-    assert "DRIVE_FOLDER_ID: ${{ secrets.DRIVE_FOLDER_ID || secrets.DRIVER_FOLDER_ID || secrets.PUBLISHER_DRIVE_FOLDER_ID" in text
 
     assert "workflow_dispatch:" in generator
     assert "  schedule:" not in generator
