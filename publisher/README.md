@@ -4,18 +4,16 @@ Módulo separado do gerador de cortes. Lê os 5 MP4 prontos no Google Drive, tra
 
 ## Entrada
 
-Pasta: o lote exato informado pelo usuário ou registrado pelo gerador em
-`publisher/state/latest_batch.json`.
+Pasta: o link ou ID exato informado manualmente pelo usuário no campo
+`drive_folder` do workflow.
 
-Na ativação manual, o campo `drive_folder` aceita diretamente o link compartilhado
+O campo `drive_folder` é obrigatório e aceita diretamente o link compartilhado
 da pasta. O Publisher extrai o ID, valida a pasta e só então inicia a preparação.
 O link é uma fronteira rígida: somente os arquivos diretamente dentro da pasta
 indicada são considerados. O Publisher nunca procura subpastas, lotes anteriores,
-pastas vizinhas ou outro conteúdo. Quando a execução é agendada, o Publisher usa
-somente o último lote exato registrado pelo gerador; nunca redescobre uma pasta
-por data, nome ou proximidade.
+pastas vizinhas ou outro conteúdo.
 
-Contrato: exatamente 5 MP4 identificáveis como 01, 02, 03, 04 e 05. O Publisher não cria, recorta, reprocessa nem altera o motor que gera os cinco cortes diários.
+Contrato: exatamente 5 MP4 identificáveis como 01, 02, 03, 04 e 05. O Publisher não cria, recorta, reprocessa nem altera o Motor 1 que gera os cinco cortes.
 
 ## Copy completa
 
@@ -30,12 +28,14 @@ Contrato: exatamente 5 MP4 identificáveis como 01, 02, 03, 04 e 05. O Publisher
 - O QA bloqueia título truncado, hashtag de plataforma incorreta, espaçamento inválido, frases genéricas antigas e erros ASR não resolvidos antes de qualquer publicação.
 - A copy nunca afirma um fato que não esteja sustentado pelo transcript: evidências são trechos literais do corte; perguntas editoriais permanecem perguntas.
 
-## Horários base — America/Sao_Paulo
+## Slots editoriais — America/Sao_Paulo
 
-- YouTube Shorts: 10h, 12h, 14h, 16h e 18h.
-- TikTok: 10h, 12h, 16h, 18h e 20h.
+- YouTube Shorts: 10h, 12h, 14h, 16h e 18h (usados para agendamento pela API).
+- TikTok: 10h, 12h, 16h, 18h e 20h (mantidos como ordem editorial do manifesto).
 
-Os cortes mais fortes recebem os slots prioritários de cada rede.
+Os cortes mais fortes recebem os slots prioritários de cada rede. Esses slots não acionam
+workflow nem cron: o TikTok só é enviado quando o usuário escolhe explicitamente o modo
+manual `tiktok` ou `all`.
 
 ## YouTube
 
@@ -52,8 +52,8 @@ Secrets:
 - `PUBLISHER_GOOGLE_REFRESH_TOKEN` — refresh token do Drive usado pelo Publisher.
 - `PUBLISHER_YOUTUBE_REFRESH_TOKEN` — refresh token da conta `extremeheroesshorts@gmail.com`, com escopo `https://www.googleapis.com/auth/youtube.upload`.
 - O token do YouTube é obrigatório e não cai silenciosamente no token do Drive.
-- Os secrets `GOOGLE_*` antigos permanecem exclusivos do motor diário e não devem ser alterados.
-- `PUBLISHER_ENABLED=1` — só depois dos testes, para ligar a execução diária.
+- Os secrets `GOOGLE_*` antigos permanecem exclusivos do Motor 1 e não devem ser alterados.
+- Não existe `PUBLISHER_ENABLED`: o Publisher só roda por acionamento manual com link de pasta.
 - `PUBLISHER_RIGHTS_AUTHORIZED=1` — opcional; confirmação padrão para lotes sem confirmação específica. Não use como substituto da revisão individual da fonte.
 - `PUBLISHER_RIGHTS_STATUS` — descrição da autorização registrada no manifesto.
 
@@ -62,12 +62,13 @@ Secrets:
 Fluxo operacional oficial:
 
 1. O vídeo é colocado na pasta de entrada do gerador.
-2. O workflow **Corte Fino Diário** seleciona o vídeo, cria exatamente cinco cortes e envia os cinco MP4 para uma única pasta de lote no Drive.
-3. O gerador registra automaticamente o link e o ID dessa pasta em `publisher/state/latest_batch.json`.
-4. O workflow **Corte Fino Publisher** usa esse lote registrado automaticamente. O campo `drive_folder` só é necessário quando você quiser substituir manualmente o lote.
-5. O Publisher prepara um manifesto v4, cria as copies e publica YouTube/TikTok de forma independente, usando os mesmos cinco arquivos e marcadores anti-duplicidade no Drive.
+2. O workflow **Corte Fino Motor 1 — Gerar 5 Cortes** seleciona o vídeo, cria exatamente cinco cortes e envia os cinco MP4 para uma única pasta de lote no Drive.
+3. O Motor 1 encerra após entregar os cinco MP4; ele não aciona o Publisher.
+4. Você copia o link exato da pasta com os cinco MP4.
+5. O workflow **Corte Fino Motor 2 — Publicar 5 Cortes** é iniciado manualmente com esse link obrigatório.
+6. O Publisher prepara um manifesto v4, cria as copies e executa YouTube/TikTok conforme o modo escolhido, usando os mesmos cinco arquivos e marcadores anti-duplicidade no Drive.
 
-O Publisher gera automaticamente ordem, horário, legenda e hashtags para cinco vídeos. Como o Direct Post do TikTok envia o vídeo imediatamente, o workflow roda nas cinco janelas locais (10h, 12h, 16h, 18h e 20h) e publica no máximo um corte por janela. Cada arquivo é marcado no Drive para impedir duplicidade.
+O Publisher gera automaticamente ordem editorial, legenda e hashtags para cinco vídeos. O workflow não possui agendamento próprio nem descobre lotes automaticamente: cada execução é iniciada manualmente com o link da pasta. O modo `youtube` agenda os cinco Shorts pela API; o modo `tiktok` publica os cinco TikToks imediatamente após a escolha explícita desse modo. Cada arquivo é marcado no Drive para impedir duplicidade.
 
 Secrets exclusivos do Publisher:
 
@@ -77,8 +78,8 @@ Secrets exclusivos do Publisher:
 - `PUBLISHER_TIKTOK_EXPECTED_USERNAME` — opcional; @handle esperado para bloquear publicação na conta errada.
 - `PUBLISHER_TIKTOK_PRIVACY_LEVEL` — opcional; padrão `PUBLIC_TO_EVERYONE`, sempre validado contra as opções devolvidas pela conta.
 
-O modo `tiktok --dry-run` não acessa a API e valida os cinco horários e captions. `tiktok --due-only` publica somente o próximo corte vencido, evitando enviar os cinco de uma vez, mas também reconcilia `publish_id` pendente de execuções anteriores. A publicação imediata de todos os cortes fica bloqueada por padrão e exige confirmação explícita. Depois do `init`, o `publish_id` é gravado imediatamente no Drive; novas execuções consultam esse ID antes de criar outro post. Uploads de chunks têm retry e estados ainda processando não são tratados como concluídos. A produção também exige confirmação de direitos no manifesto; o Sandbox privado continua disponível para testes controlados. A publicação real exige `video.publish`, autorização da conta TikTok e aprovação/auditoria do app para sair das limitações de teste da plataforma.
-Para o teste real controlado do Sandbox pelo GitHub Actions, use `mode=tiktok-now` e `tiktok_env=sandbox`. Esse modo prepara o lote e envia os cinco vídeos imediatamente apenas para a conta Sandbox configurada; ele é bloqueado quando o ambiente escolhido é Produção. Em Produção, o modo normal continua usando `--due-only`, um vídeo por janela programada.
+O modo `tiktok --dry-run` não acessa a API e valida as cinco copies. O modo `tiktok --allow-immediate` é usado somente quando o usuário escolhe explicitamente publicar pelo workflow manual. Depois do `init`, o `publish_id` é gravado imediatamente no Drive; novas execuções consultam esse ID antes de criar outro post. Uploads de chunks têm retry e estados ainda processando não são tratados como concluídos. A produção também exige confirmação de direitos no manifesto; o Sandbox privado continua disponível para testes controlados. A publicação real exige `video.publish`, autorização da conta TikTok e aprovação/auditoria do app para sair das limitações de teste da plataforma.
+Para o teste real controlado do Sandbox pelo GitHub Actions, use `mode=tiktok-now` e `tiktok_env=sandbox`. Esse modo prepara o lote e envia os cinco vídeos imediatamente apenas para a conta Sandbox configurada; ele é bloqueado quando o ambiente escolhido é Produção. Em Produção, use o modo manual `tiktok` quando quiser enviar os cinco vídeos.
 
 
 
@@ -109,9 +110,8 @@ python -m publisher.cli report
 python -m publisher.cli youtube --dry-run
 python -m publisher.cli youtube
 python -m publisher.cli tiktok --dry-run
-python -m publisher.cli tiktok --due-only
-python -m publisher.cli tiktok
-python -m publisher.cli tiktok --allow-immediate  # somente se o envio imediato for intencional
+python -m publisher.cli tiktok --allow-immediate  # envio imediato explícito
+python -m publisher.cli tiktok --due-only         # modo legado, no máximo um vencido
 python -m publisher.cli verify-tiktok
 python -m publisher.cli verify-google
 python -m publisher.cli preflight
@@ -132,7 +132,7 @@ python -m publisher.cli prepare --target-date 2026-10-07
 - intenção pendente e reconciliação do upload do YouTube;
 - estados TikTok pendente, processando, concluído e falho persistidos no Drive;
 - preflight read-only separado para Google e TikTok;
-- publicação automática desativada até `PUBLISHER_ENABLED=1`;
+- Publisher independente, sem cron e sem descoberta automática de lote;
 - manifesto v4 com `run_id`, fonte imutável, direitos confirmados, versão da HUD e lote exato do Drive;
 - estado persistido no Git sem a transcrição integral dos cortes;
 - reconciliação de TikTok pendente mesmo depois da virada do dia;
