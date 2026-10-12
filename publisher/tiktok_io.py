@@ -246,7 +246,7 @@ def publish_tiktok(
 ) -> list[dict]:
     if not dry_run and not due_only and not allow_immediate and env("PUBLISHER_ALLOW_IMMEDIATE_TIKTOK") != "1":
         raise TikTokError(
-            "Publicação imediata dos cinco TikToks está bloqueada. Use --due-only ou confirme explicitamente a execução imediata."
+            "Publicação imediata dos cinco TikToks está bloqueada. Confirme explicitamente a execução imediata."
         )
     day = date.fromisoformat(manifest["date"])
     all_clips = sorted(manifest["clips"], key=lambda item: item["index"])
