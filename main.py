@@ -22,9 +22,18 @@ MIN_EDITORIAL_SCORE = float(os.environ.get("MIN_EDITORIAL_SCORE", "78"))
 USE_EDITORIAL_SCORE_GATE = os.environ.get("USE_EDITORIAL_SCORE_GATE", "0").strip().lower() in {"1", "true", "yes", "sim"}
 REQUIRE_EXACT_TOP_FIVE = os.environ.get("REQUIRE_EXACT_TOP_FIVE", "1").strip().lower() in {"1", "true", "yes", "sim"}
 FORCE_TOP_FIVE = os.environ.get("FORCE_TOP_FIVE", "0").strip().lower() in {"1", "true", "yes", "sim"}
-MIN_CLIP_SECONDS = int(os.environ.get("MIN_CLIP_SECONDS", "45"))
-MAX_CLIP_SECONDS = int(os.environ.get("MAX_CLIP_SECONDS", "90"))
-TARGET_CLIP_SECONDS = int(os.environ.get("TARGET_CLIP_SECONDS", "68"))
+# A regra pública do Creator é exclusiva: cada corte precisa ter mais de 60 segundos.
+# O limite fica protegido contra overrides menores para evitar arquivos inválidos.
+CLIP_DURATION_FLOOR_SECONDS = 60.0
+MIN_CLIP_SECONDS = max(61, int(os.environ.get("MIN_CLIP_SECONDS", "61")))
+MAX_CLIP_SECONDS = max(
+    MIN_CLIP_SECONDS,
+    int(os.environ.get("MAX_CLIP_SECONDS", "90")),
+)
+TARGET_CLIP_SECONDS = max(
+    MIN_CLIP_SECONDS,
+    min(MAX_CLIP_SECONDS, int(os.environ.get("TARGET_CLIP_SECONDS", "68"))),
+)
 WHISPER_MODEL = os.environ.get("WHISPER_MODEL", "small").strip() or "small"
 MAX_SOURCE_DURATION_SECONDS = int(os.environ.get("MAX_SOURCE_DURATION_SECONDS", "10800"))
 TRANSCRIBE_BEAM_SIZE = max(1, int(os.environ.get("TRANSCRIBE_BEAM_SIZE", "3")))
@@ -623,7 +632,7 @@ def build_candidates(
             duration = segments[end_index].end - start
             if duration > MAX_CLIP_SECONDS:
                 break
-            if duration >= MIN_CLIP_SECONDS and (re.search(r"[.!?…]$", segments[end_index - 1].text) or duration >= TARGET_CLIP_SECONDS):
+            if clip_duration_is_valid(duration) and (re.search(r"[.!?…]$", segments[end_index - 1].text) or duration >= TARGET_CLIP_SECONDS):
                 eligible.append((end_index, duration))
         if not eligible:
             continue
@@ -664,16 +673,43 @@ def overlaps(left: Candidate, right: Candidate) -> bool:
     return intersection > 0.30 * min(left.duration, right.duration)
 
 
+def clip_duration_is_valid(
+    duration: float,
+    expected_duration: float | None = None,
+) -> bool:
+    """Aplica a regra de duração tanto ao candidato quanto ao MP4 final."""
+    try:
+        actual = float(duration)
+    except (TypeError, ValueError):
+        return False
+    if actual <= CLIP_DURATION_FLOOR_SECONDS:
+        return False
+    upper_bound = MAX_CLIP_SECONDS + (2.0 if expected_duration is not None else 0.0)
+    if actual > upper_bound:
+        return False
+    return expected_duration is None or abs(actual - float(expected_duration)) <= 3.0
+
+
 def select_candidates(
     segments: list[Segment],
     profile: dict[str, Any] | None = None,
 ) -> tuple[list[Candidate], list[Candidate]]:
     all_candidates = build_candidates(segments, profile)
+    eligible_candidates: list[Candidate] = []
+    for candidate in all_candidates:
+        if clip_duration_is_valid(candidate.duration):
+            eligible_candidates.append(candidate)
+        else:
+            candidate.accepted = False
+            candidate.rejection = (
+                f"duração inválida: o corte precisa ter mais de "
+                f"{CLIP_DURATION_FLOOR_SECONDS:.0f} segundos"
+            )
     force_top_five = FORCE_TOP_FIVE and MAX_CLIPS >= 5
 
     if force_top_five or not USE_EDITORIAL_SCORE_GATE:
         # A nota ranqueia; a aprovação depende dos gates objetivos e da revisão final.
-        pool = sorted(all_candidates, key=lambda item: (-item.score, item.start))
+        pool = sorted(eligible_candidates, key=lambda item: (-item.score, item.start))
         for candidate in all_candidates:
             candidate.accepted = False
             candidate.rejection = (
@@ -689,7 +725,10 @@ def select_candidates(
             else:
                 candidate.accepted = False
                 candidate.rejection = f"nota abaixo do mínimo editorial ({candidate.score:.2f} < {MIN_EDITORIAL_SCORE:.2f})"
-        pool = [candidate for candidate in all_candidates if candidate.accepted and candidate.score >= MIN_EDITORIAL_SCORE]
+        pool = [
+            candidate for candidate in eligible_candidates
+            if candidate.accepted and candidate.score >= MIN_EDITORIAL_SCORE
+        ]
 
     # O Top 5 fechado deve ser fechado entre candidatos tecnicamente
     # publicáveis. Um trecho rápido/ilegível não pode ocupar uma vaga e só ser
@@ -1537,10 +1576,7 @@ def validate_video(path: Path, expected_duration: float) -> dict[str, Any]:
         "audio_quality_target": audio_bitrate >= VIDEO_AUDIO_MIN_BITRATE,
         "audio_not_silent": mean_volume is not None and mean_volume > -50.0,
         "audio_not_clipped": max_volume is not None and max_volume < 0.0,
-        "duration_reasonable": (
-            MIN_CLIP_SECONDS - 2 <= duration <= MAX_CLIP_SECONDS + 2
-            and abs(duration - expected_duration) <= 3.0
-        ),
+        "duration_reasonable": clip_duration_is_valid(duration, expected_duration),
         "decodable": decode_ok,
     }
     return {
@@ -1730,6 +1766,12 @@ def write_reports(
         "note": "A seleção usa heurísticas editoriais e não promete viralização. A publicação é feita pelo Publisher separado, após preflight e reconciliação.",
         "editing": {
             "format": "9:16 — 1080x1920",
+            "duration_policy": {
+                "minimum_exclusive_seconds": CLIP_DURATION_FLOOR_SECONDS,
+                "configured_minimum_seconds": MIN_CLIP_SECONDS,
+                "target_seconds": TARGET_CLIP_SECONDS,
+                "maximum_seconds": MAX_CLIP_SECONDS,
+            },
             "audio": "áudio original preservado em AAC",
             "captions": "ASS dinâmico, no máximo duas linhas de até 32 caracteres, sincronização auditada por palavra, alvo de 18 cps e limite duro de 24 cps, revisão ortográfica estrita de caixa/acentos/pontuação e margem segura",
             "caption_gate": {
@@ -1773,6 +1815,10 @@ def write_reports(
             )
         ),
         f"**Cortes aprovados:** {len(enriched)}/{MAX_CLIPS}",
+        (
+            f"**Duração:** estritamente acima de {CLIP_DURATION_FLOOR_SECONDS:.0f}s | "
+            f"alvo {TARGET_CLIP_SECONDS}s | máximo {MAX_CLIP_SECONDS}s"
+        ),
         "**Regra operacional:** Top 5 fechado; nenhuma opção reserva substitui um dos cinco candidatos.",
         "",
         f"**Direitos:** {rights['status']}",
