@@ -22,7 +22,7 @@ on:
         type: string
 
 permissions:
-  contents: write
+  contents: read
 
 concurrency:
   # Uma rodada do Motor 1 não bloqueia o Motor 2; só evita duas gerações
@@ -40,6 +40,10 @@ jobs:
       WHISPER_MODEL: small
       WHISPER_MODEL_CACHE: ~/.cache/faster-whisper
       MAX_SOURCE_DURATION_SECONDS: 21600
+      # Contrato rígido do Creator: nenhum corte com 60s ou menos.
+      MIN_CLIP_SECONDS: "61"
+      MAX_CLIP_SECONDS: "90"
+      TARGET_CLIP_SECONDS: "68"
       PYTHONUNBUFFERED: "1"
       TRANSCRIBE_BEAM_SIZE: "3"
       TRANSCRIBE_CPU_THREADS: "4"
@@ -305,6 +309,14 @@ jobs:
                       len(data.get("clips", [])) != 5
                       or len(rendered_qa) != 5
                       or not all(item.get("passed") for item in rendered_qa)
+                      or not all(
+                          float(clip.get("duration") or 0) > 60.0
+                          for clip in data.get("clips", [])
+                      )
+                      or not all(
+                          float(item.get("duration") or 0) > 60.0
+                          for item in rendered_qa
+                      )
                   ):
                       print("Gate de prontidão reprovado: a rodada não tem 5 vídeos aprovados.")
                       code = 1
