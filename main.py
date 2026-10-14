@@ -54,6 +54,10 @@ CAPTION_MAX_LINE_CHARS = int(os.environ.get("CAPTION_MAX_LINE_CHARS", "32"))
 CAPTION_MIN_DURATION = float(os.environ.get("CAPTION_MIN_DURATION", "0.35"))
 CAPTION_MAX_DURATION = float(os.environ.get("CAPTION_MAX_DURATION", "4.0"))
 CAPTION_MAX_GAP = float(os.environ.get("CAPTION_MAX_GAP", "1.5"))
+# Pausas longas e pontuação terminal são as duas evidências mais seguras de
+# início de uma nova frase. A margem evita transformar cada bloco visual em
+# uma nova frase e impede que uma continuação comece em maiúscula por acidente.
+CAPTION_SENTENCE_GAP = float(os.environ.get("CAPTION_SENTENCE_GAP", "0.85"))
 CAPTION_SYNC_TOLERANCE = float(os.environ.get("CAPTION_SYNC_TOLERANCE", "0.35"))
 CAPTION_MAX_CPS = float(os.environ.get("CAPTION_MAX_CPS", "18.0"))
 # 18 cps é o alvo confortável; 24 cps é o limite duro para vídeos curtos,
@@ -87,7 +91,17 @@ CAPTION_SAFE_CORRECTIONS = {
     "danapolítica": "na política",
     "coneste": "conhece",
     "pim": "PIB",
+    # Formas sem acento que o ASR produz com frequência.
+    "nao": "não",
+    "voce": "você",
+    "tambem": "também",
+    "ja": "já",
+    "ate": "até",
+    "aviao": "avião",
+    "avioes": "aviões",
+    "facil": "fácil",
 }
+CAPTION_CORRECTION_FIXED_CASE = {"violins", "bradão", "bradio", "pim"}
 CAPTION_MIN_WORD_PROBABILITY = float(os.environ.get("CAPTION_MIN_WORD_PROBABILITY", "0.40"))
 CAPTION_SPELLING_MIN_ZIPF = float(os.environ.get("CAPTION_SPELLING_MIN_ZIPF", "2.30"))
 CAPTION_ALLOWED_TOKENS = {
@@ -96,6 +110,20 @@ CAPTION_ALLOWED_TOKENS = {
     "brasileira", "aviação", "aviao", "avião", "helicóptero",
     "helicoptero", "whatsapp", "chatgpt", "openai",
 }
+CAPTION_COMMON_WORDS = {
+    "a", "as", "à", "às", "ao", "aos", "e", "é", "de", "da", "das", "do",
+    "dos", "em", "na", "nas", "no", "nos", "um", "uma", "uns", "umas", "o",
+    "os", "que", "se", "eu", "tu", "ele", "ela", "eles", "elas", "você", "vocês",
+    "me", "te", "lhe", "isso", "isto", "aquilo", "não", "sim", "só", "já", "até",
+    "também", "aí", "ai", "mas", "porém", "porem", "porque", "porquê", "por que",
+    "como", "quando", "onde", "quem", "qual", "quais", "então", "entao", "bom",
+    "bem", "mais", "menos", "muito", "muita", "muitos", "muitas", "para", "pra",
+    "por", "com", "sem", "sobre", "entre", "foi", "era", "vai", "vou", "tem",
+    "têm", "tá", "ta", "está", "esta", "estão", "estao", "dá", "deixa", "pode",
+    "podia", "ser", "são", "sao", "fazer", "faz", "fez", "ter", "tinha", "tinham",
+    "havia", "aquela", "aquele", "aquelas", "aqueles", "agora", "ainda",
+}
+CAPTION_TERMINAL_PUNCTUATION = ".!?…"
 ROOT = Path(__file__).resolve().parent
 WORK = ROOT / "work"
 OUTPUT = ROOT / "output"
@@ -748,41 +776,124 @@ def word_token(value: str) -> str:
     return re.sub(r"[^\wÀ-ÿ]", "", value.lower())
 
 
-def correct_caption_word(value: str) -> str:
-    """Corrige apenas tokens ASR previamente validados, preservando pontuação."""
-    match = re.fullmatch(r"([^\wÀ-ÿ]*)([\wÀ-ÿ]+)([^\wÀ-ÿ]*)", value)
+def _caption_token_parts(value: str) -> tuple[str, str, str]:
+    """Separa pontuação externa do núcleo de uma palavra."""
+    match = re.fullmatch(r"([^\wÀ-ÿ]*)([\wÀ-ÿ]+(?:['’\-][\wÀ-ÿ]+)*)([^\wÀ-ÿ]*)", value.strip())
     if not match:
+        return "", value.strip(), ""
+    return match.groups()
+
+
+def _preserve_caption_case(value: str, reference: str) -> str:
+    """Aplica a correção sem destruir sigla, título ou inicial maiúscula."""
+    if not value:
         return value
-    prefix, token, suffix = match.groups()
+    if reference.isupper() and any(char.isalpha() for char in reference):
+        return value.upper()
+    if reference[:1].isupper():
+        return value[:1].upper() + value[1:]
+    return value.lower()
+
+
+def correct_caption_word(value: str) -> str:
+    """Corrige somente tokens ASR previamente validados, preservando pontuação."""
+    prefix, token, suffix = _caption_token_parts(value)
+    if not token:
+        return value
     replacement = CAPTION_SAFE_CORRECTIONS.get(word_token(token))
     if not replacement:
         return value
-    if replacement == "medo" and token[:1].isupper():
-        replacement = replacement.capitalize()
+    if word_token(token) not in CAPTION_CORRECTION_FIXED_CASE:
+        replacement = _preserve_caption_case(replacement, token)
     return f"{prefix}{replacement}{suffix}"
 
 
+def normalize_caption_word(value: str) -> str:
+    """Higieniza um token sem inventar conteúdo nem alterar sua duração."""
+    value = re.sub(r"\s+", " ", str(value).strip())
+    value = re.sub(r"\s+([,.;:!?…])", r"\1", value)
+    if not value:
+        return value
+    value = correct_caption_word(value)
+    prefix, token, suffix = _caption_token_parts(value)
+    if not token:
+        return value
+    suffix = re.sub(r"([,;:!?])\1+", r"\1", suffix)
+    suffix = re.sub(r"\.{4,}", "...", suffix)
+    return f"{prefix}{token}{suffix}"
+
+
+def _caption_word_is_common(value: str) -> bool:
+    return word_token(value) in CAPTION_COMMON_WORDS
+
+
+def _capitalize_caption_start(value: str) -> str:
+    prefix, token, suffix = _caption_token_parts(value)
+    if not token or token.isupper():
+        return value
+    first_alpha = next((index for index, char in enumerate(token) if char.isalpha()), None)
+    if first_alpha is None:
+        return value
+    token = token[:first_alpha] + token[first_alpha].upper() + token[first_alpha + 1:]
+    return f"{prefix}{token}{suffix}"
+
+
+def _lowercase_caption_continuation(value: str) -> str:
+    prefix, token, suffix = _caption_token_parts(value)
+    if not token or not _caption_word_is_common(token):
+        return value
+    if token.isupper() and len(token) <= 4:
+        return value
+    return f"{prefix}{token.lower()}{suffix}"
+
+
 def capitalize_caption_sentence_starts(words: list[dict[str, Any]]) -> None:
-    """Capitaliza apenas o início visual de frases, sem reescrever a fala."""
-    capitalize_next = True
+    """Normaliza caixa, acentos e pontuação sem reescrever a fala."""
+    sentence_start = True
+    previous_end: float | None = None
     for item in words:
         original = str(item.get("word", ""))
-        text = original
+        text = normalize_caption_word(original)
         if not text:
             continue
-        if capitalize_next:
-            chars = list(text)
-            for index, char in enumerate(chars):
-                if char.isalpha():
-                    chars[index] = char.upper()
-                    text = "".join(chars)
-                    item["word"] = text
-                    if text.casefold() == original.casefold() and text != original:
-                        item["case_only_adjustment"] = True
-                    break
-            capitalize_next = False
-        if re.search(r"[.!?…]$", text):
-            capitalize_next = True
+        gap = float(item["start"]) - previous_end if previous_end is not None else 0.0
+        if previous_end is not None and gap >= CAPTION_SENTENCE_GAP:
+            sentence_start = True
+        if sentence_start:
+            text = _capitalize_caption_start(text)
+            sentence_start = False
+        else:
+            text = _lowercase_caption_continuation(text)
+        if text != original:
+            item["word"] = text
+            item["orthography_adjustment"] = True
+        if re.search(rf"[{re.escape(CAPTION_TERMINAL_PUNCTUATION)}]$", text):
+            sentence_start = True
+        previous_end = float(item["end"])
+
+
+def caption_orthography_issues(words: list[dict[str, Any]]) -> list[str]:
+    """Detecta resíduos ortográficos que não devem chegar ao arquivo final."""
+    issues = []
+    previous_end = None
+    sentence_start = True
+    for index, item in enumerate(words, 1):
+        text = str(item.get("word", ""))
+        if not text:
+            continue
+        gap = float(item["start"]) - previous_end if previous_end is not None else 0.0
+        if previous_end is not None and gap >= CAPTION_SENTENCE_GAP:
+            sentence_start = True
+        if re.search(r"\s+[,.;:!?]", text) or re.search(r"[,;:!?]{2,}|\.{4,}", text):
+            issues.append(f"token {index} contém espaçamento/pontuação inválida")
+        _, token, _ = _caption_token_parts(text)
+        if sentence_start and token and _caption_word_is_common(token) and token[:1].islower():
+            issues.append(f"token {index} deveria iniciar com maiúscula")
+        if not sentence_start and token and _caption_word_is_common(token) and token[:1].isupper():
+            issues.append(f"token {index} inicia continuação com maiúscula")
+        sentence_start = bool(re.search(rf"[{re.escape(CAPTION_TERMINAL_PUNCTUATION)}]$", text))
+        previous_end = float(item["end"])
+    return sorted(set(issues))
 
 
 def _caption_context_tokens() -> set[str]:
@@ -1170,6 +1281,10 @@ def validate_captions(segments: list[Segment], candidate: Candidate, margin_v: i
 
     if not chunks:
         issues.append("nenhum bloco de legenda foi gerado")
+
+    flattened_words = [item for chunk in chunks for item in chunk]
+    orthography_issues = caption_orthography_issues(flattened_words)
+    issues.extend(orthography_issues)
 
     for index, chunk in enumerate(chunks, 1):
         for item in chunk:
@@ -1616,7 +1731,7 @@ def write_reports(
         "editing": {
             "format": "9:16 — 1080x1920",
             "audio": "áudio original preservado em AAC",
-            "captions": "ASS dinâmico, no máximo duas linhas de até 32 caracteres, sincronização auditada por palavra, alvo de 18 cps e limite duro de 24 cps, gate ortográfico/confiança do ASR e margem segura",
+            "captions": "ASS dinâmico, no máximo duas linhas de até 32 caracteres, sincronização auditada por palavra, alvo de 18 cps e limite duro de 24 cps, revisão ortográfica estrita de caixa/acentos/pontuação e margem segura",
             "caption_gate": {
                 "spelling_checker": "wordfreq pt quando disponível + lista de risco",
                 "minimum_word_probability": CAPTION_MIN_WORD_PROBABILITY,
