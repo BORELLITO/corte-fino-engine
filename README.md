@@ -19,6 +19,8 @@ Cada rodada aprovada entrega exatamente cinco arquivos na mesma pasta da rodada:
 
 Os vídeos são MP4 H.264/AAC em 1080x1920, com áudio original, fundo desfocado, cores originais, HUD `CORTE / FINO` no canto superior direito e legendas sincronizadas na área segura.
 
+A duração é um gate obrigatório: cada corte precisa ter estritamente mais de 60 segundos. O alvo editorial é 68 segundos e o limite máximo configurado é 90 segundos. Candidatos e arquivos finais com 60 segundos ou menos são reprovados automaticamente.
+
 Não são criados subdiretórios de plataforma, atalhos, ZIPs, relatórios, textos ou arquivos de QA dentro da pasta final. Relatórios e QA permanecem apenas como artefatos internos da execução. A publicação é feita pelo Publisher separado, usando exclusivamente o link exato do lote.
 
 ## O que ele faz
@@ -27,7 +29,7 @@ Não são criados subdiretórios de plataforma, atalhos, ZIPs, relatórios, text
 - aceita uma fonte manual pelo botão Run workflow;
 - transcreve em português com faster-whisper e timestamps por palavra;
 - analisa cada fonte individualmente para adaptar a leitura editorial;
-- pré-audita legendas e seleciona exatamente cinco candidatos publicáveis, sem substituir um candidato reprovado depois do fechamento por um sexto;
+- pré-audita duração, legendas e seleciona exatamente cinco candidatos publicáveis, sem substituir um candidato reprovado depois do fechamento por um sexto;
 - bloqueia legenda suspeita, repetição, falta de continuidade, falha de render ou vídeo inválido;
 - renderiza os cinco vídeos;
 - faz upload idempotente e verificável na mesma pasta, podendo retomar uma rodada parcial;
