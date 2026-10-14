@@ -710,7 +710,7 @@ def select_candidates(
     if force_top_five or not USE_EDITORIAL_SCORE_GATE:
         # A nota ranqueia; a aprovação depende dos gates objetivos e da revisão final.
         pool = sorted(eligible_candidates, key=lambda item: (-item.score, item.start))
-        for candidate in all_candidates:
+        for candidate in eligible_candidates:
             candidate.accepted = False
             candidate.rejection = (
                 f"ranqueado abaixo dos selecionados (nota {candidate.score:.2f})"
@@ -718,7 +718,7 @@ def select_candidates(
                 else f"não selecionado no Top 5 (nota {candidate.score:.2f})"
             )
     else:
-        for candidate in all_candidates:
+        for candidate in eligible_candidates:
             if candidate.score >= MIN_EDITORIAL_SCORE:
                 candidate.accepted = True
                 candidate.rejection = ""
