@@ -18,6 +18,12 @@ from main import (
     VIDEO_CRF,
     VIDEO_PRESET,
     LOGO_PATH,
+    CLIP_DURATION_FLOOR_SECONDS,
+    MIN_CLIP_SECONDS,
+    MAX_CLIP_SECONDS,
+    TARGET_CLIP_SECONDS,
+    clip_duration_is_valid,
+    caption_orthography_issues,
 )
 
 
@@ -106,6 +112,39 @@ def test_top_five_is_closed():
     assert REQUIRE_EXACT_TOP_FIVE is True
     assert MAX_CLIPS == 5
 
+
+def test_clip_duration_contract_is_strictly_over_sixty_seconds():
+    assert CLIP_DURATION_FLOOR_SECONDS == 60.0
+    assert MIN_CLIP_SECONDS >= 61
+    assert MIN_CLIP_SECONDS > CLIP_DURATION_FLOOR_SECONDS
+    assert MIN_CLIP_SECONDS <= TARGET_CLIP_SECONDS <= MAX_CLIP_SECONDS
+    assert clip_duration_is_valid(60.0) is False
+    assert clip_duration_is_valid(60.01) is True
+    assert clip_duration_is_valid(float(MIN_CLIP_SECONDS)) is True
+    assert clip_duration_is_valid(float(MAX_CLIP_SECONDS)) is True
+    assert clip_duration_is_valid(float(MAX_CLIP_SECONDS) + 0.01) is False
+    assert clip_duration_is_valid(60.0, 61.0) is False
+    assert clip_duration_is_valid(61.0, 61.0) is True
+
+
+def test_caption_orthography_gate_keeps_case_accents_and_spacing_clean():
+    words = [
+        {"start": 0.0, "end": 0.3, "word": "essa"},
+        {"start": 0.3, "end": 0.6, "word": "é"},
+        {"start": 0.6, "end": 0.9, "word": "uma"},
+        {"start": 0.9, "end": 1.2, "word": "você"},
+        {"start": 1.2, "end": 1.5, "word": "entendeu?"},
+        {"start": 2.5, "end": 2.8, "word": "voce"},
+        {"start": 2.8, "end": 3.1, "word": "agora."},
+    ]
+    from main import capitalize_caption_sentence_starts
+    capitalize_caption_sentence_starts(words)
+    assert [item["word"] for item in words] == [
+        "Essa", "é", "uma", "você", "entendeu?", "Você", "agora."
+    ]
+    assert caption_orthography_issues(words) == []
+
+
 def test_editorial_score_gate_keeps_candidates_above_threshold(monkeypatch):
     from main import Candidate, select_candidates
     import main as engine
@@ -120,14 +159,15 @@ def test_editorial_score_gate_keeps_candidates_above_threshold(monkeypatch):
             engine,
             "build_candidates",
             lambda *args, **kwargs: [
-                Candidate(0, 60, "fala forte sobre política", 80.0),
-                Candidate(70, 130, "fala forte sobre segurança", 70.0),
+                Candidate(0, 61, "fala forte sobre política", 80.0),
+                Candidate(70, 131, "fala forte sobre segurança", 70.0),
             ],
         )
         selected, candidates = select_candidates([], {})
         assert candidates
         assert selected
         assert all(candidate.accepted for candidate in selected)
+        assert all(candidate.duration > 60 for candidate in selected)
     finally:
         engine.USE_EDITORIAL_SCORE_GATE = previous_gate
         engine.MIN_EDITORIAL_SCORE = previous_minimum
