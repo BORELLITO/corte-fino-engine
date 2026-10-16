@@ -754,7 +754,10 @@ def _narrative_cohesion(text: str) -> float:
     return round(links / 2.0, 2)
 
 
-def _narrative_closure(text: str) -> dict[str, Any]:
+def _narrative_closure(
+    text: str,
+    min_closure_words: int = NARRATIVE_MIN_CLOSURE_WORDS,
+) -> dict[str, Any]:
     tokens = words_of(text)
     units = _narrative_units(text)
     last_unit = units[-1] if units else text.strip()
@@ -767,7 +770,7 @@ def _narrative_closure(text: str) -> dict[str, Any]:
     complete_sentence = (
         terminal_ending
         and not incomplete_ending
-        and final_sentence_words >= NARRATIVE_MIN_CLOSURE_WORDS
+        and final_sentence_words >= min_closure_words
     )
     # Uma conclusão explícita curta como “acabou” também pode fechar o raciocínio.
     if terminal_ending and resolution_hits and not incomplete_ending:
@@ -786,8 +789,9 @@ def narrative_quality(
     segments: list[Segment],
     start_index: int,
     end_index: int,
+    relaxed: bool = False,
 ) -> dict[str, Any]:
-    """Garante unidade de raciocínio: começo autônomo, desenvolvimento e fechamento real."""
+    """Garante unidade de raciocínio, com fallback controlado para fontes difíceis."""
     selected = segments[start_index:end_index]
     if not selected:
         return {
@@ -825,16 +829,21 @@ def narrative_quality(
         and len(first_sentence_tokens) >= 6
     )
 
-    enough_context = len(tokens) >= NARRATIVE_MIN_WORDS and len(first_sentence_tokens) >= 6
+    min_context_words = 30 if relaxed else NARRATIVE_MIN_WORDS
+    min_first_sentence_words = 4 if relaxed else 6
+    enough_context = len(tokens) >= min_context_words and len(first_sentence_tokens) >= min_first_sentence_words
     middle_window = " ".join(tokens[12:-12]) if len(tokens) > 24 else " ".join(tokens)
     development_hits = contains_signal(middle_window, NARRATIVE_DEVELOPMENT_MARKERS)
     enough_development = (
-        len(tokens) >= NARRATIVE_MIN_DEVELOPMENT_WORDS
-        or len(units) >= 3
+        len(tokens) >= (45 if relaxed else NARRATIVE_MIN_DEVELOPMENT_WORDS)
+        or len(units) >= (2 if relaxed else 3)
         or development_hits > 0
     )
 
-    closure = _narrative_closure(text)
+    closure = _narrative_closure(
+        text,
+        min_closure_words=3 if relaxed else NARRATIVE_MIN_CLOSURE_WORDS,
+    )
     terminal_ending = bool(closure["terminal_ending"])
     incomplete_ending = bool(closure["incomplete_ending"])
     has_conclusion = bool(closure["passed"])
@@ -891,6 +900,7 @@ def narrative_quality(
         "terminal_ending": terminal_ending,
         "dependent_opening": dependent_opening,
         "contextual_pronoun_opening": contextual_pronoun_opening,
+        "quality_mode": "relaxed_contextual_fallback" if relaxed else "strict",
         "incomplete_ending": incomplete_ending,
         "development_hits": development_hits,
         "resolution_hits": resolution_hits,
@@ -942,7 +952,8 @@ def validate_narrative(
             "components": {},
             "score_bonus": 0.0,
         }
-    return narrative_quality(segments, start_index, end_index)
+    relaxed = bool(candidate.components.get("narrative_fallback"))
+    return narrative_quality(segments, start_index, end_index, relaxed=relaxed)
 
 
 def build_candidates(
@@ -1001,6 +1012,52 @@ def build_candidates(
         key = (round(candidate.start), round(candidate.end))
         if key not in unique or candidate.score > unique[key].score:
             unique[key] = candidate
+
+    # Algumas transcrições longas têm poucas frases com pontuação terminal
+    # confiável, embora ainda contenham janelas publicáveis com contexto e
+    # progressão. Só abrimos este fallback se o modo estrito não conseguir
+    # formar o Top 5; ele continua exigindo início natural, desenvolvimento,
+    # fechamento não dependente e todos os gates técnicos.
+    if len(unique) < MAX_CLIPS:
+        for index in range(0, len(segments), step):
+            start = segments[index].start
+            for end_index in range(index + 1, min(len(segments), index + 80)):
+                duration = segments[end_index].end - start
+                if duration > MAX_CLIP_SECONDS:
+                    break
+                if not clip_duration_is_valid(duration):
+                    continue
+                key = (round(start), round(segments[end_index - 1].end))
+                if key in unique:
+                    continue
+                narrative = narrative_quality(segments, index, end_index, relaxed=True)
+                if not narrative["passed"]:
+                    continue
+                text = " ".join(item.text for item in segments[index:end_index]).strip()
+                score, components, trigger, reason, premise, rejection = score_text(text, profile)
+                components.update(narrative["components"])
+                components["narrative_fallback"] = 1.0
+                narrative_score = min(100.0, float(narrative["score_bonus"]) / 14.0 * 100.0)
+                score = round(
+                    max(0.0, min(100.0, score * 0.78 + narrative_score * 0.22 - 5.0)),
+                    2,
+                )
+                candidates.append(Candidate(
+                    start,
+                    segments[end_index - 1].end,
+                    text,
+                    score,
+                    components,
+                    trigger,
+                    f"{reason} Fallback contextual controlado: {narrative['summary']}",
+                    premise,
+                    not rejection,
+                    rejection,
+                ))
+        for candidate in candidates:
+            key = (round(candidate.start), round(candidate.end))
+            if key not in unique or candidate.score > unique[key].score:
+                unique[key] = candidate
     return sorted(unique.values(), key=lambda item: item.score, reverse=True)
 
 
