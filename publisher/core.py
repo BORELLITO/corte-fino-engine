@@ -13,11 +13,11 @@ YOUTUBE_HOURS = (10, 12, 14, 16, 18)
 TIKTOK_HOURS = (10, 12, 16, 18, 20)
 YOUTUBE_PRIORITY = (16, 14, 10, 12, 18)
 TIKTOK_PRIORITY = (18, 10, 12, 16, 20)
-MANIFEST_VERSION = 4
+MANIFEST_VERSION = 5
 BRANDING_VERSION = "hud-corte-fino-v1"
 BRANDING_FORMAT = "vertical_9x16_shared"
 BRANDING_LOGO_POSITION = "top-right"
-BRANDING_CAPTION_MARGIN_V = 390
+BRANDING_CAPTION_MARGIN_V = 430
 
 
 def as_bool(value: object) -> bool:
@@ -33,6 +33,7 @@ TIKTOK_CAPTION_LIMIT = 2200
 YOUTUBE_TITLE_LIMIT = 100
 YOUTUBE_DESCRIPTION_LIMIT = 5000
 YOUTUBE_TAGS_LIMIT = 500
+SOURCE_CREDIT_PREFIX = "🎥 Créditos:"
 
 
 STOPWORDS = set("a o as os um uma uns umas de da do das dos e em no na nos nas para pra por com sem que quem qual quando onde como porque isso isto essa esse essas esses eu voce voces ele ela eles elas me te se meu minha seu sua mais menos muito muita muitos muitas ja nao sim so tambem aqui ali la tem ter vai vou foi ser sao era esta estao ta tao entao ne tipo cara gente acho fica ficar fazer faz fez pode poder todo toda todos todas num numa ate ai bem sobre existe ainda realmente falei falo falou falando dizer disse diz aqui assim entao bom pessoal".split())
@@ -145,8 +146,10 @@ class CopyPack:
     youtube_description: str
     youtube_tags: list[str]
     evidence: list[str] = field(default_factory=list)
+    context_points: list[str] = field(default_factory=list)
+    source_credit: str = ""
     cta: str = ""
-    editorial_mode: str = "grounded_context"
+    editorial_mode: str = "grounded_context_v2"
 
 
 def fold(text: str) -> str:
@@ -299,6 +302,56 @@ def choose_hook(text: str) -> str:
     return max(valid, key=len, default="")
 
 
+def normalize_source_credit(value: str) -> str:
+    """Normalize attribution text without inventing a source."""
+    credit = re.sub(r"\s+", " ", value or "").strip(" .:-")
+    generic = {
+        "",
+        "fonte não identificada",
+        "canal não identificado",
+        "entrada local",
+        "entrada do google drive",
+        "fonte autorizada no google drive",
+    }
+    if fold(credit) in {fold(item) for item in generic}:
+        return ""
+    return credit
+
+
+def context_sentences(transcript: str, hook: str, limit: int = 2) -> list[str]:
+    """Cover the beginning and end of the real cut so topic shifts are not hidden."""
+    sentences = split_sentences(transcript)
+    if not sentences:
+        return []
+    hook_key = fold(hook)
+    indexed = [
+        (index, sentence)
+        for index, sentence in enumerate(sentences)
+        if fold(sentence) != hook_key and not LEADING_FILLER_RE.match(sentence)
+    ]
+    if not indexed:
+        return []
+
+    midpoint = max(1, len(sentences) // 2)
+    first_half = [(index, sentence) for index, sentence in indexed if index < midpoint]
+    second_half = [(index, sentence) for index, sentence in indexed if index >= midpoint]
+
+    chosen: list[tuple[int, str]] = []
+    for pool in (first_half, second_half):
+        if not pool:
+            continue
+        chosen.append(max(pool, key=lambda item: (sentence_score(item[1]), -item[0])))
+
+    if len(chosen) < limit:
+        used = {index for index, _ in chosen}
+        remainder = [item for item in indexed if item[0] not in used]
+        remainder.sort(key=lambda item: (-sentence_score(item[1]), item[0]))
+        chosen.extend(remainder[: limit - len(chosen)])
+
+    chosen = sorted(chosen[:limit], key=lambda item: item[0])
+    return [format_copy_text(sentence, final_punctuation=True) for _, sentence in chosen]
+
+
 def clean_hook(text: str) -> str:
     cleaned = re.sub(r"\s+", " ", text or "").strip('"“” ')
     previous = ""
@@ -336,6 +389,22 @@ def copy_quality_issues(pack: CopyPack) -> list[str]:
     texts = [pack.youtube_title, pack.tiktok_caption, pack.youtube_description]
     combined = fold(" ".join(texts))
     issues: list[str] = []
+    credit = normalize_source_credit(pack.source_credit)
+    credit_line = f"{SOURCE_CREDIT_PREFIX} {credit}" if credit else ""
+    if not credit:
+        issues.append("crédito da fonte ausente")
+    else:
+        for platform_text, platform in (
+            (pack.tiktok_caption, "TikTok"),
+            (pack.youtube_description, "YouTube"),
+        ):
+            if credit_line not in platform_text:
+                issues.append(f"{platform}: crédito da fonte ausente na copy")
+            else:
+                credit_position = platform_text.rfind(credit_line)
+                hashtag_position = platform_text.find("#", credit_position + len(credit_line))
+                if hashtag_position < 0 or credit_position > hashtag_position:
+                    issues.append(f"{platform}: crédito precisa aparecer antes das hashtags")
     if pack.youtube_title and pack.youtube_title != pack.youtube_title.upper():
         issues.append("título do YouTube não está totalmente em maiúsculas")
     if len(pack.youtube_title) > YOUTUBE_TITLE_LIMIT:
@@ -486,7 +555,7 @@ def sentence_case_issues(text: str) -> list[str]:
     return issues
 
 
-def make_copy(transcript: str) -> CopyPack:
+def make_copy(transcript: str, source_credit: str = "Fonte não identificada") -> CopyPack:
     transcript = normalize_transcript(transcript)
     if len(transcript.split()) < 6:
         raise ValueError("Copy reprovada: transcrição insuficiente para uma criação individual.")
@@ -497,15 +566,30 @@ def make_copy(transcript: str) -> CopyPack:
         raise ValueError("Copy reprovada: não foi encontrado um gancho completo na fala real.")
     title = build_title(hook, topic)
 
+    credit = normalize_source_credit(source_credit)
+    if not credit:
+        raise ValueError("Copy reprovada: crédito da fonte ausente ou genérico.")
+
     raw_evidence = _evidence_sentences(transcript, hook, keys)
     evidence = [format_copy_text(sentence, final_punctuation=True) for sentence in raw_evidence]
+    context_points = context_sentences(transcript, hook, limit=2)
     cta = format_copy_text(build_contextual_cta(transcript, topic, keys, hook), final_punctuation=True)
     tiktok_hashtag_text = " ".join(build_hashtags(topic, keys, "tiktok"))
     youtube_hashtag_text = " ".join(build_hashtags(topic, keys, "youtube"))
-    evidence_block = f'“{evidence[0]}”\n\n' if evidence else ""
-    tiktok = f"{title}\n\n{evidence_block}{cta}\n\n{tiktok_hashtag_text}"
+    credit_line = f"{SOURCE_CREDIT_PREFIX} {credit}"
+
+    body_blocks: list[str] = []
+    if context_points:
+        body_blocks.append(f"Neste corte: {context_points[0]}")
+        if len(context_points) > 1:
+            body_blocks.append(f"Na sequência: {context_points[1]}")
+    elif evidence:
+        body_blocks.append(f"Neste corte: {evidence[0]}")
+    body = "\n\n".join(body_blocks)
+    tiktok = f"{title}\n\n{body}\n\n{cta}\n\n{credit_line}\n\n{tiktok_hashtag_text}"
     description_hook = format_copy_text(hook, final_punctuation=True)
-    youtube_description = f"{description_hook}\n\n{evidence_block}{cta}\n\n{youtube_hashtag_text}"
+    youtube_body = body or description_hook
+    youtube_description = f"{youtube_body}\n\n{cta}\n\n{credit_line}\n\n{youtube_hashtag_text}"
     pack = CopyPack(
         topic,
         hook,
@@ -516,13 +600,15 @@ def make_copy(transcript: str) -> CopyPack:
         truncate_chars(youtube_description, YOUTUBE_DESCRIPTION_LIMIT),
         build_youtube_tags(topic, keys),
         evidence=evidence,
+        context_points=context_points,
+        source_credit=credit,
         cta=cta,
     )
     issues = copy_quality_issues(pack)
     normalized_source = fold(transcript)
-    for sentence in raw_evidence:
-        if fold(sentence) not in normalized_source:
-            issues.append("evidência editorial não encontrada na transcrição")
+    for sentence in [*raw_evidence, *context_points]:
+        if fold(sentence.rstrip(".!?…")) not in normalized_source:
+            issues.append("contexto editorial não encontrado na transcrição")
             break
     if issues:
         raise ValueError("Copy reprovada no QA: " + "; ".join(issues))
@@ -558,6 +644,8 @@ def _copy_pack_from_dict(raw: dict) -> CopyPack:
         youtube_description=str(raw.get("youtube_description", "")),
         youtube_tags=[str(item) for item in raw.get("youtube_tags", [])],
         evidence=[str(item) for item in raw.get("evidence", [])],
+        context_points=[str(item) for item in raw.get("context_points", [])],
+        source_credit=str(raw.get("source_credit", "")),
         cta=str(raw.get("cta", "")),
         editorial_mode=str(raw.get("editorial_mode", "")),
     )
@@ -585,6 +673,15 @@ def validate_manifest(
         issues.append("fuso horário ausente")
     if not str(manifest.get("drive_folder_id", "")).strip():
         issues.append("pasta do Drive ausente")
+
+    source = manifest.get("source")
+    manifest_credit = ""
+    if not isinstance(source, dict):
+        issues.append("bloco de fonte ausente")
+    else:
+        manifest_credit = normalize_source_credit(str(source.get("credit", "")))
+        if not manifest_credit:
+            issues.append("crédito da fonte ausente no manifesto")
 
     clips = manifest.get("clips")
     if not isinstance(clips, list) or len(clips) != 5:
@@ -635,6 +732,8 @@ def validate_manifest(
             continue
         for copy_issue in copy_quality_issues(pack):
             issues.append(f"{label}: {copy_issue}")
+        if manifest_credit and normalize_source_credit(pack.source_credit) != manifest_credit:
+            issues.append(f"{label}: crédito diverge do crédito da fonte do lote")
         if "\n\n" not in pack.tiktok_caption:
             issues.append(f"{label}: legenda TikTok sem separação de parágrafos")
         if "\n\n" not in pack.youtube_description:
