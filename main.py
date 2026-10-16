@@ -56,7 +56,9 @@ CAPTION_SHORT_TAIL_WORD_SLACK = 2
 CAPTION_FONT_SIZE = int(os.environ.get("CAPTION_FONT_SIZE", "48"))
 CAPTION_FONT_NAME = os.environ.get("CAPTION_FONT_NAME", "DejaVu Sans Condensed").strip() or "DejaVu Sans Condensed"
 # Mantém as legendas acima da área de interface inferior de Shorts e TikTok.
-CAPTION_MARGIN_V = int(os.environ.get("CAPTION_MARGIN_V", "390"))
+# Eleva a legenda cerca de 10% em relação à posição anterior (390 -> 430 px),
+# preservando a faixa inferior segura sem alterar fonte, linhas ou sincronização.
+CAPTION_MARGIN_V = int(os.environ.get("CAPTION_MARGIN_V", "430"))
 YOUTUBE_CAPTION_MARGIN_V = int(os.environ.get("YOUTUBE_CAPTION_MARGIN_V", str(CAPTION_MARGIN_V)))
 TIKTOK_CAPTION_MARGIN_V = CAPTION_MARGIN_V  # compatibilidade: render único para as duas plataformas
 CAPTION_MAX_LINE_CHARS = int(os.environ.get("CAPTION_MAX_LINE_CHARS", "32"))
@@ -1595,7 +1597,7 @@ def validate_captions(segments: list[Segment], candidate: Candidate, margin_v: i
         })
         previous_end = end
 
-    if not 160 <= margin_v <= 420:
+    if not 160 <= margin_v <= 470:
         issues.append(f"margem vertical fora da área segura ({margin_v}px)")
     if candidate.duration <= 0:
         issues.append("duração do corte inválida")
