@@ -188,6 +188,21 @@ NARRATIVE_INCOMPLETE_ENDINGS = {
 }
 NARRATIVE_MIN_WORDS = 45
 NARRATIVE_MIN_SENTENCES = 2
+# A unidade narrativa precisa mostrar progressão; quantidade de palavras sozinha
+# não prova que o trecho possui começo, desenvolvimento e fechamento.
+NARRATIVE_MIN_DEVELOPMENT_WORDS = 55
+NARRATIVE_MIN_CLOSURE_WORDS = 5
+NARRATIVE_RESOLUTION_WINDOW_WORDS = 45
+NARRATIVE_DEVELOPMENT_MARKERS = {
+    "porque", "mas", "porém", "porem", "só que", "so que", "depois",
+    "quando", "por exemplo", "ao mesmo tempo", "aí", "ai", "enquanto",
+    "antes", "durante", "logo depois", "por outro lado",
+}
+NARRATIVE_RESOLUTION_MARKERS = PAYOFF_WORDS | {
+    "no final", "acabou", "foi aí", "foi ai", "o ponto é", "o ponto e",
+    "a questão é", "a questão e", "significa que", "daí", "dai",
+    "a consequência", "a consequencia", "por causa disso",
+}
 
 NICHE_SIGNAL_MAP = {
     "política e poder": {
@@ -509,6 +524,65 @@ def editorial_reason(trigger: str) -> str:
     }.get(trigger, "O trecho tem premissa clara e contexto suficiente.")
 
 
+def _story_key_terms(text: str, limit: int = 8) -> list[str]:
+    counts: dict[str, int] = {}
+    for token in words_of(text):
+        if token in CAPTION_COMMON_WORDS or len(token) < 4:
+            continue
+        counts[token] = counts.get(token, 0) + 1
+    return [
+        token for token, _ in sorted(
+            counts.items(),
+            key=lambda item: (-item[1], item[0]),
+        )[:limit]
+    ]
+
+
+def build_story_map(segments: list[Segment], window_seconds: float = 45.0) -> list[dict[str, Any]]:
+    """Cria um mapa temporal simples da linha de raciocínio da fonte inteira."""
+    if not segments:
+        return []
+
+    blocks: list[dict[str, Any]] = []
+    start_index = 0
+    block_start = segments[0].start
+    for end_index in range(1, len(segments) + 1):
+        reached_window = segments[end_index - 1].end - block_start >= window_seconds
+        enough_segments = end_index - start_index >= 2
+        if end_index < len(segments) and not (reached_window and enough_segments):
+            continue
+
+        selected = segments[start_index:end_index]
+        text = " ".join(segment.text for segment in selected).strip()
+        blocks.append({
+            "index": len(blocks),
+            "start": round(selected[0].start, 2),
+            "end": round(selected[-1].end, 2),
+            "text_preview": short_hook(text, 150),
+            "key_terms": _story_key_terms(text),
+            "question_count": text.count("?") + contains_signal(text, QUESTION_WORDS),
+            "conflict_hits": contains_signal(text, CONFLICT_WORDS),
+            "resolution_hits": contains_signal(text, NARRATIVE_RESOLUTION_MARKERS),
+        })
+        start_index = end_index
+        if start_index < len(segments):
+            block_start = segments[start_index].start
+
+    for index, block in enumerate(blocks):
+        if index == 0:
+            block["topic_shift_after_previous"] = False
+            block["topic_similarity_with_previous"] = None
+            continue
+        previous_terms = set(blocks[index - 1].get("key_terms", []))
+        current_terms = set(block.get("key_terms", []))
+        union = previous_terms | current_terms
+        similarity = len(previous_terms & current_terms) / len(union) if union else 0.0
+        block["topic_similarity_with_previous"] = round(similarity, 3)
+        block["topic_shift_after_previous"] = similarity < 0.12 and bool(current_terms)
+
+    return blocks
+
+
 def analyze_source_profile(
     segments: list[Segment],
     info: dict[str, Any],
@@ -554,7 +628,8 @@ def analyze_source_profile(
         "question_density": round(questions / max(len(segments), 1), 3),
         "conflict_density": round(conflict / max(len(words), 1), 3),
         "priority_signals": sorted(profile_data["signals"]),
-        "method": "perfil inferido do título, canal e transcrição integral; revisão humana continua recomendada",
+        "story_map": build_story_map(segments),
+        "method": "perfil inferido do título, canal e transcrição integral, com mapa temporal de assuntos e unidades narrativas; revisão humana continua recomendada",
     }
 
 
@@ -641,12 +716,71 @@ def _text_ends_terminal(value: str) -> bool:
     return bool(re.search(r"[.!?…]\s*$", str(value).strip()))
 
 
+def _narrative_units(text: str) -> list[str]:
+    cleaned = re.sub(r"\s+", " ", str(text)).strip()
+    if not cleaned:
+        return []
+    parts = re.split(
+        r"(?<=[.!?…;])\s+|(?<=,)\s+(?=(?:mas|porém|porem|porque|então|entao|depois|quando|só que|so que)\b)",
+        cleaned,
+        flags=re.IGNORECASE,
+    )
+    return [part.strip() for part in parts if len(words_of(part)) >= 2]
+
+
+def _narrative_content_tokens(text: str) -> set[str]:
+    return {
+        token for token in words_of(text)
+        if token not in CAPTION_COMMON_WORDS and len(token) >= 4
+    }
+
+
+def _narrative_cohesion(text: str) -> float:
+    tokens = list(_narrative_content_tokens(text))
+    if len(tokens) < 6:
+        return 0.0
+    third = max(1, len(tokens) // 3)
+    first = set(tokens[:third])
+    middle = set(tokens[third:third * 2])
+    last = set(tokens[third * 2:])
+    links = sum(bool(left & right) for left, right in ((first, middle), (middle, last)))
+    return round(links / 2.0, 2)
+
+
+def _narrative_closure(text: str) -> dict[str, Any]:
+    tokens = words_of(text)
+    units = _narrative_units(text)
+    last_unit = units[-1] if units else text.strip()
+    last_token = tokens[-1] if tokens else ""
+    final_window = " ".join(tokens[-NARRATIVE_RESOLUTION_WINDOW_WORDS:])
+    resolution_hits = contains_signal(final_window, NARRATIVE_RESOLUTION_MARKERS)
+    terminal_ending = _text_ends_terminal(text)
+    incomplete_ending = last_token in NARRATIVE_INCOMPLETE_ENDINGS
+    final_sentence_words = len(words_of(last_unit))
+    complete_sentence = (
+        terminal_ending
+        and not incomplete_ending
+        and final_sentence_words >= NARRATIVE_MIN_CLOSURE_WORDS
+    )
+    # Uma conclusão explícita curta como “acabou” também pode fechar o raciocínio.
+    if terminal_ending and resolution_hits and not incomplete_ending:
+        complete_sentence = True
+    return {
+        "passed": complete_sentence,
+        "terminal_ending": terminal_ending,
+        "incomplete_ending": incomplete_ending,
+        "resolution_hits": resolution_hits,
+        "final_sentence_words": final_sentence_words,
+        "last_unit": last_unit,
+    }
+
+
 def narrative_quality(
     segments: list[Segment],
     start_index: int,
     end_index: int,
 ) -> dict[str, Any]:
-    """Garante começo autônomo, desenvolvimento e fechamento natural."""
+    """Garante unidade de raciocínio: começo autônomo, desenvolvimento e fechamento real."""
     selected = segments[start_index:end_index]
     if not selected:
         return {
@@ -659,47 +793,46 @@ def narrative_quality(
 
     text = " ".join(segment.text for segment in selected).strip()
     tokens = words_of(text)
+    units = _narrative_units(text)
     sentence_count = len(re.findall(r"[.!?…]", text))
     first_text = selected[0].text.strip()
     last_text = selected[-1].text.strip()
     previous = segments[start_index - 1] if start_index > 0 else None
     following = segments[end_index] if end_index < len(segments) else None
-    start_gap = (
-        selected[0].start - previous.end
-        if previous is not None
-        else 0.0
-    )
-    end_gap = (
-        following.start - selected[-1].end
-        if following is not None
-        else 0.0
-    )
+    start_gap = selected[0].start - previous.end if previous is not None else 0.0
+    end_gap = following.start - selected[-1].end if following is not None else 0.0
+
+    lower_text = text.casefold()
+    first_sentence_text = first_sentence(first_text)
+    first_sentence_tokens = words_of(first_sentence_text)
+    dependent_opening = lower_text.startswith(NARRATIVE_DEPENDENT_OPENINGS)
     natural_start = (
         previous is None
         or _text_ends_terminal(previous.text)
         or start_gap >= CAPTION_SENTENCE_GAP
     )
-    terminal_ending = _text_ends_terminal(last_text)
-    natural_end = (
-        terminal_ending
-        or following is None
-        or end_gap >= CAPTION_SENTENCE_GAP
+    autonomous_start = (
+        natural_start
+        and not dependent_opening
+        and len(first_sentence_tokens) >= 6
     )
-    lower_text = text.casefold()
-    dependent_opening = lower_text.startswith(NARRATIVE_DEPENDENT_OPENINGS)
-    autonomous_start = natural_start and not dependent_opening
-    final_token = tokens[-1] if tokens else ""
-    incomplete_ending = final_token in NARRATIVE_INCOMPLETE_ENDINGS
-    enough_context = len(tokens) >= NARRATIVE_MIN_WORDS
+
+    enough_context = len(tokens) >= NARRATIVE_MIN_WORDS and len(first_sentence_tokens) >= 6
+    middle_window = " ".join(tokens[12:-12]) if len(tokens) > 24 else " ".join(tokens)
+    development_hits = contains_signal(middle_window, NARRATIVE_DEVELOPMENT_MARKERS)
     enough_development = (
-        len(tokens) >= NARRATIVE_MIN_WORDS
-        and sentence_count >= NARRATIVE_MIN_SENTENCES
+        len(tokens) >= NARRATIVE_MIN_DEVELOPMENT_WORDS
+        or len(units) >= 3
+        or development_hits > 0
     )
-    has_conclusion = (
-        natural_end
-        and not incomplete_ending
-        and (terminal_ending or following is None or end_gap >= CAPTION_SENTENCE_GAP)
-    )
+
+    closure = _narrative_closure(text)
+    terminal_ending = bool(closure["terminal_ending"])
+    incomplete_ending = bool(closure["incomplete_ending"])
+    has_conclusion = bool(closure["passed"])
+    natural_end = has_conclusion
+    topic_cohesion = _narrative_cohesion(text)
+    resolution_hits = int(closure["resolution_hits"])
 
     issues: list[str] = []
     if not autonomous_start:
@@ -711,44 +844,60 @@ def narrative_quality(
     if not has_conclusion:
         issues.append("termina antes de uma conclusão natural")
     if incomplete_ending:
-        issues.append(f"termina em palavra dependente: {final_token}")
+        issues.append(f"termina em palavra dependente: {tokens[-1] if tokens else ''}")
 
+    passed = not issues
     score_bonus = sum((
         2.0 if autonomous_start else 0.0,
         3.0 if enough_context else 0.0,
         3.0 if enough_development else 0.0,
         3.0 if has_conclusion else 0.0,
         1.0 if terminal_ending else 0.0,
+        1.0 if development_hits else 0.0,
+        1.0 if resolution_hits else 0.0,
     ))
-    passed = not issues
     return {
         "passed": passed,
         "issues": sorted(set(issues)),
-        "warnings": (
-            ["abertura com pronome/conector; revisão editorial recomendada"]
-            if dependent_opening and passed
-            else []
-        ),
+        "warnings": [
+            warning for warning in (
+                "abertura com pronome/conector; revisão editorial recomendada"
+                if dependent_opening and passed else "",
+                "coesão temática baixa entre começo, desenvolvimento e fechamento"
+                if topic_cohesion < 0.25 and passed else "",
+                "fechamento sem marcador explícito de consequência; revisão contextual recomendada"
+                if not resolution_hits and passed else "",
+            )
+            if warning
+        ],
         "start_index": start_index,
         "end_index": end_index,
         "word_count": len(tokens),
         "sentence_count": sentence_count,
+        "narrative_units": len(units),
         "natural_start": natural_start,
         "autonomous_start": autonomous_start,
         "natural_end": natural_end,
         "terminal_ending": terminal_ending,
         "dependent_opening": dependent_opening,
         "incomplete_ending": incomplete_ending,
+        "development_hits": development_hits,
+        "resolution_hits": resolution_hits,
+        "topic_cohesion": topic_cohesion,
+        "end_gap_seconds": round(end_gap, 3),
         "components": {
             "narrative_start": 2.0 if autonomous_start else 0.0,
             "narrative_context": 3.0 if enough_context else 0.0,
             "narrative_development": 3.0 if enough_development else 0.0,
             "narrative_conclusion": 3.0 if has_conclusion else 0.0,
             "narrative_terminal_punctuation": 1.0 if terminal_ending else 0.0,
+            "narrative_development_signal": 1.0 if development_hits else 0.0,
+            "narrative_resolution_signal": 1.0 if resolution_hits else 0.0,
+            "narrative_topic_cohesion": round(topic_cohesion * 2.0, 2),
         },
         "score_bonus": round(score_bonus, 2),
         "summary": (
-            "começo natural, contexto suficiente, desenvolvimento e conclusão fechada"
+            "começo autônomo, contexto suficiente, desenvolvimento e conclusão fechada"
             if passed
             else "; ".join(sorted(set(issues)))
         ),
@@ -812,11 +961,17 @@ def build_candidates(
                 -float(item[2]["score_bonus"]),
             )
         )
-        for end_index, duration, narrative in eligible[:2]:
+        for end_index, duration, narrative in eligible[:6]:
             text = " ".join(item.text for item in segments[index:end_index]).strip()
             score, components, trigger, reason, premise, rejection = score_text(text, profile)
             components.update(narrative["components"])
-            score = round(min(100.0, score + float(narrative["score_bonus"])), 2)
+            # A estrutura narrativa tem peso real no ranking; o gancho sozinho
+            # não pode superar um corte com começo, meio e fim mais sólidos.
+            narrative_score = min(100.0, float(narrative["score_bonus"]) / 14.0 * 100.0)
+            score = round(
+                min(100.0, score * 0.78 + narrative_score * 0.22),
+                2,
+            )
             reason = f"{reason} {narrative['summary'].capitalize()}."
             candidates.append(Candidate(
                 start,
@@ -1963,7 +2118,7 @@ def write_reports(
                 "maximum_seconds": MAX_CLIP_SECONDS,
             },
             "audio": "áudio original preservado em AAC",
-            "narrative": "começo natural, pelo menos 45 palavras, pelo menos duas frases, desenvolvimento suficiente e conclusão sem terminar em palavra dependente",
+            "narrative": "mapa editorial da fonte, começo autônomo, contexto, desenvolvimento, coesão temática e conclusão real sem depender de silêncio ou fim da transcrição",
             "captions": "ASS dinâmico, no máximo duas linhas de até 32 caracteres, sincronização auditada por palavra, alvo de 18 cps e limite duro de 24 cps, revisão ortográfica estrita de caixa/acentos/pontuação e margem segura",
             "caption_gate": {
                 "spelling_checker": "wordfreq pt quando disponível + lista de risco",
