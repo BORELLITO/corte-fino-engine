@@ -57,6 +57,10 @@ def find_or_create_folder(drive, parent_id: str, name: str) -> str:
         pageSize=10,
         fields="files(id,name,mimeType)",
     ).execute(num_retries=3).get("files", [])
+    if len(files) > 1:
+        raise RuntimeError(
+            f"Duplicidade de pasta detectada para {name!r}; nenhuma alteração feita."
+        )
     if files:
         return files[0]["id"]
 
@@ -82,6 +86,11 @@ def upsert_file(drive, folder_id: str, path: Path) -> None:
         pageSize=10,
         fields="files(id,name)",
     ).execute(num_retries=3).get("files", [])
+
+    if len(files) > 1:
+        raise RuntimeError(
+            f"Duplicidade detectada para {path.name!r}; nenhuma alteração feita."
+        )
 
     media = MediaFileUpload(
         str(path),
@@ -120,6 +129,15 @@ def main() -> int:
         credentials=credentials_from_env(),
         cache_discovery=False,
     )
+    parent = drive.files().get(
+        fileId=base_folder,
+        fields="id,name,mimeType,trashed,capabilities(canAddChildren)",
+    ).execute(num_retries=3)
+    if parent.get("mimeType") != FOLDER_MIME or parent.get("trashed"):
+        raise SystemExit("DRIVE_FOLDER_ID não aponta para uma pasta ativa.")
+    if parent.get("capabilities", {}).get("canAddChildren") is False:
+        raise SystemExit("Sem permissão de escrita em DRIVE_FOLDER_ID.")
+
     radar_folder = find_or_create_folder(drive, base_folder, RADAR_FOLDER_NAME)
     for name in REPORT_NAMES:
         upsert_file(drive, radar_folder, output_dir / name)
