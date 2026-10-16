@@ -1,0 +1,32 @@
+name: Corte Fino Motor 0 — CI
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "radar/**"
+      - "tests/test_radar.py"
+      - ".github/workflows/corte-fino-radar*.yml"
+  pull_request:
+    paths:
+      - "radar/**"
+      - "tests/test_radar.py"
+      - ".github/workflows/corte-fino-radar*.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  tests:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v7
+        with:
+          python-version: "3.12"
+      - run: python -m pip install "pytest>=8,<9" "google-api-python-client>=2,<3" "google-auth>=2,<3"
+      - name: Testar Radar sem consumir API
+        run: |
+          python -m py_compile radar/corte_fino_radar.py radar/upload_reports_drive.py
+          python -m pytest -q tests/test_radar.py

@@ -1,17 +1,25 @@
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
+
+from radar.upload_reports_drive import normalize_folder_id
 
 from radar.corte_fino_radar import (
     QuerySignal,
     VideoCandidate,
+    apply_channel_baselines,
+    apply_momentum,
     build_queries,
     comment_analysis,
     editorial_format_fit,
     finalize_score,
     is_political,
     likely_portuguese,
+    parse_chapters,
     parse_iso8601_duration,
     parse_traffic,
+    preferred_source,
     query_gap_score,
+    safe_url_label,
+    term_hits,
 )
 
 
@@ -57,6 +65,9 @@ def test_political_candidate_has_no_editorial_score():
         video_id="abc",
         title="Entrevista política",
         channel_title="Canal",
+        channel_id="UC_TEST",
+        category_id="22",
+        made_for_kids=False,
         published_at=datetime.now(timezone.utc).isoformat(),
         description="",
         duration_seconds=3600,
@@ -83,10 +94,10 @@ def test_query_priority_keeps_sources_before_generic_themes():
     assert [q[0] for q in queries] == [
         "Flow Podcast",
         "Inteligência Ltda",
-        "Cortes do Flow",
-        "Cortes do Inteligência",
         "RedCast",
         "Podpah",
+        "AchismosTV",
+        "Jota Jota Podcast",
     ]
 
 
@@ -146,6 +157,9 @@ def test_nonpolitical_candidate_without_tension_is_not_ranked():
         video_id="xyz",
         title="Programa ao vivo",
         channel_title="Canal",
+        channel_id="UC_TEST",
+        category_id="22",
+        made_for_kids=False,
         published_at=datetime.now(timezone.utc).isoformat(),
         description="",
         duration_seconds=3600,
@@ -165,3 +179,154 @@ def test_nonpolitical_candidate_without_tension_is_not_ranked():
     )
     finalize_score(candidate)
     assert candidate.radar_score is None
+
+
+
+def test_chapter_parser_requires_ordered_multiple_chapters():
+    chapters = parse_chapters(
+        "00:00 Introdução\n12:34 BETS E VÍCIO\n35:20 Família destruída"
+    )
+    assert len(chapters) == 3
+    assert chapters[1].seconds == 754
+    assert chapters[1].heat_score > 0
+
+
+def test_channel_breakout_uses_peer_baseline():
+    candidates = []
+    for idx, vph in enumerate([100, 120, 600]):
+        candidate = VideoCandidate(
+            video_id=f"v{idx}",
+            title="Podcast",
+            channel_title="Canal A",
+            channel_id="UC_A",
+            category_id="22",
+            made_for_kids=False,
+            published_at=datetime.now(timezone.utc).isoformat(),
+            description="",
+            duration_seconds=3600,
+            view_count=1000,
+            like_count=100,
+            comment_count=50,
+            youtube_license="youtube",
+            views_per_hour=vph,
+        )
+        candidates.append(candidate)
+    apply_channel_baselines(candidates)
+    assert candidates[2].breakout_ratio > 4
+    assert candidates[2].breakout_score > 50
+
+
+def test_momentum_detects_acceleration():
+    now = datetime.now(timezone.utc)
+    candidate = VideoCandidate(
+        video_id="v1",
+        title="Podcast",
+        channel_title="Canal",
+        channel_id="UC_A",
+        category_id="22",
+        made_for_kids=False,
+        published_at=now.isoformat(),
+        description="",
+        duration_seconds=3600,
+        view_count=5000,
+        like_count=100,
+        comment_count=80,
+        youtube_license="youtube",
+        views_per_hour=500,
+    )
+    state = {
+        "videos": {
+            "v1": [
+                {
+                    "ts": (now.replace(microsecond=0)).isoformat(),
+                    "views": 4500,
+                    "comments": 70,
+                    "likes": 90,
+                }
+            ]
+        }
+    }
+    # Snapshot no mesmo instante é tratado como sem intervalo suficiente.
+    apply_momentum([candidate], state, now)
+    assert candidate.momentum_state == "STALE"
+
+
+
+def test_theme_rotation_changes_editorial_slice_without_losing_sources():
+    q0 = build_queries([], [], 8, theme_offset=0)
+    q6 = build_queries([], [], 8, theme_offset=6)
+    assert [item[0] for item in q0[:6]] == [item[0] for item in q6[:6]]
+    assert q0[6][0] != q6[6][0]
+
+
+def test_safe_url_label_strips_query_and_api_key():
+    label = safe_url_label(
+        "https://www.googleapis.com/youtube/v3/search?q=x&key=SECRET"
+    )
+    assert label == "https://www.googleapis.com/youtube/v3/search"
+    assert "SECRET" not in label
+
+
+
+def test_preferred_source_does_not_trust_lookalike_channel():
+    assert preferred_source("Flow Podcast")
+    assert preferred_source("RedCast [Oficial]")
+    assert not preferred_source("Flow Podcast Fan Clips")
+    assert not preferred_source("Meu Canal de Flow Podcast")
+
+
+def test_momentum_real_interval_can_detect_acceleration():
+    now = datetime.now(timezone.utc)
+    candidate = VideoCandidate(
+        video_id="momentum",
+        title="Podcast",
+        channel_title="Canal",
+        channel_id="UC_M",
+        category_id="22",
+        made_for_kids=False,
+        published_at=(now - timedelta(hours=12)).isoformat(),
+        description="",
+        duration_seconds=3600,
+        view_count=9000,
+        like_count=200,
+        comment_count=150,
+        youtube_license="youtube",
+        views_per_hour=750,
+    )
+    state = {
+        "videos": {
+            "momentum": [
+                {
+                    "ts": (now - timedelta(hours=6)).isoformat(),
+                    "views": 3000,
+                    "comments": 60,
+                    "likes": 100,
+                },
+                {
+                    "ts": (now - timedelta(hours=3)).isoformat(),
+                    "views": 4500,
+                    "comments": 80,
+                    "likes": 120,
+                },
+            ]
+        }
+    }
+    apply_momentum([candidate], state, now)
+    assert candidate.recent_views_per_hour == 1500
+    assert candidate.acceleration_ratio > 2
+    assert candidate.momentum_state == "ACCELERATING"
+    assert candidate.momentum_score > 50
+
+
+
+def test_drive_folder_id_normalization():
+    assert normalize_folder_id("abc123") == "abc123"
+    assert normalize_folder_id(
+        "https://drive.google.com/drive/folders/abc123?usp=sharing"
+    ) == "abc123"
+
+
+
+def test_short_semantic_terms_use_word_boundaries():
+    assert term_hits("Felca fala sobre apostas", {"fe"}) == 0
+    assert term_hits("Ele fala de fé e família", {"fe", "fé"}) == 1
