@@ -131,3 +131,37 @@ def test_editorial_format_requires_conversational_longform_shape():
         "Ore conosco e deixe seu pedido nos comentários.",
         "Canal de Orações",
     )
+
+
+def test_generic_body_context_does_not_force_political_without_domain():
+    assert not is_political(
+        "Conversa sobre tecnologia",
+        "O ministro comentou com o presidente da empresa sobre inovação.",
+        "Canal Tech",
+    )
+
+
+def test_nonpolitical_candidate_without_tension_is_not_ranked():
+    candidate = VideoCandidate(
+        video_id="xyz",
+        title="Programa ao vivo",
+        channel_title="Canal",
+        published_at=datetime.now(timezone.utc).isoformat(),
+        description="",
+        duration_seconds=3600,
+        view_count=100000,
+        like_count=1000,
+        comment_count=50,
+        youtube_license="youtube",
+        political_or_electoral=False,
+        velocity_score=100,
+        engagement_score=100,
+        comment_heat_score=0,
+        controversy_score=0,
+        emotion_score=0,
+        search_gap_score=100,
+        freshness_score=100,
+        source_score=100,
+    )
+    finalize_score(candidate)
+    assert candidate.radar_score is None
