@@ -103,7 +103,7 @@ O número de resultados do YouTube é tratado como aproximação. O peso foi red
 - Push/PR executa apenas testes, sem consumir YouTube API.
 - A varredura real roda somente por agenda ou `workflow_dispatch`.
 - Como o repositório atualmente é público, o conteúdo integral do Radar **não é publicado em Issue nem no Job Summary**.
-- O relatório completo fica somente no artifact da execução.
+- O relatório completo é enviado para a pasta privada `RADAR_CORTE_FINO` no Google Drive.
 - O histórico de momentum fica em cache do GitHub Actions e é ignorado pelo Git.
 
 ## Frequência
@@ -122,7 +122,7 @@ Padrão atual:
 - `radar/output/radar_latest.json`
 - `radar/output/radar_latest.csv`
 
-Retenção do artifact: 7 dias.
+Os três arquivos são atualizados de forma idempotente na pasta privada `RADAR_CORTE_FINO` no Google Drive.
 
 ## Contrato com os outros motores
 
