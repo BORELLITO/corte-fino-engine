@@ -61,7 +61,25 @@ PREFERRED_SOURCE_PATTERNS = [
     "venus podcast",
     "fala ordinário",
     "fala ordinario",
+    "achismos",
+    "jota jota podcast",
+    "primo cast",
+    "primocast",
+    "os economistas",
+    "cortes do podpah",
 ]
+
+LONGFORM_MARKERS = {
+    "podcast", "entrevista", "debate", "sabatina", "talk show", "talkshow",
+    "papo", "conversa", "mesa", "episódio", "episodio", "especial",
+    "react", "reação", "reacao", "ao vivo",
+}
+
+PORTUGUESE_SIGNAL_WORDS = {
+    "que", "não", "nao", "para", "com", "uma", "como", "mais", "isso", "sobre",
+    "porque", "por", "dos", "das", "ele", "ela", "você", "voce", "brasil",
+    "brasileiro", "brasileira", "hoje", "agora", "aqui", "também", "tambem",
+}
 
 CONTROVERSY_TERMS = {
     "absurdo", "polêmica", "polemica", "treta", "briga", "denúncia", "denuncia",
@@ -99,11 +117,16 @@ COMMENT_REJECT_TERMS = {
 }
 
 # Conteúdo político/eleitoral fica numa watchlist factual sem score editorial.
-POLITICAL_TERMS = {
-    "eleição", "eleicoes", "eleições", "segundo turno", "presidente", "candidato",
-    "candidata", "campanha", "governo", "congresso", "senado", "deputado", "deputada",
-    "stf", "tse", "lula", "bolsonaro", "flávio bolsonaro", "flavio bolsonaro",
-    "nikolas", "mbl", "pt", "pl", "psol", "missão", "missao", "prefeito", "governador",
+POLITICAL_STRONG_TERMS = {
+    "eleição", "eleicoes", "eleições", "segundo turno", "stf", "tse", "lula",
+    "bolsonaro", "flávio bolsonaro", "flavio bolsonaro", "nikolas", "mbl",
+    "pt", "pl", "psol",
+}
+
+POLITICAL_CONTEXT_TERMS = {
+    "presidente", "candidato", "candidata", "campanha", "governo", "congresso",
+    "senado", "deputado", "deputada", "prefeito", "prefeita", "governador",
+    "governadora", "ministro", "ministra",
 }
 
 HIGH_RISK_CLAIM_TERMS = {
@@ -360,15 +383,64 @@ def preferred_source(channel_title: str) -> bool:
     return any(pattern in norm for pattern in PREFERRED_SOURCE_PATTERNS)
 
 
-def is_political(text: str) -> bool:
+def term_present(norm: str, term: str) -> bool:
+    if " " in term or len(term) >= 4:
+        return term in norm
+    return bool(re.search(rf"(?<!\w){re.escape(term)}(?!\w)", norm))
+
+
+def is_political(
+    title: str,
+    description: str = "",
+    channel_title: str = "",
+) -> bool:
+    headline = normalize(f"{title} {channel_title}")
+    body = normalize(description)
+
+    if any(term_present(headline, term) for term in POLITICAL_STRONG_TERMS):
+        return True
+    if any(term_present(body, term) for term in POLITICAL_STRONG_TERMS):
+        return True
+
+    headline_context = sum(
+        term_present(headline, term)
+        for term in POLITICAL_CONTEXT_TERMS
+    )
+    body_context = sum(
+        term_present(body, term)
+        for term in POLITICAL_CONTEXT_TERMS
+    )
+    return headline_context >= 1 or body_context >= 2
+
+
+def likely_portuguese(text: str) -> bool:
     norm = normalize(text)
-    for term in POLITICAL_TERMS:
-        if " " in term or len(term) >= 4:
-            if term in norm:
-                return True
-        elif re.search(rf"(?<!\w){re.escape(term)}(?!\w)", norm):
-            return True
-    return False
+    tokens = re.findall(r"[a-záàâãéêíóôõúç]+", norm)
+    if not tokens:
+        return False
+    hits = sum(token in PORTUGUESE_SIGNAL_WORDS for token in tokens[:120])
+    accented = sum(
+        any(char in token for char in "áàâãéêíóôõúç")
+        for token in tokens[:120]
+    )
+    return hits >= 2 or accented >= 2
+
+
+def editorial_format_fit(
+    title: str,
+    description: str,
+    channel_title: str,
+) -> bool:
+    if preferred_source(channel_title):
+        return True
+    surface = normalize(f"{title} {channel_title}")
+    if any(marker in surface for marker in LONGFORM_MARKERS):
+        return True
+    # Descrição é evidência mais fraca: exige dois marcadores para evitar
+    # orações, novelas narradas e compilações que só citam "podcast".
+    body = normalize(description[:1200])
+    marker_hits = sum(marker in body for marker in LONGFORM_MARKERS)
+    return marker_hits >= 2
 
 
 def risk_flags(text: str) -> list[str]:
@@ -536,7 +608,11 @@ def candidate_from_item(
         source_queries=sorted({s.query for s in signals}),
         query_signals=signals,
         preferred_source=preferred_source(channel),
-        political_or_electoral=is_political(combined),
+        political_or_electoral=is_political(
+            title,
+            description,
+            channel,
+        ),
         risk_flags=risk_flags(combined),
     )
 
@@ -651,6 +727,22 @@ def collect_candidates(
             continue
 
         compute_base_metrics(candidate, now)
+
+        language_text = (
+            f"{candidate.title} {candidate.description[:500]}"
+        )
+        if (
+            not candidate.preferred_source
+            and not likely_portuguese(language_text)
+        ):
+            continue
+        if not editorial_format_fit(
+            candidate.title,
+            candidate.description,
+            candidate.channel_title,
+        ):
+            continue
+
         candidates.append(candidate)
 
     pre_ranked = sorted(
@@ -778,11 +870,19 @@ def write_outputs(
         reverse=True,
     )[:top_n]
 
+    qualified_queries = {
+        query
+        for candidate in candidates
+        for query in candidate.source_queries
+    }
     gap_signals = sorted(
         [
             signal
             for signal in query_signals
-            if signal.source != "preferred_source"
+            if (
+                signal.source != "preferred_source"
+                and signal.query in qualified_queries
+            )
         ],
         key=lambda s: s.gap_score,
         reverse=True,
