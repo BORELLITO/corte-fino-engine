@@ -1,4 +1,4 @@
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 
 from radar.corte_fino_radar import (
     QuerySignal,
@@ -14,6 +14,7 @@ from radar.corte_fino_radar import (
     parse_chapters,
     parse_iso8601_duration,
     parse_traffic,
+    preferred_source,
     query_gap_score,
     safe_url_label,
 )
@@ -261,3 +262,54 @@ def test_safe_url_label_strips_query_and_api_key():
     )
     assert label == "https://www.googleapis.com/youtube/v3/search"
     assert "SECRET" not in label
+
+
+
+def test_preferred_source_does_not_trust_lookalike_channel():
+    assert preferred_source("Flow Podcast")
+    assert preferred_source("RedCast [Oficial]")
+    assert not preferred_source("Flow Podcast Fan Clips")
+    assert not preferred_source("Meu Canal de Flow Podcast")
+
+
+def test_momentum_real_interval_can_detect_acceleration():
+    now = datetime.now(timezone.utc)
+    candidate = VideoCandidate(
+        video_id="momentum",
+        title="Podcast",
+        channel_title="Canal",
+        channel_id="UC_M",
+        category_id="22",
+        made_for_kids=False,
+        published_at=(now - timedelta(hours=12)).isoformat(),
+        description="",
+        duration_seconds=3600,
+        view_count=9000,
+        like_count=200,
+        comment_count=150,
+        youtube_license="youtube",
+        views_per_hour=750,
+    )
+    state = {
+        "videos": {
+            "momentum": [
+                {
+                    "ts": (now - timedelta(hours=6)).isoformat(),
+                    "views": 3000,
+                    "comments": 60,
+                    "likes": 100,
+                },
+                {
+                    "ts": (now - timedelta(hours=3)).isoformat(),
+                    "views": 4500,
+                    "comments": 80,
+                    "likes": 120,
+                },
+            ]
+        }
+    }
+    apply_momentum([candidate], state, now)
+    assert candidate.recent_views_per_hour == 1500
+    assert candidate.acceleration_ratio > 2
+    assert candidate.momentum_state == "ACCELERATING"
+    assert candidate.momentum_score > 50
