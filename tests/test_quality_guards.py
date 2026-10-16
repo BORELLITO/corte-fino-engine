@@ -24,6 +24,8 @@ from main import (
     TARGET_CLIP_SECONDS,
     clip_duration_is_valid,
     caption_orthography_issues,
+    narrative_quality,
+    validate_narrative,
 )
 
 
@@ -145,6 +147,58 @@ def test_caption_orthography_gate_keeps_case_accents_and_spacing_clean():
     assert caption_orthography_issues(words) == []
 
 
+def test_narrative_gate_requires_autonomous_start_context_and_closure():
+    complete = [
+        Segment(
+            0, 22,
+            "A história começa quando o convidado explica o problema que ninguém queria discutir.",
+            [],
+        ),
+        Segment(
+            22, 44,
+            "Depois ele mostra os fatos, apresenta o conflito principal e explica por que aquela decisão mudou o resultado para muita gente.",
+            [],
+        ),
+        Segment(
+            44, 66,
+            "No fim, ele revela a consequência mais importante e fecha a ideia dizendo que a responsabilidade continua sendo de quem escolhe.",
+            [],
+        ),
+    ]
+    quality = narrative_quality(complete, 0, 3)
+    assert quality["passed"] is True
+    assert quality["word_count"] >= 45
+    assert quality["sentence_count"] >= 2
+    assert quality["natural_start"] is True
+    assert quality["natural_end"] is True
+    assert quality["terminal_ending"] is True
+
+    dependent = [
+        complete[0],
+        Segment(
+            22, 44,
+            "porque o convidado mostra os fatos e apresenta o conflito principal da discussão.",
+            [],
+        ),
+        complete[2],
+    ]
+    dependent_quality = narrative_quality(dependent, 1, 3)
+    assert dependent_quality["passed"] is False
+    assert any("meio de uma ideia" in issue for issue in dependent_quality["issues"])
+
+    incomplete = [
+        complete[0],
+        Segment(
+            22, 66,
+            "Depois ele mostra os fatos, apresenta o conflito principal e termina de",
+            [],
+        ),
+    ]
+    incomplete_quality = narrative_quality(incomplete, 0, 2)
+    assert incomplete_quality["passed"] is False
+    assert any("palavra dependente" in issue for issue in incomplete_quality["issues"])
+
+
 def test_editorial_score_gate_keeps_candidates_above_threshold(monkeypatch):
     from main import Candidate, select_candidates
     import main as engine
@@ -155,6 +209,7 @@ def test_editorial_score_gate_keeps_candidates_above_threshold(monkeypatch):
         engine.USE_EDITORIAL_SCORE_GATE = True
         engine.MIN_EDITORIAL_SCORE = 0.0
         monkeypatch.setattr(engine, "validate_captions", lambda *args, **kwargs: {"passed": True})
+        monkeypatch.setattr(engine, "validate_narrative", lambda *args, **kwargs: {"passed": True})
         monkeypatch.setattr(
             engine,
             "build_candidates",
