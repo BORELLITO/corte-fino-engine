@@ -103,7 +103,7 @@ O número de resultados do YouTube é tratado como aproximação. O peso foi red
 - Push/PR executa apenas testes, sem consumir YouTube API.
 - A varredura real roda somente por agenda ou `workflow_dispatch`.
 - Como o repositório atualmente é público, o conteúdo integral do Radar **não é publicado em Issue nem no Job Summary**.
-- O relatório completo é enviado para a pasta privada `RADAR_CORTE_FINO` no Google Drive.
+- O relatório completo é enviado para a pasta privada `RADAR_CORTE_FINO` no Google Drive. Se existir o secret `RADAR_DRIVE_FOLDER_ID`, ele tem prioridade; caso contrário o motor reutiliza a pasta-base já configurada pelo projeto.
 - O histórico de momentum fica em cache do GitHub Actions e é ignorado pelo Git.
 
 ## Frequência
@@ -115,6 +115,8 @@ O número de resultados do YouTube é tratado como aproximação. O peso foi red
 Padrão atual:
 - até 6 tendências;
 - até 18 consultas principais por rodada;
+- no máximo 3 temas manuais por rodada, sem expulsar as fontes principais;
+- os temas editoriais fixos são rotacionados entre as execuções para cobrir o catálogo inteiro;
 - até 24 vídeos pré-selecionados recebem análise dupla de comentários.
 
 ## Arquivos de saída
