@@ -1233,7 +1233,7 @@ def write_outputs(
         [
             c
             for c in candidates
-            if c.radar_score is not None
+            if c.radar_score is not None and c.rank_status != "DROP"
         ],
         key=lambda c: c.radar_score or 0,
         reverse=True,
@@ -1252,6 +1252,7 @@ def write_outputs(
     qualified_queries = {
         query
         for candidate in candidates
+        if candidate.radar_score is not None and candidate.rank_status != "DROP"
         for query in candidate.source_queries
     }
     gap_signals = sorted(
