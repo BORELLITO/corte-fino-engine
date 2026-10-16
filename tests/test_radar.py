@@ -19,6 +19,7 @@ from radar.corte_fino_radar import (
     preferred_source,
     query_gap_score,
     safe_url_label,
+    term_hits,
 )
 
 
@@ -323,3 +324,9 @@ def test_drive_folder_id_normalization():
     assert normalize_folder_id(
         "https://drive.google.com/drive/folders/abc123?usp=sharing"
     ) == "abc123"
+
+
+
+def test_short_semantic_terms_use_word_boundaries():
+    assert term_hits("Felca fala sobre apostas", {"fe"}) == 0
+    assert term_hits("Ele fala de fé e família", {"fe", "fé"}) == 1
