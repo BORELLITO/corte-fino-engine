@@ -15,6 +15,7 @@ from radar.corte_fino_radar import (
     parse_iso8601_duration,
     parse_traffic,
     query_gap_score,
+    safe_url_label,
 )
 
 
@@ -89,10 +90,10 @@ def test_query_priority_keeps_sources_before_generic_themes():
     assert [q[0] for q in queries] == [
         "Flow Podcast",
         "Inteligência Ltda",
-        "Cortes do Flow",
-        "Cortes do Inteligência",
         "RedCast",
         "Podpah",
+        "AchismosTV",
+        "Jota Jota Podcast",
     ]
 
 
@@ -244,3 +245,19 @@ def test_momentum_detects_acceleration():
     # Snapshot no mesmo instante é tratado como sem intervalo suficiente.
     apply_momentum([candidate], state, now)
     assert candidate.momentum_state == "STALE"
+
+
+
+def test_theme_rotation_changes_editorial_slice_without_losing_sources():
+    q0 = build_queries([], [], 8, theme_offset=0)
+    q6 = build_queries([], [], 8, theme_offset=6)
+    assert [item[0] for item in q0[:6]] == [item[0] for item in q6[:6]]
+    assert q0[6][0] != q6[6][0]
+
+
+def test_safe_url_label_strips_query_and_api_key():
+    label = safe_url_label(
+        "https://www.googleapis.com/youtube/v3/search?q=x&key=SECRET"
+    )
+    assert label == "https://www.googleapis.com/youtube/v3/search"
+    assert "SECRET" not in label
