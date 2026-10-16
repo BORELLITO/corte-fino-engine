@@ -26,6 +26,8 @@ def test_both_motors_require_manual_dispatch():
     assert "  schedule:" not in publisher
     assert "group: corte-fino-motor-1" in generator
     assert "group: corte-fino-motor-2" in publisher
+    assert "narrative_qa" in generator
+    assert 'float(clip.get("duration") or 0) > 60.0' in generator
 
 
 def test_publisher_manual_tiktok_mode_is_explicit():
