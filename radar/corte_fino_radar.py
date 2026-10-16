@@ -244,7 +244,14 @@ def normalize(text: str) -> str:
 
 def term_hits(text: str, terms: Iterable[str]) -> int:
     norm = normalize(text)
-    return sum(1 for term in terms if term in norm)
+    hits = 0
+    for term in terms:
+        if " " in term or len(term) >= 4:
+            matched = term in norm
+        else:
+            matched = bool(re.search(rf"(?<!\\w){re.escape(term)}(?!\\w)", norm))
+        hits += int(matched)
+    return hits
 
 
 def parse_iso8601_duration(value: str) -> int:
@@ -812,7 +819,12 @@ def compute_base_metrics(
         term_hits(text, EMOTION_TERMS) * 16
     )
     candidate.search_gap_score = max(
-        [signal.gap_score for signal in candidate.query_signals] or [0.0]
+        [
+            signal.gap_score
+            for signal in candidate.query_signals
+            if signal.source != "preferred_source"
+        ]
+        or [0.0]
     )
     candidate.source_score = 100.0 if candidate.preferred_source else 25.0
 
@@ -820,7 +832,7 @@ def compute_base_metrics(
     candidate.chapter_heat_score = max(
         [chapter.heat_score for chapter in candidate.chapters] or [0.0]
     )
-    if candidate.chapters:
+    if candidate.chapters and candidate.chapter_heat_score > 0:
         best = max(candidate.chapters, key=lambda chapter: chapter.heat_score)
         candidate.best_chapter = (
             f"{fmt_duration(best.seconds)} — {best.title}"
