@@ -275,7 +275,7 @@ def test_source_colors_are_preserved_and_hud_keeps_brand_palette():
     assert "loop=loop=-1" in filter_complex
     assert "drawbox=" not in filter_complex
     assert "drawtext=" not in filter_complex
-    assert CAPTION_MARGIN_V == 390
+    assert CAPTION_MARGIN_V == 430
     assert LOGO_PATH.name == "corte_fino_logo.png"
 
 
