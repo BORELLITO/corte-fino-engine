@@ -851,6 +851,7 @@ def narrative_quality(
     )
     terminal_ending = bool(closure["terminal_ending"])
     incomplete_ending = bool(closure["incomplete_ending"])
+    final_sentence_words = int(closure["final_sentence_words"])
     # Quando o ASR não pontua a última frase, uma pausa real antes do
     # próximo bloco é uma evidência editorial válida de fechamento no fallback.
     gap_closure = bool(
