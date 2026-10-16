@@ -129,6 +129,11 @@ POLITICAL_CONTEXT_TERMS = {
     "governadora", "ministro", "ministra",
 }
 
+POLITICAL_DOMAIN_TERMS = {
+    "política", "politica", "eleitoral", "partido", "partidos", "voto", "votos",
+    "urna", "urnas", "mandato", "coalizão", "coalizao",
+}
+
 HIGH_RISK_CLAIM_TERMS = {
     "pedófilo", "pedofilo", "estuprador", "assassino", "criminoso", "ladrão", "ladrao",
     "golpista", "corrupto", "fraudou", "roubou", "matou", "abuso", "assédio", "assedio",
@@ -399,7 +404,11 @@ def is_political(
 
     if any(term_present(headline, term) for term in POLITICAL_STRONG_TERMS):
         return True
-    if any(term_present(body, term) for term in POLITICAL_STRONG_TERMS):
+    if any(
+        term_present(body, term)
+        for term in POLITICAL_STRONG_TERMS
+        if len(term) > 3 or " " in term
+    ):
         return True
 
     headline_context = sum(
@@ -410,7 +419,13 @@ def is_political(
         term_present(body, term)
         for term in POLITICAL_CONTEXT_TERMS
     )
-    return headline_context >= 1 or body_context >= 2
+    body_domain = any(
+        term_present(body, term)
+        for term in POLITICAL_DOMAIN_TERMS
+    )
+    return headline_context >= 1 or (
+        body_context >= 2 and body_domain
+    )
 
 
 def likely_portuguese(text: str) -> bool:
@@ -559,6 +574,18 @@ def compute_base_metrics(
 
 def finalize_score(candidate: VideoCandidate) -> None:
     if candidate.political_or_electoral:
+        candidate.radar_score = None
+        return
+
+    # Não ranqueia conteúdo que só tem velocidade/fonte, mas nenhuma evidência
+    # de tensão editorial. Isso reduz esportes genéricos, shows e transmissões
+    # que performam bem sem oferecer o tipo de corte emocional/polêmico buscado.
+    editorial_signal = max(
+        candidate.controversy_score,
+        candidate.emotion_score,
+        candidate.comment_heat_score,
+    )
+    if editorial_signal < 20:
         candidate.radar_score = None
         return
 
