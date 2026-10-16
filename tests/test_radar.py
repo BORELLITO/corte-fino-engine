@@ -1,5 +1,7 @@
 from datetime import datetime, timedelta, timezone
 
+from radar.upload_reports_drive import normalize_folder_id
+
 from radar.corte_fino_radar import (
     QuerySignal,
     VideoCandidate,
@@ -313,3 +315,11 @@ def test_momentum_real_interval_can_detect_acceleration():
     assert candidate.acceleration_ratio > 2
     assert candidate.momentum_state == "ACCELERATING"
     assert candidate.momentum_score > 50
+
+
+
+def test_drive_folder_id_normalization():
+    assert normalize_folder_id("abc123") == "abc123"
+    assert normalize_folder_id(
+        "https://drive.google.com/drive/folders/abc123?usp=sharing"
+    ) == "abc123"
