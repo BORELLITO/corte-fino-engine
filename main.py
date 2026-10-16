@@ -790,8 +790,10 @@ def narrative_quality(
     start_index: int,
     end_index: int,
     relaxed: bool = False,
+    coverage: bool = False,
 ) -> dict[str, Any]:
     """Garante unidade de raciocínio, com fallback controlado para fontes difíceis."""
+    coverage = bool(coverage and relaxed)
     selected = segments[start_index:end_index]
     if not selected:
         return {
@@ -829,9 +831,9 @@ def narrative_quality(
         or (relaxed and start_gap >= fallback_start_gap)
     )
     autonomous_start = (
-        natural_start
+        (natural_start or (coverage and len(first_sentence_tokens) >= 4))
         and not dependent_opening
-        and len(first_sentence_tokens) >= 6
+        and len(first_sentence_tokens) >= (4 if relaxed else 6)
     )
 
     min_context_words = 30 if relaxed else NARRATIVE_MIN_WORDS
@@ -861,7 +863,14 @@ def narrative_quality(
         and not incomplete_ending
         and final_sentence_words >= 3
     )
-    has_conclusion = bool(closure["passed"] or gap_closure)
+    coverage_closure = bool(
+        coverage
+        and following is not None
+        and not incomplete_ending
+        and final_sentence_words >= 3
+        and len(tokens) >= 30
+    )
+    has_conclusion = bool(closure["passed"] or gap_closure or coverage_closure)
     natural_end = has_conclusion
     topic_cohesion = _narrative_cohesion(text)
     resolution_hits = int(closure["resolution_hits"])
@@ -901,6 +910,8 @@ def narrative_quality(
                 if topic_cohesion < 0.25 and passed else "",
                 "fechamento inferido por pausa; revisão contextual recomendada"
                 if gap_closure and not terminal_ending and passed else "",
+                "limite de cobertura ASR; revisão contextual recomendada"
+                if coverage_closure and not gap_closure and not terminal_ending and passed else "",
                 "fechamento sem marcador explícito de consequência; revisão contextual recomendada"
                 if not resolution_hits and passed else "",
             )
@@ -916,9 +927,16 @@ def narrative_quality(
         "natural_end": natural_end,
         "terminal_ending": terminal_ending,
         "gap_closure": gap_closure,
+        "coverage_closure": coverage_closure,
         "dependent_opening": dependent_opening,
         "contextual_pronoun_opening": contextual_pronoun_opening,
-        "quality_mode": "relaxed_contextual_fallback" if relaxed else "strict",
+        "quality_mode": (
+            "coverage_contextual_fallback"
+            if coverage
+            else "relaxed_contextual_fallback"
+            if relaxed
+            else "strict"
+        ),
         "incomplete_ending": incomplete_ending,
         "development_hits": development_hits,
         "resolution_hits": resolution_hits,
@@ -930,6 +948,7 @@ def narrative_quality(
             "narrative_development": 3.0 if enough_development else 0.0,
             "narrative_conclusion": 3.0 if has_conclusion else 0.0,
             "narrative_gap_closure": 0.5 if gap_closure else 0.0,
+            "narrative_coverage_closure": 0.5 if coverage_closure else 0.0,
             "narrative_terminal_punctuation": 1.0 if terminal_ending else 0.0,
             "narrative_development_signal": 1.0 if development_hits else 0.0,
             "narrative_resolution_signal": 1.0 if resolution_hits else 0.0,
@@ -972,7 +991,14 @@ def validate_narrative(
             "score_bonus": 0.0,
         }
     relaxed = bool(candidate.components.get("narrative_fallback"))
-    return narrative_quality(segments, start_index, end_index, relaxed=relaxed)
+    coverage = bool(candidate.components.get("narrative_coverage_fallback"))
+    return narrative_quality(
+        segments,
+        start_index,
+        end_index,
+        relaxed=relaxed,
+        coverage=coverage,
+    )
 
 
 def build_candidates(
