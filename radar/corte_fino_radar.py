@@ -779,7 +779,11 @@ def write_outputs(
     )[:top_n]
 
     gap_signals = sorted(
-        query_signals,
+        [
+            signal
+            for signal in query_signals
+            if signal.source != "preferred_source"
+        ],
         key=lambda s: s.gap_score,
         reverse=True,
     )[:top_n]
@@ -925,7 +929,7 @@ def write_outputs(
             (
                 f"   Score: **{c.radar_score:.1f}/100** | "
                 f"{fmt_int(c.view_count)} views | "
-                f"{c.views_per_hour:,.0f} views/h | "
+                f"{c.views_per_hour:,.0f} views/h médio | "
                 f"{fmt_int(c.comment_count)} comentários | "
                 f"{fmt_duration(c.duration_seconds)} | "
                 f"{license_note}{risk}  "
