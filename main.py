@@ -1246,6 +1246,7 @@ def select_candidates(
     # publicáveis. Um trecho rápido/ilegível não pode ocupar uma vaga e só ser
     # descoberto depois, durante a renderização.
     caption_ready = []
+    caption_failure_counts: dict[str, int] = {}
     for candidate in pool:
         caption_qa = validate_captions(segments, candidate, CAPTION_MARGIN_V)
         if caption_qa["passed"]:
@@ -1253,6 +1254,9 @@ def select_candidates(
         else:
             candidate.accepted = False
             candidate.rejection = "reprovado no pré-gate automático de legenda"
+            for issue in caption_qa["issues"]:
+                normalized_issue = re.sub(r"bloco \\d+", "bloco <n>", str(issue))
+                caption_failure_counts[normalized_issue] = caption_failure_counts.get(normalized_issue, 0) + 1
     pool = caption_ready
     caption_ready_count = len(caption_ready)
 
@@ -1302,13 +1306,28 @@ def select_candidates(
             if len(selected) >= MAX_CLIPS:
                 break
 
+    top_caption_failures = sorted(
+        caption_failure_counts.items(),
+        key=lambda item: (-item[1], item[0]),
+    )[:10]
+    caption_preview = [
+        {
+            "start": round(candidate.start, 2),
+            "end": round(candidate.end, 2),
+            "trigger": candidate.trigger,
+            "score": candidate.score,
+        }
+        for candidate in pool[:8]
+    ]
     print(
         "Diagnóstico seleção: "
         f"construídos={built_candidate_count} "
         f"duração={duration_ready_count} "
         f"narrativa={narrative_ready_count} "
         f"legenda={caption_ready_count} "
-        f"selecionados={len(selected)}",
+        f"selecionados={len(selected)} "
+        f"falhas_legenda={top_caption_failures} "
+        f"amostra_legenda={caption_preview}",
         flush=True,
     )
 
