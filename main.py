@@ -814,14 +814,19 @@ def narrative_quality(
     end_gap = following.start - selected[-1].end if following is not None else 0.0
 
     lower_text = text.casefold()
-    first_sentence_text = first_sentence(first_text)
+    # O primeiro segmento do ASR pode conter só algumas palavras. A abertura
+    # deve ser avaliada na primeira frase do bloco narrativo inteiro, não nesse
+    # fragmento técnico, para não eliminar cortes autônomos por engano.
+    first_sentence_text = first_sentence(text)
     first_sentence_tokens = words_of(first_sentence_text)
     dependent_opening = lower_text.startswith(NARRATIVE_DEPENDENT_OPENINGS)
     contextual_pronoun_opening = lower_text.startswith(NARRATIVE_CONTEXTUAL_PRONOUN_OPENINGS)
+    fallback_start_gap = max(0.45, CAPTION_SENTENCE_GAP * 0.65)
     natural_start = (
         previous is None
         or _text_ends_terminal(previous.text)
         or start_gap >= CAPTION_SENTENCE_GAP
+        or (relaxed and start_gap >= fallback_start_gap)
     )
     autonomous_start = (
         natural_start
@@ -846,7 +851,16 @@ def narrative_quality(
     )
     terminal_ending = bool(closure["terminal_ending"])
     incomplete_ending = bool(closure["incomplete_ending"])
-    has_conclusion = bool(closure["passed"])
+    # Quando o ASR não pontua a última frase, uma pausa real antes do
+    # próximo bloco é uma evidência editorial válida de fechamento no fallback.
+    gap_closure = bool(
+        relaxed
+        and following is not None
+        and end_gap >= CAPTION_SENTENCE_GAP
+        and not incomplete_ending
+        and final_sentence_words >= 3
+    )
+    has_conclusion = bool(closure["passed"] or gap_closure)
     natural_end = has_conclusion
     topic_cohesion = _narrative_cohesion(text)
     resolution_hits = int(closure["resolution_hits"])
@@ -884,6 +898,8 @@ def narrative_quality(
                 if dependent_opening and passed else "",
                 "coesão temática baixa entre começo, desenvolvimento e fechamento"
                 if topic_cohesion < 0.25 and passed else "",
+                "fechamento inferido por pausa; revisão contextual recomendada"
+                if gap_closure and not terminal_ending and passed else "",
                 "fechamento sem marcador explícito de consequência; revisão contextual recomendada"
                 if not resolution_hits and passed else "",
             )
@@ -898,6 +914,7 @@ def narrative_quality(
         "autonomous_start": autonomous_start,
         "natural_end": natural_end,
         "terminal_ending": terminal_ending,
+        "gap_closure": gap_closure,
         "dependent_opening": dependent_opening,
         "contextual_pronoun_opening": contextual_pronoun_opening,
         "quality_mode": "relaxed_contextual_fallback" if relaxed else "strict",
@@ -911,6 +928,7 @@ def narrative_quality(
             "narrative_context": 3.0 if enough_context else 0.0,
             "narrative_development": 3.0 if enough_development else 0.0,
             "narrative_conclusion": 3.0 if has_conclusion else 0.0,
+            "narrative_gap_closure": 0.5 if gap_closure else 0.0,
             "narrative_terminal_punctuation": 1.0 if terminal_ending else 0.0,
             "narrative_development_signal": 1.0 if development_hits else 0.0,
             "narrative_resolution_signal": 1.0 if resolution_hits else 0.0,
