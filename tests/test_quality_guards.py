@@ -223,6 +223,30 @@ def test_narrative_does_not_treat_silence_or_transcript_end_as_conclusion():
     assert any("conclusão natural" in issue for issue in quality["issues"])
 
 
+def test_narrative_allows_a_complete_pronoun_opening_with_editorial_warning():
+    segments = [
+        Segment(
+            0, 22,
+            "Ele explica o problema que ninguém queria discutir e mostra por que a decisão foi tomada.",
+            [],
+        ),
+        Segment(
+            22, 44,
+            "Depois apresenta os fatos, compara as versões e detalha o conflito que mudou o resultado.",
+            [],
+        ),
+        Segment(
+            44, 66,
+            "No fim, ele revela a consequência principal e conclui que a responsabilidade continua sendo de quem escolhe.",
+            [],
+        ),
+    ]
+    quality = narrative_quality(segments, 0, 3)
+    assert quality["passed"] is True
+    assert quality["contextual_pronoun_opening"] is True
+    assert any("abertura pronominal" in warning for warning in quality["warnings"])
+
+
 def test_story_map_reads_the_source_as_temporal_editorial_blocks():
     segments = [
         Segment(0, 18, "O governo anunciou uma medida importante para o país.", []),
