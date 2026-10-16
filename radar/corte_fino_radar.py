@@ -967,13 +967,13 @@ def build_queries(
         for trend in trends
     )
     queries.extend(
-        (topic.strip(), "manual_extra", None)
-        for topic in extra_topics
-        if topic.strip()
-    )
-    queries.extend(
         (source, "preferred_source", None)
         for source in SOURCE_QUERIES
+    )
+    queries.extend(
+        (topic.strip(), "manual_extra", None)
+        for topic in extra_topics[:3]
+        if topic.strip()
     )
     if DEFAULT_THEMES:
         offset = theme_offset % len(DEFAULT_THEMES)
@@ -1025,7 +1025,7 @@ def collect_candidates(
     all_signals: list[QuerySignal] = []
 
     for index, (query, source, trend) in enumerate(queries, 1):
-        print(f"[RADAR] Busca {index}/{len(queries)}: {query}")
+        print(f"[RADAR] Busca {index}/{len(queries)} ({source})")
         try:
             ids, total = youtube_search(
                 api_key,
@@ -1035,7 +1035,7 @@ def collect_candidates(
             )
         except Exception as exc:
             print(
-                f"[WARN] Busca falhou para '{query}': {exc}",
+                f"[WARN] Busca {index}/{len(queries)} ({source}) falhou: {exc}",
                 file=sys.stderr,
             )
             continue
