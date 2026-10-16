@@ -21,6 +21,8 @@ Os vídeos são MP4 H.264/AAC em 1080x1920, com áudio original, fundo desfocado
 
 A duração é um gate obrigatório: cada corte precisa ter estritamente mais de 60 segundos. O alvo editorial é 68 segundos e o limite máximo configurado é 90 segundos. Candidatos e arquivos finais com 60 segundos ou menos são reprovados automaticamente.
 
+A seleção narrativa também é obrigatória: o corte precisa começar em um limite natural, ter pelo menos 45 palavras e duas frases, desenvolver a ideia e terminar em uma conclusão natural. A seleção rejeita trechos que começam no meio do raciocínio ou terminam em palavras dependentes, como “de”, “que”, “para” ou “e”.
+
 Não são criados subdiretórios de plataforma, atalhos, ZIPs, relatórios, textos ou arquivos de QA dentro da pasta final. Relatórios e QA permanecem apenas como artefatos internos da execução. A publicação é feita pelo Publisher separado, usando exclusivamente o link exato do lote.
 
 ## O que ele faz
