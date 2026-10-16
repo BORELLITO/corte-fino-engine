@@ -277,7 +277,7 @@ def test_relaxed_narrative_accepts_real_pause_as_closure_but_not_transcript_end(
         Segment(0, 18, "A história começa quando o convidado explica o problema que ninguém queria discutir", []),
         Segment(18, 38, "Depois ele mostra os fatos, apresenta o conflito principal e explica o resultado", []),
         Segment(38, 58, "Essa foi a consequência para muita gente", []),
-        Segment(59.0, 62.0, "Agora ele muda de assunto.", []),
+        Segment(59.0, 62.0, "Agora ele muda de", []),
     ]
     quality = narrative_quality(segments, 0, 3, relaxed=True)
     assert quality["passed"] is True
