@@ -1012,7 +1012,7 @@ def build_candidates(
         start = segments[index].start
         eligible: list[tuple[int, float, dict[str, Any]]] = []
         for end_index in range(index + 1, min(len(segments), index + 80)):
-            duration = segments[end_index].end - start
+            duration = segments[end_index - 1].end - start
             if duration > MAX_CLIP_SECONDS:
                 break
             if not clip_duration_is_valid(duration):
@@ -1067,7 +1067,7 @@ def build_candidates(
         for index in range(0, len(segments), step):
             start = segments[index].start
             for end_index in range(index + 1, min(len(segments), index + 80)):
-                duration = segments[end_index].end - start
+                duration = segments[end_index - 1].end - start
                 if duration > MAX_CLIP_SECONDS:
                     break
                 if not clip_duration_is_valid(duration):
@@ -1111,7 +1111,7 @@ def build_candidates(
         for index in range(0, len(segments), step):
             start = segments[index].start
             for end_index in range(index + 1, min(len(segments), index + 80)):
-                duration = segments[end_index].end - start
+                duration = segments[end_index - 1].end - start
                 if duration > MAX_CLIP_SECONDS:
                     break
                 if not clip_duration_is_valid(duration):
