@@ -55,7 +55,7 @@ jobs:
       CAPTION_MIN_WORD_PROBABILITY: "0.40"
       CAPTION_LOW_CONFIDENCE_FATAL: "0"
       CAPTION_SPELLING_MIN_ZIPF: "2.30"
-      CAPTION_HARD_MAX_CPS: "24.0"
+      CAPTION_HARD_MAX_CPS: "30.0"
       FORCE_TOP_FIVE: ${{ inputs.force_top_five == 'true' && '1' || '0' }}
 
     steps:
