@@ -7,6 +7,7 @@ import json
 import math
 import os
 import re
+import statistics
 import sys
 import time
 import urllib.error
@@ -22,6 +23,12 @@ ROOT = Path(__file__).resolve().parent
 OUTPUT_DIR = ROOT / "output"
 YOUTUBE_API = "https://www.googleapis.com/youtube/v3"
 GOOGLE_TRENDS_RSS = "https://trends.google.com/trending/rss?geo=BR"
+STATE_SCHEMA_VERSION = 2
+DEFAULT_STATE_FILE = ROOT / "state" / "history.json"
+CHAPTER_RE = re.compile(
+    r"(?m)^\\s*(?:(?P<h>\\d{1,2}):)?(?P<m>\\d{1,2}):(?P<s>\\d{2})"
+    r"\\s*(?:[-–—:|]\\s*)?(?P<title>[^\\n]{2,160})$"
+)
 
 DEFAULT_THEMES = [
     "bets apostas vício influenciadores",
@@ -162,10 +169,20 @@ class QuerySignal:
 
 
 @dataclass
+class Chapter:
+    seconds: int
+    title: str
+    heat_score: float = 0.0
+
+
+@dataclass
 class VideoCandidate:
     video_id: str
     title: str
     channel_title: str
+    channel_id: str
+    category_id: str
+    made_for_kids: bool
     published_at: str
     description: str
     duration_seconds: int
@@ -181,8 +198,24 @@ class VideoCandidate:
     sampled_comments: int = 0
     sampled_replies: int = 0
     comment_heat_score: float = 0.0
+    relevant_comment_heat: float = 0.0
+    recent_comment_heat: float = 0.0
     comment_divergence: bool = False
+    chapters: list[Chapter] = field(default_factory=list)
+    chapter_heat_score: float = 0.0
+    best_chapter: str = ""
+    cutability_score: float = 0.0
     views_per_hour: float = 0.0
+    recent_views_per_hour: float = 0.0
+    recent_comments_per_hour: float = 0.0
+    momentum_score: float = 50.0
+    momentum_state: str = "NEW"
+    momentum_ratio: float = 1.0
+    acceleration_ratio: float = 1.0
+    history_points: int = 0
+    channel_baseline_vph: float = 0.0
+    breakout_ratio: float = 1.0
+    breakout_score: float = 50.0
     comment_rate_per_1k: float = 0.0
     like_rate_per_1k: float = 0.0
     freshness_score: float = 0.0
@@ -192,6 +225,8 @@ class VideoCandidate:
     emotion_score: float = 0.0
     search_gap_score: float = 0.0
     source_score: float = 0.0
+    confidence_score: float = 0.0
+    rank_status: str = "DROP"
     radar_score: float | None = None
     rights_status: str = "manual_review"
     rights_note: str = "Licença/autorização de reutilização precisa ser verificada antes de usar o vídeo."
@@ -254,10 +289,18 @@ def clamp(value: float, low: float = 0.0, high: float = 100.0) -> float:
     return max(low, min(high, value))
 
 
+def safe_url_label(url: str) -> str:
+    try:
+        parsed = urllib.parse.urlsplit(url)
+        return f"{parsed.scheme}://{parsed.netloc}{parsed.path}"
+    except Exception:
+        return "<endpoint>"
+
+
 def fetch_bytes(url: str, *, timeout: int = 20, retries: int = 3) -> bytes:
-    last_error: Exception | None = None
+    last_error_type = "network_error"
     headers = {
-        "User-Agent": "CorteFinoRadar/1.0",
+        "User-Agent": "CorteFinoRadar/2.0",
         "Accept-Language": "pt-BR,pt;q=0.9,en;q=0.5",
     }
     for attempt in range(retries):
@@ -266,9 +309,11 @@ def fetch_bytes(url: str, *, timeout: int = 20, retries: int = 3) -> bytes:
             with urllib.request.urlopen(req, timeout=timeout) as response:
                 return response.read()
         except (urllib.error.URLError, TimeoutError) as exc:
-            last_error = exc
+            last_error_type = type(exc).__name__
             time.sleep(1.5 * (attempt + 1))
-    raise RuntimeError(f"Falha ao acessar {url}: {last_error}")
+    raise RuntimeError(
+        f"Falha ao acessar {safe_url_label(url)} ({last_error_type})"
+    )
 
 
 def fetch_json(base_url: str, params: dict[str, Any]) -> dict[str, Any]:
@@ -303,6 +348,7 @@ def youtube_search(
     query: str,
     published_after: str,
     max_results: int = 25,
+    order: str = "relevance",
 ) -> tuple[list[str], int]:
     payload = fetch_json(
         f"{YOUTUBE_API}/search",
@@ -311,7 +357,7 @@ def youtube_search(
             "type": "video",
             "q": query,
             "maxResults": max_results,
-            "order": "relevance",
+            "order": order,
             "regionCode": "BR",
             "relevanceLanguage": "pt",
             "safeSearch": "moderate",
@@ -350,7 +396,8 @@ def youtube_video_details(
 def youtube_comments(
     api_key: str,
     video_id: str,
-    max_results: int = 50,
+    max_results: int = 25,
+    order: str = "relevance",
 ) -> tuple[list[str], int]:
     try:
         payload = fetch_json(
@@ -359,14 +406,14 @@ def youtube_comments(
                 "part": "snippet",
                 "videoId": video_id,
                 "maxResults": max_results,
-                "order": "relevance",
+                "order": order,
                 "textFormat": "plainText",
                 "key": api_key,
             },
         )
     except Exception as exc:
         print(
-            f"[WARN] Comentários indisponíveis para {video_id}: {exc}",
+            f"[WARN] Comentários indisponíveis para {video_id} ({order}): {exc}",
             file=sys.stderr,
         )
         return [], 0
@@ -385,7 +432,14 @@ def youtube_comments(
 
 def preferred_source(channel_title: str) -> bool:
     norm = normalize(channel_title)
-    return any(pattern in norm for pattern in PREFERRED_SOURCE_PATTERNS)
+    for pattern in PREFERRED_SOURCE_PATTERNS:
+        if norm == pattern:
+            return True
+        if norm.startswith(pattern + " ") or norm.startswith(pattern + " ["):
+            return True
+        if norm.startswith(pattern + " -"):
+            return True
+    return False
 
 
 def term_present(norm: str, term: str) -> bool:
@@ -458,6 +512,210 @@ def editorial_format_fit(
     return marker_hits >= 2
 
 
+def parse_chapters(description: str) -> list[Chapter]:
+    chapters: list[Chapter] = []
+    last_seconds = -1
+    for match in CHAPTER_RE.finditer(description or ""):
+        hours = int(match.group("h") or 0)
+        minutes = int(match.group("m") or 0)
+        seconds = int(match.group("s") or 0)
+        total = hours * 3600 + minutes * 60 + seconds
+        if minutes >= 60 or seconds >= 60 or total <= last_seconds:
+            continue
+        title = match.group("title").strip(" -–—:|")
+        heat = clamp(
+            term_hits(title, CONTROVERSY_TERMS) * 28
+            + term_hits(title, EMOTION_TERMS) * 24
+        )
+        chapters.append(Chapter(total, title, heat))
+        last_seconds = total
+    return chapters if len(chapters) >= 2 else []
+
+
+def base_cutability(candidate: VideoCandidate) -> float:
+    score = 22.0
+    if candidate.preferred_source:
+        score += 18
+    if candidate.duration_seconds >= 30 * 60:
+        score += 8
+    if candidate.duration_seconds >= 60 * 60:
+        score += 4
+    if candidate.chapters:
+        score += min(24, len(candidate.chapters) * 3)
+        score += candidate.chapter_heat_score * 0.20
+    title_norm = normalize(candidate.title)
+    if any(
+        marker in title_norm
+        for marker in {"debate", "entrevista", "podcast", "papo", "conversa", "especial"}
+    ):
+        score += 8
+    if candidate.made_for_kids or any(
+        term in title_norm for term in {" kids", "infantil", "para crianças", "para criancas"}
+    ):
+        score -= 45
+    return clamp(score)
+
+
+def load_state(path: Path) -> dict[str, Any]:
+    try:
+        if not path.exists():
+            return {"schema_version": STATE_SCHEMA_VERSION, "videos": {}}
+        data = json.loads(path.read_text(encoding="utf-8"))
+        if not isinstance(data, dict):
+            raise ValueError("estado inválido")
+        data.setdefault("videos", {})
+        return data
+    except Exception as exc:
+        print(f"[WARN] Histórico ignorado: {type(exc).__name__}", file=sys.stderr)
+        return {"schema_version": STATE_SCHEMA_VERSION, "videos": {}}
+
+
+def apply_momentum(
+    candidates: list[VideoCandidate],
+    state: dict[str, Any],
+    now: datetime,
+) -> None:
+    videos = state.get("videos", {})
+    for candidate in candidates:
+        points = list(videos.get(candidate.video_id, []))[-12:]
+        candidate.history_points = len(points)
+        if not points:
+            candidate.momentum_state = "NEW"
+            candidate.momentum_score = 50.0
+            continue
+
+        last = points[-1]
+        last_ts = parse_datetime(str(last.get("ts") or ""))
+        delta_hours = (now - last_ts).total_seconds() / 3600
+        if delta_hours < 0.20 or delta_hours > 72:
+            candidate.momentum_state = "STALE"
+            candidate.momentum_score = 50.0
+            continue
+
+        delta_views = max(0, candidate.view_count - int(last.get("views") or 0))
+        delta_comments = max(
+            0,
+            candidate.comment_count - int(last.get("comments") or 0),
+        )
+        candidate.recent_views_per_hour = delta_views / max(delta_hours, 0.01)
+        candidate.recent_comments_per_hour = delta_comments / max(delta_hours, 0.01)
+        candidate.momentum_ratio = (
+            candidate.recent_views_per_hour / max(candidate.views_per_hour, 1.0)
+        )
+
+        acceleration = 1.0
+        if len(points) >= 2:
+            prev = points[-2]
+            prev_ts = parse_datetime(str(prev.get("ts") or ""))
+            prev_hours = (last_ts - prev_ts).total_seconds() / 3600
+            if prev_hours >= 0.20:
+                prev_vph = (
+                    max(0, int(last.get("views") or 0) - int(prev.get("views") or 0))
+                    / prev_hours
+                )
+                acceleration = (
+                    candidate.recent_views_per_hour / max(prev_vph, 1.0)
+                )
+        candidate.acceleration_ratio = acceleration
+
+        ratio_component = clamp(
+            50 + 24 * math.log2(max(0.20, candidate.momentum_ratio)),
+            15,
+            90,
+        )
+        acceleration_component = clamp(
+            50 + 18 * math.log2(max(0.25, acceleration)),
+            20,
+            90,
+        )
+        comment_component = clamp(
+            20 + 18 * math.log1p(candidate.recent_comments_per_hour),
+            20,
+            90,
+        )
+        candidate.momentum_score = clamp(
+            ratio_component * 0.50
+            + acceleration_component * 0.30
+            + comment_component * 0.20
+        )
+
+        if acceleration >= 1.35 or candidate.momentum_ratio >= 1.55:
+            candidate.momentum_state = "ACCELERATING"
+        elif candidate.momentum_ratio >= 1.15:
+            candidate.momentum_state = "RISING"
+        elif candidate.momentum_ratio <= 0.65:
+            candidate.momentum_state = "COOLING"
+        else:
+            candidate.momentum_state = "STEADY"
+
+
+def apply_channel_baselines(candidates: list[VideoCandidate]) -> None:
+    groups: dict[str, list[VideoCandidate]] = {}
+    for candidate in candidates:
+        key = candidate.channel_id or normalize(candidate.channel_title)
+        groups.setdefault(key, []).append(candidate)
+
+    for group in groups.values():
+        for candidate in group:
+            peers = [
+                peer.views_per_hour
+                for peer in group
+                if peer.video_id != candidate.video_id and peer.views_per_hour > 0
+            ]
+            if len(peers) < 2:
+                candidate.breakout_score = 50.0
+                candidate.breakout_ratio = 1.0
+                continue
+            baseline = statistics.median(peers)
+            candidate.channel_baseline_vph = baseline
+            candidate.breakout_ratio = candidate.views_per_hour / max(baseline, 1.0)
+            candidate.breakout_score = clamp(
+                50 + 28 * math.log2(max(0.20, candidate.breakout_ratio)),
+                10,
+                100,
+            )
+
+
+def update_state(
+    path: Path,
+    state: dict[str, Any],
+    candidates: list[VideoCandidate],
+    now: datetime,
+) -> None:
+    videos = state.setdefault("videos", {})
+    now_iso = now.isoformat()
+    seen_ids: set[str] = set()
+    for candidate in candidates:
+        seen_ids.add(candidate.video_id)
+        points = list(videos.get(candidate.video_id, []))
+        points.append(
+            {
+                "ts": now_iso,
+                "views": candidate.view_count,
+                "comments": candidate.comment_count,
+                "likes": candidate.like_count,
+            }
+        )
+        videos[candidate.video_id] = points[-12:]
+
+    cutoff = now - timedelta(days=30)
+    for video_id in list(videos):
+        points = videos.get(video_id) or []
+        if not points:
+            videos.pop(video_id, None)
+            continue
+        if parse_datetime(str(points[-1].get("ts") or "")) < cutoff:
+            videos.pop(video_id, None)
+
+    state["schema_version"] = STATE_SCHEMA_VERSION
+    state["updated_at"] = now_iso
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(
+        json.dumps(state, ensure_ascii=False, indent=2),
+        encoding="utf-8",
+    )
+
+
 def risk_flags(text: str) -> list[str]:
     norm = normalize(text)
     flags: list[str] = []
@@ -470,7 +728,7 @@ def risk_flags(text: str) -> list[str]:
         flags.append("sensitive_harm_or_death")
     if any(
         term in norm
-        for term in {"criança", "crianca", "menor", "adolescente"}
+        for term in {"criança", "crianca", "menor", "adolescente", " kids", "infantil"}
     ):
         flags.append("minor_related")
     return flags
@@ -562,7 +820,18 @@ def compute_base_metrics(
     candidate.search_gap_score = max(
         [signal.gap_score for signal in candidate.query_signals] or [0.0]
     )
-    candidate.source_score = 100.0 if candidate.preferred_source else 35.0
+    candidate.source_score = 100.0 if candidate.preferred_source else 25.0
+
+    candidate.chapters = parse_chapters(candidate.description)
+    candidate.chapter_heat_score = max(
+        [chapter.heat_score for chapter in candidate.chapters] or [0.0]
+    )
+    if candidate.chapters:
+        best = max(candidate.chapters, key=lambda chapter: chapter.heat_score)
+        candidate.best_chapter = (
+            f"{fmt_duration(best.seconds)} — {best.title}"
+        )
+    candidate.cutability_score = base_cutability(candidate)
 
     if candidate.youtube_license == "creativeCommon":
         candidate.rights_status = "youtube_creative_commons"
@@ -572,36 +841,81 @@ def compute_base_metrics(
         )
 
 
+def score_contributions(candidate: VideoCandidate) -> dict[str, float]:
+    return {
+        "momentum": candidate.momentum_score * 0.18,
+        "velocidade": candidate.velocity_score * 0.12,
+        "breakout": candidate.breakout_score * 0.12,
+        "engajamento": candidate.engagement_score * 0.10,
+        "comentários": candidate.comment_heat_score * 0.14,
+        "polêmica": candidate.controversy_score * 0.09,
+        "emoção": candidate.emotion_score * 0.08,
+        "cutability": candidate.cutability_score * 0.10,
+        "search gap": candidate.search_gap_score * 0.03,
+        "freshness": candidate.freshness_score * 0.02,
+        "fonte": candidate.source_score * 0.02,
+    }
+
+
+def compute_confidence(candidate: VideoCandidate) -> float:
+    score = 15.0
+    if candidate.history_points >= 1:
+        score += 20
+    if candidate.channel_baseline_vph > 0:
+        score += 15
+    if candidate.sampled_comments >= 20:
+        score += 20
+    if candidate.chapters:
+        score += 15
+    if candidate.preferred_source:
+        score += 10
+    age_hours = (
+        datetime.now(timezone.utc) - parse_datetime(candidate.published_at)
+    ).total_seconds() / 3600
+    if age_hours >= 3:
+        score += 5
+    return clamp(score)
+
+
 def finalize_score(candidate: VideoCandidate) -> None:
     if candidate.political_or_electoral:
         candidate.radar_score = None
+        candidate.rank_status = "POLITICAL_WATCHLIST"
+        return
+    if candidate.made_for_kids:
+        candidate.radar_score = None
+        candidate.rank_status = "DROP"
         return
 
-    # Não ranqueia conteúdo que só tem velocidade/fonte, mas nenhuma evidência
-    # de tensão editorial. Isso reduz esportes genéricos, shows e transmissões
-    # que performam bem sem oferecer o tipo de corte emocional/polêmico buscado.
     editorial_signal = max(
         candidate.controversy_score,
         candidate.emotion_score,
         candidate.comment_heat_score,
+        candidate.chapter_heat_score,
     )
     if editorial_signal < 20:
         candidate.radar_score = None
+        candidate.rank_status = "DROP"
         return
 
-    score = (
-        candidate.velocity_score * 0.24
-        + candidate.engagement_score * 0.13
-        + candidate.comment_heat_score * 0.18
-        + candidate.controversy_score * 0.12
-        + candidate.emotion_score * 0.10
-        + candidate.search_gap_score * 0.13
-        + candidate.freshness_score * 0.05
-        + candidate.source_score * 0.05
-    )
+    if candidate.comment_divergence:
+        candidate.cutability_score = clamp(candidate.cutability_score + 8)
+
+    contributions = score_contributions(candidate)
+    score = sum(contributions.values())
     if len(candidate.source_queries) >= 2:
-        score += min(5.0, 1.5 * (len(candidate.source_queries) - 1))
+        score += min(4.0, 1.25 * (len(candidate.source_queries) - 1))
     candidate.radar_score = round(clamp(score), 2)
+    candidate.confidence_score = round(compute_confidence(candidate), 2)
+
+    if candidate.radar_score >= 68:
+        candidate.rank_status = "HOT"
+    elif candidate.radar_score >= 57:
+        candidate.rank_status = "PROMISING"
+    elif candidate.radar_score >= 47:
+        candidate.rank_status = "WATCH"
+    else:
+        candidate.rank_status = "DROP"
 
 
 def candidate_from_item(
@@ -623,6 +937,9 @@ def candidate_from_item(
         video_id=video_id,
         title=title,
         channel_title=channel,
+        channel_id=str(snippet.get("channelId") or ""),
+        category_id=str(snippet.get("categoryId") or ""),
+        made_for_kids=bool(status.get("madeForKids") or False),
         published_at=str(snippet.get("publishedAt") or ""),
         description=description,
         duration_seconds=parse_iso8601_duration(
@@ -687,6 +1004,7 @@ def collect_candidates(
     trend_limit: int,
     max_queries: int,
     extra_topics: list[str],
+    state_file: Path,
 ) -> tuple[list[VideoCandidate], list[Trend], list[QuerySignal]]:
     now = datetime.now(timezone.utc)
     published_after = (
@@ -694,6 +1012,7 @@ def collect_candidates(
     ).isoformat(timespec="seconds").replace("+00:00", "Z")
 
     trends = fetch_google_trends(trend_limit)
+    state = load_state(state_file)
     queries = build_queries(
         trends,
         extra_topics,
@@ -710,6 +1029,7 @@ def collect_candidates(
                 api_key,
                 query,
                 published_after,
+                order="date" if source == "preferred_source" else "relevance",
             )
         except Exception as exc:
             print(
@@ -770,7 +1090,17 @@ def collect_candidates(
         ):
             continue
 
+        title_norm = normalize(candidate.title)
+        if candidate.made_for_kids or any(
+            term in title_norm
+            for term in {" kids", "infantil", "para crianças", "para criancas"}
+        ):
+            continue
+
         candidates.append(candidate)
+
+    apply_channel_baselines(candidates)
+    apply_momentum(candidates, state, now)
 
     pre_ranked = sorted(
         [
@@ -779,32 +1109,58 @@ def collect_candidates(
             if not c.political_or_electoral
         ],
         key=lambda c: (
-            c.velocity_score * 0.35
-            + c.engagement_score * 0.20
-            + c.controversy_score * 0.15
-            + c.emotion_score * 0.10
-            + c.search_gap_score * 0.15
-            + c.source_score * 0.05
+            c.momentum_score * 0.24
+            + c.breakout_score * 0.18
+            + c.velocity_score * 0.18
+            + c.engagement_score * 0.12
+            + c.controversy_score * 0.10
+            + c.emotion_score * 0.08
+            + c.cutability_score * 0.10
         ),
         reverse=True,
     )
 
-    for candidate in pre_ranked[:min(20, len(pre_ranked))]:
-        comments, replies = youtube_comments(
+    for candidate in pre_ranked[:min(24, len(pre_ranked))]:
+        relevant, relevant_replies = youtube_comments(
             api_key,
             candidate.video_id,
-            50,
+            25,
+            order="relevance",
         )
-        candidate.sampled_comments = len(comments)
-        candidate.sampled_replies = replies
-        (
-            candidate.comment_heat_score,
-            candidate.comment_divergence,
-        ) = comment_analysis(comments, replies)
+        recent, recent_replies = youtube_comments(
+            api_key,
+            candidate.video_id,
+            25,
+            order="time",
+        )
+        relevant_heat, relevant_divergence = comment_analysis(
+            relevant,
+            relevant_replies,
+        )
+        recent_heat, recent_divergence = comment_analysis(
+            recent,
+            recent_replies,
+        )
+        unique_comments = {
+            normalize(comment)
+            for comment in relevant + recent
+            if normalize(comment)
+        }
+        candidate.sampled_comments = len(unique_comments)
+        candidate.sampled_replies = relevant_replies + recent_replies
+        candidate.relevant_comment_heat = relevant_heat
+        candidate.recent_comment_heat = recent_heat
+        candidate.comment_heat_score = clamp(
+            recent_heat * 0.60 + relevant_heat * 0.40
+        )
+        candidate.comment_divergence = (
+            recent_divergence or relevant_divergence
+        )
 
     for candidate in candidates:
         finalize_score(candidate)
 
+    update_state(state_file, state, candidates, now)
     return candidates, trends, all_signals
 
 
@@ -821,46 +1177,28 @@ def fmt_duration(seconds: int) -> str:
 
 
 def explain(candidate: VideoCandidate) -> list[str]:
-    reasons = [
-        (
-            candidate.velocity_score,
-            f"velocidade de views {candidate.views_per_hour:,.0f}/h".replace(
-                ",",
-                ".",
-            ),
-        ),
-        (
-            candidate.comment_heat_score,
-            "comentários com forte reação/divergência",
-        ),
-        (
-            candidate.controversy_score,
-            "vocabulário de conflito/polêmica",
-        ),
-        (
-            candidate.emotion_score,
-            "carga emocional",
-        ),
-        (
-            candidate.search_gap_score,
-            "demanda/saturação favorável",
-        ),
-        (
-            candidate.source_score,
-            "fonte editorial preferida",
-        ),
-        (
-            candidate.engagement_score,
-            "densidade de comentários/likes",
-        ),
-    ]
+    contributions = score_contributions(candidate)
+    labels = {
+        "momentum": f"momentum {candidate.momentum_state.lower()}",
+        "velocidade": f"velocidade média {candidate.views_per_hour:,.0f}/h".replace(",", "."),
+        "breakout": f"breakout {candidate.breakout_ratio:.1f}× vs. canal",
+        "engajamento": "densidade de comentários/likes",
+        "comentários": "comentários com reação/divergência",
+        "polêmica": "conflito/polêmica",
+        "emoção": "carga emocional",
+        "cutability": "boa estrutura para cortes",
+        "search gap": "demanda/saturação favorável",
+        "freshness": "publicação recente",
+        "fonte": "fonte editorial reconhecida",
+    }
     return [
-        text
-        for score, text in sorted(
-            reasons,
+        labels[name]
+        for name, contribution in sorted(
+            contributions.items(),
+            key=lambda item: item[1],
             reverse=True,
         )[:3]
-        if score >= 20
+        if contribution > 0
     ]
 
 
@@ -982,9 +1320,19 @@ def write_outputs(
             "duration",
             "views",
             "views_per_hour",
+            "recent_views_per_hour",
+            "momentum_state",
+            "momentum_score",
+            "breakout_ratio",
+            "breakout_score",
+            "cutability_score",
+            "confidence_score",
+            "rank_status",
             "comments",
             "comment_rate_per_1k",
             "comment_heat",
+            "recent_comment_heat",
+            "relevant_comment_heat",
             "search_gap",
             "preferred_source",
             "youtube_license",
@@ -1001,9 +1349,19 @@ def write_outputs(
                 fmt_duration(c.duration_seconds),
                 c.view_count,
                 round(c.views_per_hour, 2),
+                round(c.recent_views_per_hour, 2),
+                c.momentum_state,
+                round(c.momentum_score, 2),
+                round(c.breakout_ratio, 3),
+                round(c.breakout_score, 2),
+                round(c.cutability_score, 2),
+                round(c.confidence_score, 2),
+                c.rank_status,
                 c.comment_count,
                 round(c.comment_rate_per_1k, 3),
                 round(c.comment_heat_score, 2),
+                round(c.recent_comment_heat, 2),
+                round(c.relevant_comment_heat, 2),
                 round(c.search_gap_score, 2),
                 c.preferred_source,
                 c.youtube_license,
@@ -1012,7 +1370,7 @@ def write_outputs(
             ])
 
     lines = [
-        "# 🎯 Corte Fino — Radar Viral",
+        "# 🎯 Corte Fino — Radar Viral V2",
         "",
         (
             "Atualizado em "
@@ -1054,14 +1412,22 @@ def write_outputs(
                 f"{c.channel_title}  "
             ),
             (
-                f"   Score: **{c.radar_score:.1f}/100** | "
+                f"   **{c.rank_status}** | Score **{c.radar_score:.1f}/100** | "
+                f"confiança {c.confidence_score:.0f}/100 | "
                 f"{fmt_int(c.view_count)} views | "
                 f"{c.views_per_hour:,.0f} views/h médio | "
+                f"momentum {c.momentum_state} ({c.momentum_score:.0f}) | "
+                f"breakout {c.breakout_ratio:.1f}× | "
+                f"cutability {c.cutability_score:.0f} | "
                 f"{fmt_int(c.comment_count)} comentários | "
                 f"{fmt_duration(c.duration_seconds)} | "
                 f"{license_note}{risk}  "
             ),
             f"   Por quê: {reason}.  ",
+            (
+                f"   Melhor capítulo: {c.best_chapter}  "
+                if c.best_chapter else ""
+            ),
             f"   {c.url}",
             "",
         ])
@@ -1138,6 +1504,14 @@ def write_outputs(
             "do YouTube como proxy; Creator Search Insights do TikTok "
             "não é consumido diretamente."
         ),
+        (
+            "- Momentum usa snapshots entre rodadas; na primeira aparição "
+            "o vídeo recebe estado NEW e confiança menor."
+        ),
+        (
+            "- O score considera breakout relativo ao próprio canal quando "
+            "há amostra suficiente de vídeos recentes."
+        ),
     ])
 
     (
@@ -1175,6 +1549,13 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument(
         "--extra-topics",
         default=os.environ.get("RADAR_EXTRA_TOPICS", ""),
+    )
+    parser.add_argument(
+        "--state-file",
+        default=os.environ.get(
+            "RADAR_STATE_FILE",
+            str(DEFAULT_STATE_FILE),
+        ),
     )
     return parser.parse_args()
 
@@ -1223,6 +1604,7 @@ def main() -> int:
             min(args.max_queries, 30),
         ),
         extra_topics=extra_topics,
+        state_file=Path(args.state_file),
     )
 
     write_outputs(
