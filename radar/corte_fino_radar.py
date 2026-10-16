@@ -48,10 +48,10 @@ DEFAULT_THEMES = [
 SOURCE_QUERIES = [
     "Flow Podcast",
     "Inteligência Ltda",
-    "Cortes do Flow",
-    "Cortes do Inteligência",
     "RedCast",
     "Podpah",
+    "AchismosTV",
+    "Jota Jota Podcast",
 ]
 
 PREFERRED_SOURCE_PATTERNS = [
@@ -69,6 +69,7 @@ PREFERRED_SOURCE_PATTERNS = [
     "fala ordinário",
     "fala ordinario",
     "achismos",
+    "achismostv",
     "jota jota podcast",
     "primo cast",
     "primocast",
@@ -965,6 +966,7 @@ def build_queries(
     trends: list[Trend],
     extra_topics: list[str],
     max_queries: int,
+    theme_offset: int = 0,
 ) -> list[tuple[str, str, Trend | None]]:
     queries: list[tuple[str, str, Trend | None]] = []
     queries.extend(
@@ -980,9 +982,14 @@ def build_queries(
         (source, "preferred_source", None)
         for source in SOURCE_QUERIES
     )
+    if DEFAULT_THEMES:
+        offset = theme_offset % len(DEFAULT_THEMES)
+        rotated_themes = DEFAULT_THEMES[offset:] + DEFAULT_THEMES[:offset]
+    else:
+        rotated_themes = []
     queries.extend(
         (theme, "editorial_theme", None)
-        for theme in DEFAULT_THEMES
+        for theme in rotated_themes
     )
 
     deduped: list[tuple[str, str, Trend | None]] = []
@@ -1013,10 +1020,12 @@ def collect_candidates(
 
     trends = fetch_google_trends(trend_limit)
     state = load_state(state_file)
+    theme_offset = int(now.timestamp() // (6 * 3600)) % max(1, len(DEFAULT_THEMES))
     queries = build_queries(
         trends,
         extra_topics,
         max_queries,
+        theme_offset=theme_offset,
     )
 
     video_signals: dict[str, list[QuerySignal]] = {}
