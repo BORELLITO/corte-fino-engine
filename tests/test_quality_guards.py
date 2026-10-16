@@ -288,6 +288,19 @@ def test_relaxed_narrative_accepts_real_pause_as_closure_but_not_transcript_end(
     assert at_transcript_end["passed"] is False
 
 
+def test_coverage_fallback_keeps_context_without_terminal_punctuation():
+    segments = [
+        Segment(0, 18, "A história começa quando o convidado explica o problema que ninguém queria discutir", []),
+        Segment(18, 38, "Depois ele mostra os fatos, apresenta o conflito principal e explica o resultado", []),
+        Segment(38, 58, "Essa foi a consequência para muita gente", []),
+        Segment(59.0, 62.0, "Agora ele muda de assunto.", []),
+    ]
+    quality = narrative_quality(segments, 0, 3, relaxed=True, coverage=True)
+    assert quality["passed"] is True
+    assert quality["quality_mode"] == "coverage_contextual_fallback"
+    assert quality["coverage_closure"] is True
+
+
 def test_story_map_reads_the_source_as_temporal_editorial_blocks():
     segments = [
         Segment(0, 18, "O governo anunciou uma medida importante para o país.", []),
