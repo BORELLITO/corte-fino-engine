@@ -99,10 +99,10 @@ jobs:
           TITLE="🎯 Corte Fino — Radar Viral (automático)"
           NUMBER="$(gh issue list \
             --state open \
-            --limit 100 \
+            --search "$TITLE in:title" \
+            --limit 20 \
             --json number,title \
-            --jq '.[] | select(.title == "'"'"$TITLE"'"'") | .number' \
-            | head -n 1)"
+            --jq '.[0].number // empty')"
 
           if [ -z "$NUMBER" ]; then
             gh issue create \
