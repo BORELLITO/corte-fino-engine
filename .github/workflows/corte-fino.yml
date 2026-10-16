@@ -310,6 +310,10 @@ jobs:
                       or len(rendered_qa) != 5
                       or not all(item.get("passed") for item in rendered_qa)
                       or not all(
+                          (item.get("narrative_qa") or {}).get("passed")
+                          for item in rendered_qa
+                      )
+                      or not all(
                           float(clip.get("duration") or 0) > 60.0
                           for clip in data.get("clips", [])
                       )
