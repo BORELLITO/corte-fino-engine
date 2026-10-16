@@ -173,6 +173,7 @@ GENERIC_STARTS = (
 # O corte só é considerado autônomo quando não depende de uma fala anterior.
 NARRATIVE_DEPENDENT_OPENINGS = (
     "como eu falei", "como falei", "isso porque", "aí eu", "ai eu",
+    "porque ", "porém ", "porem ", "mas ", "por isso ", "então ", "entao ",
     "isso ", "ele ", "ela ", "eles ", "elas ", "aquilo ",
     "esse ", "essa ", "aquele ", "aquela ",
 )
