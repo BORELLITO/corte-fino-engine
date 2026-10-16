@@ -5,8 +5,10 @@ from radar.corte_fino_radar import (
     VideoCandidate,
     build_queries,
     comment_analysis,
+    editorial_format_fit,
     finalize_score,
     is_political,
+    likely_portuguese,
     parse_iso8601_duration,
     parse_traffic,
     query_gap_score,
@@ -86,3 +88,46 @@ def test_query_priority_keeps_sources_before_generic_themes():
         "RedCast",
         "Podpah",
     ]
+
+
+def test_nonpolitical_description_with_one_context_word_is_not_flagged():
+    assert not is_political(
+        "Saúde mental da mocidade",
+        "Conversa sobre saúde, família e ações do governo.",
+        "Canal de Psicologia",
+    )
+
+
+def test_political_named_actor_is_flagged():
+    assert is_political(
+        "Entrevista com Lula",
+        "Conversa sobre economia.",
+        "Canal de Entrevistas",
+    )
+
+
+def test_language_filter_rejects_english_and_accepts_portuguese():
+    assert likely_portuguese(
+        "Esse podcast fala sobre a vida no Brasil e como você pode mudar."
+    )
+    assert not likely_portuguese(
+        "A video about a man who was followed by ventriloquists."
+    )
+
+
+def test_editorial_format_requires_conversational_longform_shape():
+    assert editorial_format_fit(
+        "DEBATE SOBRE RELACIONAMENTOS",
+        "",
+        "Canal X",
+    )
+    assert editorial_format_fit(
+        "Tema qualquer",
+        "",
+        "Inteligência Ltda",
+    )
+    assert not editorial_format_fit(
+        "ORAÇÃO DA NOITE",
+        "Ore conosco e deixe seu pedido nos comentários.",
+        "Canal de Orações",
+    )
