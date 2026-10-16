@@ -33,10 +33,10 @@ jobs:
 
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
 
       - name: Python
-        uses: actions/setup-python@v5
+        uses: actions/setup-python@v7
         with:
           python-version: "3.12"
 
@@ -50,7 +50,7 @@ jobs:
           python -m pytest -q tests/test_radar.py
 
       - name: Restaurar histórico de momentum
-        uses: actions/cache/restore@v4
+        uses: actions/cache/restore@v6
         with:
           path: radar/state/history.json
           key: corte-fino-radar-state-${{ github.run_id }}
@@ -94,7 +94,7 @@ jobs:
 
       - name: Salvar histórico de momentum
         if: success()
-        uses: actions/cache/save@v4
+        uses: actions/cache/save@v6
         with:
           path: radar/state/history.json
           key: corte-fino-radar-state-${{ github.run_id }}
