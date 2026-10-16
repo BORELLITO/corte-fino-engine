@@ -1,6 +1,12 @@
 name: Corte Fino Motor 0 — Radar Viral
 
 on:
+  push:
+    branches: [main]
+    paths:
+      - "radar/**"
+      - "tests/test_radar.py"
+      - ".github/workflows/corte-fino-radar.yml"
   workflow_dispatch:
     inputs:
       days:
