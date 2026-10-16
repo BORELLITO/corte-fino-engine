@@ -176,8 +176,15 @@ GENERIC_STARTS = (
 NARRATIVE_DEPENDENT_OPENINGS = (
     "como eu falei", "como falei", "isso porque", "aí eu", "ai eu",
     "porque ", "porém ", "porem ", "mas ", "por isso ", "então ", "entao ",
-    "isso ", "ele ", "ela ", "eles ", "elas ", "aquilo ",
-    "esse ", "essa ", "aquele ", "aquela ",
+    "isso ", "aquilo ", "esse ", "essa ", "aquele ", "aquela ",
+)
+# Pronomes pessoais no início de uma frase completa não são, sozinhos,
+# evidência de corte sem contexto. Em entrevistas, “Ele...”/“Ela...” costuma
+# retomar a pessoa já identificada pelo título ou pelo próprio bloco anterior.
+# Eles passam quando a frase é autônoma, mas permanecem registrados como alerta
+# editorial para revisão humana.
+NARRATIVE_CONTEXTUAL_PRONOUN_OPENINGS = (
+    "ele ", "ela ", "eles ", "elas ",
 )
 NARRATIVE_INCOMPLETE_ENDINGS = {
     "a", "as", "ao", "aos", "da", "das", "de", "do", "dos",
@@ -806,6 +813,7 @@ def narrative_quality(
     first_sentence_text = first_sentence(first_text)
     first_sentence_tokens = words_of(first_sentence_text)
     dependent_opening = lower_text.startswith(NARRATIVE_DEPENDENT_OPENINGS)
+    contextual_pronoun_opening = lower_text.startswith(NARRATIVE_CONTEXTUAL_PRONOUN_OPENINGS)
     natural_start = (
         previous is None
         or _text_ends_terminal(previous.text)
@@ -861,7 +869,9 @@ def narrative_quality(
         "issues": sorted(set(issues)),
         "warnings": [
             warning for warning in (
-                "abertura com pronome/conector; revisão editorial recomendada"
+                "abertura pronominal; conferir referência no título e no bloco anterior"
+                if contextual_pronoun_opening and passed else "",
+                "abertura com conector; revisão editorial recomendada"
                 if dependent_opening and passed else "",
                 "coesão temática baixa entre começo, desenvolvimento e fechamento"
                 if topic_cohesion < 0.25 and passed else "",
@@ -880,6 +890,7 @@ def narrative_quality(
         "natural_end": natural_end,
         "terminal_ending": terminal_ending,
         "dependent_opening": dependent_opening,
+        "contextual_pronoun_opening": contextual_pronoun_opening,
         "incomplete_ending": incomplete_ending,
         "development_hits": development_hits,
         "resolution_hits": resolution_hits,
