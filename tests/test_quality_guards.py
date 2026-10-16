@@ -260,6 +260,34 @@ def test_narrative_relaxed_fallback_keeps_context_and_closure_gates():
     assert relaxed["quality_mode"] == "relaxed_contextual_fallback"
 
 
+def test_narrative_opening_uses_full_block_not_first_asr_fragment():
+    segments = [
+        Segment(0, 1.2, "A", []),
+        Segment(1.2, 4.0, "história começa quando o convidado explica o problema que ninguém queria discutir.", []),
+        Segment(4.0, 24.0, "Depois ele mostra os fatos, apresenta o conflito principal e explica por que aquela decisão mudou o resultado para muita gente.", []),
+        Segment(24.0, 44.0, "No fim, ele revela a consequência mais importante e fecha a ideia dizendo que a responsabilidade continua sendo de quem escolhe.", []),
+    ]
+    quality = narrative_quality(segments, 0, 4)
+    assert quality["passed"] is True
+    assert quality["autonomous_start"] is True
+
+
+def test_relaxed_narrative_accepts_real_pause_as_closure_but_not_transcript_end():
+    segments = [
+        Segment(0, 18, "A história começa quando o convidado explica o problema que ninguém queria discutir", []),
+        Segment(18, 38, "Depois ele mostra os fatos, apresenta o conflito principal e explica o resultado", []),
+        Segment(38, 58, "Essa foi a consequência para muita gente", []),
+        Segment(59.0, 62.0, "Agora ele muda de assunto.", []),
+    ]
+    quality = narrative_quality(segments, 0, 3, relaxed=True)
+    assert quality["passed"] is True
+    assert quality["gap_closure"] is True
+    assert quality["natural_end"] is True
+
+    at_transcript_end = narrative_quality(segments, 0, 4, relaxed=True)
+    assert at_transcript_end["passed"] is False
+
+
 def test_story_map_reads_the_source_as_temporal_editorial_blocks():
     segments = [
         Segment(0, 18, "O governo anunciou uma medida importante para o país.", []),
