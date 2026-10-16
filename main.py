@@ -2040,6 +2040,9 @@ def render_clip(source: Path, captions: Path, candidate: Candidate, output: Path
         "ffmpeg", "-y", "-ss", f"{candidate.start:.3f}", "-i", str(source), "-t", f"{candidate.duration:.3f}",
         "-filter_complex", filter_complex, "-map", "[v]", "-map", "0:a:0?", "-c:v", "libx264", "-preset", VIDEO_PRESET,
         "-crf", str(VIDEO_CRF), "-profile:v", "high", "-level:v", "4.2", "-pix_fmt", "yuv420p", "-r", "30",
+        # Pequena margem contra pico de codificação em 0 dBFS; mantém a fala intacta
+        # e evita falsos negativos no gate de clipping do AAC.
+        "-af", "volume=-1dB",
         "-c:a", "aac", "-b:a", VIDEO_AUDIO_BITRATE, "-ac", "2", "-ar", "48000",
         "-movflags", "+faststart", "-shortest", "-avoid_negative_ts", "make_zero", str(output),
     ])
@@ -2057,6 +2060,14 @@ def render_and_validate(
         temporary.unlink()
     render_clip(source, captions, candidate, temporary)
     qa = validate_video(temporary, candidate.duration)
+    if not qa["passed"]:
+        failed_checks = [name for name, passed in qa.get("checks", {}).items() if not passed]
+        print(
+            f"QA técnico {temporary.name}: falhas={failed_checks} "
+            f"mean_volume={qa.get('mean_volume_db')} max_volume={qa.get('max_volume_db')} "
+            f"duration={qa.get('duration')}",
+            file=sys.stderr,
+        )
     if qa["passed"]:
         temporary.replace(output)
         qa["file"] = output.name
