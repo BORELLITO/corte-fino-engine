@@ -59,16 +59,17 @@ PREFERRED_SOURCE_PATTERNS = [
     "cortes do flow",
     "inteligência ltda",
     "inteligencia ltda",
-    "cortes do inteligência",
-    "cortes do inteligencia",
+    "cortes do inteligência [oficial]",
+    "cortes do inteligencia [oficial]",
     "redcast",
+    "redcast [oficial]",
     "podpah",
+    "podpah tv",
     "pânico",
     "panico",
     "venus podcast",
     "fala ordinário",
     "fala ordinario",
-    "achismos",
     "achismostv",
     "jota jota podcast",
     "primo cast",
@@ -432,15 +433,7 @@ def youtube_comments(
 
 
 def preferred_source(channel_title: str) -> bool:
-    norm = normalize(channel_title)
-    for pattern in PREFERRED_SOURCE_PATTERNS:
-        if norm == pattern:
-            return True
-        if norm.startswith(pattern + " ") or norm.startswith(pattern + " ["):
-            return True
-        if norm.startswith(pattern + " -"):
-            return True
-    return False
+    return normalize(channel_title) in PREFERRED_SOURCE_PATTERNS
 
 
 def term_present(norm: str, term: str) -> bool:
