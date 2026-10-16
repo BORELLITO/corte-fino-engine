@@ -857,7 +857,7 @@ def narrative_quality(
     gap_closure = bool(
         relaxed
         and following is not None
-        and end_gap >= CAPTION_SENTENCE_GAP
+        and end_gap >= fallback_start_gap
         and not incomplete_ending
         and final_sentence_words >= 3
     )
