@@ -247,6 +247,19 @@ def test_narrative_allows_a_complete_pronoun_opening_with_editorial_warning():
     assert any("abertura pronominal" in warning for warning in quality["warnings"])
 
 
+def test_narrative_relaxed_fallback_keeps_context_and_closure_gates():
+    segments = [
+        Segment(0, 22, "A história explica o problema que ninguém queria discutir e mostra por que a decisão foi tomada", []),
+        Segment(22, 44, "Depois apresenta os fatos, compara as versões e detalha o conflito que mudou o resultado", []),
+        Segment(44, 66, "Tudo terminou bem.", []),
+    ]
+    strict = narrative_quality(segments, 0, 3)
+    relaxed = narrative_quality(segments, 0, 3, relaxed=True)
+    assert strict["passed"] is False
+    assert relaxed["passed"] is True
+    assert relaxed["quality_mode"] == "relaxed_contextual_fallback"
+
+
 def test_story_map_reads_the_source_as_temporal_editorial_blocks():
     segments = [
         Segment(0, 18, "O governo anunciou uma medida importante para o país.", []),
