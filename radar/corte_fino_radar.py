@@ -249,7 +249,7 @@ def term_hits(text: str, terms: Iterable[str]) -> int:
         if " " in term or len(term) >= 4:
             matched = term in norm
         else:
-            matched = bool(re.search(rf"(?<!\\w){re.escape(term)}(?!\\w)", norm))
+            matched = bool(re.search(rf"(?<!\w){re.escape(term)}(?!\w)", norm))
         hits += int(matched)
     return hits
 
