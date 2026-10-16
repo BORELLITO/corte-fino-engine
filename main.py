@@ -170,6 +170,22 @@ GENERIC_STARTS = (
     "aí eu", "ai eu", "né,", "ne,", "bom, então", "bom entao",
 )
 
+# O corte só é considerado autônomo quando não depende de uma fala anterior.
+NARRATIVE_DEPENDENT_OPENINGS = (
+    "como eu falei", "como falei", "isso porque", "aí eu", "ai eu",
+    "isso ", "ele ", "ela ", "eles ", "elas ", "aquilo ",
+    "esse ", "essa ", "aquele ", "aquela ",
+)
+NARRATIVE_INCOMPLETE_ENDINGS = {
+    "a", "as", "ao", "aos", "da", "das", "de", "do", "dos",
+    "em", "na", "nas", "no", "nos", "para", "pela", "pelas",
+    "pelo", "pelos", "por", "que", "se", "um", "uma", "uns",
+    "umas", "e", "ou", "mas", "porque", "como", "quando",
+    "onde", "com", "sem", "é",
+}
+NARRATIVE_MIN_WORDS = 45
+NARRATIVE_MIN_SENTENCES = 2
+
 NICHE_SIGNAL_MAP = {
     "política e poder": {
         "signals": {"governo", "presidente", "congresso", "stf", "ministro", "eleição", "eleicoes", "voto", "bolsonaro", "lula", "centrão", "corrupção"},
@@ -618,6 +634,155 @@ def score_text(
     return score, components, trigger, editorial_reason(trigger), premise, rejection
 
 
+def _text_ends_terminal(value: str) -> bool:
+    return bool(re.search(r"[.!?…]\\s*$", str(value).strip()))
+
+
+def narrative_quality(
+    segments: list[Segment],
+    start_index: int,
+    end_index: int,
+) -> dict[str, Any]:
+    """Garante começo autônomo, desenvolvimento e fechamento natural."""
+    selected = segments[start_index:end_index]
+    if not selected:
+        return {
+            "passed": False,
+            "issues": ["nenhum segmento narrativo foi selecionado"],
+            "warnings": [],
+            "components": {},
+            "score_bonus": 0.0,
+        }
+
+    text = " ".join(segment.text for segment in selected).strip()
+    tokens = words_of(text)
+    sentence_count = len(re.findall(r"[.!?…]", text))
+    first_text = selected[0].text.strip()
+    last_text = selected[-1].text.strip()
+    previous = segments[start_index - 1] if start_index > 0 else None
+    following = segments[end_index] if end_index < len(segments) else None
+    start_gap = (
+        selected[0].start - previous.end
+        if previous is not None
+        else 0.0
+    )
+    end_gap = (
+        following.start - selected[-1].end
+        if following is not None
+        else 0.0
+    )
+    natural_start = (
+        previous is None
+        or _text_ends_terminal(previous.text)
+        or start_gap >= CAPTION_SENTENCE_GAP
+    )
+    terminal_ending = _text_ends_terminal(last_text)
+    natural_end = (
+        terminal_ending
+        or following is None
+        or end_gap >= CAPTION_SENTENCE_GAP
+    )
+    lower_text = text.casefold()
+    dependent_opening = lower_text.startswith(NARRATIVE_DEPENDENT_OPENINGS)
+    final_token = tokens[-1] if tokens else ""
+    incomplete_ending = final_token in NARRATIVE_INCOMPLETE_ENDINGS
+    enough_context = (
+        len(tokens) >= NARRATIVE_MIN_WORDS
+        and not (dependent_opening and sentence_count < 3)
+    )
+    enough_development = (
+        len(tokens) >= NARRATIVE_MIN_WORDS
+        and sentence_count >= NARRATIVE_MIN_SENTENCES
+    )
+    has_conclusion = (
+        natural_end
+        and not incomplete_ending
+        and (terminal_ending or following is None or end_gap >= CAPTION_SENTENCE_GAP)
+    )
+
+    issues: list[str] = []
+    if not natural_start:
+        issues.append("começa no meio de uma ideia")
+    if not enough_context:
+        issues.append("contexto insuficiente para entender a premissa")
+    if not enough_development:
+        issues.append("desenvolvimento insuficiente para formar começo, meio e fim")
+    if not has_conclusion:
+        issues.append("termina antes de uma conclusão natural")
+    if incomplete_ending:
+        issues.append(f"termina em palavra dependente: {final_token}")
+
+    score_bonus = sum((
+        2.0 if natural_start else 0.0,
+        3.0 if enough_context else 0.0,
+        3.0 if enough_development else 0.0,
+        3.0 if has_conclusion else 0.0,
+        1.0 if terminal_ending else 0.0,
+    ))
+    passed = not issues
+    return {
+        "passed": passed,
+        "issues": sorted(set(issues)),
+        "warnings": (
+            ["abertura com pronome/conector; revisão editorial recomendada"]
+            if dependent_opening and passed
+            else []
+        ),
+        "start_index": start_index,
+        "end_index": end_index,
+        "word_count": len(tokens),
+        "sentence_count": sentence_count,
+        "natural_start": natural_start,
+        "natural_end": natural_end,
+        "terminal_ending": terminal_ending,
+        "dependent_opening": dependent_opening,
+        "incomplete_ending": incomplete_ending,
+        "components": {
+            "narrative_start": 2.0 if natural_start else 0.0,
+            "narrative_context": 3.0 if enough_context else 0.0,
+            "narrative_development": 3.0 if enough_development else 0.0,
+            "narrative_conclusion": 3.0 if has_conclusion else 0.0,
+            "narrative_terminal_punctuation": 1.0 if terminal_ending else 0.0,
+        },
+        "score_bonus": round(score_bonus, 2),
+        "summary": (
+            "começo natural, contexto suficiente, desenvolvimento e conclusão fechada"
+            if passed
+            else "; ".join(sorted(set(issues)))
+        ),
+    }
+
+
+def validate_narrative(
+    segments: list[Segment],
+    candidate: Candidate,
+) -> dict[str, Any]:
+    """Revalida a unidade narrativa do candidato antes do render."""
+    start_index = next(
+        (
+            index for index, segment in enumerate(segments)
+            if abs(segment.start - candidate.start) <= 0.05
+        ),
+        None,
+    )
+    end_index = next(
+        (
+            index + 1 for index, segment in enumerate(segments)
+            if abs(segment.end - candidate.end) <= 0.05
+        ),
+        None,
+    )
+    if start_index is None or end_index is None or end_index <= start_index:
+        return {
+            "passed": False,
+            "issues": ["limites narrativos não correspondem aos segmentos da transcrição"],
+            "warnings": [],
+            "components": {},
+            "score_bonus": 0.0,
+        }
+    return narrative_quality(segments, start_index, end_index)
+
+
 def build_candidates(
     segments: list[Segment],
     profile: dict[str, Any] | None = None,
@@ -627,19 +792,30 @@ def build_candidates(
     step = max(1, len(segments) // max_starts)
     for index in range(0, len(segments), step):
         start = segments[index].start
-        eligible: list[tuple[int, float]] = []
+        eligible: list[tuple[int, float, dict[str, Any]]] = []
         for end_index in range(index + 1, min(len(segments), index + 80)):
             duration = segments[end_index].end - start
             if duration > MAX_CLIP_SECONDS:
                 break
-            if clip_duration_is_valid(duration) and (re.search(r"[.!?…]$", segments[end_index - 1].text) or duration >= TARGET_CLIP_SECONDS):
-                eligible.append((end_index, duration))
+            if not clip_duration_is_valid(duration):
+                continue
+            narrative = narrative_quality(segments, index, end_index)
+            if narrative["passed"]:
+                eligible.append((end_index, duration, narrative))
         if not eligible:
             continue
-        eligible.sort(key=lambda item: abs(item[1] - TARGET_CLIP_SECONDS))
-        for end_index, duration in eligible[:2]:
+        eligible.sort(
+            key=lambda item: (
+                abs(item[1] - TARGET_CLIP_SECONDS),
+                -float(item[2]["score_bonus"]),
+            )
+        )
+        for end_index, duration, narrative in eligible[:2]:
             text = " ".join(item.text for item in segments[index:end_index]).strip()
             score, components, trigger, reason, premise, rejection = score_text(text, profile)
+            components.update(narrative["components"])
+            score = round(min(100.0, score + float(narrative["score_bonus"])), 2)
+            reason = f"{reason} {narrative['summary'].capitalize()}."
             candidates.append(Candidate(
                 start,
                 segments[end_index - 1].end,
@@ -705,6 +881,18 @@ def select_candidates(
                 f"duração inválida: o corte precisa ter mais de "
                 f"{CLIP_DURATION_FLOOR_SECONDS:.0f} segundos"
             )
+    narrative_ready: list[Candidate] = []
+    for candidate in eligible_candidates:
+        narrative_qa = validate_narrative(segments, candidate)
+        if narrative_qa["passed"]:
+            narrative_ready.append(candidate)
+        else:
+            candidate.accepted = False
+            candidate.rejection = (
+                "reprovado no gate editorial de contexto: "
+                + "; ".join(narrative_qa["issues"])
+            )
+    eligible_candidates = narrative_ready
     force_top_five = FORCE_TOP_FIVE and MAX_CLIPS >= 5
 
     if force_top_five or not USE_EDITORIAL_SCORE_GATE:
@@ -1773,6 +1961,7 @@ def write_reports(
                 "maximum_seconds": MAX_CLIP_SECONDS,
             },
             "audio": "áudio original preservado em AAC",
+            "narrative": "começo natural, pelo menos 45 palavras, pelo menos duas frases, desenvolvimento suficiente e conclusão sem terminar em palavra dependente",
             "captions": "ASS dinâmico, no máximo duas linhas de até 32 caracteres, sincronização auditada por palavra, alvo de 18 cps e limite duro de 24 cps, revisão ortográfica estrita de caixa/acentos/pontuação e margem segura",
             "caption_gate": {
                 "spelling_checker": "wordfreq pt quando disponível + lista de risco",
@@ -1902,6 +2091,23 @@ def main() -> int:
             clip_number = len(clips) + 1
             captions = WORK / f"vertical_{clip_number:02d}.ass"
             output = CLIPS_DIR / f"corte_fino_{clip_number:02d}_vertical.mp4"
+            narrative_qa = validate_narrative(segments, candidate)
+            if not narrative_qa["passed"]:
+                candidate.accepted = False
+                candidate.rejection = "reprovado no gate automático de contexto"
+                qa.append({
+                    "platform": "vertical_shared",
+                    "clip": clip_number,
+                    "stage": "candidate_rejected",
+                    "fatal": True,
+                    "passed": False,
+                    "candidate": candidate.as_dict(),
+                    "narrative_qa": narrative_qa,
+                })
+                raise RuntimeError(
+                    f"Top 5 fechado reprovou no gate editorial no corte {clip_number}; "
+                    "nenhum candidato reserva será usado."
+                )
             write_ass(segments, candidate, captions, CAPTION_MARGIN_V)
             caption_qa = validate_captions(segments, candidate, CAPTION_MARGIN_V)
             if not caption_qa["passed"]:
@@ -1922,6 +2128,7 @@ def main() -> int:
                 )
 
             clip_qa = render_and_validate(source, captions, candidate, output)
+            clip_qa["narrative_qa"] = narrative_qa
             clip_qa["caption_qa"] = caption_qa
             clip_qa["stage"] = "rendered_clip"
             clip_qa["fatal"] = not clip_qa["passed"]
