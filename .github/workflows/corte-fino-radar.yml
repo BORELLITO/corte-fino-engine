@@ -40,16 +40,16 @@ jobs:
         with:
           python-version: "3.12"
 
-      - name: Instalar pytest
-        run: python -m pip install "pytest>=8,<9"
+      - name: Instalar dependências leves
+        run: |
+          python -m pip install "pytest>=8,<9" "google-api-python-client>=2,<3" "google-auth>=2,<3"
 
       - name: Validar código do Radar
         run: |
-          python -m py_compile radar/corte_fino_radar.py
+          python -m py_compile radar/corte_fino_radar.py radar/upload_reports_drive.py
           python -m pytest -q tests/test_radar.py
 
       - name: Restaurar histórico de momentum
-        id: radar-state
         uses: actions/cache/restore@v4
         with:
           path: radar/state/history.json
@@ -60,11 +60,19 @@ jobs:
       - name: Preflight
         env:
           YOUTUBE_API_KEY: ${{ secrets.YOUTUBE_API_KEY }}
+          GOOGLE_REFRESH_TOKEN: ${{ secrets.GOOGLE_REFRESH_TOKEN }}
+          GOOGLE_CLIENT_ID: ${{ secrets.GOOGLE_CLIENT_ID }}
+          GOOGLE_CLIENT_SECRET: ${{ secrets.GOOGLE_CLIENT_SECRET }}
+          DRIVE_FOLDER_ID: ${{ secrets.DRIVE_FOLDER_ID || secrets.DRIVER_FOLDER_ID || secrets.PUBLISHER_DRIVE_FOLDER_ID }}
         run: |
-          if [ -z "$YOUTUBE_API_KEY" ]; then
-            echo "::error::Secret YOUTUBE_API_KEY ausente."
-            exit 2
-          fi
+          missing=0
+          for name in YOUTUBE_API_KEY GOOGLE_REFRESH_TOKEN GOOGLE_CLIENT_ID GOOGLE_CLIENT_SECRET DRIVE_FOLDER_ID; do
+            if [ -z "${!name}" ]; then
+              echo "::error::Secret $name ausente."
+              missing=1
+            fi
+          done
+          if [ "$missing" -ne 0 ]; then exit 2; fi
 
       - name: Executar Radar Viral
         env:
@@ -75,8 +83,14 @@ jobs:
           RADAR_MAX_QUERIES: "18"
           RADAR_EXTRA_TOPICS: ${{ inputs.extra_topics || '' }}
           RADAR_STATE_FILE: "radar/state/history.json"
-        run: |
-          python radar/corte_fino_radar.py             --days "$RADAR_DAYS"             --top-n "$RADAR_TOP_N"             --trend-limit "$RADAR_TREND_LIMIT"             --max-queries "$RADAR_MAX_QUERIES"             --extra-topics "$RADAR_EXTRA_TOPICS"             --state-file "$RADAR_STATE_FILE"
+        run: >-
+          python radar/corte_fino_radar.py
+          --days "$RADAR_DAYS"
+          --top-n "$RADAR_TOP_N"
+          --trend-limit "$RADAR_TREND_LIMIT"
+          --max-queries "$RADAR_MAX_QUERIES"
+          --extra-topics "$RADAR_EXTRA_TOPICS"
+          --state-file "$RADAR_STATE_FILE"
 
       - name: Salvar histórico de momentum
         if: success()
@@ -85,23 +99,19 @@ jobs:
           path: radar/state/history.json
           key: corte-fino-radar-state-${{ github.run_id }}
 
+      - name: Enviar relatório ao Google Drive
+        if: success()
+        env:
+          GOOGLE_REFRESH_TOKEN: ${{ secrets.GOOGLE_REFRESH_TOKEN }}
+          GOOGLE_CLIENT_ID: ${{ secrets.GOOGLE_CLIENT_ID }}
+          GOOGLE_CLIENT_SECRET: ${{ secrets.GOOGLE_CLIENT_SECRET }}
+          DRIVE_FOLDER_ID: ${{ secrets.DRIVE_FOLDER_ID || secrets.DRIVER_FOLDER_ID || secrets.PUBLISHER_DRIVE_FOLDER_ID }}
+        run: python radar/upload_reports_drive.py
+
       - name: Resumo seguro
         if: success()
         run: |
-          echo "## 🎯 Corte Fino — Radar Viral" >> "$GITHUB_STEP_SUMMARY"
+          echo "## 🎯 Corte Fino — Radar Viral V2" >> "$GITHUB_STEP_SUMMARY"
           echo "" >> "$GITHUB_STEP_SUMMARY"
-          echo "Relatório gerado com sucesso. O conteúdo completo não é publicado no Summary porque o repositório é público." >> "$GITHUB_STEP_SUMMARY"
-          echo "" >> "$GITHUB_STEP_SUMMARY"
-          echo "Baixe o artifact desta execução para consultar Markdown, JSON e CSV." >> "$GITHUB_STEP_SUMMARY"
-
-      - name: Salvar relatório como artifact
-        if: success()
-        uses: actions/upload-artifact@v4
-        with:
-          name: corte-fino-radar-${{ github.run_id }}
-          path: |
-            radar/output/radar_latest.md
-            radar/output/radar_latest.json
-            radar/output/radar_latest.csv
-          retention-days: 7
-          if-no-files-found: error
+          echo "Varredura concluída e relatório enviado para a pasta privada RADAR_CORTE_FINO no Google Drive." >> "$GITHUB_STEP_SUMMARY"
+          echo "Nenhum ranking editorial completo é publicado no GitHub." >> "$GITHUB_STEP_SUMMARY"
