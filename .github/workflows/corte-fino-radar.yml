@@ -1,0 +1,114 @@
+name: Corte Fino Motor 0 — Radar Viral
+
+on:
+  workflow_dispatch:
+    inputs:
+      days:
+        description: "Janela de busca em dias (1 a 14)"
+        required: false
+        default: "7"
+      top_n:
+        description: "Quantidade de oportunidades no relatório"
+        required: false
+        default: "12"
+      extra_topics:
+        description: "Temas extras separados por vírgula"
+        required: false
+        default: ""
+  schedule:
+    # 08:30, 14:30 e 20:30 no horário de Brasília (UTC-3).
+    - cron: "30 11,17,23 * * *"
+
+permissions:
+  contents: read
+  issues: write
+
+concurrency:
+  group: corte-fino-radar-viral
+  cancel-in-progress: true
+
+jobs:
+  radar:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Instalar pytest
+        run: python -m pip install "pytest>=8,<9"
+
+      - name: Validar código do Radar
+        run: |
+          python -m py_compile radar/corte_fino_radar.py
+          python -m pytest -q tests/test_radar.py
+
+      - name: Preflight
+        env:
+          YOUTUBE_API_KEY: ${{ secrets.YOUTUBE_API_KEY }}
+        run: |
+          if [ -z "$YOUTUBE_API_KEY" ]; then
+            echo "::error::Secret YOUTUBE_API_KEY ausente."
+            echo "Crie uma API key com YouTube Data API v3 habilitada e salve em Settings > Secrets and variables > Actions."
+            exit 2
+          fi
+
+      - name: Executar Radar Viral
+        env:
+          YOUTUBE_API_KEY: ${{ secrets.YOUTUBE_API_KEY }}
+          RADAR_DAYS: ${{ inputs.days || '7' }}
+          RADAR_TOP_N: ${{ inputs.top_n || '12' }}
+          RADAR_TREND_LIMIT: "8"
+          RADAR_MAX_QUERIES: "24"
+          RADAR_EXTRA_TOPICS: ${{ inputs.extra_topics || '' }}
+        run: |
+          python radar/corte_fino_radar.py \
+            --days "$RADAR_DAYS" \
+            --top-n "$RADAR_TOP_N" \
+            --trend-limit "$RADAR_TREND_LIMIT" \
+            --max-queries "$RADAR_MAX_QUERIES" \
+            --extra-topics "$RADAR_EXTRA_TOPICS"
+
+      - name: Publicar resumo no GitHub Actions
+        if: success()
+        run: cat radar/output/radar_latest.md >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Salvar relatório como artifact
+        if: success()
+        uses: actions/upload-artifact@v4
+        with:
+          name: corte-fino-radar-${{ github.run_id }}
+          path: |
+            radar/output/radar_latest.md
+            radar/output/radar_latest.json
+            radar/output/radar_latest.csv
+          retention-days: 14
+          if-no-files-found: error
+
+      - name: Atualizar issue fixa do Radar
+        if: success()
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          TITLE="🎯 Corte Fino — Radar Viral (automático)"
+          NUMBER="$(gh issue list \
+            --state open \
+            --limit 100 \
+            --json number,title \
+            --jq '.[] | select(.title == "'"'"$TITLE"'"'") | .number' \
+            | head -n 1)"
+
+          if [ -z "$NUMBER" ]; then
+            gh issue create \
+              --title "$TITLE" \
+              --body-file radar/output/radar_latest.md
+          else
+            gh issue edit "$NUMBER" \
+              --body-file radar/output/radar_latest.md
+          fi
