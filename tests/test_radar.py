@@ -3,12 +3,15 @@ from datetime import datetime, timezone
 from radar.corte_fino_radar import (
     QuerySignal,
     VideoCandidate,
+    apply_channel_baselines,
+    apply_momentum,
     build_queries,
     comment_analysis,
     editorial_format_fit,
     finalize_score,
     is_political,
     likely_portuguese,
+    parse_chapters,
     parse_iso8601_duration,
     parse_traffic,
     query_gap_score,
@@ -57,6 +60,9 @@ def test_political_candidate_has_no_editorial_score():
         video_id="abc",
         title="Entrevista política",
         channel_title="Canal",
+        channel_id="UC_TEST",
+        category_id="22",
+        made_for_kids=False,
         published_at=datetime.now(timezone.utc).isoformat(),
         description="",
         duration_seconds=3600,
@@ -146,6 +152,9 @@ def test_nonpolitical_candidate_without_tension_is_not_ranked():
         video_id="xyz",
         title="Programa ao vivo",
         channel_title="Canal",
+        channel_id="UC_TEST",
+        category_id="22",
+        made_for_kids=False,
         published_at=datetime.now(timezone.utc).isoformat(),
         description="",
         duration_seconds=3600,
@@ -165,3 +174,73 @@ def test_nonpolitical_candidate_without_tension_is_not_ranked():
     )
     finalize_score(candidate)
     assert candidate.radar_score is None
+
+
+
+def test_chapter_parser_requires_ordered_multiple_chapters():
+    chapters = parse_chapters(
+        "00:00 Introdução\n12:34 BETS E VÍCIO\n35:20 Família destruída"
+    )
+    assert len(chapters) == 3
+    assert chapters[1].seconds == 754
+    assert chapters[1].heat_score > 0
+
+
+def test_channel_breakout_uses_peer_baseline():
+    candidates = []
+    for idx, vph in enumerate([100, 120, 600]):
+        candidate = VideoCandidate(
+            video_id=f"v{idx}",
+            title="Podcast",
+            channel_title="Canal A",
+            channel_id="UC_A",
+            category_id="22",
+            made_for_kids=False,
+            published_at=datetime.now(timezone.utc).isoformat(),
+            description="",
+            duration_seconds=3600,
+            view_count=1000,
+            like_count=100,
+            comment_count=50,
+            youtube_license="youtube",
+            views_per_hour=vph,
+        )
+        candidates.append(candidate)
+    apply_channel_baselines(candidates)
+    assert candidates[2].breakout_ratio > 4
+    assert candidates[2].breakout_score > 50
+
+
+def test_momentum_detects_acceleration():
+    now = datetime.now(timezone.utc)
+    candidate = VideoCandidate(
+        video_id="v1",
+        title="Podcast",
+        channel_title="Canal",
+        channel_id="UC_A",
+        category_id="22",
+        made_for_kids=False,
+        published_at=now.isoformat(),
+        description="",
+        duration_seconds=3600,
+        view_count=5000,
+        like_count=100,
+        comment_count=80,
+        youtube_license="youtube",
+        views_per_hour=500,
+    )
+    state = {
+        "videos": {
+            "v1": [
+                {
+                    "ts": (now.replace(microsecond=0)).isoformat(),
+                    "views": 4500,
+                    "comments": 70,
+                    "likes": 90,
+                }
+            ]
+        }
+    }
+    # Snapshot no mesmo instante é tratado como sem intervalo suficiente.
+    apply_momentum([candidate], state, now)
+    assert candidate.momentum_state == "STALE"
