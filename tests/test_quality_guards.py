@@ -25,6 +25,7 @@ from main import (
     clip_duration_is_valid,
     caption_orthography_issues,
     narrative_quality,
+    build_story_map,
     validate_narrative,
 )
 
@@ -197,6 +198,41 @@ def test_narrative_gate_requires_autonomous_start_context_and_closure():
     incomplete_quality = narrative_quality(incomplete, 0, 2)
     assert incomplete_quality["passed"] is False
     assert any("palavra dependente" in issue for issue in incomplete_quality["issues"])
+
+
+def test_narrative_does_not_treat_silence_or_transcript_end_as_conclusion():
+    dangling = [
+        Segment(
+            0, 22,
+            "A história começa quando o convidado explica o problema que ninguém queria discutir.",
+            [],
+        ),
+        Segment(
+            22, 44,
+            "Depois ele mostra os fatos, apresenta o conflito principal e explica por que aquela decisão mudou o resultado.",
+            [],
+        ),
+        Segment(
+            44, 66,
+            "No fim, ele revela o que aconteceu e continua falando sobre",
+            [],
+        ),
+    ]
+    quality = narrative_quality(dangling, 0, 3)
+    assert quality["passed"] is False
+    assert any("conclusão natural" in issue for issue in quality["issues"])
+
+
+def test_story_map_reads_the_source_as_temporal_editorial_blocks():
+    segments = [
+        Segment(0, 18, "O governo anunciou uma medida importante para o país.", []),
+        Segment(18, 38, "Depois, especialistas explicaram os efeitos dessa decisão.", []),
+        Segment(38, 60, "No fim, a consequência pode atingir milhões de pessoas.", []),
+    ]
+    story_map = build_story_map(segments, window_seconds=30)
+    assert len(story_map) >= 2
+    assert all(block["key_terms"] for block in story_map)
+    assert all("resolution_hits" in block for block in story_map)
 
 
 def test_editorial_score_gate_keeps_candidates_above_threshold(monkeypatch):
