@@ -1011,7 +1011,7 @@ def build_candidates(
     for index in range(0, len(segments), step):
         start = segments[index].start
         eligible: list[tuple[int, float, dict[str, Any]]] = []
-        for end_index in range(index + 1, min(len(segments), index + 80)):
+        for end_index in range(index + 1, len(segments)):
             duration = segments[end_index - 1].end - start
             if duration > MAX_CLIP_SECONDS:
                 break
@@ -1066,7 +1066,7 @@ def build_candidates(
     if len(unique) < MAX_CLIPS:
         for index in range(0, len(segments), step):
             start = segments[index].start
-            for end_index in range(index + 1, min(len(segments), index + 80)):
+            for end_index in range(index + 1, len(segments)):
                 duration = segments[end_index - 1].end - start
                 if duration > MAX_CLIP_SECONDS:
                     break
@@ -1110,7 +1110,7 @@ def build_candidates(
     if len(unique) < MAX_CLIPS:
         for index in range(0, len(segments), step):
             start = segments[index].start
-            for end_index in range(index + 1, min(len(segments), index + 80)):
+            for end_index in range(index + 1, len(segments)):
                 duration = segments[end_index - 1].end - start
                 if duration > MAX_CLIP_SECONDS:
                     break
@@ -1192,6 +1192,7 @@ def select_candidates(
     profile: dict[str, Any] | None = None,
 ) -> tuple[list[Candidate], list[Candidate]]:
     all_candidates = build_candidates(segments, profile)
+    built_candidate_count = len(all_candidates)
     eligible_candidates: list[Candidate] = []
     for candidate in all_candidates:
         if clip_duration_is_valid(candidate.duration):
@@ -1202,6 +1203,7 @@ def select_candidates(
                 f"duração inválida: o corte precisa ter mais de "
                 f"{CLIP_DURATION_FLOOR_SECONDS:.0f} segundos"
             )
+    duration_ready_count = len(eligible_candidates)
     narrative_ready: list[Candidate] = []
     for candidate in eligible_candidates:
         narrative_qa = validate_narrative(segments, candidate)
@@ -1214,6 +1216,7 @@ def select_candidates(
                 + "; ".join(narrative_qa["issues"])
             )
     eligible_candidates = narrative_ready
+    narrative_ready_count = len(narrative_ready)
     force_top_five = FORCE_TOP_FIVE and MAX_CLIPS >= 5
 
     if force_top_five or not USE_EDITORIAL_SCORE_GATE:
@@ -1251,6 +1254,7 @@ def select_candidates(
             candidate.accepted = False
             candidate.rejection = "reprovado no pré-gate automático de legenda"
     pool = caption_ready
+    caption_ready_count = len(caption_ready)
 
     selected: list[Candidate] = []
     deferred: list[Candidate] = []
@@ -1297,6 +1301,16 @@ def select_candidates(
             trigger_counts[candidate.trigger] = trigger_counts.get(candidate.trigger, 0) + 1
             if len(selected) >= MAX_CLIPS:
                 break
+
+    print(
+        "Diagnóstico seleção: "
+        f"construídos={built_candidate_count} "
+        f"duração={duration_ready_count} "
+        f"narrativa={narrative_ready_count} "
+        f"legenda={caption_ready_count} "
+        f"selecionados={len(selected)}",
+        flush=True,
+    )
 
     for candidate in all_candidates:
         if candidate in selected:
