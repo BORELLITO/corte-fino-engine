@@ -27,6 +27,7 @@ from publisher.core import (
     local_publish_at,
     make_copy,
     natural_index,
+    normalize_source_credit,
     truncate,
     truncate_utf8,
     validate_manifest,
@@ -164,6 +165,59 @@ def list_videos(drive, folder_id: str) -> list[dict]:
             break
     files.sort(key=lambda f: (natural_index(f.get("name", "")), f.get("name", "")))
     return files
+
+
+def source_metadata(files: list[dict]) -> dict:
+    """Resolve one trustworthy source credit for the whole five-video batch."""
+    override_credit = normalize_source_credit(env("PUBLISHER_SOURCE_CREDIT"))
+    credits: set[str] = set()
+    titles: set[str] = set()
+    urls: set[str] = set()
+    channels: set[str] = set()
+
+    for item in files:
+        props = item.get("appProperties") or {}
+        credit = normalize_source_credit(
+            str(props.get("cf_source_credit") or props.get("cf_source_channel") or "")
+        )
+        if credit:
+            credits.add(credit)
+        title = str(props.get("cf_source_title") or "").strip()
+        channel = str(props.get("cf_source_channel") or "").strip()
+        url = str(props.get("cf_source_url") or "").strip()
+        if title:
+            titles.add(title)
+        if channel:
+            channels.add(channel)
+        if url:
+            urls.add(url)
+
+    if override_credit:
+        credit = override_credit
+    elif len(credits) == 1:
+        credit = next(iter(credits))
+    elif len(credits) > 1:
+        raise RuntimeError("Crédito inconsistente: os cinco vídeos não apontam para a mesma fonte.")
+    else:
+        raise RuntimeError(
+            "Crédito da fonte ausente. Informe source_credit no workflow ou gere um novo lote "
+            "com metadados de origem."
+        )
+
+    if len(titles) > 1:
+        raise RuntimeError("Metadados inconsistentes: os cinco vídeos têm títulos de fonte diferentes.")
+    if len(channels) > 1:
+        raise RuntimeError("Metadados inconsistentes: os cinco vídeos têm canais de origem diferentes.")
+    if len(urls) > 1:
+        raise RuntimeError("Metadados inconsistentes: os cinco vídeos têm URLs de origem diferentes.")
+
+    return {
+        "credit": credit,
+        "title": next(iter(titles), ""),
+        "channel": next(iter(channels), credit),
+        "url": next(iter(urls), ""),
+        "credit_origin": "workflow_override" if override_credit else "creator_app_properties",
+    }
 
 
 def _is_complete_batch(files: list[dict]) -> bool:
@@ -344,6 +398,7 @@ def prepare(
     if indexed != [1, 2, 3, 4, 5]:
         raise RuntimeError("Os cinco vídeos precisam estar numerados de 01 a 05 no nome do arquivo.")
 
+    source = source_metadata(files)
     clips: list[dict] = []
     with tempfile.TemporaryDirectory(prefix="corte-fino-publisher-") as temp_dir:
         for index, item in zip(indexed, files):
@@ -364,7 +419,7 @@ def prepare(
                     "modified_time": item.get("modifiedTime", ""),
                     "video_profile": profile,
                     "transcript": transcript,
-                    "copy": copy_dict(make_copy(transcript)),
+                    "copy": copy_dict(make_copy(transcript, source_credit=source["credit"])),
                     "schedule": {},
                 }
             )
@@ -379,6 +434,7 @@ def prepare(
         "date": publication_day(target_date=target_date).isoformat(),
         "timezone": "America/Sao_Paulo",
         "drive_folder_id": folder_id,
+        "source": source,
         "youtube_hours": list(YOUTUBE_HOURS),
         "tiktok_hours": list(TIKTOK_HOURS),
         "rights": {
