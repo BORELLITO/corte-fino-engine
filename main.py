@@ -71,9 +71,10 @@ CAPTION_MAX_GAP = float(os.environ.get("CAPTION_MAX_GAP", "1.5"))
 CAPTION_SENTENCE_GAP = float(os.environ.get("CAPTION_SENTENCE_GAP", "0.85"))
 CAPTION_SYNC_TOLERANCE = float(os.environ.get("CAPTION_SYNC_TOLERANCE", "0.35"))
 CAPTION_MAX_CPS = float(os.environ.get("CAPTION_MAX_CPS", "18.0"))
-# 18 cps é o alvo confortável; 24 cps é o limite duro para vídeos curtos,
-# onde a legenda ainda precisa acompanhar uma fala naturalmente acelerada.
-CAPTION_HARD_MAX_CPS = float(os.environ.get("CAPTION_HARD_MAX_CPS", "24.0"))
+# 18 cps é o alvo confortável; 30 cps é o limite duro para blocos curtos,
+# acomodando a variação dos timestamps de palavra do ASR sem liberar leitura
+# excessivamente rápida. Acima disso, o candidato continua sendo reprovado.
+CAPTION_HARD_MAX_CPS = float(os.environ.get("CAPTION_HARD_MAX_CPS", "30.0"))
 # Baixa confiança isolada do ASR vira alerta; erros conhecidos e limites de
 # leitura continuam fatais. Isso evita reprovar palavras comuns por uma
 # probabilidade baixa sem evidência de transcrição incorreta.
