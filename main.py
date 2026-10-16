@@ -1103,6 +1103,57 @@ def build_candidates(
             key = (round(candidate.start), round(candidate.end))
             if key not in unique or candidate.score > unique[key].score:
                 unique[key] = candidate
+    # Último recurso editorial para ASR com pouca pontuação: cobre a fonte em
+    # blocos temporalmente distintos. Continua exigindo contexto, progressão,
+    # início que não depende de conector e final que não termina em palavra
+    # dependente. A penalidade mantém esse modo abaixo dos candidatos normais.
+    if len(unique) < MAX_CLIPS:
+        for index in range(0, len(segments), step):
+            start = segments[index].start
+            for end_index in range(index + 1, min(len(segments), index + 80)):
+                duration = segments[end_index].end - start
+                if duration > MAX_CLIP_SECONDS:
+                    break
+                if not clip_duration_is_valid(duration):
+                    continue
+                key = (round(start), round(segments[end_index - 1].end))
+                if key in unique:
+                    continue
+                narrative = narrative_quality(
+                    segments,
+                    index,
+                    end_index,
+                    relaxed=True,
+                    coverage=True,
+                )
+                if not narrative["passed"]:
+                    continue
+                text = " ".join(item.text for item in segments[index:end_index]).strip()
+                score, components, trigger, reason, premise, rejection = score_text(text, profile)
+                components.update(narrative["components"])
+                components["narrative_fallback"] = 1.0
+                components["narrative_coverage_fallback"] = 1.0
+                narrative_score = min(100.0, float(narrative["score_bonus"]) / 14.0 * 100.0)
+                score = round(
+                    max(0.0, min(100.0, score * 0.78 + narrative_score * 0.22 - 8.0)),
+                    2,
+                )
+                candidates.append(Candidate(
+                    start,
+                    segments[end_index - 1].end,
+                    text,
+                    score,
+                    components,
+                    trigger,
+                    f"{reason} Fallback de cobertura controlada: {narrative['summary']}",
+                    premise,
+                    not rejection,
+                    rejection,
+                ))
+        for candidate in candidates:
+            key = (round(candidate.start), round(candidate.end))
+            if key not in unique or candidate.score > unique[key].score:
+                unique[key] = candidate
     return sorted(unique.values(), key=lambda item: item.score, reverse=True)
 
 
