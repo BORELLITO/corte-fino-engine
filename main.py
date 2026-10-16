@@ -684,12 +684,10 @@ def narrative_quality(
     )
     lower_text = text.casefold()
     dependent_opening = lower_text.startswith(NARRATIVE_DEPENDENT_OPENINGS)
+    autonomous_start = natural_start and not dependent_opening
     final_token = tokens[-1] if tokens else ""
     incomplete_ending = final_token in NARRATIVE_INCOMPLETE_ENDINGS
-    enough_context = (
-        len(tokens) >= NARRATIVE_MIN_WORDS
-        and not (dependent_opening and sentence_count < 3)
-    )
+    enough_context = len(tokens) >= NARRATIVE_MIN_WORDS
     enough_development = (
         len(tokens) >= NARRATIVE_MIN_WORDS
         and sentence_count >= NARRATIVE_MIN_SENTENCES
@@ -701,7 +699,7 @@ def narrative_quality(
     )
 
     issues: list[str] = []
-    if not natural_start:
+    if not autonomous_start:
         issues.append("começa no meio de uma ideia")
     if not enough_context:
         issues.append("contexto insuficiente para entender a premissa")
@@ -713,7 +711,7 @@ def narrative_quality(
         issues.append(f"termina em palavra dependente: {final_token}")
 
     score_bonus = sum((
-        2.0 if natural_start else 0.0,
+        2.0 if autonomous_start else 0.0,
         3.0 if enough_context else 0.0,
         3.0 if enough_development else 0.0,
         3.0 if has_conclusion else 0.0,
@@ -733,12 +731,13 @@ def narrative_quality(
         "word_count": len(tokens),
         "sentence_count": sentence_count,
         "natural_start": natural_start,
+        "autonomous_start": autonomous_start,
         "natural_end": natural_end,
         "terminal_ending": terminal_ending,
         "dependent_opening": dependent_opening,
         "incomplete_ending": incomplete_ending,
         "components": {
-            "narrative_start": 2.0 if natural_start else 0.0,
+            "narrative_start": 2.0 if autonomous_start else 0.0,
             "narrative_context": 3.0 if enough_context else 0.0,
             "narrative_development": 3.0 if enough_development else 0.0,
             "narrative_conclusion": 3.0 if has_conclusion else 0.0,
