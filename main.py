@@ -635,7 +635,7 @@ def score_text(
 
 
 def _text_ends_terminal(value: str) -> bool:
-    return bool(re.search(r"[.!?…]\\s*$", str(value).strip()))
+    return bool(re.search(r"[.!?…]\s*$", str(value).strip()))
 
 
 def narrative_quality(
