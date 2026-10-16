@@ -26,8 +26,8 @@ GOOGLE_TRENDS_RSS = "https://trends.google.com/trending/rss?geo=BR"
 STATE_SCHEMA_VERSION = 2
 DEFAULT_STATE_FILE = ROOT / "state" / "history.json"
 CHAPTER_RE = re.compile(
-    r"(?m)^\\s*(?:(?P<h>\\d{1,2}):)?(?P<m>\\d{1,2}):(?P<s>\\d{2})"
-    r"\\s*(?:[-–—:|]\\s*)?(?P<title>[^\\n]{2,160})$"
+    r"(?m)^\s*(?:(?P<h>\d{1,2}):)?(?P<m>\d{1,2}):(?P<s>\d{2})"
+    r"\s*(?:[-–—:|]\s*)?(?P<title>[^\n]{2,160})$"
 )
 
 DEFAULT_THEMES = [
@@ -1254,7 +1254,7 @@ def write_outputs(
     )[:top_n]
 
     payload = {
-        "schema_version": 1,
+        "schema_version": 2,
         "generated_at_utc": generated_at.isoformat(),
         "method": {
             "ranking_scope": "non-political content only",
