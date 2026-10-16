@@ -1,107 +1,139 @@
-# Corte Fino — Motor 0: Radar Viral
+# Corte Fino — Motor 0: Radar Viral V2
 
-O **Motor 0** pesquisa oportunidades antes da edição. Ele é propositalmente isolado do Motor 1 (Creator) e do Motor 2 (Publisher): não baixa vídeos, não cria cortes e não publica nada.
+O **Motor 0** é a camada de inteligência editorial anterior ao Creator. Ele descobre, monitora e prioriza fontes; não baixa vídeos, não cria cortes e não publica nada.
 
-## Objetivo
+## Pipeline
 
-Detectar vídeos longos recentes no YouTube que tenham sinais combinados de:
+`Discovery → Normalizer → Momentum → Breakout → Content Brain → Comment Brain → Cutability → Rights/Risk → Decision`
 
-- velocidade de visualizações;
-- densidade de comentários e likes;
-- comentários com reação e divergência;
+### Discovery
+- Google Trends Brasil;
+- temas editoriais fixos;
+- Flow, Inteligência Ltda., RedCast, Podpah e outras fontes reconhecidas;
+- buscas extras informadas manualmente.
+
+### Normalizer
+- vídeo longo (mínimo operacional de 20 min);
+- idioma PT-BR quando a fonte não é reconhecida;
+- formato conversacional/entrevista/debate;
+- exclusão de conteúdo marcado para crianças;
+- deduplicação por videoId;
+- identificação por channelId quando disponível.
+
+### Momentum Engine
+O Radar mantém snapshots privados entre rodadas. Para cada vídeo calcula:
+- views/h no intervalo mais recente;
+- comentários/h recentes;
+- razão entre velocidade recente e média desde a publicação;
+- aceleração entre dois intervalos;
+- estado: `NEW`, `ACCELERATING`, `RISING`, `STEADY`, `COOLING` ou `STALE`.
+
+O estado é persistido via GitHub Actions Cache em `radar/state/history.json`, sem commit no repositório.
+
+### Breakout Engine
+Compara o views/h de um vídeo com a mediana de outros vídeos recentes do mesmo canal disponíveis na rodada. Quando há amostra suficiente, gera:
+- baseline do canal;
+- breakout ratio;
+- breakout score.
+
+Assim, um vídeo pequeno pode superar um vídeo grande quando está muito acima do padrão do próprio canal.
+
+### Content Brain
 - carga emocional;
 - conflito/polêmica;
-- baixa saturação relativa para um tema com demanda;
-- preferência editorial por fontes como Flow, Inteligência Ltda. e canais semelhantes.
+- estrutura de podcast/debate;
+- parser de capítulos/timecodes da descrição;
+- heat score dos capítulos;
+- indicação do capítulo mais promissor.
 
-O resultado é um relatório com links de origem. A decisão de usar um vídeo continua humana.
+### Comment Brain
+Para os pré-candidatos mais fortes, consulta duas amostras:
+- comentários por relevância;
+- comentários mais recentes.
 
-## Arquitetura
+Mede reação, divergência e respostas. Comentários recentes recebem peso maior para detectar mudança de temperatura.
 
-1. **Google Trends Brasil** fornece temas que estão ganhando atenção.
-2. **Temas editoriais fixos** cobrem bets, relacionamento, religião, crime, dinheiro, IA, saúde mental, família, carros, celebridades e ciência.
-3. **Consultas de fonte** mantêm Flow, Inteligência Ltda., Cortes do Flow, Cortes do Inteligência, RedCast e Podpah no radar.
-4. **YouTube Data API v3** procura vídeos longos publicados na janela definida.
-5. O método videos.list coleta duração, views, likes, comentários e o status de licença informado pelo YouTube.
-6. Para os pré-candidatos mais fortes, commentThreads.list amostra comentários relevantes e mede reação/divergência.
-7. O motor calcula um radar_score de 0–100 apenas para conteúdo não político.
-8. Conteúdo político/eleitoral é separado em uma watchlist factual, sem score editorial nem recomendação comparativa.
-9. O workflow publica o relatório no Summary da Action, salva JSON/CSV/Markdown como artifact e mantém uma issue fixa atualizada.
+### Cutability Engine
+Estima se o vídeo tem estrutura favorável para gerar cortes:
+- fonte reconhecida;
+- duração suficiente;
+- capítulos;
+- capítulos emocionalmente fortes;
+- formato entrevista/debate/podcast;
+- divergência de comentários.
 
-## Score não político
+É um score de triagem, não substitui a análise narrativa do Motor 1.
 
-Pesos da versão 1:
+## Score V2 — conteúdo não político
 
-- 24% velocidade de views;
-- 18% calor/divergência dos comentários;
-- 13% engajamento;
-- 13% Search Gap;
-- 12% conflito/polêmica;
-- 10% emoção;
-- 5% atualidade;
-- 5% preferência de fonte.
+- 18% momentum;
+- 12% velocidade média;
+- 12% breakout relativo ao canal;
+- 10% engajamento;
+- 14% temperatura dos comentários;
+- 9% conflito/polêmica;
+- 8% emoção;
+- 10% cutability;
+- 3% Search Gap;
+- 2% freshness;
+- 2% fonte reconhecida.
 
-Vídeos encontrados por mais de uma rota de busca recebem uma pequena confirmação adicional.
+O relatório mostra também `confidence_score` separado do score editorial.
+
+### Estados de decisão
+- **HOT**: score ≥ 68
+- **PROMISING**: score ≥ 57
+- **WATCH**: score ≥ 47
+- **DROP**: abaixo disso ou sem tensão editorial suficiente
+
+Conteúdo político/eleitoral brasileiro permanece em **watchlist factual**, sem score editorial ou recomendação comparativa.
 
 ## Search Gap
+Continua como proxy experimental:
 
-O TikTok Creator Search Insights não é consumido diretamente pelo motor. A versão 1 usa um proxy automatizável:
+`demanda Google Trends × oferta aproximada recente no YouTube`
 
-**demanda do Google Trends Brasil × oferta recente do YouTube**
+O número de resultados do YouTube é tratado como aproximação. O peso foi reduzido na V2 para impedir que uma lacuna de busca domine um vídeo fraco editorialmente.
 
-A oferta vem de pageInfo.totalResults da busca do YouTube e deve ser tratada como aproximada. A ideia não é afirmar volume absoluto, mas priorizar temas com atenção crescente e menos saturação relativa.
+## Segurança e privacidade
 
-## Direitos e integridade
-
-- Estar em Flow, Inteligência ou qualquer outro canal **não é interpretado como autorização automática**.
-- O motor registra o campo status.license retornado pelo YouTube.
-- creativeCommon é registrado, mas ainda exige cumprimento dos termos e atribuição aplicáveis.
-- Todo o resto fica como manual_review.
-- Alegações graves, morte/autolesão e conteúdo envolvendo menores recebem flags.
-- O Radar nunca altera o título original para transformar alegação em fato.
-
-## Política/eleições
-
-Para conteúdo político/eleitoral brasileiro, o Motor 0 não gera nota editorial nem escolhe “melhor candidato”. Ele mostra apenas uma watchlist cronológica com métricas públicas brutas do vídeo.
+- A API key nunca é impressa deliberadamente em logs.
+- URLs de erro são sanitizadas antes de serem exibidas.
+- O workflow real não roda mais em todo push.
+- Push/PR executa apenas testes, sem consumir YouTube API.
+- A varredura real roda somente por agenda ou `workflow_dispatch`.
+- Como o repositório atualmente é público, o conteúdo integral do Radar **não é publicado em Issue nem no Job Summary**.
+- O relatório completo fica somente no artifact da execução.
+- O histórico de momentum fica em cache do GitHub Actions e é ignorado pelo Git.
 
 ## Frequência
 
-O workflow roda três vezes ao dia:
+- 08:30 BRT
+- 14:30 BRT
+- 20:30 BRT
 
-- 08:30 BRT;
-- 14:30 BRT;
-- 20:30 BRT.
+Padrão atual:
+- até 6 tendências;
+- até 18 consultas principais por rodada;
+- até 24 vídeos pré-selecionados recebem análise dupla de comentários.
 
-Também pode ser acionado manualmente.
+## Arquivos de saída
+- `radar/output/radar_latest.md`
+- `radar/output/radar_latest.json`
+- `radar/output/radar_latest.csv`
 
-A configuração usa no máximo 24 consultas por rodada para manter o consumo previsível.
-
-## Configuração única
-
-Crie um secret no repositório:
-
-YOUTUBE_API_KEY
-
-A chave precisa ter **YouTube Data API v3** habilitada. Restrinja a chave à API do YouTube no Google Cloud.
-
-Depois, execute:
-
-**Actions → Corte Fino Motor 0 — Radar Viral → Run workflow**
-
-## Saídas
-
-- radar/output/radar_latest.md — leitura humana;
-- radar/output/radar_latest.json — integração futura;
-- radar/output/radar_latest.csv — auditoria/análise;
-- issue fixa “🎯 Corte Fino — Radar Viral (automático)”;
-- artifact da execução por 14 dias.
+Retenção do artifact: 7 dias.
 
 ## Contrato com os outros motores
 
-O Motor 0 termina no relatório.
+`Radar → escolha humana da fonte → Motor 1 → 5 cortes → Motor 2`
 
-Ele **não** dispara o Motor 1 automaticamente e **não** interfere no Publisher. Isso preserva o contrato já existente:
+O Motor 0 não aciona automaticamente o Creator nem o Publisher.
 
-Radar → escolha humana da fonte → Motor 1 → link da pasta com 5 cortes → Motor 2
+## Limitações conhecidas
 
-Uma integração automática entre Radar e Creator só deve ser criada como etapa separada e explicitamente aprovada.
+1. Breakout usa a amostra de vídeos disponível na rodada, não um histórico profundo do canal.
+2. Cutability V2 usa metadados, capítulos e sinais editoriais; ainda não lê a transcrição integral.
+3. Search Gap usa proxy de demanda/oferta e não o Creator Search Insights do TikTok.
+4. A primeira aparição de um vídeo não possui delta temporal real; recebe estado `NEW` e confiança menor.
+5. Fonte reconhecida ainda deve passar por revisão de licença/autorização antes de reutilização.
