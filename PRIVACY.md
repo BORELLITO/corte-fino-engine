@@ -6,19 +6,19 @@ Esta política explica como o Corte Fino Publisher trata informações utilizada
 
 ## Informações utilizadas
 
-O serviço pode processar: arquivos e metadados dos vídeos selecionados no Google Drive; títulos, legendas e horários de publicação; identificadores técnicos das publicações; e informações básicas da conta TikTok autorizada, como identificador e nome de exibição, quando fornecidas pela API.
+O serviço pode processar: arquivos e metadados dos vídeos selecionados no Google Drive; títulos, legendas e horários de publicação; e o pacote preparado para revisão manual no YouTube Studio e no TikTok Studio.
 
 ## Finalidade
 
-As informações são utilizadas exclusivamente para validar os vídeos, preparar as publicações, confirmar a conta autorizada, publicar o conteúdo solicitado e evitar duplicidade ou publicação na conta errada.
+As informações são utilizadas exclusivamente para validar os vídeos, preparar o pacote browser-only, conferir a conta e a tela corretas e reduzir o risco de duplicidade antes da confirmação manual no Studio.
 
 ## Compartilhamento
 
-O serviço utiliza APIs oficiais do Google, TikTok, GitHub Actions e serviços necessários ao funcionamento do motor. Não vendemos informações pessoais e não usamos os dados para publicidade própria.
+O preparo pode ler arquivos autorizados do Google Drive e executar no GitHub Actions. A confirmação final ocorre manualmente nas interfaces oficiais do YouTube Studio e do TikTok Studio; não há integração de publicação com terceiros. Não vendemos informações pessoais e não usamos os dados para publicidade própria.
 
 ## Segurança e retenção
 
-Credenciais e tokens devem ser armazenados em secrets protegidos do ambiente de execução. Artefatos temporários e registros técnicos podem ser mantidos pelo tempo necessário à execução, auditoria e prevenção de duplicidade. O usuário pode revogar autorizações e solicitar esclarecimentos pelo repositório oficial.
+Credenciais eventualmente usadas apenas para ler o Drive devem ser armazenadas em secrets protegidos do ambiente de execução. O pacote e os artefatos técnicos podem ser mantidos pelo tempo necessário à execução, revisão e prevenção de duplicidadeção, auditoria e prevenção de duplicidade. O usuário pode revogar autorizações e solicitar esclarecimentos pelo repositório oficial.
 
 ## Direitos e contato
 
