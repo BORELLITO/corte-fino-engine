@@ -330,3 +330,40 @@ def test_drive_folder_id_normalization():
 def test_short_semantic_terms_use_word_boundaries():
     assert term_hits("Felca fala sobre apostas", {"fe"}) == 0
     assert term_hits("Ele fala de fé e família", {"fe", "fé"}) == 1
+
+
+
+def test_previous_score_is_loaded_from_state():
+    now = datetime.now(timezone.utc)
+    candidate = VideoCandidate(
+        video_id="score-delta",
+        title="Podcast",
+        channel_title="Canal",
+        channel_id="UC_SCORE",
+        category_id="22",
+        made_for_kids=False,
+        published_at=(now - timedelta(hours=10)).isoformat(),
+        description="",
+        duration_seconds=3600,
+        view_count=10000,
+        like_count=500,
+        comment_count=300,
+        youtube_license="youtube",
+        views_per_hour=1000,
+    )
+    state = {
+        "videos": {
+            "score-delta": [
+                {
+                    "ts": (now - timedelta(hours=4)).isoformat(),
+                    "views": 7000,
+                    "comments": 200,
+                    "likes": 400,
+                    "score": 61.5,
+                    "status": "PROMISING",
+                }
+            ]
+        }
+    }
+    apply_momentum([candidate], state, now)
+    assert candidate.previous_score == 61.5

@@ -28,7 +28,7 @@ O Radar mantém snapshots privados entre rodadas. Para cada vídeo calcula:
 - aceleração entre dois intervalos;
 - estado: `NEW`, `ACCELERATING`, `RISING`, `STEADY`, `COOLING` ou `STALE`.
 
-O estado é persistido via GitHub Actions Cache em `radar/state/history.json`, sem commit no repositório.
+O estado é persistido como `history.json` na pasta privada `RADAR_CORTE_FINO` do Google Drive, sem commit no repositório.
 
 ### Breakout Engine
 Compara o views/h de um vídeo com a mediana de outros vídeos recentes do mesmo canal disponíveis na rodada. Quando há amostra suficiente, gera:
@@ -109,7 +109,6 @@ O número de resultados do YouTube é tratado como aproximação. O peso foi red
 ## Frequência
 
 - 08:30 BRT
-- 14:30 BRT
 - 20:30 BRT
 
 Padrão atual:
@@ -117,7 +116,8 @@ Padrão atual:
 - até 18 consultas principais por rodada;
 - no máximo 3 temas manuais por rodada, sem expulsar as fontes principais;
 - os temas editoriais fixos são rotacionados entre as execuções para cobrir o catálogo inteiro;
-- até 24 vídeos pré-selecionados recebem análise dupla de comentários.
+- até 24 vídeos pré-selecionados recebem análise dupla de comentários;
+- entrega visual padrão: Top 5 compacto, até 3 Search Gaps e até 3 itens políticos factuais.
 
 ## Arquivos de saída
 - `radar/output/radar_latest.md`
@@ -137,5 +137,5 @@ O Motor 0 não aciona automaticamente o Creator nem o Publisher.
 1. Breakout usa a amostra de vídeos disponível na rodada, não um histórico profundo do canal.
 2. Cutability V2 usa metadados, capítulos e sinais editoriais; ainda não lê a transcrição integral.
 3. Search Gap usa proxy de demanda/oferta e não o Creator Search Insights do TikTok.
-4. A primeira aparição de um vídeo não possui delta temporal real; recebe estado `NEW` e confiança menor.
+4. A primeira aparição de um vídeo não possui delta temporal real; recebe estado `NEW` e confiança menor. A partir da segunda rodada, o relatório também mostra movimento de score.
 5. Fonte reconhecida ainda deve passar por revisão de licença/autorização antes de reutilização.
