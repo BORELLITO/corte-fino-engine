@@ -362,7 +362,7 @@ def _prepare_batch(
     hours = period_hours(period)
     source_name = validate_credit_source(str(spec.get("source_name", "") or "").strip(), required=True)
     source_episode = str(spec.get("source_episode", "") or "").strip()
-    rights_authorized = bool(spec.get("rights_authorized"))
+    rights_authorized = as_bool(spec.get("rights_authorized"))
     clips: list[dict] = []
     with tempfile.TemporaryDirectory(prefix=f"corte-fino-publisher-{batch_id.lower()}-") as temp_dir:
         for batch_index, item in zip(indexed, files):
@@ -435,7 +435,7 @@ def prepare_batches(
     all_slots = [(batch["date"], hour) for batch in batches for hour in batch["hours"]]
     if len(all_slots) != len(set(all_slots)):
         raise RuntimeError("Os períodos das duas pastas possuem horários conflitantes.")
-    rights_authorized = all(bool(spec.get("rights_authorized")) for spec in batch_specs)
+    rights_authorized = all(as_bool(spec.get("rights_authorized")) for spec in batch_specs)
     manifest = {
         "version": MANIFEST_VERSION,
         "run_id": uuid.uuid4().hex,
@@ -461,7 +461,9 @@ def prepare_batches(
         },
         "clips": clips,
     }
-    validate_manifest(manifest, require_transcripts=True)
+    # Um manifesto sem direitos confirmados não chega ao pacote de postagem.
+    # A confirmação é obrigatória antes de qualquer ação no Studio.
+    validate_manifest(manifest, require_rights=True, require_transcripts=True)
     output.parent.mkdir(parents=True, exist_ok=True)
     output.write_text(json.dumps(manifest, ensure_ascii=False, indent=2), encoding="utf-8")
     return manifest
@@ -488,7 +490,7 @@ def prepare(
         raise RuntimeError("O novo Publisher exige duas pastas por rodada; informe folder_2_id.")
     day_1 = publication_day(target_date=target_date).isoformat() if target_date else publication_day().isoformat()
     day_2 = date_2.isoformat() if isinstance(date_2, date) else (str(date_2) if date_2 else day_1)
-    authorized = env_bool("PUBLISHER_RIGHTS_AUTHORIZED") if rights_authorized is None else bool(rights_authorized)
+    authorized = env_bool("PUBLISHER_RIGHTS_AUTHORIZED") if rights_authorized is None else as_bool(rights_authorized)
     return prepare_batches(
         [
             {"folder_id": folder_id, "date": day_1, "period": period_1, "source_name": source_name or env("PUBLISHER_SOURCE_NAME"), "source_episode": source_episode or env("PUBLISHER_SOURCE_EPISODE"), "rights_authorized": authorized},
@@ -701,6 +703,24 @@ def publish_youtube(manifest: dict, dry_run: bool = False) -> list[dict]:
         raise RuntimeError(
             "Publicação YouTube por API bloqueada: o fluxo oficial usa o Cloud Web Browser no YouTube Studio."
         )
+    # A prévia precisa ser totalmente local. Não abra o Drive nem renove
+    # OAuth aqui: isso tornaria o dry-run dependente de segredos e quebraria o
+    # fluxo oficial browser-only antes mesmo da revisão humana.
+    if dry_run:
+        results: list[dict] = []
+        for clip in sorted(manifest["clips"], key=lambda item: item["index"]):
+            copy = clip["copy"]
+            results.append(
+                {
+                    "index": clip["index"],
+                    "status": "dry_run",
+                    "publish_at": scheduled_publish_at(manifest, clip, "youtube"),
+                    "title": truncate(copy["youtube_title"], YOUTUBE_TITLE_LIMIT),
+                    "description": truncate_utf8(copy["youtube_description"], YOUTUBE_DESCRIPTION_LIMIT),
+                    "tags": list(copy.get("youtube_tags", [])),
+                }
+            )
+        return results
     force_repost = env("PUBLISHER_FORCE_REPOST", "0").strip() == "1"
     drive = drive_service()
     youtube = None
