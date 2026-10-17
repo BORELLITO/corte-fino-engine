@@ -1,0 +1,315 @@
+{
+  "version": 5,
+  "run_id": "bc9bbb7b009e495f8b37ad6c8e8e0f2c",
+  "created_at_utc": "2026-10-17T01:00:15.946962Z",
+  "date": "2026-10-17",
+  "timezone": "America/Sao_Paulo",
+  "drive_folder_id": "1VwQbMia53D04sLV9ku_-nbuBeDlyDvnk",
+  "youtube_hours": [
+    10,
+    12,
+    15,
+    17,
+    19
+  ],
+  "tiktok_hours": [
+    10,
+    12,
+    15,
+    17,
+    19
+  ],
+  "rights": {
+    "authorized": true,
+    "status": "AUTORIZADO — confirmação manual do proprietário/licenciante"
+  },
+  "source": {
+    "name": "",
+    "episode": ""
+  },
+  "branding": {
+    "version": "hud-corte-fino-v1",
+    "format": "vertical_9x16_shared",
+    "logo_position": "top-right",
+    "caption_margin_v": 390
+  },
+  "clips": [
+    {
+      "index": 1,
+      "drive_id": "1xqmhLlX0Gb2poqceCNE8_UsDaMZqkn_Y",
+      "name": "A IA VAI NOS EXTERMINAR - 01.mp4",
+      "size": 21408445,
+      "md5_checksum": "7b2aed25e7e2967e7ddfee3ce8d4ec87",
+      "mime_type": "video/mp4",
+      "modified_time": "2026-10-16T20:59:16.447Z",
+      "video_profile": {
+        "width": 1080,
+        "height": 1920,
+        "video_codec": "h264",
+        "audio_codec": "aac",
+        "pixel_format": "yuv420p",
+        "video_profile": "High",
+        "sample_aspect_ratio": "1:1",
+        "frame_rate": 30.0,
+        "audio_sample_rate": "48000",
+        "audio_bitrate": "199999",
+        "duration": 79.234
+      },
+      "copy": {
+        "topic": "ia",
+        "hook": "Será que a Inteligencia TV vai conseguir produzir arte, por exemplo?",
+        "keywords": [
+          "entendeu",
+          "agentes",
+          "lance",
+          "evolucao"
+        ],
+        "viral_score": 4.25,
+        "tiktok_caption": "SERÁ QUE A INTELIGENCIA TV VAI CONSEGUIR PRODUZIR ARTE POR EXEMPLO 🧠\n\nE esse lance que você fala, o medo da galera, eu acho que nem é o medo do ser humano estar atrapalhando, pra mim acho que o lance é o seguinte cara, o ser humano não vai servir pra nada, entendeu?\n\nEm que momento a ferramenta passa a tomar o lugar da pessoa? ⚖️\n\nCréditos: fonte não identificada.\n\n#inteligenciaartificial #tecnologia #futurodotrabalho #agentes",
+        "youtube_title": "SERÁ QUE A INTELIGENCIA TV VAI CONSEGUIR PRODUZIR ARTE POR EXEMPLO 🧠",
+        "youtube_description": "Será que a Inteligencia TV vai conseguir produzir arte, por exemplo?\n\nE esse lance que você fala, o medo da galera, eu acho que nem é o medo do ser humano estar atrapalhando, pra mim acho que o lance é o seguinte cara, o ser humano não vai servir pra nada, entendeu?\n\nEm que momento a ferramenta passa a tomar o lugar da pessoa? ⚖️\n\nCréditos: fonte não identificada.\n\n#inteligenciaartificial #tecnologia #futurodotrabalho #agentes",
+        "youtube_tags": [
+          "inteligencia artificial",
+          "tecnologia",
+          "futuro do trabalho",
+          "agentes",
+          "corte fino",
+          "cortes de podcast",
+          "shorts"
+        ],
+        "credit": "Créditos: fonte não identificada.",
+        "evidence": [
+          "E esse lance que você fala, o medo da galera, eu acho que nem é o medo do ser humano estar atrapalhando, pra mim acho que o lance é o seguinte cara, o ser humano não vai servir pra nada, entendeu?"
+        ],
+        "cta": "Em que momento a ferramenta passa a tomar o lugar da pessoa? ⚖️",
+        "editorial_mode": "grounded_context"
+      },
+      "schedule": {
+        "youtube_hour": 12,
+        "tiktok_hour": 12
+      }
+    },
+    {
+      "index": 2,
+      "drive_id": "1hjXMZ68MNr3DW6kc8ZHAJ8ivvE3Qu3d2",
+      "name": "A IA VAI NOS EXTERMINAR - 02.mp4",
+      "size": 24391093,
+      "md5_checksum": "ae5634024c134778cbdf9282f4ba157e",
+      "mime_type": "video/mp4",
+      "modified_time": "2026-10-16T20:59:35.237Z",
+      "video_profile": {
+        "width": 1080,
+        "height": 1920,
+        "video_codec": "h264",
+        "audio_codec": "aac",
+        "pixel_format": "yuv420p",
+        "video_profile": "High",
+        "sample_aspect_ratio": "1:1",
+        "frame_rate": 30.0,
+        "audio_sample_rate": "48000",
+        "audio_bitrate": "194648",
+        "duration": 81.967
+      },
+      "copy": {
+        "topic": "petroleo",
+        "hook": "Vai ser o problema do petróleo é que ele é uma montanha russa",
+        "keywords": [
+          "macae",
+          "petroleo",
+          "tempo",
+          "entendeu"
+        ],
+        "viral_score": 4.85,
+        "tiktok_caption": "VAI SER O PROBLEMA DO PETRÓLEO É QUE ELE É UMA MONTANHA RUSSA 🛢️\n\nTá todo mundo de olho nessa margem equatorial, vai vir muita empresa pra cá, vai ser o problema do petróleo é que ele é uma montanha russa, entendeu?\n\nRiqueza natural significa desenvolvimento garantido? 🌍\n\nCréditos: fonte não identificada.\n\n#petroleo #economia #geopolitica #macae",
+        "youtube_title": "VAI SER O PROBLEMA DO PETRÓLEO É QUE ELE É UMA MONTANHA RUSSA 🛢️",
+        "youtube_description": "Vai ser o problema do petróleo é que ele é uma montanha russa.\n\nTá todo mundo de olho nessa margem equatorial, vai vir muita empresa pra cá, vai ser o problema do petróleo é que ele é uma montanha russa, entendeu?\n\nRiqueza natural significa desenvolvimento garantido? 🌍\n\nCréditos: fonte não identificada.\n\n#petroleo #economia #geopolitica #macae",
+        "youtube_tags": [
+          "petroleo",
+          "energia",
+          "economia",
+          "geopolitica",
+          "Macaé",
+          "corte fino",
+          "cortes de podcast",
+          "shorts"
+        ],
+        "credit": "Créditos: fonte não identificada.",
+        "evidence": [
+          "Tá todo mundo de olho nessa margem equatorial, vai vir muita empresa pra cá, vai ser o problema do petróleo é que ele é uma montanha russa, entendeu?"
+        ],
+        "cta": "Riqueza natural significa desenvolvimento garantido? 🌍",
+        "editorial_mode": "grounded_context"
+      },
+      "schedule": {
+        "youtube_hour": 15,
+        "tiktok_hour": 15
+      }
+    },
+    {
+      "index": 3,
+      "drive_id": "1q2O0Yd3nXvHhHx8mqYVHql90U9xtgJUF",
+      "name": "A IA VAI NOS EXTERMINAR - 03.mp4",
+      "size": 16609752,
+      "md5_checksum": "6c13eaee1d322553b39f966888ac9229",
+      "mime_type": "video/mp4",
+      "modified_time": "2026-10-16T20:59:39.799Z",
+      "video_profile": {
+        "width": 1080,
+        "height": 1920,
+        "video_codec": "h264",
+        "audio_codec": "aac",
+        "pixel_format": "yuv420p",
+        "video_profile": "High",
+        "sample_aspect_ratio": "1:1",
+        "frame_rate": 30.0,
+        "audio_sample_rate": "48000",
+        "audio_bitrate": "195835",
+        "duration": 67.034
+      },
+      "copy": {
+        "topic": "petroleo",
+        "hook": "E aí, quando não tem petróleo, o que os ingleses fazem?",
+        "keywords": [
+          "petroleo",
+          "israel",
+          "entendeu",
+          "mundo"
+        ],
+        "viral_score": 4.0,
+        "tiktok_caption": "E AÍ QUANDO NÃO TEM PETRÓLEO O QUE OS INGLESES FAZEM 🛢️\n\nMó reserve petróleo do mundo é venezuelana, é petróleo pra caramba, não é pouco, não é muito, entendeu?\n\nRiqueza natural significa desenvolvimento garantido? 🌍\n\nCréditos: fonte não identificada.\n\n#petroleo #economia #geopolitica",
+        "youtube_title": "E AÍ QUANDO NÃO TEM PETRÓLEO O QUE OS INGLESES FAZEM 🛢️",
+        "youtube_description": "E aí, quando não tem petróleo, o que os ingleses fazem?\n\nMó reserve petróleo do mundo é venezuelana, é petróleo pra caramba, não é pouco, não é muito, entendeu?\n\nRiqueza natural significa desenvolvimento garantido? 🌍\n\nCréditos: fonte não identificada.\n\n#petroleo #economia #geopolitica",
+        "youtube_tags": [
+          "petroleo",
+          "energia",
+          "economia",
+          "geopolitica",
+          "corte fino",
+          "cortes de podcast",
+          "shorts"
+        ],
+        "credit": "Créditos: fonte não identificada.",
+        "evidence": [
+          "Mó reserve petróleo do mundo é venezuelana, é petróleo pra caramba, não é pouco, não é muito, entendeu?"
+        ],
+        "cta": "Riqueza natural significa desenvolvimento garantido? 🌍",
+        "editorial_mode": "grounded_context"
+      },
+      "schedule": {
+        "youtube_hour": 19,
+        "tiktok_hour": 19
+      }
+    },
+    {
+      "index": 4,
+      "drive_id": "1ojXFS4DFCYvczq8dOm2q2zwDTAdK0JL5",
+      "name": "A IA VAI NOS EXTERMINAR - 04.mp4",
+      "size": 24734385,
+      "md5_checksum": "1d416136e77e006a64b45500aea3d1e7",
+      "mime_type": "video/mp4",
+      "modified_time": "2026-10-16T20:59:42.592Z",
+      "video_profile": {
+        "width": 1080,
+        "height": 1920,
+        "video_codec": "h264",
+        "audio_codec": "aac",
+        "pixel_format": "yuv420p",
+        "video_profile": "High",
+        "sample_aspect_ratio": "1:1",
+        "frame_rate": 30.0,
+        "audio_sample_rate": "48000",
+        "audio_bitrate": "199079",
+        "duration": 74.467
+      },
+      "copy": {
+        "topic": "petroleo",
+        "hook": "Só que qual foi o problema?",
+        "keywords": [
+          "crise",
+          "estava",
+          "brasil",
+          "empresa"
+        ],
+        "viral_score": 5.5,
+        "tiktok_caption": "SÓ QUE QUAL FOI O PROBLEMA 🛢️\n\n2018 Quando estoura lá o negócio do Petrolão, a gente estava vendendo uma crise mundial também do Petrole, entendeu?\n\nRiqueza natural significa desenvolvimento garantido? 🌍\n\nCréditos: fonte não identificada.\n\n#petroleo #economia #geopolitica",
+        "youtube_title": "SÓ QUE QUAL FOI O PROBLEMA 🛢️",
+        "youtube_description": "Só que qual foi o problema?\n\n2018 Quando estoura lá o negócio do Petrolão, a gente estava vendendo uma crise mundial também do Petrole, entendeu?\n\nRiqueza natural significa desenvolvimento garantido? 🌍\n\nCréditos: fonte não identificada.\n\n#petroleo #economia #geopolitica",
+        "youtube_tags": [
+          "petroleo",
+          "energia",
+          "economia",
+          "geopolitica",
+          "corte fino",
+          "cortes de podcast",
+          "shorts"
+        ],
+        "credit": "Créditos: fonte não identificada.",
+        "evidence": [
+          "2018 Quando estoura lá o negócio do Petrolão, a gente estava vendendo uma crise mundial também do Petrole, entendeu?"
+        ],
+        "cta": "Riqueza natural significa desenvolvimento garantido? 🌍",
+        "editorial_mode": "grounded_context"
+      },
+      "schedule": {
+        "youtube_hour": 17,
+        "tiktok_hour": 17
+      }
+    },
+    {
+      "index": 5,
+      "drive_id": "1dtsSKNMdVAGHI_frxb1q-1XAMtlEFeoN",
+      "name": "A IA VAI NOS EXTERMINAR - 05.mp4",
+      "size": 19803648,
+      "md5_checksum": "48a324d7bedca2808f57076064527112",
+      "mime_type": "video/mp4",
+      "modified_time": "2026-10-16T20:59:44.851Z",
+      "video_profile": {
+        "width": 1080,
+        "height": 1920,
+        "video_codec": "h264",
+        "audio_codec": "aac",
+        "pixel_format": "yuv420p",
+        "video_profile": "High",
+        "sample_aspect_ratio": "1:1",
+        "frame_rate": 30.0,
+        "audio_sample_rate": "48000",
+        "audio_bitrate": "197524",
+        "duration": 81.5
+      },
+      "copy": {
+        "topic": "espaco",
+        "hook": "A União Soviética, depois a Rússia e a Europa nunca conseguiram pousar em Marte.",
+        "keywords": [
+          "teve",
+          "conseguiram",
+          "obrigado",
+          "paraquedas"
+        ],
+        "viral_score": 4.45,
+        "tiktok_caption": "A UNIÃO SOVIÉTICA DEPOIS A RÚSSIA E A EUROPA NUNCA CONSEGUIRAM POUSAR EM MARTE 🚀\n\nTem um tesão danado em Marte, inclusive, né?\n\nO desejo de explorar justifica um risco desse tamanho? 🔴\n\nCréditos: fonte não identificada.\n\n#marte #ciencia #exploracaoespacial",
+        "youtube_title": "A UNIÃO SOVIÉTICA DEPOIS A RÚSSIA E A EUROPA NUNCA CONSEGUIRAM POUSAR EM MARTE 🚀",
+        "youtube_description": "A União Soviética, depois a Rússia e a Europa nunca conseguiram pousar em Marte.\n\nTem um tesão danado em Marte, inclusive, né?\n\nO desejo de explorar justifica um risco desse tamanho? 🔴\n\nCréditos: fonte não identificada.\n\n#marte #ciencia #exploracaoespacial",
+        "youtube_tags": [
+          "Marte",
+          "espaco",
+          "ciencia",
+          "exploracao espacial",
+          "corte fino",
+          "cortes de podcast",
+          "shorts"
+        ],
+        "credit": "Créditos: fonte não identificada.",
+        "evidence": [
+          "Tem um tesão danado em Marte, inclusive, né?"
+        ],
+        "cta": "O desejo de explorar justifica um risco desse tamanho? 🔴",
+        "editorial_mode": "grounded_context"
+      },
+      "schedule": {
+        "youtube_hour": 10,
+        "tiktok_hour": 10
+      }
+    }
+  ],
+  "transcripts": "redacted"
+}
