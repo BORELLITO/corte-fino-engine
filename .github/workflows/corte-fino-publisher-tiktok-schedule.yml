@@ -1,24 +1,78 @@
-name: Corte Fino Motor 2 — TikTok Agendado
+name: Corte Fino Motor 2 — TikTok Automático
 
 on:
-  # O TikTok está roteado pelo Metricool temporariamente. Este workflow fica
-  # manual apenas como lembrete operacional e não publica diretamente.
   workflow_dispatch:
+  schedule:
+    # GitHub cron usa UTC. As execuções horárias são intencionais: o
+    # Publisher seleciona somente o próximo slot vencido em São Paulo,
+    # evitando publicar adiantado e permitindo recuperação segura.
+    - cron: "0 11-23 * * *"
+    - cron: "0 0-1 * * *"
 
 permissions:
   contents: read
 
 concurrency:
-  group: corte-fino-motor-2
+  group: corte-fino-publisher
   cancel-in-progress: false
 
 jobs:
-  tiktok-scheduler:
+  tiktok-due:
     runs-on: ubuntu-22.04
-    timeout-minutes: 5
+    timeout-minutes: 20
+    env:
+      PYTHONUNBUFFERED: "1"
+      PUBLISHER_GOOGLE_CLIENT_ID: ${{ secrets.PUBLISHER_GOOGLE_CLIENT_ID }}
+      PUBLISHER_GOOGLE_CLIENT_SECRET: ${{ secrets.PUBLISHER_GOOGLE_CLIENT_SECRET }}
+      PUBLISHER_GOOGLE_REFRESH_TOKEN: ${{ secrets.PUBLISHER_GOOGLE_REFRESH_TOKEN }}
+      PUBLISHER_TIKTOK_CLIENT_KEY: ${{ secrets.PUBLISHER_TIKTOK_CLIENT_KEY }}
+      PUBLISHER_TIKTOK_CLIENT_SECRET: ${{ secrets.PUBLISHER_TIKTOK_CLIENT_SECRET }}
+      PUBLISHER_TIKTOK_REFRESH_TOKEN: ${{ secrets.PUBLISHER_TIKTOK_REFRESH_TOKEN }}
+      PUBLISHER_TIKTOK_SANDBOX_CLIENT_KEY: ${{ secrets.TIKTOK_SANDBOX_CLIENT_KEY }}
+      PUBLISHER_TIKTOK_SANDBOX_CLIENT_SECRET: ${{ secrets.TIKTOK_SANDBOX_CLIENT_SECRET }}
+      PUBLISHER_TIKTOK_SANDBOX_REFRESH_TOKEN: ${{ secrets.TIKTOK_SANDBOX_REFRESH_TOKEN }}
+      PUBLISHER_TIKTOK_ENV: production
+      PUBLISHER_TIKTOK_EXPECTED_USERNAME: ${{ secrets.PUBLISHER_TIKTOK_EXPECTED_USERNAME }}
+      PUBLISHER_TIKTOK_PRIVACY_LEVEL: PUBLIC_TO_EVERYONE
+      PUBLISHER_TIKTOK_DIRECT_ENABLED: "1"
+
     steps:
-      - name: Confirmar roteamento atual
+      - name: Checkout do manifesto
+        uses: actions/checkout@v7
+
+      - name: Python
+        uses: actions/setup-python@v7
+        with:
+          python-version: "3.11"
+          cache: pip
+
+      - name: Dependências
         run: |
-          echo "Publicação direta do TikTok está desativada no Publisher."
-          echo "Agende os vídeos do TikTok pelo Metricool nesta fase."
-          echo "O YouTube continua sendo publicado diretamente pelo Publisher."
+          python -m pip install --upgrade pip
+          python -m pip install -r requirements.txt
+
+      - name: Verificar se existe manifesto v6 ativo
+        id: manifest
+        run: |
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          path = Path("publisher/state/current.json")
+          try:
+              data = json.loads(path.read_text(encoding="utf-8"))
+              active = data.get("version") == 6 and len(data.get("clips", [])) == 10
+          except Exception:
+              active = False
+          Path("manifest_active").write_text("1" if active else "0", encoding="utf-8")
+          print("manifest_active=" + ("1" if active else "0"))
+          PY
+          echo "active=$(cat manifest_active)" >> "$GITHUB_OUTPUT"
+
+      - name: Publicar somente o próximo slot vencido
+        if: steps.manifest.outputs.active == '1'
+        run: python -m publisher.cli tiktok --due-only
+
+      - name: Aguardar nova rodada
+        if: steps.manifest.outputs.active != '1'
+        run: echo "Nenhum manifesto v6 ativo; aguardando uma nova rodada de duas pastas."
+
