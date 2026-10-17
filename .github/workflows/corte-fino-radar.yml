@@ -72,7 +72,7 @@ jobs:
           GOOGLE_CLIENT_ID: ${{ secrets.GOOGLE_CLIENT_ID }}
           GOOGLE_CLIENT_SECRET: ${{ secrets.GOOGLE_CLIENT_SECRET }}
           DRIVE_FOLDER_ID: ${{ secrets.RADAR_DRIVE_FOLDER_ID || secrets.DRIVE_FOLDER_ID || secrets.DRIVER_FOLDER_ID || secrets.PUBLISHER_DRIVE_FOLDER_ID }}
-        run: python radar/drive_state.py pull
+        run: python -m radar.drive_state pull
 
       - name: Executar Radar Viral
         env:
@@ -99,7 +99,7 @@ jobs:
           GOOGLE_CLIENT_ID: ${{ secrets.GOOGLE_CLIENT_ID }}
           GOOGLE_CLIENT_SECRET: ${{ secrets.GOOGLE_CLIENT_SECRET }}
           DRIVE_FOLDER_ID: ${{ secrets.RADAR_DRIVE_FOLDER_ID || secrets.DRIVE_FOLDER_ID || secrets.DRIVER_FOLDER_ID || secrets.PUBLISHER_DRIVE_FOLDER_ID }}
-        run: python radar/upload_reports_drive.py
+        run: python -m radar.upload_reports_drive
 
       - name: Salvar histórico de momentum no Drive
         if: success()
@@ -108,7 +108,7 @@ jobs:
           GOOGLE_CLIENT_ID: ${{ secrets.GOOGLE_CLIENT_ID }}
           GOOGLE_CLIENT_SECRET: ${{ secrets.GOOGLE_CLIENT_SECRET }}
           DRIVE_FOLDER_ID: ${{ secrets.RADAR_DRIVE_FOLDER_ID || secrets.DRIVE_FOLDER_ID || secrets.DRIVER_FOLDER_ID || secrets.PUBLISHER_DRIVE_FOLDER_ID }}
-        run: python radar/drive_state.py push
+        run: python -m radar.drive_state push
 
       - name: Resumo seguro
         if: success()
