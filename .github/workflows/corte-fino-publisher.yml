@@ -234,11 +234,11 @@ jobs:
         run: python -m publisher.cli youtube
 
       - name: Relatório final
-        if: always() && steps.prepare.outcome == 'success' && inputs.mode != 'verify-tiktok' && inputs.mode != 'verify-google' && inputs.mode != 'preflight'
+        if: always() && (steps.prepare.outcome == 'success' || steps.state.outputs.needs_prepare == '0') && inputs.mode != 'verify-tiktok' && inputs.mode != 'verify-google' && inputs.mode != 'preflight'
         run: python -m publisher.cli report --remote | tee publisher/state/report.json
 
       - name: Guard de falhas parciais
-        if: always() && steps.prepare.outcome == 'success' && inputs.mode != 'verify-tiktok' && inputs.mode != 'verify-google' && inputs.mode != 'preflight'
+        if: always() && (steps.prepare.outcome == 'success' || steps.state.outputs.needs_prepare == '0') && inputs.mode != 'verify-tiktok' && inputs.mode != 'verify-google' && inputs.mode != 'preflight'
         run: |
           python - <<'PY'
           import json
@@ -253,7 +253,7 @@ jobs:
           PY
 
       - name: Persistir manifesto sanitizado
-        if: always() && steps.prepare.outcome == 'success' && inputs.mode != 'verify-tiktok' && inputs.mode != 'verify-google' && inputs.mode != 'preflight'
+        if: always() && (steps.prepare.outcome == 'success' || steps.state.outputs.needs_prepare == '0') && inputs.mode != 'verify-tiktok' && inputs.mode != 'verify-google' && inputs.mode != 'preflight'
         run: |
           python - <<'PY'
           import json
