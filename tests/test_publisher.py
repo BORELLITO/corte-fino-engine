@@ -4,7 +4,7 @@ from zoneinfo import ZoneInfo
 import pytest
 
 from publisher.cli import report
-from publisher.core import (BRANDING_CAPTION_MARGIN_V, BRANDING_FORMAT, BRANDING_LOGO_POSITION, BRANDING_VERSION, MANIFEST_VERSION, TIKTOK_CAPTION_LIMIT, TIKTOK_HOURS, YOUTUBE_DESCRIPTION_LIMIT, YOUTUBE_HOURS, YOUTUBE_TITLE_LIMIT, assign_slots, build_title, copy_dict, copy_quality_issues, detect_topic, format_copy_text, local_publish_at, make_copy, natural_index, normalize_transcript, validate_manifest)
+from publisher.core import (BRANDING_CAPTION_MARGIN_V, BRANDING_FORMAT, BRANDING_LOGO_POSITION, BRANDING_VERSION, MANIFEST_VERSION, TIKTOK_CAPTION_LIMIT, TIKTOK_HOURS, YOUTUBE_DESCRIPTION_LIMIT, YOUTUBE_HOURS, YOUTUBE_TITLE_LIMIT, assign_slots, build_title, copy_dict, copy_quality_issues, detect_topic, format_copy_text, local_publish_at, make_copy, natural_index, normalize_transcript, validate_credit_source, validate_manifest)
 from publisher.google_io import normalize_folder_id, publication_day, reconcile_youtube_upload, resolve_publication_folder, verify_manifest_clip, wait_youtube_processing
 from publisher.tiktok_io import TikTokError, choose_privacy_level, publish_tiktok
 import publisher.tiktok_io as tiktok_io
@@ -67,6 +67,19 @@ def test_titles_are_uppercase_and_have_no_punctuation():
     assert pack.youtube_title == pack.youtube_title.upper()
     assert not any(char in pack.youtube_title for char in ".,;:!?—–-")
     assert pack.tiktok_caption.split("\n", 1)[0] == pack.youtube_title
+
+
+def test_credit_source_must_be_the_original_channel():
+    assert validate_credit_source("Redcast Feminismo") == "Redcast Feminismo"
+    with pytest.raises(ValueError, match="nunca use Corte Fino"):
+        validate_credit_source("Corte Fino Publisher")
+    with pytest.raises(ValueError, match="fonte original"):
+        validate_credit_source("", required=True)
+    with pytest.raises(ValueError, match="nunca use Corte Fino"):
+        make_copy(
+            "A inteligência artificial está mudando o trabalho. O ser humano pode virar o gargalo.",
+            "Corte Fino",
+        )
 
 
 def test_copy_uses_natural_credit_and_exactly_two_emojis():
@@ -163,6 +176,13 @@ def _valid_manifest():
 
 def test_manifest_v5_validates_copy_rights_and_branding():
     validate_manifest(_valid_manifest())
+
+
+def test_manifest_rejects_publisher_as_persisted_credit_source():
+    manifest = _valid_manifest()
+    manifest["source"] = {"name": "Corte Fino", "episode": ""}
+    with pytest.raises(RuntimeError, match="nunca use Corte Fino"):
+        validate_manifest(manifest)
 
 
 def test_manifest_rejects_old_copy_without_paragraphs():
