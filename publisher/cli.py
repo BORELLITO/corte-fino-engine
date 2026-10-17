@@ -3,13 +3,16 @@ from __future__ import annotations
 import argparse
 import json
 import os
+from datetime import datetime
 from pathlib import Path
+from zoneinfo import ZoneInfo
 
 from publisher.core import validate_manifest
 from publisher.google_io import (
     FOLDER_ID,
     drive_service,
     prepare_batches,
+    scheduled_publish_at,
     verify_google_accounts,
 )
 from publisher.tiktok_io import publish_tiktok
@@ -76,29 +79,51 @@ def report(manifest: dict, drive=None) -> dict:
 
 def browser_package(manifest: dict) -> dict:
     """Build the exact payload consumed by the Cloud Web Browser flow."""
+    validate_manifest(manifest, require_rights=True)
+    timezone = ZoneInfo(manifest["timezone"])
     posts = []
     for clip in sorted(manifest["clips"], key=lambda item: item["schedule"]["youtube_publish_at"]):
+        youtube_at = scheduled_publish_at(manifest, clip, "youtube")
+        tiktok_at = scheduled_publish_at(manifest, clip, "tiktok")
+        youtube_local = datetime.fromisoformat(youtube_at.replace("Z", "+00:00")).astimezone(timezone)
+        tiktok_local = datetime.fromisoformat(tiktok_at.replace("Z", "+00:00")).astimezone(timezone)
         posts.append(
             {
                 "index": clip["index"],
                 "batch_id": clip["batch_id"],
                 "batch_index": clip["batch_index"],
                 "drive_folder_id": clip["drive_folder_id"],
+                "drive_folder_url": f"https://drive.google.com/drive/folders/{clip['drive_folder_id']}",
                 "drive_id": clip["drive_id"],
                 "file_name": clip["name"],
                 "youtube": {
-                    "publish_at": clip["schedule"]["youtube_publish_at"],
+                    "publish_at": youtube_at,
+                    "publish_at_local": youtube_local.strftime("%Y-%m-%d %H:%M"),
+                    "publication_mode": "schedule",
+                    "language": "pt-BR",
+                    "category_id": "24",
+                    "made_for_kids": False,
+                    "contains_synthetic_media": False,
                     "title": clip["copy"]["youtube_title"],
                     "description": clip["copy"]["youtube_description"],
                     "tags": clip["copy"]["youtube_tags"],
                 },
                 "tiktok": {
-                    "publish_at": clip["schedule"]["tiktok_publish_at"],
+                    "publish_at": tiktok_at,
+                    "publish_at_local": tiktok_local.strftime("%Y-%m-%d %H:%M"),
+                    "publication_mode": "schedule",
+                    "visibility": "PUBLIC_TO_EVERYONE",
                     "caption": clip["copy"]["tiktok_caption"],
                 },
             }
         )
-    return {"version": 1, "source_manifest_version": manifest["version"], "timezone": manifest["timezone"], "posts": posts}
+    return {
+        "version": 2,
+        "source_manifest_version": manifest["version"],
+        "timezone": manifest["timezone"],
+        "rights_authorized": True,
+        "posts": posts,
+    }
 
 
 def main() -> int:
