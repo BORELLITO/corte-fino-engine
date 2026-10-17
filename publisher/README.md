@@ -1,4 +1,4 @@
-# Corte Fino Publisher 1.8
+# Corte Fino Publisher 1.9
 
 Módulo separado do gerador de cortes. Lê os 5 MP4 prontos no Google Drive, transcreve localmente com `faster-whisper`, cria copy completa para TikTok/YouTube, ranqueia os cortes e agenda os Shorts pela YouTube Data API.
 
@@ -35,8 +35,9 @@ Contrato: exatamente 5 MP4 identificáveis como 01, 02, 03, 04 e 05. O Publisher
 - TikTok: 10h, 12h, 15h, 17h e 19h (mesma grade editorial do manifesto).
 
 Os cortes mais fortes recebem os slots prioritários de cada rede. O YouTube é agendado
-diretamente pela API. O TikTok é publicado pelo workflow automático de hora em hora,
-que lê o manifesto persistido e envia somente o corte cujo horário local já venceu.
+diretamente pela API, sem depender de limite mensal do Metricool. O TikTok fica
+temporariamente roteado pelo Metricool, para evitar duplicidade enquanto a integração
+oficial direta do TikTok permanece desativada no Publisher.
 
 ## YouTube
 
@@ -69,9 +70,15 @@ Fluxo operacional oficial:
 5. O workflow **Corte Fino Motor 2 — Publicar 5 Cortes** é iniciado manualmente com esse link obrigatório.
 6. O Publisher prepara um manifesto v5, cria as copies e executa YouTube/TikTok conforme o modo escolhido, usando os mesmos cinco arquivos e marcadores anti-duplicidade no Drive.
 
-O Publisher gera automaticamente ordem editorial, legenda e hashtags para cinco vídeos. A preparação do lote continua manual e exige o link exato da pasta. Depois que o manifesto é preparado, o modo `youtube` agenda os cinco Shorts pela API e o workflow `Corte Fino Motor 2 — TikTok Agendado` executa `--due-only` de hora em hora. Os campos opcionais `source_name` e `source_episode` alimentam os créditos sem permitir invenções. Cada arquivo é marcado no Drive para impedir duplicidade.
+O Publisher gera automaticamente ordem editorial, legenda e hashtags para cinco vídeos. A preparação do lote continua manual e exige o link exato da pasta. Depois que o manifesto é preparado, o modo `youtube` agenda os cinco Shorts diretamente pela API. Os campos opcionais `source_name` e `source_episode` alimentam os créditos sem permitir invenções. Cada arquivo é marcado no Drive para impedir duplicidade.
 
-A publicação do TikTok é direta pela API oficial e não depende de Metricool nem do limite mensal de uma ferramenta intermediária. O agendador possui também `workflow_dispatch` para recuperação manual: se o cron atrasar ou um envio ficar pendente, abra **Actions → Corte Fino Motor 2 — TikTok Agendado → Run workflow**. O manifesto persistido continua sendo a única fonte do lote e a marcação no Drive impede duplicações.
+### Roteamento atual
+
+- **YouTube Shorts:** publicado diretamente pelo Publisher, com agendamento pela API do YouTube.
+- **TikTok:** agendado manualmente pelo Metricool nesta fase.
+- **Proteção contra duplicidade:** a publicação direta do TikTok está bloqueada no código e no workflow. Assim, o mesmo lote não será enviado pelo Metricool e pelo GitHub ao mesmo tempo.
+
+Quando a integração direta do TikTok for aprovada e quisermos migrar, basta habilitar explicitamente o recurso e reativar o workflow dedicado. Até lá, não execute modos de publicação direta do TikTok pelo GitHub.
 
 Secrets exclusivos do Publisher:
 
@@ -81,7 +88,7 @@ Secrets exclusivos do Publisher:
 - `PUBLISHER_TIKTOK_EXPECTED_USERNAME` — opcional; @handle esperado para bloquear publicação na conta errada.
 - `PUBLISHER_TIKTOK_PRIVACY_LEVEL` — opcional; padrão `PUBLIC_TO_EVERYONE`, sempre validado contra as opções devolvidas pela conta.
 
-O modo `tiktok --dry-run` não acessa a API e valida as cinco copies. O modo `tiktok --allow-immediate` é usado somente quando o usuário escolhe explicitamente publicar pelo workflow manual. Depois do `init`, o `publish_id` é gravado imediatamente no Drive; novas execuções consultam esse ID antes de criar outro post. Chamadas da API têm retry com backoff para erros transitórios/limites (429 e 5xx), uploads de chunks têm retry e estados ainda processando não são tratados como concluídos. A produção também exige confirmação de direitos no manifesto; o Sandbox privado continua disponível para testes controlados. A publicação real exige `video.publish`, autorização da conta TikTok e aprovação/auditoria do app para sair das limitações de teste da plataforma.
+O modo `tiktok --dry-run` continua disponível para validar as cinco copies sem publicar. A publicação direta fica bloqueada por padrão enquanto o Metricool for o canal operacional do TikTok. O código direto permanece preparado, com retry de API/chunks e reconciliação por `publish_id`, mas não pode ser ativado por acidente. A produção também exige confirmação de direitos no manifesto; o Sandbox privado continua disponível para testes controlados. A publicação real pela API exige `video.publish`, autorização da conta TikTok e aprovação/auditoria do app.
 Para o teste real controlado do Sandbox pelo GitHub Actions, use `mode=tiktok-now` e `tiktok_env=sandbox`. Esse modo prepara o lote e envia os cinco vídeos imediatamente apenas para a conta Sandbox configurada; ele é bloqueado quando o ambiente escolhido é Produção. Em Produção, use o modo manual `tiktok` quando quiser enviar os cinco vídeos.
 
 
@@ -128,7 +135,7 @@ python -m publisher.cli prepare --target-date 2026-10-07
 - checksum, tamanho, nome e pasta dos cinco arquivos revalidados antes de cada publicação;
 - MP4 validado com `ffprobe`/`ffmpeg`: 1080x1920, H.264, AAC, 30 fps, yuv420p, áudio 48 kHz, decodificação integral e duração entre 45 e 90 segundos;
 - transcrição local;
-- sem Metricool;
+- YouTube direto sem Metricool; TikTok roteado pelo Metricool temporariamente;
 - copy completa com limites de caracteres/bytes;
 - QA editorial bloqueante para ortografia, truncamento e tokens ASR suspeitos;
 - anti-duplicidade via Drive;
