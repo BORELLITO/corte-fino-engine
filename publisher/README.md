@@ -70,7 +70,7 @@ Fluxo operacional oficial:
 5. O workflow **Corte Fino Motor 2 — Publicar 5 Cortes** é iniciado manualmente com esse link obrigatório.
 6. O Publisher prepara um manifesto v5, cria as copies e executa YouTube/TikTok conforme o modo escolhido, usando os mesmos cinco arquivos e marcadores anti-duplicidade no Drive.
 
-O Publisher gera automaticamente ordem editorial, legenda e hashtags para cinco vídeos. A preparação do lote continua manual e exige o link exato da pasta. Depois que o manifesto é preparado, o modo `youtube` agenda os cinco Shorts diretamente pela API. Os campos opcionais `source_name` e `source_episode` alimentam os créditos sem permitir invenções. Cada arquivo é marcado no Drive para impedir duplicidade.
+O Publisher gera automaticamente ordem editorial, legenda e hashtags para cinco vídeos. A preparação do lote continua manual e exige o link exato da pasta. Depois que o manifesto é preparado, o modo `youtube` agenda os cinco Shorts diretamente pela API. O `source_name` confirmado é obrigatório no preparo e alimenta o crédito com o canal/fonte original do corte; `Corte Fino` é rejeitado como crédito. O `source_episode` é opcional e só é incluído quando confirmado. Cada arquivo é marcado no Drive para impedir duplicidade.
 
 ### Roteamento atual
 
@@ -144,6 +144,7 @@ python -m publisher.cli prepare --target-date 2026-10-07
 - preflight read-only separado para Google e TikTok;
 - Publisher independente do Motor 1; preparação manual por pasta exata e agendamento TikTok separado, sem descoberta automática de lote;
 - manifesto v5 com `run_id`, fonte imutável, direitos confirmados, versão da HUD, créditos editoriais e lote exato do Drive;
+- crédito obrigatório do canal/fonte original, com bloqueio explícito para `Corte Fino` e derivados;
 - estado persistido no Git sem a transcrição integral dos cortes;
 - reconciliação de TikTok pendente mesmo depois da virada do dia;
 - pré-flight de todos os horários do YouTube antes do primeiro upload;
