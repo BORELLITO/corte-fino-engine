@@ -1461,85 +1461,13 @@ def write_outputs(
         ])
 
     lines.extend([
-        "## 🔎 Hipóteses de Search Gap",
-        "",
-    ])
-
-    for signal in gap_signals[:3]:
-        trend = (
-            f" | tendência #{signal.trend_rank}"
-            if signal.trend_rank
-            else ""
-        )
-        traffic = (
-            f" | tráfego ~{fmt_int(signal.approx_traffic)}"
-            if signal.approx_traffic
-            else ""
-        )
-        lines.append(
-            f"- **{signal.query}** — "
-            f"gap {signal.gap_score:.1f}/100"
-            f"{trend}{traffic} | "
-            "oferta YouTube "
-            f"~{fmt_int(signal.youtube_total_results)} resultados."
-        )
-
-    lines.extend([
-        "",
-        "## 🗳️ Watchlist política/eleitoral — métricas brutas",
+        "## Resumo operacional",
         "",
         (
-            "Sem score e sem recomendação comparativa "
-            "de candidatos ou políticos."
+            "Use o Top 5 como fila principal. Search Gap, watchlist política, "
+            "métricas completas, direitos e flags continuam disponíveis no JSON/CSV."
         ),
         "",
-    ])
-
-    if not political:
-        lines.append(
-            "_Nenhum item político/eleitoral nesta rodada._"
-        )
-
-    for c in political[:3]:
-        lines.extend([
-            (
-                f"- **{c.title}** — {c.channel_title} | "
-                f"{fmt_int(c.view_count)} views | "
-                f"{fmt_int(c.comment_count)} comentários | "
-                f"publicado {c.published_at[:10]}  "
-            ),
-            f"  {c.url}",
-        ])
-
-    lines.extend([
-        "",
-        "## ⚠️ Regras de uso",
-        "",
-        (
-            "- O radar **não baixa, corta nem publica** nada; "
-            "Motor 1 e Publisher continuam independentes."
-        ),
-        (
-            "- Canal preferido não significa autorização. "
-            "Verifique licença/autorização antes de reutilizar."
-        ),
-        (
-            "- Alegações graves e temas sensíveis recebem flag "
-            "para exigir contexto e atribuição."
-        ),
-        (
-            "- Search Gap automático usa Google Trends + oferta recente "
-            "do YouTube como proxy; Creator Search Insights do TikTok "
-            "não é consumido diretamente."
-        ),
-        (
-            "- Momentum usa snapshots entre rodadas; na primeira aparição "
-            "o vídeo recebe estado NEW e confiança menor."
-        ),
-        (
-            "- O score considera breakout relativo ao próprio canal quando "
-            "há amostra suficiente de vídeos recentes."
-        ),
     ])
 
     (
