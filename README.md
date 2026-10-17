@@ -7,7 +7,7 @@ Motor de produção e preparação de publicações curtas do Corte Fino, separa
 - **Motor 1 — Creator:** lê uma fonte autorizada, seleciona e renderiza exatamente cinco MP4 verticais e entrega uma pasta de lote no Google Drive.
 - **Motor 2 — Publisher:** recebe duas pastas exatas, cada uma com cinco cortes, e prepara dez publicações para o mesmo dia ou para datas/períodos informados.
 - Não existe handoff automático entre os motores: o Creator termina depois da entrega e nunca inicia o Publisher.
-- A postagem final ocorre exclusivamente no YouTube Studio e no TikTok Studio, por Cloud Web Browser. Não há Metricool, agendador externo ou API de publicação.
+- A postagem final ocorre exclusivamente no YouTube Studio e no TikTok Studio, por Cloud Web Browser. Não há serviço externo de agendamento nem API de publicação.
 
 ## Grade fixa do Publisher
 
