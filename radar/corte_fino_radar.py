@@ -903,13 +903,16 @@ def finalize_score(candidate: VideoCandidate) -> None:
         candidate.rank_status = "DROP"
         return
 
-    editorial_signal = max(
+    semantic_signal = max(
         candidate.controversy_score,
         candidate.emotion_score,
-        candidate.comment_heat_score,
         candidate.chapter_heat_score,
     )
-    if editorial_signal < 20:
+    organic_conflict = (
+        candidate.comment_heat_score >= 35
+        and candidate.comment_divergence
+    )
+    if semantic_signal < 16 and not organic_conflict:
         candidate.radar_score = None
         candidate.rank_status = "DROP"
         return
