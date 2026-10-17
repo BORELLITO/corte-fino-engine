@@ -7,11 +7,20 @@ import time
 import urllib.error
 import urllib.parse
 import urllib.request
-from datetime import date, datetime, time
+from datetime import datetime, timezone
 from pathlib import Path
 
-from publisher.core import TIKTOK_CAPTION_LIMIT, TIMEZONE, as_bool, local_publish_at, truncate_utf8
-from publisher.google_io import download, drive_service, env, marker, verify_manifest_clip
+from publisher.core import TIKTOK_CAPTION_LIMIT, TIMEZONE, as_bool, truncate_utf8
+from publisher.google_io import (
+    download,
+    drive_service,
+    env,
+    marker,
+    scheduled_local_date,
+    scheduled_publish_at,
+    verify_manifest_clip,
+    _parse_utc,
+)
 
 
 API_ROOT = "https://open.tiktokapis.com/v2"
@@ -274,19 +283,13 @@ def _post_clip(token: str, creator: dict, clip: dict, source: Path, on_initializ
 
 def _due_clips(manifest: dict, now: datetime | None = None) -> list[dict]:
     current = now or datetime.now(TIMEZONE)
-    day = date.fromisoformat(manifest["date"])
-    if current.date() != day:
-        return []
+    current_utc = current.astimezone(timezone.utc) if current.tzinfo else current.replace(tzinfo=TIMEZONE).astimezone(timezone.utc)
     eligible = [
         clip
         for clip in manifest["clips"]
-        if current >= datetime.combine(
-            day,
-            time(hour=int(clip["schedule"]["tiktok_hour"])),
-            tzinfo=TIMEZONE,
-        )
+        if (_parse_utc(scheduled_publish_at(manifest, clip, "tiktok")) or datetime.max.replace(tzinfo=timezone.utc)) <= current_utc
     ]
-    return sorted(eligible, key=lambda item: (int(item["schedule"]["tiktok_hour"]), item["index"]))
+    return sorted(eligible, key=lambda item: (scheduled_publish_at(manifest, item, "tiktok"), item["index"]))
 
 
 def _select_due_clips(
@@ -336,15 +339,14 @@ def publish_tiktok(
 ) -> list[dict]:
     if not dry_run and not due_only and not allow_immediate and env("PUBLISHER_ALLOW_IMMEDIATE_TIKTOK") != "1":
         raise TikTokError(
-            "Publicação imediata dos cinco TikToks está bloqueada. Confirme explicitamente a execução imediata."
+            "Publicação imediata dos dez TikToks está bloqueada. Use o modo due-only ou confirme explicitamente a execução imediata."
         )
-    day = date.fromisoformat(manifest["date"])
     all_clips = sorted(manifest["clips"], key=lambda item: item["index"])
     clips = _due_clips(manifest, now) if due_only else all_clips
     if dry_run:
         if due_only:
             clips = clips[:1]
-        return [{"index": clip["index"], "status": "dry_run", "publish_at": local_publish_at(day, int(clip["schedule"]["tiktok_hour"])), "caption": truncate_utf8(clip["copy"]["tiktok_caption"], 2200)} for clip in clips]
+        return [{"index": clip["index"], "status": "dry_run", "publish_at": scheduled_publish_at(manifest, clip, "tiktok"), "caption": truncate_utf8(clip["copy"]["tiktok_caption"], 2200)} for clip in clips]
     if not dry_run:
         rights = manifest.get("rights") or {}
         sandbox = env("PUBLISHER_TIKTOK_ENV").casefold() == "sandbox"
@@ -354,8 +356,7 @@ def publish_tiktok(
             )
         if env("PUBLISHER_TIKTOK_DIRECT_ENABLED", "0").strip() != "1":
             raise TikTokError(
-                "Publicação direta no TikTok está desativada enquanto o fluxo usa o Metricool. "
-                "Agende o TikTok pelo Metricool; o YouTube continua no Publisher."
+                "Publicação direta no TikTok está desativada. Habilite PUBLISHER_TIKTOK_DIRECT_ENABLED=1 após validar a conta e o app."
             )
 
     # O estado de um publish_id precisa ser reconciliado mesmo quando o
@@ -379,11 +380,11 @@ def publish_tiktok(
         if existing_id:
             state, status_data = _wait_for_publish(token, existing_id)
             if state == "PUBLISH_COMPLETE":
-                marker(drive, clip["drive_id"], {"cf_tiktok_status": state, "cf_tiktok_date": manifest["date"]})
+                marker(drive, clip["drive_id"], {"cf_tiktok_status": state, "cf_tiktok_date": scheduled_local_date(manifest, clip, "tiktok")})
                 results.append({"index": clip["index"], "status": "already_published", "publish_id": existing_id})
                 continue
             if state not in {"FAILED", "CANCELED"}:
-                marker(drive, clip["drive_id"], {"cf_tiktok_status": state, "cf_tiktok_date": manifest["date"]})
+                marker(drive, clip["drive_id"], {"cf_tiktok_status": state, "cf_tiktok_date": scheduled_local_date(manifest, clip, "tiktok")})
                 results.append({"index": clip["index"], "status": state, "publish_id": existing_id})
                 continue
             marker(
@@ -393,7 +394,7 @@ def publish_tiktok(
                     "cf_tiktok_last_publish_id": existing_id,
                     "cf_tiktok_publish_id": "",
                     "cf_tiktok_status": state,
-                    "cf_tiktok_date": manifest["date"],
+                    "cf_tiktok_date": scheduled_local_date(manifest, clip, "tiktok"),
                 },
             )
             raise TikTokError(f"TikTok falhou no publish_id {existing_id}: {status_data}")
@@ -411,7 +412,7 @@ def publish_tiktok(
                     {
                         "cf_tiktok_publish_id": publish_id,
                         "cf_tiktok_status": "PENDING",
-                        "cf_tiktok_date": manifest["date"],
+                        "cf_tiktok_date": scheduled_local_date(manifest, clip, "tiktok"),
                     },
                 ),
             )
@@ -423,7 +424,7 @@ def publish_tiktok(
                     "cf_tiktok_last_publish_id": outcome["publish_id"],
                     "cf_tiktok_publish_id": "",
                     "cf_tiktok_status": outcome["status"],
-                    "cf_tiktok_date": manifest["date"],
+                    "cf_tiktok_date": scheduled_local_date(manifest, clip, "tiktok"),
                 },
             )
             raise TikTokError(f"TikTok falhou no publish_id {outcome['publish_id']}: {outcome.get('status_data', {})}")
@@ -433,10 +434,11 @@ def publish_tiktok(
             {
                 "cf_tiktok_publish_id": outcome["publish_id"],
                 "cf_tiktok_status": outcome["status"],
-                "cf_tiktok_date": manifest["date"],
+                "cf_tiktok_date": scheduled_local_date(manifest, clip, "tiktok"),
             },
         )
         results.append({"index": clip["index"], **outcome})
         if due_only:
             break
     return results
+
