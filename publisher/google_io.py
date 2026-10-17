@@ -697,6 +697,10 @@ def _preflight_youtube_schedule(drive, manifest: dict, *, force_repost: bool = F
 
 
 def publish_youtube(manifest: dict, dry_run: bool = False) -> list[dict]:
+    if not dry_run and env("PUBLISHER_BROWSER_ONLY", "1") == "1":
+        raise RuntimeError(
+            "Publicação YouTube por API bloqueada: o fluxo oficial usa o Cloud Web Browser no YouTube Studio."
+        )
     force_repost = env("PUBLISHER_FORCE_REPOST", "0").strip() == "1"
     drive = drive_service()
     youtube = None
