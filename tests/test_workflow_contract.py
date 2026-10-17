@@ -14,8 +14,11 @@ def test_publisher_requires_two_exact_drive_folders_and_periods():
     assert "period_2:" in text
     assert "PUBLISHER_BROWSER_ONLY: \"1\"" in text
     assert "PUBLISHER_TIKTOK_DIRECT_ENABLED: \"0\"" in text
+    assert "REQUESTED_EPISODE_1" in text
+    assert "REQUESTED_EPISODE_2" in text
     assert "python -m publisher.cli prepare" in text
     assert "python -m publisher.cli browser-package" in text
+    assert "publisher/state/browser_package.json" in text
 
 
 def test_publication_api_scheduler_is_removed():
