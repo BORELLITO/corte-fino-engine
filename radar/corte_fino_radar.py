@@ -18,6 +18,7 @@ from dataclasses import asdict, dataclass, field
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from typing import Any, Iterable
+from zoneinfo import ZoneInfo
 
 ROOT = Path(__file__).resolve().parent
 OUTPUT_DIR = ROOT / "output"
@@ -1402,12 +1403,13 @@ def write_outputs(
                 ",".join(c.risk_flags),
             ])
 
+    local_time = generated_at.astimezone(ZoneInfo("America/Sao_Paulo"))
     lines = [
-        "# 🎯 Corte Fino — Radar Viral V2",
+        "# 🎯 Corte Fino — Radar Viral V2.1",
         "",
         (
             "Atualizado em "
-            f"**{generated_at.strftime('%d/%m/%Y %H:%M UTC')}**."
+            f"**{local_time.strftime('%d/%m/%Y %H:%M')} BRT**."
         ),
         "",
         (
@@ -1461,85 +1463,14 @@ def write_outputs(
         ])
 
     lines.extend([
-        "## 🔎 Hipóteses de Search Gap",
-        "",
-    ])
-
-    for signal in gap_signals[:3]:
-        trend = (
-            f" | tendência #{signal.trend_rank}"
-            if signal.trend_rank
-            else ""
-        )
-        traffic = (
-            f" | tráfego ~{fmt_int(signal.approx_traffic)}"
-            if signal.approx_traffic
-            else ""
-        )
-        lines.append(
-            f"- **{signal.query}** — "
-            f"gap {signal.gap_score:.1f}/100"
-            f"{trend}{traffic} | "
-            "oferta YouTube "
-            f"~{fmt_int(signal.youtube_total_results)} resultados."
-        )
-
-    lines.extend([
-        "",
-        "## 🗳️ Watchlist política/eleitoral — métricas brutas",
+        "## Resumo",
         "",
         (
-            "Sem score e sem recomendação comparativa "
-            "de candidatos ou políticos."
+            "Fila principal encerrada no Top 5. "
+            "Search Gap, watchlist política, direitos, riscos e métricas completas "
+            "permanecem no JSON/CSV para auditoria."
         ),
         "",
-    ])
-
-    if not political:
-        lines.append(
-            "_Nenhum item político/eleitoral nesta rodada._"
-        )
-
-    for c in political[:3]:
-        lines.extend([
-            (
-                f"- **{c.title}** — {c.channel_title} | "
-                f"{fmt_int(c.view_count)} views | "
-                f"{fmt_int(c.comment_count)} comentários | "
-                f"publicado {c.published_at[:10]}  "
-            ),
-            f"  {c.url}",
-        ])
-
-    lines.extend([
-        "",
-        "## ⚠️ Regras de uso",
-        "",
-        (
-            "- O radar **não baixa, corta nem publica** nada; "
-            "Motor 1 e Publisher continuam independentes."
-        ),
-        (
-            "- Canal preferido não significa autorização. "
-            "Verifique licença/autorização antes de reutilizar."
-        ),
-        (
-            "- Alegações graves e temas sensíveis recebem flag "
-            "para exigir contexto e atribuição."
-        ),
-        (
-            "- Search Gap automático usa Google Trends + oferta recente "
-            "do YouTube como proxy; Creator Search Insights do TikTok "
-            "não é consumido diretamente."
-        ),
-        (
-            "- Momentum usa snapshots entre rodadas; na primeira aparição "
-            "o vídeo recebe estado NEW e confiança menor."
-        ),
-        (
-            "- O score considera breakout relativo ao próprio canal quando "
-            "há amostra suficiente de vídeos recentes."
-        ),
     ])
 
     (
