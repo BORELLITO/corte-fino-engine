@@ -634,10 +634,49 @@ def publish_youtube(manifest: dict, dry_run: bool = False) -> list[dict]:
                         {"cf_youtube_upload_status": "FAILED"},
                     )
                     raise RuntimeError(f"Processamento YouTube falhou para o corte {clip['index']:02d}.")
+            desired_publish_at = local_publish_at(
+                day,
+                int(clip["schedule"]["youtube_hour"]),
+            )
+            recorded_publish_at = properties.get("cf_youtube_publish_at", "")
+            if (
+                not dry_run
+                and existing_status in {"SCHEDULED", "PROCESSING"}
+                and recorded_publish_at != desired_publish_at
+            ):
+                youtube.videos().update(
+                    part="status",
+                    body={
+                        "id": existing_video_id,
+                        "status": {
+                            "privacyStatus": "private",
+                            "publishAt": desired_publish_at,
+                            "selfDeclaredMadeForKids": False,
+                            "containsSyntheticMedia": False,
+                        },
+                    },
+                ).execute(num_retries=4)
+                marker(
+                    drive,
+                    clip["drive_id"],
+                    {
+                        "cf_youtube_upload_status": "SCHEDULED",
+                        "cf_youtube_publish_at": desired_publish_at,
+                        "cf_youtube_date": manifest["date"],
+                    },
+                )
+                results.append({
+                    "index": clip["index"],
+                    "status": "rescheduled",
+                    "video_id": existing_video_id,
+                    "publish_at": desired_publish_at,
+                })
+                continue
             results.append({
                 "index": clip["index"],
                 "status": "already_published" if existing_status == "SCHEDULED" else "processing",
                 "video_id": existing_video_id,
+                "publish_at": desired_publish_at,
             })
             continue
 
