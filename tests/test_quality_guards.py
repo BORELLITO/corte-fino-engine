@@ -66,7 +66,7 @@ def test_short_caption_tail_is_joined_without_breaking_safe_layout():
 def test_caption_gate_does_not_block_names_slang_or_valid_loanwords():
     labels = ["Bianquinha", "tigrinho", "bets", "descredibilizar", "bloqueava", "consegui"]
     assert caption_spelling_issues(labels) == []
-    assert "bianquinha" in caption_spelling_warnings(labels)
+    assert caption_spelling_warnings(labels) == []
 
 
 def test_hashtag_matching_uses_word_boundaries():
@@ -447,3 +447,4 @@ def test_caption_sentence_after_punctuation_is_capitalized():
     assert [item["word"] for chunk in chunks for item in chunk] == [
         "Primeira", "frase.", "Segunda", "frase."
     ]
+
