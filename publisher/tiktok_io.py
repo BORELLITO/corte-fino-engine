@@ -337,7 +337,7 @@ def publish_tiktok(
     now: datetime | None = None,
     allow_immediate: bool = False,
 ) -> list[dict]:
-    if not dry_run and env("PUBLISHER_BROWSER_ONLY", "1") == "1":
+    if not dry_run:
         raise TikTokError(
             "Publicação TikTok por API bloqueada: o fluxo oficial usa o Cloud Web Browser no TikTok Studio."
         )
