@@ -2,7 +2,7 @@
 
 **Última atualização:** 10 de outubro de 2026
 
-O Corte Fino Publisher é uma ferramenta privada destinada ao proprietário da conta e a usuários autorizados para organizar e publicar vídeos curtos em contas próprias ou autorizadas.
+O Corte Fino Publisher é uma ferramenta privada destinada ao proprietário da conta e a usuários autorizados para organizar e preparar vídeos curtos para confirmação manual em contas próprias ou autorizadas.
 
 ## Uso autorizado
 
@@ -10,11 +10,11 @@ O usuário deve utilizar o serviço somente com contas, vídeos, músicas, image
 
 ## Funcionamento
 
-O serviço pode receber vídeos de uma pasta autorizada do Google Drive, validar os arquivos, preparar informações de publicação e enviar conteúdo à conta TikTok conectada mediante autorização válida. A publicação pode ser interrompida por falhas técnicas, credenciais inválidas, conta incorreta ou validações de segurança.
+O serviço pode receber vídeos de duas pastas autorizadas do Google Drive, validar os arquivos e preparar informações de publicação. O usuário confirma cada item diretamente no YouTube Studio e no TikTok Studio. A rodada pode ser interrompida por falhas técnicas, pasta incorreta, conta incorreta ou validações de segurança.
 
 ## Contas e credenciais
 
-O usuário é responsável por manter suas credenciais e tokens seguros. O serviço não solicita que credenciais sejam compartilhadas em mensagens públicas. O usuário pode revogar as autorizações concedidas diretamente nas plataformas correspondentes.
+O usuário é responsável por manter suas credenciais seguras. O serviço não solicita senhas em mensagens públicas. O usuário pode revogar as autorizações de leitura concedidas diretamente nas plataformas correspondentes.
 
 ## Responsabilidade
 
