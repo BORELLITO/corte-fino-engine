@@ -73,7 +73,7 @@ O Publisher não publica por API ou qualquer agendador externo. As funções leg
 - timestamps locais convertidos e revisados antes da postagem;
 - validação de conta e tela correta no Studio;
 - revisão visual antes de confirmar cada agendamento;
-- marcadores anti-duplicidade no manifesto e no Drive;
+- manifesto imutável e revisão de cada item no Studio antes da confirmação;
 - falha parcial interrompe a rodada e exige reconciliação;
 - Creator e Publisher continuam separados.
 
