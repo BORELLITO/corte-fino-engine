@@ -20,6 +20,8 @@ CHUNK_SIZE = 10 * 1024 * 1024
 POLL_SECONDS = 5
 POLL_ATTEMPTS = 24
 UPLOAD_ATTEMPTS = 3
+API_RETRY_ATTEMPTS = 4
+RETRYABLE_HTTP_STATUS = {429, 500, 502, 503, 504}
 TERMINAL_STATUSES = {"PUBLISH_COMPLETE", "FAILED", "CANCELED"}
 
 
@@ -27,28 +29,48 @@ class TikTokError(RuntimeError):
     pass
 
 
+def _retry_delay(attempt: int, retry_after: str | None = None) -> float:
+    """Return a bounded delay for transient TikTok/API failures."""
+    try:
+        server_delay = float(retry_after or 0)
+    except (TypeError, ValueError):
+        server_delay = 0
+    return min(max(server_delay, 2**attempt), 30.0)
+
+
 def _json_request(url: str, *, method: str = "POST", token: str = "", body: dict | None = None) -> dict:
     payload = json.dumps(body or {}).encode("utf-8")
     headers = {"Content-Type": "application/json; charset=UTF-8"}
     if token:
         headers["Authorization"] = f"Bearer {token}"
-    request = urllib.request.Request(url, data=payload, headers=headers, method=method)
-    try:
-        with urllib.request.urlopen(request, timeout=60) as response:
-            raw = response.read().decode("utf-8")
-    except urllib.error.HTTPError as exc:
-        detail = exc.read().decode("utf-8", errors="replace")
-        raise TikTokError(f"TikTok HTTP {exc.code}: {detail[:500]}") from exc
-    except urllib.error.URLError as exc:
-        raise TikTokError(f"Falha de rede no TikTok: {exc.reason}") from exc
-    try:
-        result = json.loads(raw)
-    except json.JSONDecodeError as exc:
-        raise TikTokError("TikTok devolveu uma resposta inválida.") from exc
-    error = result.get("error", {})
-    if error and error.get("code") not in (None, "ok"):
-        raise TikTokError(f"TikTok {error.get('code')}: {error.get('message', 'erro sem mensagem')}")
-    return result
+
+    for attempt in range(API_RETRY_ATTEMPTS):
+        request = urllib.request.Request(url, data=payload, headers=headers, method=method)
+        try:
+            with urllib.request.urlopen(request, timeout=60) as response:
+                raw = response.read().decode("utf-8")
+        except urllib.error.HTTPError as exc:
+            detail = exc.read().decode("utf-8", errors="replace")
+            if exc.code in RETRYABLE_HTTP_STATUS and attempt < API_RETRY_ATTEMPTS - 1:
+                time.sleep(_retry_delay(attempt, exc.headers.get("Retry-After")))
+                continue
+            raise TikTokError(f"TikTok HTTP {exc.code}: {detail[:500]}") from exc
+        except urllib.error.URLError as exc:
+            if attempt < API_RETRY_ATTEMPTS - 1:
+                time.sleep(_retry_delay(attempt))
+                continue
+            raise TikTokError(f"Falha de rede no TikTok: {exc.reason}") from exc
+
+        try:
+            result = json.loads(raw)
+        except json.JSONDecodeError as exc:
+            raise TikTokError("TikTok devolveu uma resposta inválida.") from exc
+        error = result.get("error", {})
+        if error and error.get("code") not in (None, "ok"):
+            raise TikTokError(f"TikTok {error.get('code')}: {error.get('message', 'erro sem mensagem')}")
+        return result
+
+    raise TikTokError("TikTok não respondeu após as tentativas de retry.")
 
 
 def _refresh_access_token() -> str:
