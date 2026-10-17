@@ -147,11 +147,13 @@ def main() -> int:
             raise SystemExit("O preparo exige --folder-id e --folder-2-id.")
         if not date_1 or not date_2:
             raise SystemExit("O preparo exige --date-1 e --date-2, ou --target-date para ambos.")
+        if not args.source_name.strip() or not args.source_name_2.strip():
+            raise SystemExit("O preparo exige a fonte original de cada pasta; não reutilize a fonte do lote A por omissão.")
         rights = args.confirm_rights or os.environ.get("PUBLISHER_RIGHTS_AUTHORIZED", "").casefold() in {"1", "true", "yes", "sim", "on"}
         data = prepare_batches(
             [
                 {"folder_id": args.folder_id, "date": date_1, "period": args.period_1, "source_name": args.source_name, "source_episode": args.source_episode, "rights_authorized": rights},
-                {"folder_id": args.folder_2_id, "date": date_2, "period": args.period_2, "source_name": args.source_name_2 or args.source_name, "source_episode": args.source_episode_2 or args.source_episode, "rights_authorized": rights},
+                {"folder_id": args.folder_2_id, "date": date_2, "period": args.period_2, "source_name": args.source_name_2, "source_episode": args.source_episode_2 or args.source_episode, "rights_authorized": rights},
             ],
             path,
             rights_status=os.environ.get("PUBLISHER_RIGHTS_STATUS", "revisão manual necessária"),
