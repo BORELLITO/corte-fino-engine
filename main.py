@@ -1762,6 +1762,62 @@ def repair_short_caption_chunks(
     return repaired
 
 
+def pad_caption_timings(
+    chunks: list[list[dict[str, Any]]],
+    candidate: Candidate,
+) -> list[list[dict[str, Any]]]:
+    """Amplia a permanência da legenda apenas dentro das pausas disponíveis."""
+    padded: list[list[dict[str, Any]]] = []
+    for index, chunk in enumerate(chunks):
+        if not chunk:
+            continue
+        current = [dict(item) for item in chunk]
+        original_start = float(current[0]["start"])
+        original_end = float(current[-1]["end"])
+        duration = original_end - original_start
+        labels = [str(item.get("word", "")).strip() for item in current]
+        characters = len(" ".join(labels))
+        target_duration = max(
+            CAPTION_MIN_DURATION,
+            min(CAPTION_MAX_DURATION, characters / CAPTION_HARD_MAX_CPS),
+        )
+        needed = max(0.0, target_duration - duration)
+        if needed <= 0:
+            padded.append(current)
+            continue
+
+        previous_end = (
+            float(chunks[index - 1][-1]["end"])
+            if index > 0 and chunks[index - 1]
+            else float(candidate.start)
+        )
+        next_start = (
+            float(chunks[index + 1][0]["start"])
+            if index + 1 < len(chunks) and chunks[index + 1]
+            else float(candidate.end)
+        )
+        left_room = max(0.0, original_start - previous_end)
+        right_room = max(0.0, next_start - original_end)
+
+        left = min(left_room, needed / 2.0)
+        right = min(right_room, needed - left)
+        remaining = needed - left - right
+        if remaining > 0:
+            extra_left = min(max(0.0, left_room - left), remaining)
+            left += extra_left
+            remaining -= extra_left
+        if remaining > 0:
+            extra_right = min(max(0.0, right_room - right), remaining)
+            right += extra_right
+
+        if left > 0:
+            current[0]["start"] = round(original_start - left, 3)
+        if right > 0:
+            current[-1]["end"] = round(original_end + right, 3)
+        padded.append(current)
+    return padded
+
+
 def caption_chunks(segments: list[Segment], candidate: Candidate) -> list[list[dict[str, Any]]]:
     words: list[dict[str, Any]] = []
     for segment in segments:
@@ -1872,7 +1928,9 @@ def caption_chunks(segments: list[Segment], candidate: Candidate) -> list[list[d
                 chunks.append(current)
         else:
             chunks.append(current)
-    return repair_short_caption_chunks(normalize_caption_chunks(chunks))
+    normalized = normalize_caption_chunks(chunks)
+    repaired = repair_short_caption_chunks(normalized)
+    return pad_caption_timings(repaired, candidate)
 
 def validate_captions(segments: list[Segment], candidate: Candidate, margin_v: int) -> dict[str, Any]:
     """Audita tempo, continuidade, largura e posição das legendas antes da renderização."""
