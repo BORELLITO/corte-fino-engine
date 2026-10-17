@@ -462,6 +462,15 @@ def _parse_utc(value: str) -> datetime | None:
     return parsed.astimezone(timezone.utc) if parsed.tzinfo else parsed.replace(tzinfo=timezone.utc)
 
 
+def effective_youtube_publish_at(day: date, hour: int) -> str:
+    """Move only an already-expired slot today to the next safe minute."""
+    desired = local_publish_at(day, hour)
+    parsed = _parse_utc(desired)
+    if parsed and parsed <= _utc_now() and day == datetime.now(TIMEZONE).date():
+        return (_utc_now() + timedelta(minutes=5)).replace(microsecond=0).isoformat().replace("+00:00", "Z")
+    return desired
+
+
 def reconcile_youtube_upload(youtube, title: str, intent_at: str) -> str | None:
     """Find a just-created upload when the Drive marker was not finalized."""
     intent = _parse_utc(intent_at)
@@ -576,7 +585,7 @@ def _preflight_youtube_schedule(drive, manifest: dict, *, force_repost: bool = F
         properties = item.get("appProperties", {})
         if (not force_repost) and (properties.get("cf_youtube_video_id") or properties.get("cf_youtube_upload_status") == "PENDING"):
             continue
-        publish_at = local_publish_at(
+        publish_at = effective_youtube_publish_at(
             date.fromisoformat(manifest["date"]),
             int(clip["schedule"]["youtube_hour"]),
         )
@@ -635,7 +644,7 @@ def publish_youtube(manifest: dict, dry_run: bool = False) -> list[dict]:
                         {"cf_youtube_upload_status": "FAILED"},
                     )
                     raise RuntimeError(f"Processamento YouTube falhou para o corte {clip['index']:02d}.")
-            desired_publish_at = local_publish_at(
+            desired_publish_at = effective_youtube_publish_at(
                 day,
                 int(clip["schedule"]["youtube_hour"]),
             )
@@ -682,7 +691,7 @@ def publish_youtube(manifest: dict, dry_run: bool = False) -> list[dict]:
             continue
 
         hour = int(clip["schedule"]["youtube_hour"])
-        publish_at = local_publish_at(day, hour)
+        publish_at = effective_youtube_publish_at(day, hour)
 
         if existing_video_id and force_repost and not dry_run:
             # Repost explícito: retira o agendamento anterior antes de criar
