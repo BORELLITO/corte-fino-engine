@@ -1420,7 +1420,7 @@ def write_outputs(
             "**conteúdo não político**."
         ),
         "",
-        "## 🔥 Top 5",
+        f"## 🔥 Prioridades ({len(ranked)}/5)",
         "",
         "Leitura rápida: prioridade, motivo, link.",
         "",
@@ -1441,8 +1441,12 @@ def write_outputs(
         reasons = explain(c)
         reason = reasons[0] if reasons else "sinais combinados de desempenho"
         delta = ""
-        if c.score_delta is not None:
-            arrow = "↑" if c.score_delta > 0 else "↓" if c.score_delta < 0 else "→"
+        if (
+            c.score_delta is not None
+            and abs(c.score_delta) >= 0.1
+            and c.momentum_state != "STALE"
+        ):
+            arrow = "↑" if c.score_delta > 0 else "↓"
             delta = f" | {arrow}{abs(c.score_delta):.1f}"
         chapter = f" | {c.best_chapter}" if c.best_chapter else ""
         rights = (

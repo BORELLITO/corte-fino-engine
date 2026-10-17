@@ -417,7 +417,7 @@ def test_human_report_is_compact_and_local_time(tmp_path, monkeypatch):
     )
     report = (tmp_path / "radar_latest.md").read_text(encoding="utf-8")
     assert "17/10/2026 12:00 BRT" in report
-    assert "## 🔥 Top 5" in report
+    assert "## 🔥 Prioridades (1/5)" in report
     assert "## 🔎 Hipóteses de Search Gap" not in report
     assert "## 🗳️ Watchlist" not in report
     assert "## ⚠️ Regras de uso" not in report
@@ -531,3 +531,38 @@ def test_strong_organic_comment_conflict_can_pass_without_keywords():
     )
     finalize_score(candidate)
     assert candidate.radar_score is not None
+
+
+
+def test_stale_tiny_score_delta_is_hidden(tmp_path, monkeypatch):
+    monkeypatch.setattr(radar_module, "OUTPUT_DIR", tmp_path)
+    candidate = VideoCandidate(
+        video_id="stale",
+        title="Podcast",
+        channel_title="Flow Podcast",
+        channel_id="UC_FLOW",
+        category_id="22",
+        made_for_kids=False,
+        published_at="2026-10-17T12:00:00+00:00",
+        description="",
+        duration_seconds=3600,
+        view_count=100000,
+        like_count=1000,
+        comment_count=500,
+        youtube_license="youtube",
+        radar_score=55.0,
+        previous_score=54.99,
+        score_delta=0.01,
+        rank_status="WATCH",
+        momentum_state="STALE",
+    )
+    write_outputs(
+        [candidate],
+        [],
+        [],
+        top_n=5,
+        generated_at=datetime(2026, 10, 17, 15, 0, tzinfo=timezone.utc),
+    )
+    report = (tmp_path / "radar_latest.md").read_text(encoding="utf-8")
+    assert "↑0.0" not in report
+    assert "↓0.0" not in report
