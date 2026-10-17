@@ -563,6 +563,63 @@ def test_tiktok_dry_run_keeps_five_scheduled_posts():
     assert all(item["status"] == "dry_run" for item in result)
 
 
+def test_tiktok_due_selection_skips_completed_clips_and_chooses_next_slot(monkeypatch):
+    manifest = {
+        "date": "2026-10-10",
+        "drive_folder_id": "folder-1",
+        "clips": [
+            {
+                "index": index,
+                "drive_id": f"drive-{index}",
+                "name": f"fonte - {index:02d}.mp4",
+                "size": 100,
+                "md5_checksum": f"md5-{index}",
+                "schedule": {"tiktok_hour": hour},
+                "copy": {"tiktok_caption": f"Legenda {index}"},
+            }
+            for index, hour in enumerate(TIKTOK_HOURS, 1)
+        ],
+    }
+
+    class Request:
+        def __init__(self, data):
+            self.data = data
+
+        def execute(self, **kwargs):
+            return self.data
+
+    class Files:
+        def get(self, **kwargs):
+            index = int(kwargs["fileId"].split("-")[-1])
+            properties = (
+                {"cf_tiktok_publish_id": "publish-1", "cf_tiktok_status": "PUBLISH_COMPLETE"}
+                if index == 1
+                else {}
+            )
+            clip = manifest["clips"][index - 1]
+            return Request({
+                "id": clip["drive_id"],
+                "name": clip["name"],
+                "size": clip["size"],
+                "mimeType": "video/mp4",
+                "md5Checksum": clip["md5_checksum"],
+                "parents": ["folder-1"],
+                "appProperties": properties,
+            })
+
+    class Drive:
+        def files(self):
+            return Files()
+
+    clips, prefetched = tiktok_io._select_due_clips(
+        manifest,
+        Drive(),
+        datetime(2026, 10, 10, 12, 15, tzinfo=ZoneInfo("America/Sao_Paulo")),
+    )
+    assert [clip["index"] for clip in clips] == [2]
+    assert prefetched[1]["appProperties"]["cf_tiktok_status"] == "PUBLISH_COMPLETE"
+
+
 def test_tiktok_due_only_returns_one_post_for_the_current_window():
     manifest = {
         "date": "2026-10-10",
