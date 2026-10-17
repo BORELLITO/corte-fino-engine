@@ -88,15 +88,6 @@ jobs:
           --extra-topics "$RADAR_EXTRA_TOPICS"
           --state-file "$RADAR_STATE_FILE"
 
-      - name: Salvar histórico de momentum no Drive
-        if: success()
-        env:
-          GOOGLE_REFRESH_TOKEN: ${{ secrets.GOOGLE_REFRESH_TOKEN }}
-          GOOGLE_CLIENT_ID: ${{ secrets.GOOGLE_CLIENT_ID }}
-          GOOGLE_CLIENT_SECRET: ${{ secrets.GOOGLE_CLIENT_SECRET }}
-          DRIVE_FOLDER_ID: ${{ secrets.RADAR_DRIVE_FOLDER_ID || secrets.DRIVE_FOLDER_ID || secrets.DRIVER_FOLDER_ID || secrets.PUBLISHER_DRIVE_FOLDER_ID }}
-        run: python radar/drive_state.py push
-
       - name: Enviar relatório ao Google Drive
         if: success()
         env:
@@ -106,10 +97,19 @@ jobs:
           DRIVE_FOLDER_ID: ${{ secrets.RADAR_DRIVE_FOLDER_ID || secrets.DRIVE_FOLDER_ID || secrets.DRIVER_FOLDER_ID || secrets.PUBLISHER_DRIVE_FOLDER_ID }}
         run: python radar/upload_reports_drive.py
 
+      - name: Salvar histórico de momentum no Drive
+        if: success()
+        env:
+          GOOGLE_REFRESH_TOKEN: ${{ secrets.GOOGLE_REFRESH_TOKEN }}
+          GOOGLE_CLIENT_ID: ${{ secrets.GOOGLE_CLIENT_ID }}
+          GOOGLE_CLIENT_SECRET: ${{ secrets.GOOGLE_CLIENT_SECRET }}
+          DRIVE_FOLDER_ID: ${{ secrets.RADAR_DRIVE_FOLDER_ID || secrets.DRIVE_FOLDER_ID || secrets.DRIVER_FOLDER_ID || secrets.PUBLISHER_DRIVE_FOLDER_ID }}
+        run: python radar/drive_state.py push
+
       - name: Resumo seguro
         if: success()
         run: |
-          echo "## 🎯 Corte Fino — Radar Viral V2" >> "$GITHUB_STEP_SUMMARY"
+          echo "## 🎯 Corte Fino — Radar Viral V2.1" >> "$GITHUB_STEP_SUMMARY"
           echo "" >> "$GITHUB_STEP_SUMMARY"
           echo "Varredura concluída e relatório enviado para a pasta privada RADAR_CORTE_FINO no Google Drive." >> "$GITHUB_STEP_SUMMARY"
           echo "Nenhum ranking editorial completo é publicado no GitHub." >> "$GITHUB_STEP_SUMMARY"
