@@ -1,10 +1,10 @@
 {
   "version": 5,
-  "run_id": "b1cbb0919ca74d58b6b087054ac2e844",
-  "created_at_utc": "2026-10-17T01:31:36.802073Z",
-  "date": "2026-10-17",
+  "run_id": "e7796f47065e44d29936968a4a9ebcc5",
+  "created_at_utc": "2026-10-17T03:15:19.531407Z",
+  "date": "2026-10-18",
   "timezone": "America/Sao_Paulo",
-  "drive_folder_id": "1VwQbMia53D04sLV9ku_-nbuBeDlyDvnk",
+  "drive_folder_id": "1uDoJeYbJLj8-i8doY_2B64w98xMLPbIL",
   "youtube_hours": [
     10,
     12,
@@ -24,7 +24,7 @@
     "status": "AUTORIZADO — confirmação manual do proprietário/licenciante"
   },
   "source": {
-    "name": "",
+    "name": "Redcast Feminismo",
     "episode": ""
   },
   "branding": {
@@ -36,12 +36,12 @@
   "clips": [
     {
       "index": 1,
-      "drive_id": "1xqmhLlX0Gb2poqceCNE8_UsDaMZqkn_Y",
-      "name": "A IA VAI NOS EXTERMINAR - 01.mp4",
-      "size": 21408445,
-      "md5_checksum": "7b2aed25e7e2967e7ddfee3ce8d4ec87",
+      "drive_id": "1LB-FQNCvivdcXvspD19dFJgCn885gbFK",
+      "name": "REDCAST FEMINISMO - 01.mp4",
+      "size": 25067967,
+      "md5_checksum": "c6c40776ee1301ff35ede508d19f8218",
       "mime_type": "video/mp4",
-      "modified_time": "2026-10-17T01:01:19.959Z",
+      "modified_time": "2026-10-16T19:31:21.084Z",
       "video_profile": {
         "width": 1080,
         "height": 1920,
@@ -52,36 +52,49 @@
         "sample_aspect_ratio": "1:1",
         "frame_rate": 30.0,
         "audio_sample_rate": "48000",
-        "audio_bitrate": "199999",
-        "duration": 79.234
+        "audio_bitrate": "194668",
+        "duration": 87.367
       },
       "copy": {
-        "topic": "ia",
-        "hook": "Será que a Inteligencia de Tirova conseguir produzir arte, por exemplo?",
+        "topic": "geral",
+        "hook": "Ou com uma avó, né?",
         "keywords": [
-          "entendeu",
-          "agentes",
-          "lance",
-          "evolucao"
+          "dentro",
+          "solteira",
+          "certo",
+          "teve"
         ],
-        "viral_score": 4.25,
-        "tiktok_caption": "SERÁ QUE A INTELIGENCIA DE TIROVA CONSEGUIR PRODUZIR ARTE POR EXEMPLO 🧠\n\nPra mim acho que o lance é o seguinte cara, o ser humano não vai servir pra nada, entendeu?\n\nEm que momento a ferramenta passa a tomar o lugar da pessoa? ⚖️\n\nCréditos: fonte não identificada.\n\n#inteligenciaartificial #tecnologia #futurodotrabalho #agentes",
-        "youtube_title": "SERÁ QUE A INTELIGENCIA DE TIROVA CONSEGUIR PRODUZIR ARTE POR EXEMPLO 🧠",
-        "youtube_description": "Será que a Inteligencia de Tirova conseguir produzir arte, por exemplo?\n\nPra mim acho que o lance é o seguinte cara, o ser humano não vai servir pra nada, entendeu?\n\nEm que momento a ferramenta passa a tomar o lugar da pessoa? ⚖️\n\nCréditos: fonte não identificada.\n\n#inteligenciaartificial #tecnologia #futurodotrabalho #agentes",
+        "viral_score": 2.95,
+        "tiktok_caption": "OU COM UMA AVÓ NÉ 🧠\n\nAí que tá, eu já falei isso, eu acabei de falar isso, e eu vou repetir aqui, a maternidade solteira, até certo ponto, até a Revolução Sexual, ela era tratada como o problema que ela é, é um problema.\n\nEssa pergunta sobre dentro responde ao problema ou deixa algo importante de fora? 💬\n\nCréditos: Redcast Feminismo.\n\n#podcast #debate #dentro #solteira #certo",
+        "youtube_title": "OU COM UMA AVÓ NÉ 🧠",
+        "youtube_description": "Ou com uma avó, né?\n\nAí que tá, eu já falei isso, eu acabei de falar isso, e eu vou repetir aqui, a maternidade solteira, até certo ponto, até a Revolução Sexual, ela era tratada como o problema que ela é, é um problema.\n\nEssa pergunta sobre dentro responde ao problema ou deixa algo importante de fora? 💬\n\nCréditos: Redcast Feminismo.\n\n#podcast #debate #dentro #solteira #certo",
         "youtube_tags": [
-          "inteligencia artificial",
-          "tecnologia",
-          "futuro do trabalho",
-          "agentes",
+          "debate",
           "corte fino",
+          "cortes",
           "cortes de podcast",
-          "shorts"
+          "podcast brasileiro",
+          "shorts",
+          "youtube shorts",
+          "viral",
+          "viralizou",
+          "opiniao",
+          "conversa",
+          "entrevista",
+          "trecho de podcast",
+          "conteudo brasileiro",
+          "corte de entrevista",
+          "reflexao",
+          "atualidades",
+          "fatos e opinioes",
+          "corte comentado",
+          "corte relevante"
         ],
-        "credit": "Créditos: fonte não identificada.",
+        "credit": "Créditos: Redcast Feminismo.",
         "evidence": [
-          "Pra mim acho que o lance é o seguinte cara, o ser humano não vai servir pra nada, entendeu?"
+          "Aí que tá, eu já falei isso, eu acabei de falar isso, e eu vou repetir aqui, a maternidade solteira, até certo ponto, até a Revolução Sexual, ela era tratada como o problema que ela é, é um problema."
         ],
-        "cta": "Em que momento a ferramenta passa a tomar o lugar da pessoa? ⚖️",
+        "cta": "Essa pergunta sobre dentro responde ao problema ou deixa algo importante de fora? 💬",
         "editorial_mode": "grounded_context"
       },
       "schedule": {
@@ -91,12 +104,12 @@
     },
     {
       "index": 2,
-      "drive_id": "1hjXMZ68MNr3DW6kc8ZHAJ8ivvE3Qu3d2",
-      "name": "A IA VAI NOS EXTERMINAR - 02.mp4",
-      "size": 24391093,
-      "md5_checksum": "ae5634024c134778cbdf9282f4ba157e",
+      "drive_id": "1I2GYh5wsxA1t9geuoH5SqKkA9rQER-10",
+      "name": "REDCAST FEMINISMO - 02.mp4",
+      "size": 27972139,
+      "md5_checksum": "296ccfaa30af1739cf2d1f60b4536f43",
       "mime_type": "video/mp4",
-      "modified_time": "2026-10-17T01:02:23.230Z",
+      "modified_time": "2026-10-16T19:31:22.549Z",
       "video_profile": {
         "width": 1080,
         "height": 1920,
@@ -107,92 +120,49 @@
         "sample_aspect_ratio": "1:1",
         "frame_rate": 30.0,
         "audio_sample_rate": "48000",
-        "audio_bitrate": "194648",
-        "duration": 81.967
+        "audio_bitrate": "195320",
+        "duration": 89.367
       },
       "copy": {
-        "topic": "petroleo",
-        "hook": "Ele é muito sensível a problemas que a gente não tem controle.",
+        "topic": "politica",
+        "hook": "O que que eles tinham demais?",
         "keywords": [
-          "macae",
-          "petroleo",
-          "tempo",
-          "dias"
+          "indios",
+          "portugueses",
+          "tribos",
+          "indigenas"
         ],
-        "viral_score": 3.85,
-        "tiktok_caption": "ELE É MUITO SENSÍVEL A PROBLEMAS QUE A GENTE NÃO TEM CONTROLE 🛢️\n\nAcabou o Macaé agora, né?\n\nUm país consegue prosperar dependendo de uma única riqueza? 🌍\n\nCréditos: fonte não identificada.\n\n#petroleo #economia #geopolitica #macae",
-        "youtube_title": "ELE É MUITO SENSÍVEL A PROBLEMAS QUE A GENTE NÃO TEM CONTROLE 🛢️",
-        "youtube_description": "Ele é muito sensível a problemas que a gente não tem controle.\n\nAcabou o Macaé agora, né?\n\nUm país consegue prosperar dependendo de uma única riqueza? 🌍\n\nCréditos: fonte não identificada.\n\n#petroleo #economia #geopolitica #macae",
+        "viral_score": 3.0,
+        "tiktok_caption": "O QUE QUE ELES TINHAM DEMAIS 🏛️\n\nÉ o tipo de ritual que tribos indígenas que nunca tiver acesso ao cristianismo fazem até hoje.\n\nEssa decisão resolve o problema ou apenas muda o conflito de lugar? 🗣️\n\nCréditos: Redcast Feminismo.\n\n#politicabrasileira #governo #debatepublico",
+        "youtube_title": "O QUE QUE ELES TINHAM DEMAIS 🏛️",
+        "youtube_description": "O que que eles tinham demais?\n\nÉ o tipo de ritual que tribos indígenas que nunca tiver acesso ao cristianismo fazem até hoje.\n\nEssa decisão resolve o problema ou apenas muda o conflito de lugar? 🗣️\n\nCréditos: Redcast Feminismo.\n\n#politicabrasileira #governo #debatepublico",
         "youtube_tags": [
-          "petroleo",
-          "energia",
-          "economia",
-          "geopolitica",
-          "Macaé",
+          "politica",
+          "politica brasileira",
+          "governo",
+          "debate publico",
           "corte fino",
+          "cortes",
           "cortes de podcast",
-          "shorts"
+          "podcast brasileiro",
+          "shorts",
+          "youtube shorts",
+          "viral",
+          "viralizou",
+          "opiniao",
+          "debate",
+          "conversa",
+          "entrevista",
+          "trecho de podcast",
+          "conteudo brasileiro",
+          "corte de entrevista",
+          "reflexao"
         ],
-        "credit": "Créditos: fonte não identificada.",
+        "credit": "Créditos: Redcast Feminismo.",
         "evidence": [
-          "Acabou o Macaé agora, né?"
+          "É o tipo de ritual que tribos indígenas que nunca tiver acesso ao cristianismo fazem até hoje."
         ],
-        "cta": "Um país consegue prosperar dependendo de uma única riqueza? 🌍",
-        "editorial_mode": "grounded_context"
-      },
-      "schedule": {
-        "youtube_hour": 19,
-        "tiktok_hour": 19
-      }
-    },
-    {
-      "index": 3,
-      "drive_id": "1q2O0Yd3nXvHhHx8mqYVHql90U9xtgJUF",
-      "name": "A IA VAI NOS EXTERMINAR - 03.mp4",
-      "size": 16609752,
-      "md5_checksum": "6c13eaee1d322553b39f966888ac9229",
-      "mime_type": "video/mp4",
-      "modified_time": "2026-10-17T01:03:25.304Z",
-      "video_profile": {
-        "width": 1080,
-        "height": 1920,
-        "video_codec": "h264",
-        "audio_codec": "aac",
-        "pixel_format": "yuv420p",
-        "video_profile": "High",
-        "sample_aspect_ratio": "1:1",
-        "frame_rate": 30.0,
-        "audio_sample_rate": "48000",
-        "audio_bitrate": "195835",
-        "duration": 67.034
-      },
-      "copy": {
-        "topic": "petroleo",
-        "hook": "Mó reserve petróleo do mundo é venezuelana, é petróleo pra caramba, né?",
-        "keywords": [
-          "petroleo",
-          "entendeu",
-          "israel",
-          "mundo"
-        ],
-        "viral_score": 4.3,
-        "tiktok_caption": "MÓ RESERVE PETRÓLEO DO MUNDO É VENEZUELANA É PETRÓLEO PRA CARAMBA NÉ 🛢️\n\nO petróleo tem essa maldição aí atrelada ele, você pega a Venezuela, era pra ser um dos pais mais ricos do mundo, entendeu?\n\nUm país consegue prosperar dependendo de uma única riqueza? 🌍\n\nCréditos: fonte não identificada.\n\n#petroleo #economia #geopolitica",
-        "youtube_title": "MÓ RESERVE PETRÓLEO DO MUNDO É VENEZUELANA É PETRÓLEO PRA CARAMBA NÉ 🛢️",
-        "youtube_description": "Mó reserve petróleo do mundo é venezuelana, é petróleo pra caramba, né?\n\nO petróleo tem essa maldição aí atrelada ele, você pega a Venezuela, era pra ser um dos pais mais ricos do mundo, entendeu?\n\nUm país consegue prosperar dependendo de uma única riqueza? 🌍\n\nCréditos: fonte não identificada.\n\n#petroleo #economia #geopolitica",
-        "youtube_tags": [
-          "petroleo",
-          "energia",
-          "economia",
-          "geopolitica",
-          "corte fino",
-          "cortes de podcast",
-          "shorts"
-        ],
-        "credit": "Créditos: fonte não identificada.",
-        "evidence": [
-          "O petróleo tem essa maldição aí atrelada ele, você pega a Venezuela, era pra ser um dos pais mais ricos do mundo, entendeu?"
-        ],
-        "cta": "Um país consegue prosperar dependendo de uma única riqueza? 🌍",
+        "cta": "Essa decisão resolve o problema ou apenas muda o conflito de lugar? 🗣️",
         "editorial_mode": "grounded_context"
       },
       "schedule": {
@@ -201,13 +171,13 @@
       }
     },
     {
-      "index": 4,
-      "drive_id": "1ojXFS4DFCYvczq8dOm2q2zwDTAdK0JL5",
-      "name": "A IA VAI NOS EXTERMINAR - 04.mp4",
-      "size": 24734385,
-      "md5_checksum": "1d416136e77e006a64b45500aea3d1e7",
+      "index": 3,
+      "drive_id": "1gWZa7A2Rw6IJ_EgrFhliEmfv8lDz3fIV",
+      "name": "REDCAST FEMINISMO - 03.mp4",
+      "size": 23009473,
+      "md5_checksum": "c5ea0928b0bacb67f86169a2ae9f5546",
       "mime_type": "video/mp4",
-      "modified_time": "2026-10-17T01:04:28.571Z",
+      "modified_time": "2026-10-16T19:31:24.159Z",
       "video_profile": {
         "width": 1080,
         "height": 1920,
@@ -218,36 +188,117 @@
         "sample_aspect_ratio": "1:1",
         "frame_rate": 30.0,
         "audio_sample_rate": "48000",
-        "audio_bitrate": "199079",
-        "duration": 74.467
+        "audio_bitrate": "194825",
+        "duration": 89.167
       },
       "copy": {
-        "topic": "petroleo",
-        "hook": "Só que qual foi o problema?",
+        "topic": "geral",
+        "hook": "Mas agora a gente quer todo mundo no parque da Disney todo dia 24 horas?",
         "keywords": [
-          "crise",
-          "estava",
-          "brasil",
-          "empresa"
+          "casamento",
+          "estar",
+          "comum",
+          "tristeza"
         ],
-        "viral_score": 5.25,
-        "tiktok_caption": "SÓ QUE QUAL FOI O PROBLEMA 🛢️\n\nE isso por uma empresa de petróleo é terrível, então aí você juntou uma crise externa com uma crise interna, cara, isso aí virou a tempestade perfeita que o pessoal fala.\n\nUm país consegue prosperar dependendo de uma única riqueza? 🌍\n\nCréditos: fonte não identificada.\n\n#petroleo #economia #geopolitica",
-        "youtube_title": "SÓ QUE QUAL FOI O PROBLEMA 🛢️",
-        "youtube_description": "Só que qual foi o problema?\n\nE isso por uma empresa de petróleo é terrível, então aí você juntou uma crise externa com uma crise interna, cara, isso aí virou a tempestade perfeita que o pessoal fala.\n\nUm país consegue prosperar dependendo de uma única riqueza? 🌍\n\nCréditos: fonte não identificada.\n\n#petroleo #economia #geopolitica",
+        "viral_score": 3.7,
+        "tiktok_caption": "MAS AGORA A GENTE QUER TODO MUNDO NO PARQUE DA DISNEY TODO DIA 24 HORAS 🧠\n\nMas é a mesma coisa, é uma rotina.\n\nEssa pergunta sobre casamento responde ao problema ou deixa algo importante de fora? 💬\n\nCréditos: Redcast Feminismo.\n\n#podcast #debate #casamento #estar #comum",
+        "youtube_title": "MAS AGORA A GENTE QUER TODO MUNDO NO PARQUE DA DISNEY TODO DIA 24 HORAS 🧠",
+        "youtube_description": "Mas agora a gente quer todo mundo no parque da Disney todo dia 24 horas?\n\nMas é a mesma coisa, é uma rotina.\n\nEssa pergunta sobre casamento responde ao problema ou deixa algo importante de fora? 💬\n\nCréditos: Redcast Feminismo.\n\n#podcast #debate #casamento #estar #comum",
         "youtube_tags": [
-          "petroleo",
-          "energia",
-          "economia",
-          "geopolitica",
+          "debate",
           "corte fino",
+          "cortes",
           "cortes de podcast",
-          "shorts"
+          "podcast brasileiro",
+          "shorts",
+          "youtube shorts",
+          "viral",
+          "viralizou",
+          "opiniao",
+          "conversa",
+          "entrevista",
+          "trecho de podcast",
+          "conteudo brasileiro",
+          "corte de entrevista",
+          "reflexao",
+          "atualidades",
+          "fatos e opinioes",
+          "corte comentado",
+          "corte relevante"
         ],
-        "credit": "Créditos: fonte não identificada.",
+        "credit": "Créditos: Redcast Feminismo.",
         "evidence": [
-          "E isso por uma empresa de petróleo é terrível, então aí você juntou uma crise externa com uma crise interna, cara, isso aí virou a tempestade perfeita que o pessoal fala."
+          "Mas é a mesma coisa, é uma rotina."
         ],
-        "cta": "Um país consegue prosperar dependendo de uma única riqueza? 🌍",
+        "cta": "Essa pergunta sobre casamento responde ao problema ou deixa algo importante de fora? 💬",
+        "editorial_mode": "grounded_context"
+      },
+      "schedule": {
+        "youtube_hour": 15,
+        "tiktok_hour": 15
+      }
+    },
+    {
+      "index": 4,
+      "drive_id": "1Yq_Vhoid2q2KRPV9MkFjnPbpHpkrfQQq",
+      "name": "REDCAST FEMINISMO - 04.mp4",
+      "size": 21108656,
+      "md5_checksum": "31ac003b12db89a7bdae07c88d56d0a5",
+      "mime_type": "video/mp4",
+      "modified_time": "2026-10-16T19:31:25.834Z",
+      "video_profile": {
+        "width": 1080,
+        "height": 1920,
+        "video_codec": "h264",
+        "audio_codec": "aac",
+        "pixel_format": "yuv420p",
+        "video_profile": "High",
+        "sample_aspect_ratio": "1:1",
+        "frame_rate": 30.0,
+        "audio_sample_rate": "48000",
+        "audio_bitrate": "194103",
+        "duration": 66.434
+      },
+      "copy": {
+        "topic": "politica",
+        "hook": "Mas como é que eu vou negar a mim mesmo, criatura, se eu sou a manifestação?",
+        "keywords": [
+          "cada",
+          "deus",
+          "existo",
+          "problema"
+        ],
+        "viral_score": 3.75,
+        "tiktok_caption": "MAS COMO É QUE EU VOU NEGAR A MIM MESMO CRIATURA SE EU SOU A MANIFESTAÇÃO 🏛️\n\nEu falo do cristianismo, quem quiser aceitar a Jesus, né, é que você é assim mesmo.\n\nQual é o ponto mais difícil de ignorar nessa discussão? 🗣️\n\nCréditos: Redcast Feminismo.\n\n#politicabrasileira #governo #debatepublico",
+        "youtube_title": "MAS COMO É QUE EU VOU NEGAR A MIM MESMO CRIATURA SE EU SOU A MANIFESTAÇÃO 🏛️",
+        "youtube_description": "Mas como é que eu vou negar a mim mesmo, criatura, se eu sou a manifestação?\n\nEu falo do cristianismo, quem quiser aceitar a Jesus, né, é que você é assim mesmo.\n\nQual é o ponto mais difícil de ignorar nessa discussão? 🗣️\n\nCréditos: Redcast Feminismo.\n\n#politicabrasileira #governo #debatepublico",
+        "youtube_tags": [
+          "politica",
+          "politica brasileira",
+          "governo",
+          "debate publico",
+          "corte fino",
+          "cortes",
+          "cortes de podcast",
+          "podcast brasileiro",
+          "shorts",
+          "youtube shorts",
+          "viral",
+          "viralizou",
+          "opiniao",
+          "debate",
+          "conversa",
+          "entrevista",
+          "trecho de podcast",
+          "conteudo brasileiro",
+          "corte de entrevista",
+          "reflexao"
+        ],
+        "credit": "Créditos: Redcast Feminismo.",
+        "evidence": [
+          "Eu falo do cristianismo, quem quiser aceitar a Jesus, né, é que você é assim mesmo."
+        ],
+        "cta": "Qual é o ponto mais difícil de ignorar nessa discussão? 🗣️",
         "editorial_mode": "grounded_context"
       },
       "schedule": {
@@ -257,12 +308,12 @@
     },
     {
       "index": 5,
-      "drive_id": "1dtsSKNMdVAGHI_frxb1q-1XAMtlEFeoN",
-      "name": "A IA VAI NOS EXTERMINAR - 05.mp4",
-      "size": 19803648,
-      "md5_checksum": "48a324d7bedca2808f57076064527112",
+      "drive_id": "193Nv9g0fuTKMmcPBApIyI79_5oYB4TiE",
+      "name": "REDCAST FEMINISMO - 05.mp4",
+      "size": 27352331,
+      "md5_checksum": "146fe0b7485e8976ac609467d20b6dcb",
       "mime_type": "video/mp4",
-      "modified_time": "2026-10-17T01:05:30.758Z",
+      "modified_time": "2026-10-16T19:31:27.525Z",
       "video_profile": {
         "width": 1080,
         "height": 1920,
@@ -273,41 +324,54 @@
         "sample_aspect_ratio": "1:1",
         "frame_rate": 30.0,
         "audio_sample_rate": "48000",
-        "audio_bitrate": "197524",
-        "duration": 81.5
+        "audio_bitrate": "193592",
+        "duration": 83.067
       },
       "copy": {
-        "topic": "espaco",
-        "hook": "A União Soviética, depois a Rússia e a Europa nunca conseguiram pousar em Marte.",
+        "topic": "geral",
+        "hook": "Eu não te chamo de Marconha, eu não te chamo de Marconha.",
         "keywords": [
-          "teve",
-          "conseguiram",
-          "obrigado",
-          "paraquedas"
+          "insiste",
+          "nisso",
+          "novo",
+          "ponto"
         ],
-        "viral_score": 4.95,
-        "tiktok_caption": "A UNIÃO SOVIÉTICA DEPOIS A RÚSSIA E A EUROPA NUNCA CONSEGUIRAM POUSAR EM MARTE 🚀\n\nTem um tesão danado em Marte, inclusive, né?\n\nO desejo de explorar justifica um risco desse tamanho? 🔴\n\nCréditos: fonte não identificada.\n\n#marte #ciencia #exploracaoespacial",
-        "youtube_title": "A UNIÃO SOVIÉTICA DEPOIS A RÚSSIA E A EUROPA NUNCA CONSEGUIRAM POUSAR EM MARTE 🚀",
-        "youtube_description": "A União Soviética, depois a Rússia e a Europa nunca conseguiram pousar em Marte.\n\nTem um tesão danado em Marte, inclusive, né?\n\nO desejo de explorar justifica um risco desse tamanho? 🔴\n\nCréditos: fonte não identificada.\n\n#marte #ciencia #exploracaoespacial",
+        "viral_score": 2.6,
+        "tiktok_caption": "EU NÃO TE CHAMO DE MARCONHA EU NÃO TE CHAMO DE MARCONHA 🧠\n\nInsiste nisso de novo e prova o meu ponto de que mulheres do lado de vocês desrespeitam mulheres que não estão.\n\nEssa pergunta sobre insiste responde ao problema ou deixa algo importante de fora? 💬\n\nCréditos: Redcast Feminismo.\n\n#podcast #debate #insiste #nisso #novo",
+        "youtube_title": "EU NÃO TE CHAMO DE MARCONHA EU NÃO TE CHAMO DE MARCONHA 🧠",
+        "youtube_description": "Eu não te chamo de Marconha, eu não te chamo de Marconha.\n\nInsiste nisso de novo e prova o meu ponto de que mulheres do lado de vocês desrespeitam mulheres que não estão.\n\nEssa pergunta sobre insiste responde ao problema ou deixa algo importante de fora? 💬\n\nCréditos: Redcast Feminismo.\n\n#podcast #debate #insiste #nisso #novo",
         "youtube_tags": [
-          "Marte",
-          "espaco",
-          "ciencia",
-          "exploracao espacial",
+          "debate",
           "corte fino",
+          "cortes",
           "cortes de podcast",
-          "shorts"
+          "podcast brasileiro",
+          "shorts",
+          "youtube shorts",
+          "viral",
+          "viralizou",
+          "opiniao",
+          "conversa",
+          "entrevista",
+          "trecho de podcast",
+          "conteudo brasileiro",
+          "corte de entrevista",
+          "reflexao",
+          "atualidades",
+          "fatos e opinioes",
+          "corte comentado",
+          "corte relevante"
         ],
-        "credit": "Créditos: fonte não identificada.",
+        "credit": "Créditos: Redcast Feminismo.",
         "evidence": [
-          "Tem um tesão danado em Marte, inclusive, né?"
+          "Insiste nisso de novo e prova o meu ponto de que mulheres do lado de vocês desrespeitam mulheres que não estão."
         ],
-        "cta": "O desejo de explorar justifica um risco desse tamanho? 🔴",
+        "cta": "Essa pergunta sobre insiste responde ao problema ou deixa algo importante de fora? 💬",
         "editorial_mode": "grounded_context"
       },
       "schedule": {
-        "youtube_hour": 15,
-        "tiktok_hour": 15
+        "youtube_hour": 19,
+        "tiktok_hour": 19
       }
     }
   ],
