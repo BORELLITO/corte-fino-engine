@@ -74,9 +74,36 @@ def report(manifest: dict, drive=None) -> dict:
     }
 
 
+def browser_package(manifest: dict) -> dict:
+    """Build the exact payload consumed by the Cloud Web Browser flow."""
+    posts = []
+    for clip in sorted(manifest["clips"], key=lambda item: item["schedule"]["youtube_publish_at"]):
+        posts.append(
+            {
+                "index": clip["index"],
+                "batch_id": clip["batch_id"],
+                "batch_index": clip["batch_index"],
+                "drive_folder_id": clip["drive_folder_id"],
+                "drive_id": clip["drive_id"],
+                "file_name": clip["name"],
+                "youtube": {
+                    "publish_at": clip["schedule"]["youtube_publish_at"],
+                    "title": clip["copy"]["youtube_title"],
+                    "description": clip["copy"]["youtube_description"],
+                    "tags": clip["copy"]["youtube_tags"],
+                },
+                "tiktok": {
+                    "publish_at": clip["schedule"]["tiktok_publish_at"],
+                    "caption": clip["copy"]["tiktok_caption"],
+                },
+            }
+        )
+    return {"version": 1, "source_manifest_version": manifest["version"], "timezone": manifest["timezone"], "posts": posts}
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(description="Corte Fino Publisher")
-    parser.add_argument("command", choices=["prepare", "report", "youtube", "tiktok", "verify-tiktok", "verify-google", "preflight"])
+    parser.add_argument("command", choices=["prepare", "browser-package", "report", "youtube", "tiktok", "verify-tiktok", "verify-google", "preflight"])
     parser.add_argument("--folder-id", default=os.environ.get("PUBLISHER_DRIVE_FOLDER_ID", FOLDER_ID))
     parser.add_argument("--folder-2-id", default=os.environ.get("PUBLISHER_DRIVE_FOLDER_2_ID", ""))
     parser.add_argument("--manifest", default="publisher/state/current.json")
@@ -130,6 +157,9 @@ def main() -> int:
         return 0
 
     data = load(path)
+    if args.command == "browser-package":
+        print(json.dumps(browser_package(data), ensure_ascii=False, indent=2))
+        return 0
     if args.command == "youtube":
         from publisher.google_io import publish_youtube
         print(json.dumps(publish_youtube(data, dry_run=args.dry_run), ensure_ascii=False, indent=2))
