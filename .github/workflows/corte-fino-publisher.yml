@@ -133,6 +133,9 @@ jobs:
           REQUESTED_PERIOD_2: ${{ inputs.period_2 }}
           REQUESTED_SOURCE_1: ${{ inputs.source_name_1 }}
           REQUESTED_SOURCE_2: ${{ inputs.source_name_2 }}
+          REQUESTED_EPISODE_1: ${{ inputs.source_episode_1 }}
+          REQUESTED_EPISODE_2: ${{ inputs.source_episode_2 }}
+          REQUESTED_RIGHTS: ${{ inputs.rights_confirmed && '1' || '0' }}
           REQUESTED_MODE: ${{ inputs.mode }}
         run: |
           needs_prepare=1
@@ -141,7 +144,7 @@ jobs:
           import json
           import os
           from pathlib import Path
-          from publisher.core import normalize_period, validate_manifest
+          from publisher.core import as_bool, normalize_period, validate_manifest
           from publisher.google_io import normalize_folder_id
 
           try:
@@ -155,9 +158,17 @@ jobs:
                   (normalize_folder_id(str(item.get("drive_folder_id", ""))), str(item.get("date", "")), normalize_period(str(item.get("period", ""))))
                   for item in data.get("batches", [])
               ]
-              requested_sources = [os.environ.get("REQUESTED_SOURCE_1", "").strip(), os.environ.get("REQUESTED_SOURCE_2", "").strip()]
-              actual_sources = [str(item.get("source", {}).get("name", "")).strip() for item in data.get("batches", [])]
-              if requested != actual or requested_sources != actual_sources:
+              requested_sources = [
+                  (os.environ.get("REQUESTED_SOURCE_1", "").strip(), os.environ.get("REQUESTED_EPISODE_1", "").strip()),
+                  (os.environ.get("REQUESTED_SOURCE_2", "").strip(), os.environ.get("REQUESTED_EPISODE_2", "").strip()),
+              ]
+              actual_sources = [
+                  (str(item.get("source", {}).get("name", "")).strip(), str(item.get("source", {}).get("episode", "")).strip())
+                  for item in data.get("batches", [])
+              ]
+              requested_rights = os.environ.get("REQUESTED_RIGHTS", "0") == "1"
+              actual_rights = as_bool((data.get("rights") or {}).get("authorized"))
+              if requested != actual or requested_sources != actual_sources or requested_rights != actual_rights:
                   raise SystemExit(1)
           except Exception:
               raise SystemExit(1)
@@ -242,7 +253,10 @@ jobs:
           PY
           git config user.name "corte-fino-publisher[bot]"
           git config user.email "corte-fino-publisher[bot]@users.noreply.github.com"
-          git add publisher/state/current.json publisher/state/report.json
+          git add -f publisher/state/current.json publisher/state/report.json 2>/dev/null || true
+          if [ -f publisher/state/browser_package.json ]; then
+            git add -f publisher/state/browser_package.json
+          fi
           if ! git diff --cached --quiet; then
             git commit -m "chore(publisher): atualizar manifesto v6 da rodada"
             for attempt in 1 2 3; do
