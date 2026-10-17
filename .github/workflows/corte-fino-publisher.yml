@@ -4,11 +4,11 @@ on:
   workflow_dispatch:
     inputs:
       mode:
-        description: "prepare, dry-run, preflight, verify-google, verify-tiktok ou youtube"
+        description: "prepare, dry-run, browser-package ou preflight"
         required: true
         default: "dry-run"
         type: choice
-        options: [dry-run, prepare, preflight, verify-google, verify-tiktok, youtube]
+        options: [dry-run, prepare, browser-package, preflight]
       folder_1:
         description: "URL/ID da primeira pasta com 5 MP4"
         required: true
@@ -60,17 +60,6 @@ on:
         required: true
         default: false
         type: boolean
-      force_repost:
-        description: "Desativa vídeos YouTube anteriores e cria novo upload"
-        required: false
-        default: false
-        type: boolean
-      tiktok_env:
-        description: "Credenciais TikTok desta execução"
-        required: true
-        default: "production"
-        type: choice
-        options: [production, sandbox]
 
 permissions:
   contents: write
@@ -89,20 +78,12 @@ jobs:
       PUBLISHER_GOOGLE_CLIENT_ID: ${{ secrets.PUBLISHER_GOOGLE_CLIENT_ID }}
       PUBLISHER_GOOGLE_CLIENT_SECRET: ${{ secrets.PUBLISHER_GOOGLE_CLIENT_SECRET }}
       PUBLISHER_GOOGLE_REFRESH_TOKEN: ${{ secrets.PUBLISHER_GOOGLE_REFRESH_TOKEN }}
-      PUBLISHER_YOUTUBE_REFRESH_TOKEN: ${{ secrets.PUBLISHER_YOUTUBE_REFRESH_TOKEN }}
-      PUBLISHER_TIKTOK_CLIENT_KEY: ${{ secrets.PUBLISHER_TIKTOK_CLIENT_KEY }}
-      PUBLISHER_TIKTOK_CLIENT_SECRET: ${{ secrets.PUBLISHER_TIKTOK_CLIENT_SECRET }}
-      PUBLISHER_TIKTOK_REFRESH_TOKEN: ${{ secrets.PUBLISHER_TIKTOK_REFRESH_TOKEN }}
-      PUBLISHER_TIKTOK_SANDBOX_CLIENT_KEY: ${{ secrets.TIKTOK_SANDBOX_CLIENT_KEY }}
-      PUBLISHER_TIKTOK_SANDBOX_CLIENT_SECRET: ${{ secrets.TIKTOK_SANDBOX_CLIENT_SECRET }}
-      PUBLISHER_TIKTOK_SANDBOX_REFRESH_TOKEN: ${{ secrets.TIKTOK_SANDBOX_REFRESH_TOKEN }}
-      PUBLISHER_TIKTOK_ENV: ${{ inputs.tiktok_env }}
-      PUBLISHER_TIKTOK_EXPECTED_USERNAME: ${{ inputs.tiktok_env == 'sandbox' && 'absurdodocumentado' || secrets.PUBLISHER_TIKTOK_EXPECTED_USERNAME }}
-      PUBLISHER_TIKTOK_PRIVACY_LEVEL: PUBLIC_TO_EVERYONE
-      PUBLISHER_TIKTOK_DIRECT_ENABLED: "1"
+      # Publicação bloqueada por API. A etapa final ocorre manualmente no
+      # YouTube Studio e no TikTok Studio pelo Cloud Web Browser.
+      PUBLISHER_BROWSER_ONLY: "1"
+      PUBLISHER_TIKTOK_DIRECT_ENABLED: "0"
       PUBLISHER_RIGHTS_AUTHORIZED: ${{ inputs.rights_confirmed && '1' || '0' }}
       PUBLISHER_RIGHTS_STATUS: "AUTORIZADO — confirmação manual das duas fontes"
-      PUBLISHER_FORCE_REPOST: ${{ inputs.force_repost && '1' || '0' }}
 
     steps:
       - name: Guardar acionamento manual
@@ -187,14 +168,14 @@ jobs:
               fi
             fi
           fi
-          if [ "${{ inputs.mode }}" = "verify-tiktok" ] || [ "${{ inputs.mode }}" = "verify-google" ] || [ "${{ inputs.mode }}" = "preflight" ]; then
+          if [ "${{ inputs.mode }}" = "preflight" ]; then
             needs_prepare=0
           fi
           echo "needs_prepare=$needs_prepare" >> "$GITHUB_OUTPUT"
 
       - name: Preparar manifesto v6
         id: prepare
-        if: steps.state.outputs.needs_prepare == '1' && inputs.mode != 'verify-tiktok' && inputs.mode != 'verify-google' && inputs.mode != 'preflight'
+        if: steps.state.outputs.needs_prepare == '1' && inputs.mode != 'preflight'
         run: |
           python -m publisher.cli prepare \
             --folder-id "${{ inputs.folder_1 }}" \
@@ -217,28 +198,20 @@ jobs:
         if: inputs.mode == 'dry-run'
         run: python -m publisher.cli tiktok --dry-run
 
-      - name: Verificar conta TikTok
-        if: inputs.mode == 'verify-tiktok'
-        run: python -m publisher.cli verify-tiktok
+      - name: Gerar pacote para o Cloud Web Browser
+        if: inputs.mode == 'browser-package'
+        run: python -m publisher.cli browser-package | tee publisher/state/browser_package.json
 
-      - name: Verificar Google
-        if: inputs.mode == 'verify-google'
-        run: python -m publisher.cli verify-google --folder-id "${{ inputs.folder_1 }}" --folder-2-id "${{ inputs.folder_2 }}"
-
-      - name: Preflight de produção
+      - name: Preflight sem publicação
         if: inputs.mode == 'preflight'
-        run: python -m publisher.cli preflight --folder-id "${{ inputs.folder_1 }}" --folder-2-id "${{ inputs.folder_2 }}"
-
-      - name: Agendar YouTube
-        if: inputs.mode == 'youtube'
-        run: python -m publisher.cli youtube
+        run: python -m publisher.cli browser-package > /dev/null
 
       - name: Relatório final
-        if: always() && (steps.prepare.outcome == 'success' || steps.state.outputs.needs_prepare == '0') && inputs.mode != 'verify-tiktok' && inputs.mode != 'verify-google' && inputs.mode != 'preflight'
-        run: python -m publisher.cli report --remote | tee publisher/state/report.json
+        if: always() && (steps.prepare.outcome == 'success' || steps.state.outputs.needs_prepare == '0') && inputs.mode != 'preflight'
+        run: python -m publisher.cli report | tee publisher/state/report.json
 
       - name: Guard de falhas parciais
-        if: always() && (steps.prepare.outcome == 'success' || steps.state.outputs.needs_prepare == '0') && inputs.mode != 'verify-tiktok' && inputs.mode != 'verify-google' && inputs.mode != 'preflight'
+        if: always() && (steps.prepare.outcome == 'success' || steps.state.outputs.needs_prepare == '0') && inputs.mode != 'preflight'
         run: |
           python - <<'PY'
           import json
@@ -253,7 +226,7 @@ jobs:
           PY
 
       - name: Persistir manifesto sanitizado
-        if: always() && (steps.prepare.outcome == 'success' || steps.state.outputs.needs_prepare == '0') && inputs.mode != 'verify-tiktok' && inputs.mode != 'verify-google' && inputs.mode != 'preflight'
+        if: always() && (steps.prepare.outcome == 'success' || steps.state.outputs.needs_prepare == '0') && inputs.mode != 'preflight'
         run: |
           python - <<'PY'
           import json
