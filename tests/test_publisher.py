@@ -31,7 +31,7 @@ from publisher.core import (
     validate_credit_source,
     validate_manifest,
 )
-from publisher.google_io import normalize_folder_id, publication_day, resolve_publication_folder
+from publisher.google_io import normalize_folder_id, publication_day, publish_youtube, resolve_publication_folder
 from publisher.tiktok_io import TikTokError, choose_privacy_level, publish_tiktok
 
 
@@ -200,11 +200,17 @@ def test_privacy_level_is_explicit():
         choose_privacy_level({"privacy_level_options": ["SELF_ONLY"]}, "PUBLIC_TO_EVERYONE")
 
 
-def test_tiktok_direct_publish_requires_feature_flag(monkeypatch):
-    monkeypatch.setenv("PUBLISHER_TIKTOK_DIRECT_ENABLED", "0")
+def test_tiktok_api_publish_is_blocked_in_browser_only_mode(monkeypatch):
+    monkeypatch.setenv("PUBLISHER_BROWSER_ONLY", "1")
     manifest = _valid_manifest()
-    with pytest.raises(TikTokError, match="desativada"):
+    with pytest.raises(TikTokError, match="Cloud Web Browser"):
         publish_tiktok(manifest, due_only=True)
+
+
+def test_youtube_api_publish_is_blocked_in_browser_only_mode(monkeypatch):
+    monkeypatch.setenv("PUBLISHER_BROWSER_ONLY", "1")
+    with pytest.raises(RuntimeError, match="Cloud Web Browser"):
+        publish_youtube(_valid_manifest())
 
 
 def test_tiktok_dry_run_keeps_ten_scheduled_posts():
