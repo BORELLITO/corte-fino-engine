@@ -150,6 +150,8 @@ jobs:
           REQUESTED_DATE_2: ${{ inputs.date_2 }}
           REQUESTED_PERIOD_1: ${{ inputs.period_1 }}
           REQUESTED_PERIOD_2: ${{ inputs.period_2 }}
+          REQUESTED_SOURCE_1: ${{ inputs.source_name_1 }}
+          REQUESTED_SOURCE_2: ${{ inputs.source_name_2 }}
           REQUESTED_MODE: ${{ inputs.mode }}
         run: |
           needs_prepare=1
@@ -164,16 +166,17 @@ jobs:
           try:
               data = json.loads(Path("publisher/state/current.json").read_text(encoding="utf-8"))
               validate_manifest(data)
-              requested = {
-                  normalize_folder_id(os.environ["REQUESTED_FOLDER_1"]),
-                  normalize_folder_id(os.environ["REQUESTED_FOLDER_2"]),
-              }
-              actual = {normalize_folder_id(str(item.get("drive_folder_id", ""))) for item in data.get("batches", [])}
-              periods = [normalize_period(os.environ["REQUESTED_PERIOD_1"]), normalize_period(os.environ["REQUESTED_PERIOD_2"])]
-              actual_periods = [normalize_period(str(item.get("period", ""))) for item in data.get("batches", [])]
-              dates = [os.environ["REQUESTED_DATE_1"], os.environ["REQUESTED_DATE_2"]]
-              actual_dates = [str(item.get("date", "")) for item in data.get("batches", [])]
-              if requested != actual or periods != actual_periods or dates != actual_dates:
+              requested = [
+                  (normalize_folder_id(os.environ["REQUESTED_FOLDER_1"]), os.environ["REQUESTED_DATE_1"], normalize_period(os.environ["REQUESTED_PERIOD_1"])),
+                  (normalize_folder_id(os.environ["REQUESTED_FOLDER_2"]), os.environ["REQUESTED_DATE_2"], normalize_period(os.environ["REQUESTED_PERIOD_2"])),
+              ]
+              actual = [
+                  (normalize_folder_id(str(item.get("drive_folder_id", ""))), str(item.get("date", "")), normalize_period(str(item.get("period", ""))))
+                  for item in data.get("batches", [])
+              ]
+              requested_sources = [os.environ.get("REQUESTED_SOURCE_1", "").strip(), os.environ.get("REQUESTED_SOURCE_2", "").strip()]
+              actual_sources = [str(item.get("source", {}).get("name", "")).strip() for item in data.get("batches", [])]
+              if requested != actual or requested_sources != actual_sources:
                   raise SystemExit(1)
           except Exception:
               raise SystemExit(1)
