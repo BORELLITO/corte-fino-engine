@@ -12,7 +12,7 @@ from publisher.google_io import (
     prepare_batches,
     verify_google_accounts,
 )
-from publisher.tiktok_io import publish_tiktok, verify_tiktok_account
+from publisher.tiktok_io import publish_tiktok
 
 
 def load(path: Path) -> dict:
@@ -125,17 +125,18 @@ def main() -> int:
     path = Path(args.manifest)
 
     if args.command == "verify-tiktok":
-        print(json.dumps(verify_tiktok_account(), ensure_ascii=False, indent=2))
+        print(json.dumps({"status": "browser_only", "message": "A conta será validada visualmente no TikTok Studio pelo Cloud Web Browser."}, ensure_ascii=False, indent=2))
         return 0
-    if args.command in {"verify-google", "preflight"}:
+    if args.command == "preflight":
+        data = load(path)
+        print(json.dumps({"status": "ok", "manifest": browser_package(data)}, ensure_ascii=False, indent=2))
+        return 0
+    if args.command == "verify-google":
         folder_ids = [item for item in (args.folder_id, args.folder_2_id) if item]
         if not folder_ids:
             raise SystemExit("Informe as duas pastas do Publisher.")
         google = [verify_google_accounts(folder_id) for folder_id in folder_ids]
-        if args.command == "verify-google":
-            print(json.dumps(google, ensure_ascii=False, indent=2))
-        else:
-            print(json.dumps({"google": google, "tiktok": verify_tiktok_account()}, ensure_ascii=False, indent=2))
+        print(json.dumps(google, ensure_ascii=False, indent=2))
         return 0
     if args.command == "prepare":
         date_1 = args.date_1 or args.target_date
