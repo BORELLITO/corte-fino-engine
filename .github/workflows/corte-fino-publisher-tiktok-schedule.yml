@@ -3,8 +3,11 @@ name: Corte Fino Motor 2 — TikTok Agendado
 on:
   # GitHub Actions usa UTC. O job roda de hora em hora e o Publisher decide
   # localmente, em America/Sao_Paulo, se existe algum corte vencido.
+  # O disparo manual serve como recuperação operacional quando o cron do
+  # GitHub atrasar ou quando for necessário reconciliar um publish_id pendente.
   schedule:
     - cron: "0 * * * *"
+  workflow_dispatch:
 
 permissions:
   contents: read
