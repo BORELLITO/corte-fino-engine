@@ -9,10 +9,10 @@ from zoneinfo import ZoneInfo
 
 
 TIMEZONE = ZoneInfo("America/Sao_Paulo")
-YOUTUBE_HOURS = (10, 12, 15, 17, 19)
-TIKTOK_HOURS = (10, 12, 15, 17, 19)
-YOUTUBE_PRIORITY = (17, 15, 10, 12, 19)
-TIKTOK_PRIORITY = (17, 15, 10, 12, 19)
+YOUTUBE_HOURS = (11, 13, 16, 17, 19)
+TIKTOK_HOURS = (11, 13, 16, 17, 19)
+YOUTUBE_PRIORITY = (17, 16, 11, 13, 19)
+TIKTOK_PRIORITY = (17, 16, 11, 13, 19)
 MANIFEST_VERSION = 5
 BRANDING_VERSION = "hud-corte-fino-v1"
 BRANDING_FORMAT = "vertical_9x16_shared"
