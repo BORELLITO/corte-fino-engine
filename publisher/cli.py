@@ -10,10 +10,8 @@ from zoneinfo import ZoneInfo
 from publisher.core import validate_manifest
 from publisher.google_io import (
     FOLDER_ID,
-    drive_service,
     prepare_batches,
     scheduled_publish_at,
-    verify_google_accounts,
 )
 from publisher.tiktok_io import publish_tiktok
 
@@ -24,42 +22,29 @@ def load(path: Path) -> dict:
     return data
 
 
-def report(manifest: dict, drive=None) -> dict:
-    """Return the ten planned slots and optional remote publication states."""
-    remote: dict[str, dict] = {}
-    if drive:
-        for clip in manifest["clips"]:
-            item = drive.files().get(fileId=clip["drive_id"], fields="id,appProperties").execute(num_retries=4)
-            remote[str(clip["index"])] = item.get("appProperties", {})
-
+def report(manifest: dict) -> dict:
+    """Return the ten planned browser-only slots."""
     youtube = []
     tiktok = []
     for clip in sorted(manifest["clips"], key=lambda c: c["schedule"]["youtube_publish_at"]):
-        properties = remote.get(str(clip["index"]), {})
-        youtube_status = properties.get("cf_youtube_upload_status", "pending")
-        if youtube_status == "PENDING":
-            youtube_status = "recovery_required"
-        if properties.get("cf_youtube_video_id") and youtube_status == "SCHEDULED":
-            youtube_status = "scheduled"
         youtube.append({
             "index": clip["index"],
             "batch_id": clip["batch_id"],
             "batch_index": clip["batch_index"],
             "publish_at": clip["schedule"]["youtube_publish_at"],
             "title": clip["copy"]["youtube_title"],
-            "status": youtube_status,
-            "video_id": properties.get("cf_youtube_video_id"),
+            "status": "pending_browser",
+            "video_id": None,
         })
     for clip in sorted(manifest["clips"], key=lambda c: c["schedule"]["tiktok_publish_at"]):
-        properties = remote.get(str(clip["index"]), {})
         tiktok.append({
             "index": clip["index"],
             "batch_id": clip["batch_id"],
             "batch_index": clip["batch_index"],
             "publish_at": clip["schedule"]["tiktok_publish_at"],
             "caption": clip["copy"]["tiktok_caption"],
-            "status": properties.get("cf_tiktok_status", "pending"),
-            "publish_id": properties.get("cf_tiktok_publish_id") or properties.get("cf_tiktok_last_publish_id"),
+            "status": "pending_browser",
+            "publish_id": None,
         })
     statuses = [item["status"] for item in youtube + tiktok]
     return {
@@ -71,7 +56,7 @@ def report(manifest: dict, drive=None) -> dict:
         "summary": {
             "total": len(statuses),
             "scheduled_or_complete": sum(status in {"scheduled", "SCHEDULED", "PUBLISH_COMPLETE", "published"} for status in statuses),
-            "pending_or_processing": sum(status in {"pending", "PENDING", "PROCESSING"} for status in statuses),
+            "pending_or_processing": sum(status in {"pending", "pending_browser", "PENDING", "PROCESSING"} for status in statuses),
             "attention": sum(status in {"FAILED", "CANCELED", "recovery_required"} for status in statuses),
         },
     }
@@ -128,7 +113,7 @@ def browser_package(manifest: dict) -> dict:
 
 def main() -> int:
     parser = argparse.ArgumentParser(description="Corte Fino Publisher")
-    parser.add_argument("command", choices=["prepare", "browser-package", "report", "youtube", "tiktok", "verify-tiktok", "verify-google", "preflight"])
+    parser.add_argument("command", choices=["prepare", "browser-package", "report", "youtube", "tiktok", "verify-tiktok", "preflight"])
     parser.add_argument("--folder-id", default=os.environ.get("PUBLISHER_DRIVE_FOLDER_ID", FOLDER_ID))
     parser.add_argument("--folder-2-id", default=os.environ.get("PUBLISHER_DRIVE_FOLDER_2_ID", ""))
     parser.add_argument("--manifest", default="publisher/state/current.json")
@@ -145,7 +130,6 @@ def main() -> int:
     parser.add_argument("--source-name-2", default=os.environ.get("PUBLISHER_SOURCE_NAME_2", ""), help="fonte do lote B")
     parser.add_argument("--source-episode-2", default=os.environ.get("PUBLISHER_SOURCE_EPISODE_2", ""), help="episódio do lote B")
     parser.add_argument("--confirm-rights", action="store_true", help="confirma autorização das duas fontes")
-    parser.add_argument("--remote", action="store_true", help="inclui estados persistidos no Drive no relatório")
     args = parser.parse_args()
     path = Path(args.manifest)
 
@@ -155,13 +139,6 @@ def main() -> int:
     if args.command == "preflight":
         data = load(path)
         print(json.dumps({"status": "ok", "manifest": browser_package(data)}, ensure_ascii=False, indent=2))
-        return 0
-    if args.command == "verify-google":
-        folder_ids = [item for item in (args.folder_id, args.folder_2_id) if item]
-        if not folder_ids:
-            raise SystemExit("Informe as duas pastas do Publisher.")
-        google = [verify_google_accounts(folder_id) for folder_id in folder_ids]
-        print(json.dumps(google, ensure_ascii=False, indent=2))
         return 0
     if args.command == "prepare":
         date_1 = args.date_1 or args.target_date
@@ -192,7 +169,7 @@ def main() -> int:
     elif args.command == "tiktok":
         print(json.dumps(publish_tiktok(data, dry_run=args.dry_run, due_only=args.due_only, allow_immediate=args.allow_immediate), ensure_ascii=False, indent=2))
     else:
-        print(json.dumps(report(data, drive=drive_service() if args.remote else None), ensure_ascii=False, indent=2))
+        print(json.dumps(report(data), ensure_ascii=False, indent=2))
     return 0
 
 
