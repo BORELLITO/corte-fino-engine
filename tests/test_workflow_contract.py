@@ -2,6 +2,7 @@ from pathlib import Path
 
 PUBLISHER_WORKFLOW = Path(".github/workflows/corte-fino-publisher.yml")
 GENERATOR_WORKFLOW = Path(".github/workflows/corte-fino.yml")
+TIKTOK_API_WORKFLOW = Path(".github/workflows/tiktok-sandbox-token.yml")
 
 
 def test_publisher_requires_two_exact_drive_folders_and_periods():
@@ -22,12 +23,14 @@ def test_publisher_requires_two_exact_drive_folders_and_periods():
 
 def test_publication_api_scheduler_is_removed():
     assert not Path(".github/workflows/corte-fino-publisher-tiktok-schedule.yml").exists()
+    assert not TIKTOK_API_WORKFLOW.exists()
 
 
 def test_publisher_has_no_metricool_route():
     assert "Metricool" not in PUBLISHER_WORKFLOW.read_text(encoding="utf-8")
     assert "Metricool" not in Path("publisher/tiktok_io.py").read_text(encoding="utf-8")
     assert "Metricool" not in Path("publisher/README.md").read_text(encoding="utf-8")
+    assert "tiktokapis" not in Path("publisher/tiktok_io.py").read_text(encoding="utf-8")
 
 
 def test_both_motors_require_manual_dispatch():
