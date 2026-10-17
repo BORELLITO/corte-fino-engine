@@ -136,7 +136,7 @@ def list_children(drive, folder_id: str) -> list[dict]:
             "q": q,
             "pageSize": 100,
             "orderBy": "name",
-            "fields": "nextPageToken,files(id,name,size,mimeType,md5Checksum,appProperties,modifiedTime,parents)",
+            "fields": "nextPageToken,files(id,name,size,mimeType,md5Checksum,modifiedTime,parents)",
         }
         if page_token:
             kwargs["pageToken"] = page_token
@@ -157,7 +157,7 @@ def list_videos(drive, folder_id: str) -> list[dict]:
             "q": q,
             "pageSize": 100,
             "orderBy": "name",
-            "fields": "nextPageToken,files(id,name,size,mimeType,md5Checksum,appProperties,modifiedTime,parents)",
+            "fields": "nextPageToken,files(id,name,size,mimeType,md5Checksum,modifiedTime,parents)",
         }
         if page_token:
             kwargs["pageToken"] = page_token
