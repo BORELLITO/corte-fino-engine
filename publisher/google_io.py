@@ -27,6 +27,8 @@ from publisher.core import (
     local_publish_at,
     make_copy,
     natural_index,
+    normalize_period,
+    period_hours,
     truncate,
     truncate_utf8,
     validate_credit_source,
@@ -37,7 +39,7 @@ from publisher.core import (
 FOLDER_ID = os.environ.get("PUBLISHER_DRIVE_FOLDER_ID", "").strip()
 YOUTUBE_PROCESSING_ATTEMPTS = 12
 YOUTUBE_PROCESSING_INTERVAL = 5
-PUBLISHER_MIN_CLIP_SECONDS = 45.0
+PUBLISHER_MIN_CLIP_SECONDS = 60.01
 PUBLISHER_MAX_CLIP_SECONDS = 90.0
 PUBLISHER_MIN_FILE_BYTES = 50_000
 PUBLISHER_MIN_AUDIO_BITRATE = 128_000
@@ -339,44 +341,44 @@ def publication_day(now: datetime | None = None, target_date: date | str | None 
     return current.date() + (timedelta(days=1) if current.hour >= 9 else timedelta())
 
 
-def prepare(
-    folder_id: str,
-    output: Path,
-    target_date: date | str | None = None,
-    *,
-    rights_authorized: bool | None = None,
-    rights_status: str | None = None,
-    source_name: str = "",
-    source_episode: str = "",
-) -> dict:
-    drive = drive_service()
-    folder_id = resolve_publication_folder(drive, folder_id)
+def _prepare_batch(
+    drive,
+    spec: dict,
+    batch_id: str,
+    start_index: int,
+) -> tuple[dict, list[dict]]:
+    folder_id = resolve_publication_folder(drive, str(spec.get("folder_id", "")))
     files = list_videos(drive, folder_id)
     if len(files) != 5:
-        raise RuntimeError(f"Pasta do Publisher precisa conter exatamente 5 vídeos; encontrados: {len(files)}")
-
-    source_name = validate_credit_source(
-        (source_name or env("PUBLISHER_SOURCE_NAME")).strip(),
-        required=True,
-    )
-    source_episode = (source_episode or env("PUBLISHER_SOURCE_EPISODE")).strip()
-
+        raise RuntimeError(f"Pasta {batch_id} precisa conter exatamente 5 vídeos; encontrados: {len(files)}")
     indexed = [natural_index(f.get("name", "")) for f in files]
     if indexed != [1, 2, 3, 4, 5]:
-        raise RuntimeError("Os cinco vídeos precisam estar numerados de 01 a 05 no nome do arquivo.")
-
+        raise RuntimeError(f"Pasta {batch_id}: os vídeos precisam estar numerados de 01 a 05.")
+    try:
+        batch_day = date.fromisoformat(str(spec.get("date", "")))
+    except ValueError as exc:
+        raise RuntimeError(f"Data inválida no lote {batch_id}; use AAAA-MM-DD.") from exc
+    period = normalize_period(str(spec.get("period", "")))
+    hours = period_hours(period)
+    source_name = validate_credit_source(str(spec.get("source_name", "") or "").strip(), required=True)
+    source_episode = str(spec.get("source_episode", "") or "").strip()
+    rights_authorized = bool(spec.get("rights_authorized"))
     clips: list[dict] = []
-    with tempfile.TemporaryDirectory(prefix="corte-fino-publisher-") as temp_dir:
-        for index, item in zip(indexed, files):
-            source = Path(temp_dir) / f"{index:02d}.mp4"
+    with tempfile.TemporaryDirectory(prefix=f"corte-fino-publisher-{batch_id.lower()}-") as temp_dir:
+        for batch_index, item in zip(indexed, files):
+            global_index = start_index + batch_index
+            source = Path(temp_dir) / f"{global_index:02d}.mp4"
             download(drive, item["id"], source)
             profile = probe_video(source)
             transcript = transcribe(source)
             if len(transcript.split()) < 6:
-                raise RuntimeError(f"Transcrição insuficiente para o corte {index:02d}.")
+                raise RuntimeError(f"Transcrição insuficiente para o corte {global_index:02d}.")
             clips.append(
                 {
-                    "index": index,
+                    "index": global_index,
+                    "batch_id": batch_id,
+                    "batch_index": batch_index,
+                    "drive_folder_id": folder_id,
                     "drive_id": item["id"],
                     "name": item.get("name", ""),
                     "size": int(item.get("size", 0) or 0),
@@ -389,27 +391,68 @@ def prepare(
                     "schedule": {},
                 }
             )
+    assign_slots(clips, hours)
+    for clip in clips:
+        hour = int(clip["schedule"]["youtube_hour"])
+        publish_at = local_publish_at(batch_day, hour)
+        clip["schedule"].update(
+            {
+                "youtube_publish_at": publish_at,
+                "tiktok_publish_at": publish_at,
+            }
+        )
+    return (
+        {
+            "batch_id": batch_id,
+            "drive_folder_id": folder_id,
+            "date": batch_day.isoformat(),
+            "period": period,
+            "hours": list(hours),
+            "source": {"name": source_name, "episode": source_episode},
+            "rights_authorized": rights_authorized,
+        },
+        clips,
+    )
 
-    assign_slots(clips)
-    if rights_authorized is None:
-        rights_authorized = env_bool("PUBLISHER_RIGHTS_AUTHORIZED")
+
+def prepare_batches(
+    batch_specs: list[dict],
+    output: Path,
+    *,
+    rights_status: str | None = None,
+) -> dict:
+    if len(batch_specs) != 2:
+        raise RuntimeError("O Publisher exige exatamente duas pastas por rodada.")
+    drive = drive_service()
+    batches: list[dict] = []
+    clips: list[dict] = []
+    for position, spec in enumerate(batch_specs):
+        batch, batch_clips = _prepare_batch(drive, spec, chr(ord("A") + position), position * 5)
+        batches.append(batch)
+        clips.extend(batch_clips)
+    if batches[0]["drive_folder_id"] == batches[1]["drive_folder_id"]:
+        raise RuntimeError("As duas pastas da rodada precisam ser diferentes.")
+    all_slots = [(batch["date"], hour) for batch in batches for hour in batch["hours"]]
+    if len(all_slots) != len(set(all_slots)):
+        raise RuntimeError("Os períodos das duas pastas possuem horários conflitantes.")
+    rights_authorized = all(bool(spec.get("rights_authorized")) for spec in batch_specs)
     manifest = {
         "version": MANIFEST_VERSION,
         "run_id": uuid.uuid4().hex,
         "created_at_utc": _utc_now().isoformat().replace("+00:00", "Z"),
-        "date": publication_day(target_date=target_date).isoformat(),
+        "date": batches[0]["date"],
         "timezone": "America/Sao_Paulo",
-        "drive_folder_id": folder_id,
+        "drive_folder_id": batches[0]["drive_folder_id"],
+        "drive_folder_ids": [batch["drive_folder_id"] for batch in batches],
         "youtube_hours": list(YOUTUBE_HOURS),
         "tiktok_hours": list(TIKTOK_HOURS),
+        "batches": batches,
         "rights": {
-            "authorized": bool(rights_authorized),
+            "authorized": rights_authorized,
             "status": (rights_status or env("PUBLISHER_RIGHTS_STATUS", "revisão manual necessária")).strip(),
         },
-        "source": {
-            "name": source_name,
-            "episode": source_episode,
-        },
+        "source": batches[0]["source"],
+        "sources": [batch["source"] for batch in batches],
         "branding": {
             "version": BRANDING_VERSION,
             "format": BRANDING_FORMAT,
@@ -422,6 +465,38 @@ def prepare(
     output.parent.mkdir(parents=True, exist_ok=True)
     output.write_text(json.dumps(manifest, ensure_ascii=False, indent=2), encoding="utf-8")
     return manifest
+
+
+def prepare(
+    folder_id: str,
+    output: Path,
+    target_date: date | str | None = None,
+    *,
+    folder_2_id: str = "",
+    period_1: str = "day",
+    period_2: str = "night",
+    date_2: date | str | None = None,
+    rights_authorized: bool | None = None,
+    rights_status: str | None = None,
+    source_name: str = "",
+    source_episode: str = "",
+    source_name_2: str = "",
+    source_episode_2: str = "",
+) -> dict:
+    """Compatibility wrapper; production always supplies two folders."""
+    if not folder_2_id:
+        raise RuntimeError("O novo Publisher exige duas pastas por rodada; informe folder_2_id.")
+    day_1 = publication_day(target_date=target_date).isoformat() if target_date else publication_day().isoformat()
+    day_2 = date_2.isoformat() if isinstance(date_2, date) else (str(date_2) if date_2 else day_1)
+    authorized = env_bool("PUBLISHER_RIGHTS_AUTHORIZED") if rights_authorized is None else bool(rights_authorized)
+    return prepare_batches(
+        [
+            {"folder_id": folder_id, "date": day_1, "period": period_1, "source_name": source_name or env("PUBLISHER_SOURCE_NAME"), "source_episode": source_episode or env("PUBLISHER_SOURCE_EPISODE"), "rights_authorized": authorized},
+            {"folder_id": folder_2_id, "date": day_2, "period": period_2, "source_name": source_name_2 or source_name or env("PUBLISHER_SOURCE_NAME"), "source_episode": source_episode_2 or source_episode or env("PUBLISHER_SOURCE_EPISODE"), "rights_authorized": authorized},
+        ],
+        output,
+        rights_status=rights_status,
+    )
 
 
 def verify_google_accounts(folder_id: str) -> dict:
@@ -472,6 +547,25 @@ def effective_youtube_publish_at(day: date, hour: int) -> str:
             return candidate.astimezone(timezone.utc).isoformat().replace("+00:00", "Z")
         return (_utc_now() + timedelta(minutes=5)).replace(microsecond=0).isoformat().replace("+00:00", "Z")
     return desired
+
+
+def scheduled_publish_at(manifest: dict, clip: dict, platform: str = "youtube") -> str:
+    """Return the immutable per-clip timestamp stored by the v6 manifest."""
+    key = f"{platform}_publish_at"
+    value = str((clip.get("schedule") or {}).get(key, "")).strip()
+    if value:
+        return value
+    # Legacy fallback is intentionally only useful for diagnostics; v6
+    # validation requires the explicit timestamp.
+    hour = int((clip.get("schedule") or {}).get(f"{platform}_hour"))
+    return local_publish_at(date.fromisoformat(manifest["date"]), hour)
+
+
+def scheduled_local_date(manifest: dict, clip: dict, platform: str = "youtube") -> str:
+    parsed = _parse_utc(scheduled_publish_at(manifest, clip, platform))
+    if not parsed:
+        return str(manifest.get("date", ""))
+    return parsed.astimezone(TIMEZONE).date().isoformat()
 
 
 def reconcile_youtube_upload(youtube, title: str, intent_at: str) -> str | None:
@@ -551,7 +645,9 @@ def verify_manifest_clip(drive, manifest: dict, clip: dict) -> dict:
         fileId=clip["drive_id"],
         fields="id,name,size,mimeType,md5Checksum,parents,trashed,appProperties",
     ).execute(num_retries=4)
-    expected_folder = normalize_folder_id(manifest["drive_folder_id"])
+    expected_folder = normalize_folder_id(
+        str(clip.get("drive_folder_id") or manifest.get("drive_folder_id", ""))
+    )
     parents = set(item.get("parents", []))
     if item.get("trashed") or expected_folder not in parents:
         raise RuntimeError(
@@ -588,10 +684,7 @@ def _preflight_youtube_schedule(drive, manifest: dict, *, force_repost: bool = F
         properties = item.get("appProperties", {})
         if (not force_repost) and (properties.get("cf_youtube_video_id") or properties.get("cf_youtube_upload_status") == "PENDING"):
             continue
-        publish_at = effective_youtube_publish_at(
-            date.fromisoformat(manifest["date"]),
-            int(clip["schedule"]["youtube_hour"]),
-        )
+        publish_at = scheduled_publish_at(manifest, clip, "youtube")
         publish_dt = _parse_utc(publish_at)
         if publish_dt and publish_dt <= now:
             expired.append(f"{clip['index']:02d} ({publish_at})")
@@ -605,7 +698,6 @@ def _preflight_youtube_schedule(drive, manifest: dict, *, force_repost: bool = F
 
 def publish_youtube(manifest: dict, dry_run: bool = False) -> list[dict]:
     force_repost = env("PUBLISHER_FORCE_REPOST", "0").strip() == "1"
-    day = date.fromisoformat(manifest["date"])
     drive = drive_service()
     youtube = None
     if not dry_run:
@@ -647,10 +739,7 @@ def publish_youtube(manifest: dict, dry_run: bool = False) -> list[dict]:
                         {"cf_youtube_upload_status": "FAILED"},
                     )
                     raise RuntimeError(f"Processamento YouTube falhou para o corte {clip['index']:02d}.")
-            desired_publish_at = effective_youtube_publish_at(
-                day,
-                int(clip["schedule"]["youtube_hour"]),
-            )
+            desired_publish_at = scheduled_publish_at(manifest, clip, "youtube")
             recorded_publish_at = properties.get("cf_youtube_publish_at", "")
             if (
                 not dry_run
@@ -675,7 +764,7 @@ def publish_youtube(manifest: dict, dry_run: bool = False) -> list[dict]:
                     {
                         "cf_youtube_upload_status": "SCHEDULED",
                         "cf_youtube_publish_at": desired_publish_at,
-                        "cf_youtube_date": manifest["date"],
+                        "cf_youtube_date": scheduled_local_date(manifest, clip, "youtube"),
                     },
                 )
                 results.append({
@@ -693,8 +782,7 @@ def publish_youtube(manifest: dict, dry_run: bool = False) -> list[dict]:
             })
             continue
 
-        hour = int(clip["schedule"]["youtube_hour"])
-        publish_at = effective_youtube_publish_at(day, hour)
+        publish_at = scheduled_publish_at(manifest, clip, "youtube")
 
         if existing_video_id and force_repost and not dry_run:
             # Repost explícito: retira o agendamento anterior antes de criar
@@ -748,7 +836,7 @@ def publish_youtube(manifest: dict, dry_run: bool = False) -> list[dict]:
                     "cf_youtube_video_id": recovered_id,
                     "cf_youtube_upload_status": recovered_status,
                     "cf_youtube_publish_at": publish_at,
-                    "cf_youtube_date": manifest["date"],
+                    "cf_youtube_date": scheduled_local_date(manifest, clip, "youtube"),
                 },
             )
             results.append({"index": clip["index"], "status": recovered_status.lower(), "video_id": recovered_id, "publish_at": publish_at})
@@ -795,7 +883,7 @@ def publish_youtube(manifest: dict, dry_run: bool = False) -> list[dict]:
                     "cf_youtube_intent_at": intent_at,
                     "cf_youtube_title": title,
                     "cf_youtube_publish_at": publish_at,
-                    "cf_youtube_date": manifest["date"],
+                    "cf_youtube_date": scheduled_local_date(manifest, clip, "youtube"),
                 },
             )
             response = youtube.videos().insert(
@@ -816,7 +904,7 @@ def publish_youtube(manifest: dict, dry_run: bool = False) -> list[dict]:
                 "cf_youtube_video_id": video_id,
                 "cf_youtube_upload_status": "PROCESSING",
                 "cf_youtube_publish_at": publish_at,
-                "cf_youtube_date": manifest["date"],
+                "cf_youtube_date": scheduled_local_date(manifest, clip, "youtube"),
             },
         )
         processing = wait_youtube_processing(youtube, video_id)
@@ -828,7 +916,7 @@ def publish_youtube(manifest: dict, dry_run: bool = False) -> list[dict]:
                     "cf_youtube_video_id": video_id,
                     "cf_youtube_upload_status": "FAILED",
                     "cf_youtube_publish_at": publish_at,
-                    "cf_youtube_date": manifest["date"],
+                    "cf_youtube_date": scheduled_local_date(manifest, clip, "youtube"),
                 },
             )
             raise RuntimeError(f"Processamento YouTube falhou para o corte {clip['index']:02d}.")
@@ -840,9 +928,10 @@ def publish_youtube(manifest: dict, dry_run: bool = False) -> list[dict]:
                 "cf_youtube_video_id": video_id,
                 "cf_youtube_upload_status": final_status,
                 "cf_youtube_publish_at": publish_at,
-                "cf_youtube_date": manifest["date"],
+                    "cf_youtube_date": scheduled_local_date(manifest, clip, "youtube"),
             },
         )
         results.append({"index": clip["index"], "status": final_status.lower(), "video_id": video_id, "publish_at": publish_at})
 
     return results
+
