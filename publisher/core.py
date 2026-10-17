@@ -33,6 +33,7 @@ TIKTOK_CAPTION_LIMIT = 2200
 YOUTUBE_TITLE_LIMIT = 100
 YOUTUBE_DESCRIPTION_LIMIT = 5000
 YOUTUBE_TAGS_LIMIT = 500
+YOUTUBE_TAG_COUNT = 20
 
 
 STOPWORDS = set("a o as os um uma uns umas de da do das dos e em no na nos nas para pra por com sem que quem qual quando onde como porque isso isto essa esse essas esses eu voce voces ele ela eles elas me te se meu minha seu sua mais menos muito muita muitos muitas ja nao sim so tambem aqui ali la tem ter vai vou foi ser sao era esta estao ta tao entao ne tipo cara gente acho fica ficar fazer faz fez pode poder todo toda todos todas num numa ate ai bem sobre existe ainda realmente falei falo falou falando dizer disse diz aqui assim entao bom pessoal".split())
@@ -406,6 +407,8 @@ def copy_quality_issues(pack: CopyPack) -> list[str]:
         issues.append("legenda do TikTok excede 2200 caracteres")
     if len(pack.youtube_description) > YOUTUBE_DESCRIPTION_LIMIT:
         issues.append("descrição do YouTube excede 5000 caracteres")
+    if len(pack.youtube_tags) != YOUTUBE_TAG_COUNT:
+        issues.append(f"o YouTube precisa de exatamente {YOUTUBE_TAG_COUNT} tags")
     tag_length = sum(len(tag) for tag in pack.youtube_tags) + max(0, 2 * (len(pack.youtube_tags) - 1))
     if tag_length > YOUTUBE_TAGS_LIMIT:
         issues.append("tags do YouTube excedem 500 caracteres")
@@ -574,7 +577,13 @@ def build_youtube_tags(topic: str, keywords: list[str]) -> list[str]:
     relevant = [word for word in keywords if allowed and word in allowed]
     candidates = [*TOPIC_TERMS.get(topic, TOPIC_TERMS["geral"])]
     candidates.extend(KEYWORD_ALIASES.get(word, word) for word in relevant[:5])
-    candidates.extend(("corte fino", "cortes de podcast", "shorts"))
+    candidates.extend((
+        "corte fino", "cortes", "cortes de podcast", "podcast brasileiro",
+        "shorts", "youtube shorts", "viral", "viralizou", "opiniao",
+        "debate", "conversa", "entrevista", "trecho de podcast",
+        "conteudo brasileiro", "corte de entrevista", "reflexao",
+        "atualidades", "fatos e opinioes", "corte comentado", "corte relevante",
+    ))
     tags: list[str] = []
     seen: set[str] = set()
     total = 0
@@ -587,7 +596,7 @@ def build_youtube_tags(topic: str, keywords: list[str]) -> list[str]:
         tags.append(tag)
         seen.add(key)
         total += addition
-    return tags or ["corte fino"]
+    return tags[:YOUTUBE_TAG_COUNT] or ["corte fino"]
 
 
 def sentence_case_issues(text: str) -> list[str]:
