@@ -81,7 +81,6 @@ jobs:
       # Publicação bloqueada por API. A etapa final ocorre manualmente no
       # YouTube Studio e no TikTok Studio pelo Cloud Web Browser.
       PUBLISHER_BROWSER_ONLY: "1"
-      PUBLISHER_TIKTOK_DIRECT_ENABLED: "0"
       PUBLISHER_RIGHTS_AUTHORIZED: ${{ inputs.rights_confirmed && '1' || '0' }}
       PUBLISHER_RIGHTS_STATUS: "AUTORIZADO — confirmação manual das duas fontes"
 
