@@ -1,4 +1,4 @@
-# Corte Fino — Motor 0: Radar Viral V2
+# Corte Fino — Motor 0: Radar Viral V2.1
 
 O **Motor 0** é a camada de inteligência editorial anterior ao Creator. Ele descobre, monitora e prioriza fontes; não baixa vídeos, não cria cortes e não publica nada.
 
@@ -104,7 +104,7 @@ O número de resultados do YouTube é tratado como aproximação. O peso foi red
 - A varredura real roda somente por agenda ou `workflow_dispatch`.
 - Como o repositório atualmente é público, o conteúdo integral do Radar **não é publicado em Issue nem no Job Summary**.
 - O relatório completo é enviado para a pasta privada `RADAR_CORTE_FINO` no Google Drive. Se existir o secret `RADAR_DRIVE_FOLDER_ID`, ele tem prioridade; caso contrário o motor reutiliza a pasta-base já configurada pelo projeto.
-- O histórico de momentum fica em cache do GitHub Actions e é ignorado pelo Git.
+- O histórico de momentum fica em `history.json` na pasta privada `RADAR_CORTE_FINO` do Google Drive e é ignorado pelo Git.
 
 ## Frequência
 
@@ -117,14 +117,14 @@ Padrão atual:
 - no máximo 3 temas manuais por rodada, sem expulsar as fontes principais;
 - os temas editoriais fixos são rotacionados entre as execuções para cobrir o catálogo inteiro;
 - até 24 vídeos pré-selecionados recebem análise dupla de comentários;
-- entrega visual padrão: Top 5 compacto, até 3 Search Gaps e até 3 itens políticos factuais.
+- entrega visual padrão: somente Top 5 compacto; Search Gap, watchlist política e métricas detalhadas ficam no JSON/CSV para auditoria.
 
 ## Arquivos de saída
 - `radar/output/radar_latest.md`
 - `radar/output/radar_latest.json`
 - `radar/output/radar_latest.csv`
 
-Os três arquivos são atualizados de forma idempotente na pasta privada `RADAR_CORTE_FINO` no Google Drive.
+Os três arquivos são atualizados de forma idempotente na pasta privada `RADAR_CORTE_FINO` no Google Drive. O relatório é enviado antes de o novo snapshot de momentum ser confirmado, evitando avançar o histórico quando a entrega falha.
 
 ## Contrato com os outros motores
 
