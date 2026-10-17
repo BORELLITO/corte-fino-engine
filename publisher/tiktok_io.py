@@ -266,6 +266,44 @@ def _due_clips(manifest: dict, now: datetime | None = None) -> list[dict]:
     return sorted(eligible, key=lambda item: (int(item["schedule"]["tiktok_hour"]), item["index"]))
 
 
+def _select_due_clips(
+    manifest: dict,
+    drive,
+    now: datetime | None = None,
+) -> tuple[list[dict], dict[int, dict]]:
+    """Select the next due TikTok without getting stuck on an old marker.
+
+    Completed publish IDs are skipped. Non-terminal IDs are returned first for
+    reconciliation; only then is the earliest due clip without a publish ID
+    selected for a new post.
+    """
+    due = _due_clips(manifest, now)
+    prefetched: dict[int, dict] = {}
+    pending: list[dict] = []
+    completed_indexes: set[int] = set()
+
+    for candidate in sorted(manifest["clips"], key=lambda item: item["index"]):
+        item = verify_manifest_clip(drive, manifest, candidate)
+        index = int(candidate["index"])
+        prefetched[index] = item
+        properties = item.get("appProperties", {})
+        publish_id = properties.get("cf_tiktok_publish_id", "").strip()
+        if not publish_id:
+            continue
+        if properties.get("cf_tiktok_status", "").strip().upper() == "PUBLISH_COMPLETE":
+            completed_indexes.add(index)
+            continue
+        pending.append(candidate)
+
+    new_due = [
+        clip
+        for clip in due
+        if int(clip["index"]) not in completed_indexes
+        and not prefetched[int(clip["index"])].get("appProperties", {}).get("cf_tiktok_publish_id", "").strip()
+    ]
+    return pending + new_due[:1], prefetched
+
+
 def publish_tiktok(
     manifest: dict,
     dry_run: bool = False,
@@ -298,16 +336,7 @@ def publish_tiktok(
     prefetched: dict[int, dict] = {}
     drive = drive_service()
     if due_only:
-        due = _due_clips(manifest, now)
-        due_indexes = {int(clip["index"]) for clip in due}
-        pending: list[dict] = []
-        for candidate in all_clips:
-            item = verify_manifest_clip(drive, manifest, candidate)
-            prefetched[int(candidate["index"])] = item
-            properties = item.get("appProperties", {})
-            if int(candidate["index"]) not in due_indexes and properties.get("cf_tiktok_publish_id", "").strip():
-                pending.append(candidate)
-        clips = pending + [clip for clip in due if int(clip["index"]) not in {int(item["index"]) for item in pending}][:1]
+        clips, prefetched = _select_due_clips(manifest, drive, now)
         if not clips:
             return [{"status": "nothing_due"}]
 
