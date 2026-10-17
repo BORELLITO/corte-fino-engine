@@ -2,7 +2,7 @@
 
 **Última atualização:** 10 de outubro de 2026
 
-Esta política explica como o Corte Fino Publisher trata informações utilizadas para preparar e publicar vídeos em contas autorizadas.
+Esta política explica como o Corte Fino Publisher trata informações utilizadas para preparar vídeos e apoiar a confirmação manual em contas autorizadas.
 
 ## Informações utilizadas
 
@@ -18,7 +18,7 @@ O preparo pode ler arquivos autorizados do Google Drive e executar no GitHub Act
 
 ## Segurança e retenção
 
-Credenciais eventualmente usadas apenas para ler o Drive devem ser armazenadas em secrets protegidos do ambiente de execução. O pacote e os artefatos técnicos podem ser mantidos pelo tempo necessário à execução, revisão e prevenção de duplicidadeção, auditoria e prevenção de duplicidade. O usuário pode revogar autorizações e solicitar esclarecimentos pelo repositório oficial.
+Credenciais eventualmente usadas apenas para ler o Drive devem ser armazenadas em secrets protegidos do ambiente de execução. O pacote e os artefatos técnicos podem ser mantidos pelo tempo necessário à execução, revisão, auditoria e prevenção de duplicidade. O usuário pode revogar autorizações e solicitar esclarecimentos pelo repositório oficial.
 
 ## Direitos e contato
 
