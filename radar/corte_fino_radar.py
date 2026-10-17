@@ -228,6 +228,8 @@ class VideoCandidate:
     search_gap_score: float = 0.0
     source_score: float = 0.0
     confidence_score: float = 0.0
+    previous_score: float | None = None
+    score_delta: float | None = None
     rank_status: str = "DROP"
     radar_score: float | None = None
     rights_status: str = "manual_review"
@@ -586,6 +588,11 @@ def apply_momentum(
             continue
 
         last = points[-1]
+        if last.get("score") is not None:
+            try:
+                candidate.previous_score = float(last.get("score"))
+            except (TypeError, ValueError):
+                candidate.previous_score = None
         last_ts = parse_datetime(str(last.get("ts") or ""))
         delta_hours = (now - last_ts).total_seconds() / 3600
         if delta_hours < 0.20 or delta_hours > 72:
@@ -695,6 +702,8 @@ def update_state(
                 "views": candidate.view_count,
                 "comments": candidate.comment_count,
                 "likes": candidate.like_count,
+                "score": candidate.radar_score,
+                "status": candidate.rank_status,
             }
         )
         videos[candidate.video_id] = points[-12:]
@@ -913,6 +922,11 @@ def finalize_score(candidate: VideoCandidate) -> None:
         score += min(4.0, 1.25 * (len(candidate.source_queries) - 1))
     candidate.radar_score = round(clamp(score), 2)
     candidate.confidence_score = round(compute_confidence(candidate), 2)
+    if candidate.previous_score is not None:
+        candidate.score_delta = round(
+            candidate.radar_score - candidate.previous_score,
+            2,
+        )
 
     if candidate.radar_score >= 68:
         candidate.rank_status = "HOT"
@@ -1342,6 +1356,8 @@ def write_outputs(
             "breakout_score",
             "cutability_score",
             "confidence_score",
+            "previous_score",
+            "score_delta",
             "rank_status",
             "comments",
             "comment_rate_per_1k",
@@ -1371,6 +1387,8 @@ def write_outputs(
                 round(c.breakout_score, 2),
                 round(c.cutability_score, 2),
                 round(c.confidence_score, 2),
+                c.previous_score,
+                c.score_delta,
                 c.rank_status,
                 c.comment_count,
                 round(c.comment_rate_per_1k, 3),
@@ -1397,7 +1415,9 @@ def write_outputs(
             "**conteúdo não político**."
         ),
         "",
-        "## 🔥 Oportunidades priorizadas",
+        "## 🔥 Top 5",
+        "",
+        "Leitura rápida: prioridade, motivo, link.",
         "",
     ]
 
@@ -1406,43 +1426,36 @@ def write_outputs(
             "_Nenhuma oportunidade não política nesta rodada._"
         )
 
+    status_icons = {
+        "HOT": "🔥",
+        "PROMISING": "🟡",
+        "WATCH": "🔵",
+    }
+
     for index, c in enumerate(ranked, 1):
-        reason = (
-            "; ".join(explain(c))
-            or "sinais combinados de desempenho"
-        )
-        risk = (
-            f" | ⚠️ {', '.join(c.risk_flags)}"
-            if c.risk_flags
-            else ""
-        )
-        license_note = (
+        reasons = explain(c)
+        reason = reasons[0] if reasons else "sinais combinados de desempenho"
+        delta = ""
+        if c.score_delta is not None:
+            arrow = "↑" if c.score_delta > 0 else "↓" if c.score_delta < 0 else "→"
+            delta = f" | {arrow}{abs(c.score_delta):.1f}"
+        chapter = f" | {c.best_chapter}" if c.best_chapter else ""
+        rights = (
             "CC"
             if c.youtube_license == "creativeCommon"
-            else "licença padrão"
+            else "revisar direitos"
         )
         lines.extend([
             (
-                f"{index}. **{c.title}** — "
-                f"{c.channel_title}  "
+                f"{index}. {status_icons.get(c.rank_status, '•')} "
+                f"**{c.title}** — {c.channel_title}"
             ),
             (
-                f"   **{c.rank_status}** | Score **{c.radar_score:.1f}/100** | "
-                f"confiança {c.confidence_score:.0f}/100 | "
+                f"   {c.rank_status} | {c.radar_score:.1f}/100{delta} | "
                 f"{fmt_int(c.view_count)} views | "
-                f"{c.views_per_hour:,.0f} views/h médio | "
-                f"momentum {c.momentum_state} ({c.momentum_score:.0f}) | "
-                f"breakout {c.breakout_ratio:.1f}× | "
-                f"cutability {c.cutability_score:.0f} | "
-                f"{fmt_int(c.comment_count)} comentários | "
-                f"{fmt_duration(c.duration_seconds)} | "
-                f"{license_note}{risk}  "
+                f"{c.momentum_state} | {rights}"
             ),
-            f"   Por quê: {reason}.  ",
-            (
-                f"   Melhor capítulo: {c.best_chapter}  "
-                if c.best_chapter else ""
-            ),
+            f"   **Por que agora:** {reason}{chapter}",
             f"   {c.url}",
             "",
         ])
@@ -1452,7 +1465,7 @@ def write_outputs(
         "",
     ])
 
-    for signal in gap_signals[:8]:
+    for signal in gap_signals[:3]:
         trend = (
             f" | tendência #{signal.trend_rank}"
             if signal.trend_rank
@@ -1487,7 +1500,7 @@ def write_outputs(
             "_Nenhum item político/eleitoral nesta rodada._"
         )
 
-    for c in political:
+    for c in political[:3]:
         lines.extend([
             (
                 f"- **{c.title}** — {c.channel_title} | "
@@ -1549,7 +1562,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument(
         "--top-n",
         type=int,
-        default=int(os.environ.get("RADAR_TOP_N", "12")),
+        default=int(os.environ.get("RADAR_TOP_N", "5")),
     )
     parser.add_argument(
         "--trend-limit",
