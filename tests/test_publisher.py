@@ -3,7 +3,7 @@ from zoneinfo import ZoneInfo
 
 import pytest
 
-from publisher.cli import report
+from publisher.cli import browser_package, report
 from publisher.core import (
     BRANDING_CAPTION_MARGIN_V,
     BRANDING_FORMAT,
@@ -211,6 +211,44 @@ def test_youtube_api_publish_is_blocked_in_browser_only_mode(monkeypatch):
     monkeypatch.setenv("PUBLISHER_BROWSER_ONLY", "1")
     with pytest.raises(RuntimeError, match="Cloud Web Browser"):
         publish_youtube(_valid_manifest())
+
+
+def test_youtube_dry_run_is_fully_local(monkeypatch):
+    def fail_if_called():
+        raise AssertionError("dry-run não pode abrir o Drive")
+
+    monkeypatch.setattr("publisher.google_io.drive_service", fail_if_called)
+    results = publish_youtube(_valid_manifest(), dry_run=True)
+    assert len(results) == 10
+    assert all(item["status"] == "dry_run" for item in results)
+
+
+def test_browser_package_has_timezone_safe_studio_settings():
+    package = browser_package(_valid_manifest())
+    assert package["version"] == 2
+    assert package["rights_authorized"] is True
+    assert len(package["posts"]) == 10
+    first = package["posts"][0]
+    assert first["drive_folder_url"].startswith("https://drive.google.com/drive/folders/")
+    assert first["youtube"]["publication_mode"] == "schedule"
+    assert first["youtube"]["made_for_kids"] is False
+    assert first["youtube"]["contains_synthetic_media"] is False
+    assert first["tiktok"]["visibility"] == "PUBLIC_TO_EVERYONE"
+    assert first["youtube"]["publish_at_local"].endswith(":00")
+
+
+def test_browser_package_blocks_unconfirmed_rights():
+    manifest = _valid_manifest()
+    manifest["rights"]["authorized"] = False
+    with pytest.raises(RuntimeError, match="direitos não confirmados"):
+        browser_package(manifest)
+
+
+def test_manifest_reports_malformed_schedule_without_crashing():
+    manifest = _valid_manifest()
+    manifest["clips"][0]["schedule"] = "invalid"
+    with pytest.raises(RuntimeError, match="bloco de agendamento inválido"):
+        validate_manifest(manifest)
 
 
 def test_tiktok_dry_run_keeps_ten_scheduled_posts():
