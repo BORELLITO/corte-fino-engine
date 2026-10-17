@@ -1,3 +1,6 @@
+import json
+
+import radar.corte_fino_radar as radar_module
 from datetime import datetime, timedelta, timezone
 
 from radar.upload_reports_drive import normalize_folder_id
@@ -20,6 +23,7 @@ from radar.corte_fino_radar import (
     query_gap_score,
     safe_url_label,
     term_hits,
+    write_outputs,
 )
 
 
@@ -367,3 +371,93 @@ def test_previous_score_is_loaded_from_state():
     }
     apply_momentum([candidate], state, now)
     assert candidate.previous_score == 61.5
+
+
+
+def test_human_report_is_compact_and_local_time(tmp_path, monkeypatch):
+    monkeypatch.setattr(radar_module, "OUTPUT_DIR", tmp_path)
+    candidate = VideoCandidate(
+        video_id="top1",
+        title="Debate emocional",
+        channel_title="Flow Podcast",
+        channel_id="UC_FLOW",
+        category_id="22",
+        made_for_kids=False,
+        published_at="2026-10-17T12:00:00+00:00",
+        description="",
+        duration_seconds=3600,
+        view_count=250000,
+        like_count=10000,
+        comment_count=2500,
+        youtube_license="youtube",
+        source_queries=["relacionamento traição casamento"],
+        radar_score=72.5,
+        rank_status="HOT",
+        momentum_state="RISING",
+        momentum_score=70,
+        confidence_score=75,
+        cutability_score=80,
+        velocity_score=80,
+        controversy_score=70,
+        emotion_score=60,
+        source_score=100,
+    )
+    signal = QuerySignal(
+        query="relacionamento traição casamento",
+        source="editorial_theme",
+        youtube_total_results=1000,
+        gap_score=55,
+    )
+    write_outputs(
+        [candidate],
+        [],
+        [signal],
+        top_n=5,
+        generated_at=datetime(2026, 10, 17, 15, 0, tzinfo=timezone.utc),
+    )
+    report = (tmp_path / "radar_latest.md").read_text(encoding="utf-8")
+    assert "17/10/2026 12:00 BRT" in report
+    assert "## 🔥 Top 5" in report
+    assert "## 🔎 Hipóteses de Search Gap" not in report
+    assert "## 🗳️ Watchlist" not in report
+    assert "## ⚠️ Regras de uso" not in report
+    payload = json.loads(
+        (tmp_path / "radar_latest.json").read_text(encoding="utf-8")
+    )
+    assert payload["search_gaps"][0]["query"] == "relacionamento traição casamento"
+
+
+def test_output_hard_locks_to_five(tmp_path, monkeypatch):
+    monkeypatch.setattr(radar_module, "OUTPUT_DIR", tmp_path)
+    candidates = []
+    for idx in range(7):
+        candidates.append(
+            VideoCandidate(
+                video_id=f"v{idx}",
+                title=f"Podcast {idx}",
+                channel_title="Flow Podcast",
+                channel_id="UC_FLOW",
+                category_id="22",
+                made_for_kids=False,
+                published_at="2026-10-17T12:00:00+00:00",
+                description="",
+                duration_seconds=3600,
+                view_count=100000 + idx,
+                like_count=1000,
+                comment_count=500,
+                youtube_license="youtube",
+                radar_score=80 - idx,
+                rank_status="HOT",
+            )
+        )
+    write_outputs(
+        candidates,
+        [],
+        [],
+        top_n=5,
+        generated_at=datetime(2026, 10, 17, 15, 0, tzinfo=timezone.utc),
+    )
+    payload = json.loads(
+        (tmp_path / "radar_latest.json").read_text(encoding="utf-8")
+    )
+    assert len(payload["ranked_nonpolitical"]) == 5
