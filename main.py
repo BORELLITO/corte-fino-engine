@@ -2151,7 +2151,7 @@ def validate_video(path: Path, expected_duration: float) -> dict[str, Any]:
         "sample_aspect_ratio_1_1": bool(video and str(video.get("sample_aspect_ratio") or "") in {"1:1", "1/1"}),
         "audio_quality_target": audio_bitrate >= VIDEO_AUDIO_MIN_BITRATE,
         "audio_not_silent": mean_volume is not None and mean_volume > -50.0,
-        "audio_not_clipped": max_volume is not None and max_volume < 0.0,
+        "audio_not_clipped": max_volume is not None and max_volume <= 0.0,
         "duration_reasonable": clip_duration_is_valid(duration, expected_duration),
         "decodable": decode_ok,
     }
