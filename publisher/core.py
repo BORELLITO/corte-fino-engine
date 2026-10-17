@@ -561,11 +561,7 @@ def build_hashtags(topic: str, keywords: list[str], platform: str = "youtube") -
     return list(dict.fromkeys(tag for tag in tags if tag))[:limit]
 
 
-_PUBLISHER_CREDIT_NAMES = {
-    "cortefino",
-    "cortefinopublisher",
-    "cortefinoengine",
-}
+_PUBLISHER_CREDIT_PREFIX = "cortefino"
 
 def validate_credit_source(source_name: str = "", *, required: bool = False) -> str:
     """Validate the original channel used in the public credit line.
@@ -580,7 +576,7 @@ def validate_credit_source(source_name: str = "", *, required: bool = False) -> 
         raise ValueError(
             "Crédito obrigatório: informe o canal ou a fonte original do corte."
         )
-    if compact in _PUBLISHER_CREDIT_NAMES:
+    if compact.startswith(_PUBLISHER_CREDIT_PREFIX):
         raise ValueError(
             "Crédito inválido: use o canal ou a fonte original; nunca use Corte Fino."
         )
