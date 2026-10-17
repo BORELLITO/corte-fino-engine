@@ -779,6 +779,10 @@ def validate_manifest(
         issues.append("data ISO inválida")
     if str(manifest.get("timezone", "")).strip() != "America/Sao_Paulo":
         issues.append("fuso horário incompatível; esperado America/Sao_Paulo")
+    if manifest.get("youtube_hours") != list(YOUTUBE_HOURS):
+        issues.append("grade global do YouTube incompatível")
+    if manifest.get("tiktok_hours") != list(TIKTOK_HOURS):
+        issues.append("grade global do TikTok incompatível")
 
     batches = manifest.get("batches")
     if not isinstance(batches, list) or len(batches) != 2:
