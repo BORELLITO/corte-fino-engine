@@ -183,6 +183,13 @@ def test_manifest_rejects_missing_source_or_rights():
         validate_manifest(manifest)
 
 
+def test_manifest_rejects_source_crossed_between_batches():
+    manifest = _valid_manifest()
+    manifest["batches"][1]["source"]["name"] = "Canal A"
+    with pytest.raises(RuntimeError, match="fontes declaradas"):
+        validate_manifest(manifest)
+
+
 def test_drive_link_is_hard_boundary():
     assert normalize_folder_id("https://drive.google.com/drive/folders/abc123?usp=sharing") == "abc123"
     assert normalize_folder_id("abc123") == "abc123"
