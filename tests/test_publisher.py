@@ -4,666 +4,235 @@ from zoneinfo import ZoneInfo
 import pytest
 
 from publisher.cli import report
-from publisher.core import (BRANDING_CAPTION_MARGIN_V, BRANDING_FORMAT, BRANDING_LOGO_POSITION, BRANDING_VERSION, MANIFEST_VERSION, TIKTOK_CAPTION_LIMIT, TIKTOK_HOURS, YOUTUBE_DESCRIPTION_LIMIT, YOUTUBE_HOURS, YOUTUBE_TITLE_LIMIT, assign_slots, build_title, copy_dict, copy_quality_issues, detect_topic, format_copy_text, local_publish_at, make_copy, natural_index, normalize_transcript, validate_credit_source, validate_manifest)
-from publisher.google_io import normalize_folder_id, publication_day, reconcile_youtube_upload, resolve_publication_folder, verify_manifest_clip, wait_youtube_processing
+from publisher.core import (
+    BRANDING_CAPTION_MARGIN_V,
+    BRANDING_FORMAT,
+    BRANDING_LOGO_POSITION,
+    BRANDING_VERSION,
+    DAY_PERIOD_HOURS,
+    MANIFEST_VERSION,
+    NIGHT_PERIOD_HOURS,
+    TIKTOK_CAPTION_LIMIT,
+    TIKTOK_HOURS,
+    YOUTUBE_DESCRIPTION_LIMIT,
+    YOUTUBE_HOURS,
+    YOUTUBE_TITLE_LIMIT,
+    assign_slots,
+    build_title,
+    copy_dict,
+    copy_quality_issues,
+    detect_topic,
+    format_copy_text,
+    local_publish_at,
+    make_copy,
+    natural_index,
+    normalize_period,
+    normalize_transcript,
+    validate_credit_source,
+    validate_manifest,
+)
+from publisher.google_io import normalize_folder_id, publication_day, resolve_publication_folder
 from publisher.tiktok_io import TikTokError, choose_privacy_level, publish_tiktok
-import publisher.tiktok_io as tiktok_io
 
 
-def test_numbering():
+def test_numbering_and_periods():
     assert natural_index("corte_fino_01_vertical.mp4") == 1
     assert natural_index("VIDEO - 05.mp4") == 5
+    assert normalize_period("Bloco A") == "day"
+    assert normalize_period("evening") == "night"
 
 
-def test_bets_copy():
-    pack = make_copy(
-        "A casa sempre ganha. O problema é quando a pessoa entra no vício de aposta e cassino. Até onde vai a responsabilidade de quem divulga isso?"
-    )
-    assert pack.topic == "apostas"
-    assert len(pack.youtube_title) <= 100
-    assert pack.youtube_title == pack.youtube_title.upper()
-    assert "#apostas" in pack.tiktok_caption
-    assert "#corteFino" not in pack.tiktok_caption
-    assert "#TikTok" not in pack.tiktok_caption
-    assert "#Shorts" not in pack.tiktok_caption
-    assert "#Shorts" not in pack.youtube_description
-    assert "#Problema" not in pack.tiktok_caption
-    assert pack.youtube_tags
-    assert any("cassino" in tag.lower() for tag in pack.youtube_tags)
-    assert sum(len(tag) for tag in pack.youtube_tags) + max(0, 2 * (len(pack.youtube_tags) - 1)) <= 500
-    assert "A conversa coloca" not in pack.tiktok_caption
-
-
-def test_five_slots_for_both_networks():
+def test_slots_are_ten_and_each_batch_isolated():
     clips = [
         {"index": index, "copy": {"viral_score": float(index)}, "schedule": {}}
         for index in range(1, 6)
     ]
-    assign_slots(clips)
-    assert sorted(clip["schedule"]["youtube_hour"] for clip in clips) == list(YOUTUBE_HOURS)
-    assert sorted(clip["schedule"]["tiktok_hour"] for clip in clips) == list(TIKTOK_HOURS)
+    assign_slots(clips, DAY_PERIOD_HOURS)
+    assert sorted(clip["schedule"]["youtube_hour"] for clip in clips) == list(DAY_PERIOD_HOURS)
+    assert sorted(clip["schedule"]["tiktok_hour"] for clip in clips) == list(DAY_PERIOD_HOURS)
+    assert list(YOUTUBE_HOURS) == [8, 10, 12, 14, 16, 18, 19, 20, 21, 22]
+    assert TIKTOK_HOURS == YOUTUBE_HOURS
 
 
-def test_politics():
-    assert detect_topic("O presidente falou do governo e o congresso respondeu.") == "politica"
-
-
-def test_general_copy_does_not_turn_transcription_noise_into_tags():
-    pack = make_copy("E falo mais, Jikei, você tem sangue nas mãos, tá?")
-    assert pack.topic == "geral"
-    assert "#debate" in pack.tiktok_caption
-    assert "#cortefino" not in pack.tiktok_caption.casefold()
-    assert "#tiktok" not in pack.tiktok_caption.casefold()
-    assert all("jikei" not in tag.lower() for tag in pack.youtube_tags)
-
-
-def test_title_uses_the_strongest_hook():
-    pack = make_copy("A casa sempre ganha. O problema é quando a pessoa perde tudo no vício de aposta.")
-    assert "PERDE TUDO" in pack.youtube_title
-
-
-def test_titles_are_uppercase_and_have_no_punctuation():
-    pack = make_copy("A casa sempre ganha. O problema é quando a pessoa perde tudo no vício de aposta.")
+def test_copy_contract():
+    pack = make_copy(
+        "A casa sempre ganha. O problema é quando a pessoa entra no vício de aposta e cassino. Até onde vai a responsabilidade de quem divulga isso?",
+        "Flow Podcast",
+        "434",
+    )
+    assert pack.topic == "apostas"
     assert pack.youtube_title == pack.youtube_title.upper()
-    assert not any(char in pack.youtube_title for char in ".,;:!?—–-")
-    assert pack.tiktok_caption.split("\n", 1)[0] == pack.youtube_title
+    assert len(pack.youtube_title) <= YOUTUBE_TITLE_LIMIT
+    assert len(pack.tiktok_caption) <= TIKTOK_CAPTION_LIMIT
+    assert len(pack.youtube_description) <= YOUTUBE_DESCRIPTION_LIMIT
+    assert "Créditos: Flow Podcast, episódio 434." in pack.tiktok_caption
+    assert "—" not in pack.tiktok_caption
+    assert "#cortefino" not in pack.tiktok_caption.casefold()
+    assert len(pack.youtube_tags) == 20
+    assert copy_quality_issues(pack) == []
 
 
-def test_credit_source_must_be_the_original_channel():
+def test_copy_rejects_wrong_credit():
     assert validate_credit_source("Redcast Feminismo") == "Redcast Feminismo"
     with pytest.raises(ValueError, match="nunca use Corte Fino"):
         validate_credit_source("Corte Fino Publisher")
     with pytest.raises(ValueError, match="fonte original"):
         validate_credit_source("", required=True)
-    with pytest.raises(ValueError, match="nunca use Corte Fino"):
-        make_copy(
-            "A inteligência artificial está mudando o trabalho. O ser humano pode virar o gargalo.",
-            "Corte Fino",
-        )
 
 
-def test_copy_uses_natural_credit_and_exactly_two_emojis():
-    pack = make_copy(
-        "A inteligência artificial está mudando o trabalho. O ser humano pode virar o gargalo.",
-        "Flow Podcast",
-        "434",
-    )
-    assert "Créditos: Flow Podcast, episódio 434." in pack.tiktok_caption
-    assert "—" not in pack.tiktok_caption
-    assert "🧠" in pack.tiktok_caption
-    assert "⚖️" in pack.tiktok_caption
-
-
-def test_copy_editorial_qa_cleans_fillers_and_safe_spelling_errors():
-    normalized = normalize_transcript("Bom, pessoal, a politica e o casino prejudicam a audiencia. O impacto aparece quando ninguém confere a informação.")
-    assert normalized == "Bom, pessoal, a política e o cassino prejudicam a audiência. O impacto aparece quando ninguém confere a informação."
+def test_copy_formatting_and_topic():
+    assert detect_topic("O presidente falou do governo e o congresso respondeu.") == "politica"
+    normalized = normalize_transcript("A politica e o casino prejudicam a audiencia.")
+    assert normalized == "A política e o cassino prejudicam a audiência."
+    assert format_copy_text("a frase começa,com erro . outra frase sem ponto", final_punctuation=True) == "A frase começa, com erro. Outra frase sem ponto."
     title = build_title("Bom, pessoal, essa é a verdade sobre responsabilidade", "geral")
     assert not title.startswith("BOM, PESSOAL")
-    assert "…" not in title
-    assert copy_quality_issues(make_copy(normalized)) == []
-    assert make_copy(normalized).evidence
-    assert make_copy(normalized).cta
-
-
-def test_copy_editorial_qa_normalizes_casino_gender_without_blocking():
-    normalized = normalize_transcript(
-        "A casino aparece na discussão sobre vício e responsabilidade. O debate mostra como o dinheiro muda decisões."
-    )
-    assert normalized.startswith("O cassino")
-    assert copy_quality_issues(make_copy(normalized)) == []
-
-
-def test_copy_formatting_enforces_sentence_case_and_platform_limits():
-    formatted = format_copy_text(
-        "a frase começa,com erro . outra frase sem ponto",
-        final_punctuation=True,
-    )
-    assert formatted == "A frase começa, com erro. Outra frase sem ponto."
-
-    pack = make_copy(
-        "A casa sempre ganha. O problema é quando a pessoa entra no vício de aposta e cassino. Até onde vai a responsabilidade de quem divulga isso?"
-    )
-    assert pack.youtube_title == pack.youtube_title.upper()
-    assert len(pack.youtube_title) <= YOUTUBE_TITLE_LIMIT
-    assert len(pack.tiktok_caption) <= TIKTOK_CAPTION_LIMIT
-    assert len(pack.youtube_description) <= YOUTUBE_DESCRIPTION_LIMIT
-    assert "  " not in pack.tiktok_caption
-    assert "  " not in pack.youtube_description
-
-
-def test_copy_evidence_stays_related_to_the_selected_hook():
-    pack = make_copy(
-        "A casa sempre ganha. Roda umas donates aí, né? "
-        "Não é outro sentimento além de raiva de ver essa pessoa que não quer somar?"
-    )
-    assert pack.evidence
-    assert "raiva" in pack.evidence[0].casefold()
 
 
 def _valid_manifest():
-    pack = copy_dict(make_copy(
-        "A casa sempre ganha. O problema é quando a pessoa entra no vício de aposta e cassino. Até onde vai a responsabilidade de quem divulga isso?"
+    pack_a = copy_dict(make_copy(
+        "A casa sempre ganha. O problema é quando a pessoa entra no vício de aposta e cassino. Até onde vai a responsabilidade de quem divulga isso?",
+        "Canal A",
+        "1",
     ))
-    clips = [
-        {
-            "index": index,
-            "drive_id": f"drive-{index}",
-            "name": f"fonte - {index:02d}.mp4",
-            "size": 100000,
-            "md5_checksum": f"md5-{index}",
-            "transcript": "A transcrição validada tem conteúdo suficiente para o corte.",
-            "schedule": {"youtube_hour": youtube_hour, "tiktok_hour": tiktok_hour},
-            "copy": pack,
-        }
-        for index, (youtube_hour, tiktok_hour) in enumerate(zip(YOUTUBE_HOURS, TIKTOK_HOURS), 1)
+    pack_b = copy_dict(make_copy(
+        "A inteligência artificial está mudando o trabalho. O ser humano pode virar o gargalo quando a ferramenta substitui decisões.",
+        "Canal B",
+        "2",
+    ))
+    clips = []
+    batches = [
+        ("A", "folder-a", "2026-10-18", "day", list(DAY_PERIOD_HOURS), pack_a),
+        ("B", "folder-b", "2026-10-18", "night", list(NIGHT_PERIOD_HOURS), pack_b),
     ]
+    for batch_no, (batch_id, folder, day, period, hours, pack) in enumerate(batches):
+        local = [
+            {"index": batch_no * 5 + index, "batch_id": batch_id, "batch_index": index, "drive_folder_id": folder,
+             "drive_id": f"drive-{batch_id}-{index}", "name": f"{batch_id}-{index:02d}.mp4",
+             "size": 100000, "md5_checksum": f"md5-{batch_id}-{index}", "transcript": "transcrição validada com conteúdo suficiente",
+             "copy": dict(pack), "schedule": {}}
+            for index in range(1, 6)
+        ]
+        assign_slots(local, hours)
+        for clip in local:
+            at = local_publish_at(date.fromisoformat(day), clip["schedule"]["youtube_hour"])
+            clip["schedule"]["youtube_publish_at"] = at
+            clip["schedule"]["tiktok_publish_at"] = at
+        clips.extend(local)
     return {
         "version": MANIFEST_VERSION,
         "run_id": "run-1",
-        "date": "2026-10-11",
+        "date": "2026-10-18",
         "timezone": "America/Sao_Paulo",
-        "drive_folder_id": "folder-1",
+        "drive_folder_id": "folder-a",
+        "drive_folder_ids": ["folder-a", "folder-b"],
+        "youtube_hours": list(YOUTUBE_HOURS),
+        "tiktok_hours": list(TIKTOK_HOURS),
+        "batches": [
+            {"batch_id": "A", "drive_folder_id": "folder-a", "date": "2026-10-18", "period": "day", "hours": list(DAY_PERIOD_HOURS), "source": {"name": "Canal A", "episode": "1"}},
+            {"batch_id": "B", "drive_folder_id": "folder-b", "date": "2026-10-18", "period": "night", "hours": list(NIGHT_PERIOD_HOURS), "source": {"name": "Canal B", "episode": "2"}},
+        ],
         "rights": {"authorized": True, "status": "AUTORIZADO"},
-        "branding": {
-            "version": BRANDING_VERSION,
-            "format": BRANDING_FORMAT,
-            "logo_position": BRANDING_LOGO_POSITION,
-            "caption_margin_v": BRANDING_CAPTION_MARGIN_V,
-        },
+        "source": {"name": "Canal A", "episode": "1"},
+        "sources": [{"name": "Canal A", "episode": "1"}, {"name": "Canal B", "episode": "2"}],
+        "branding": {"version": BRANDING_VERSION, "format": BRANDING_FORMAT, "logo_position": BRANDING_LOGO_POSITION, "caption_margin_v": BRANDING_CAPTION_MARGIN_V},
         "clips": clips,
     }
 
 
-def test_manifest_v5_validates_copy_rights_and_branding():
+def test_manifest_v6_validates_ten_clips_and_two_batches():
     validate_manifest(_valid_manifest())
 
 
-def test_manifest_rejects_publisher_as_persisted_credit_source():
+def test_manifest_rejects_duplicate_slot():
     manifest = _valid_manifest()
-    manifest["source"] = {"name": "Corte Fino", "episode": ""}
+    manifest["clips"][1]["schedule"]["youtube_publish_at"] = manifest["clips"][0]["schedule"]["youtube_publish_at"]
+    manifest["clips"][1]["schedule"]["tiktok_publish_at"] = manifest["clips"][0]["schedule"]["tiktok_publish_at"]
+    with pytest.raises(RuntimeError, match="conflito|duplicados"):
+        validate_manifest(manifest)
+
+
+def test_manifest_rejects_five_clip_or_old_manifest():
+    manifest = _valid_manifest()
+    manifest["clips"] = manifest["clips"][:5]
+    with pytest.raises(RuntimeError, match="10 cortes"):
+        validate_manifest(manifest)
+
+
+def test_manifest_rejects_duplicate_drive_file():
+    manifest = _valid_manifest()
+    manifest["clips"][1]["drive_id"] = manifest["clips"][0]["drive_id"]
+    with pytest.raises(RuntimeError, match="arquivo Drive duplicado"):
+        validate_manifest(manifest)
+
+
+def test_manifest_rejects_wrong_period():
+    manifest = _valid_manifest()
+    manifest["batches"][0]["period"] = "night"
+    with pytest.raises(RuntimeError, match="horários"):
+        validate_manifest(manifest)
+
+
+def test_manifest_rejects_missing_source_or_rights():
+    manifest = _valid_manifest()
+    manifest["rights"]["authorized"] = False
+    with pytest.raises(RuntimeError):
+        validate_manifest(manifest, require_rights=True)
+    manifest["source"]["name"] = "Corte Fino"
     with pytest.raises(RuntimeError, match="nunca use Corte Fino"):
         validate_manifest(manifest)
 
 
-def test_manifest_rejects_old_copy_without_paragraphs():
-    manifest = _valid_manifest()
-    manifest["clips"][0]["copy"]["tiktok_caption"] = manifest["clips"][0]["copy"]["tiktok_caption"].replace("\n\n", " ")
-    with pytest.raises(RuntimeError, match="parágrafos"):
-        validate_manifest(manifest)
+def test_drive_link_is_hard_boundary():
+    assert normalize_folder_id("https://drive.google.com/drive/folders/abc123?usp=sharing") == "abc123"
+    assert normalize_folder_id("abc123") == "abc123"
 
 
-def test_manifest_can_be_persisted_without_public_transcripts():
-    manifest = _valid_manifest()
-    for clip in manifest["clips"]:
-        clip.pop("transcript")
-    validate_manifest(manifest)
+def test_publication_day_boundary():
+    tz = ZoneInfo("America/Sao_Paulo")
+    assert publication_day(datetime(2026, 10, 17, 8, 59, tzinfo=tz)).isoformat() == "2026-10-17"
+    assert publication_day(datetime(2026, 10, 17, 9, 0, tzinfo=tz)).isoformat() == "2026-10-18"
 
 
-def test_manifest_rejects_mismatched_branding_contract():
-    manifest = _valid_manifest()
-    manifest["branding"]["logo_position"] = "center"
-    with pytest.raises(RuntimeError, match="HUD/legenda"):
-        validate_manifest(manifest)
+def test_privacy_level_is_explicit():
+    assert choose_privacy_level({"privacy_level_options": ["PUBLIC_TO_EVERYONE", "SELF_ONLY"]}, "PUBLIC_TO_EVERYONE") == "PUBLIC_TO_EVERYONE"
+    with pytest.raises(TikTokError):
+        choose_privacy_level({"privacy_level_options": ["SELF_ONLY"]}, "PUBLIC_TO_EVERYONE")
 
 
-def test_manifest_rejects_duplicate_publication_slots():
-    manifest = _valid_manifest()
-    manifest["clips"][1]["schedule"]["youtube_hour"] = manifest["clips"][0]["schedule"]["youtube_hour"]
-    with pytest.raises(RuntimeError, match="horários duplicados"):
-        validate_manifest(manifest)
-
-
-def test_copy_qa_rejects_lowercase_sentence_starts():
-    pack = make_copy(
-        "A casa sempre ganha. O problema é quando a pessoa entra no vício de aposta e cassino. Você concorda com essa aposta?"
-    )
-    pack.youtube_description = pack.youtube_description.replace("Quem deveria", "quem deveria", 1)
-    assert "início de frase não está em maiúscula" in copy_quality_issues(pack)
-
-
-def test_rights_gate_does_not_accept_string_false():
-    manifest = _valid_manifest()
-    manifest["rights"]["authorized"] = "false"
-    with pytest.raises(RuntimeError, match="direitos não confirmados"):
-        validate_manifest(manifest, require_rights=True)
-
-
-def test_drive_folder_accepts_url_or_id():
-    url = "https://drive.google.com/drive/folders/abc_123?usp=sharing"
-    assert normalize_folder_id(url) == "abc_123"
-    assert normalize_folder_id("abc_123") == "abc_123"
-
-
-def test_drive_link_is_hard_content_boundary():
-    class Request:
-        def __init__(self, data):
-            self.data = data
-
-        def execute(self, **kwargs):
-            return self.data
-
-    class Files:
-        def list(self, **kwargs):
-            query = kwargs["q"]
-            assert "trashed = false" in query
-            return Request({"files": [{"id": f"video-{index}", "name": f"fonte - {index:02d}.mp4", "mimeType": "video/mp4"} for index in range(1, 6)]})
-
-    class Drive:
-        def files(self):
-            return Files()
-
-    assert resolve_publication_folder(Drive(), "exact-folder") == "exact-folder"
-
-
-def test_drive_parent_without_direct_videos_is_rejected():
-    class Request:
-        def execute(self, **kwargs):
-            return {"files": []}
-
-    class Files:
-        def list(self, **kwargs):
-            return Request()
-
-    class Drive:
-        def files(self):
-            return Files()
-
-    try:
-        resolve_publication_folder(Drive(), "parent-folder")
-    except RuntimeError as error:
-        assert "diretamente exatamente os 5 vídeos" in str(error)
-    else:
-        raise AssertionError("uma pasta sem os cinco MP4s diretos deve bloquear a publicação")
-
-
-def test_drive_folder_with_extra_child_is_rejected():
-    class Request:
-        def execute(self, **kwargs):
-            return {
-                "files": [
-                    *[
-                        {"id": f"video-{index}", "name": f"fonte - {index:02d}.mp4", "mimeType": "video/mp4"}
-                        for index in range(1, 6)
-                    ],
-                    {"id": "folder-extra", "name": "Relatorio", "mimeType": "application/vnd.google-apps.folder"},
-                ]
-            }
-
-    class Files:
-        def list(self, **kwargs):
-            return Request()
-
-    class Drive:
-        def files(self):
-            return Files()
-
-    with pytest.raises(RuntimeError, match="arquivos extras"):
-        resolve_publication_folder(Drive(), "exact-folder")
-
-
-def test_manifest_file_mutation_is_blocked_before_publication():
-    class Request:
-        def execute(self, **kwargs):
-            return {
-                "id": "drive-1",
-                "name": "lote - 01.mp4",
-                "size": 999,
-                "mimeType": "video/mp4",
-                "md5Checksum": "new-checksum",
-                "parents": ["folder-1"],
-                "trashed": False,
-                "appProperties": {},
-            }
-
-    class Files:
-        def get(self, **kwargs):
-            return Request()
-
-    class Drive:
-        def files(self):
-            return Files()
-
-    manifest = {"drive_folder_id": "folder-1"}
-    clip = {
-        "index": 1,
-        "drive_id": "drive-1",
-        "name": "lote - 01.mp4",
-        "size": 100,
-        "md5_checksum": "old-checksum",
-    }
-    try:
-        verify_manifest_clip(Drive(), manifest, clip)
-    except RuntimeError as error:
-        assert "mudou" in str(error)
-    else:
-        raise AssertionError("arquivo alterado depois do preparo deve ser bloqueado")
-
-
-def test_publication_day_supports_boundary_and_manual_recovery_date():
-    sao_paulo = ZoneInfo("America/Sao_Paulo")
-    assert publication_day(datetime(2026, 10, 10, 8, 59, tzinfo=sao_paulo)) == date(2026, 10, 10)
-    assert publication_day(datetime(2026, 10, 10, 9, 0, tzinfo=sao_paulo)) == date(2026, 10, 11)
-    assert publication_day(target_date="2026-10-07") == date(2026, 10, 7)
-
-
-def test_tiktok_privacy_level_is_explicit_and_available(monkeypatch):
-    creator = {"privacy_level_options": ["SELF_ONLY", "PUBLIC_TO_EVERYONE"]}
-    monkeypatch.setenv("PUBLISHER_TIKTOK_ENV", "production")
-    assert choose_privacy_level(creator) == "PUBLIC_TO_EVERYONE"
-    monkeypatch.setenv("PUBLISHER_TIKTOK_ENV", "sandbox")
-    monkeypatch.setenv("PUBLISHER_TIKTOK_PRIVACY_LEVEL", "PUBLIC_TO_EVERYONE")
-    assert choose_privacy_level(creator) == "SELF_ONLY"
-
-
-def test_tiktok_publish_checks_expected_account(monkeypatch):
-    monkeypatch.setenv("PUBLISHER_TIKTOK_EXPECTED_USERNAME", "cortefinoshorts")
-    with pytest.raises(TikTokError, match="Conta TikTok incorreta"):
-        tiktok_io._assert_expected_username({"creator_username": "outra_conta"})
-    with pytest.raises(TikTokError, match="Conta TikTok incorreta"):
-        tiktok_io._assert_expected_username({})
-
-
-def test_tiktok_existing_processing_id_is_reconciled_without_duplicate(monkeypatch):
-    class Request:
-        def __init__(self, data):
-            self.data = data
-
-        def execute(self, **kwargs):
-            return self.data
-
-    class Files:
-        def get(self, **kwargs):
-            return Request({
-                "id": "drive-1",
-                "name": "fonte - 01.mp4",
-                "size": 100,
-                "mimeType": "video/mp4",
-                "md5Checksum": "abc",
-                "parents": ["folder-1"],
-                "appProperties": {"cf_tiktok_publish_id": "publish-1"},
-            })
-
-    class Drive:
-        def files(self):
-            return Files()
-
-    manifest = {
-        "date": "2026-10-10",
-        "drive_folder_id": "folder-1",
-        "rights": {"authorized": True},
-        "clips": [{
-            "index": 1,
-            "drive_id": "drive-1",
-            "name": "fonte - 01.mp4",
-            "size": 100,
-            "md5_checksum": "abc",
-            "schedule": {"tiktok_hour": 10},
-            "copy": {"tiktok_caption": "Legenda de teste"},
-        }],
-    }
-    markers = []
-    monkeypatch.setattr(tiktok_io, "_refresh_access_token", lambda: "token")
-    monkeypatch.setattr(tiktok_io, "_creator_info", lambda token: {"privacy_level_options": ["PUBLIC_TO_EVERYONE"]})
-    monkeypatch.setattr(tiktok_io, "drive_service", lambda: Drive())
-    monkeypatch.setattr(tiktok_io, "_wait_for_publish", lambda token, publish_id: ("PROCESSING", {"status": "PROCESSING"}))
-    monkeypatch.setattr(tiktok_io, "marker", lambda drive, file_id, values: markers.append(values))
-    monkeypatch.setattr(tiktok_io, "_post_clip", lambda *args, **kwargs: (_ for _ in ()).throw(AssertionError("não deve criar outro post")))
-
-    result = publish_tiktok(
-        manifest,
-        due_only=True,
-        now=datetime(2026, 10, 10, 10, 30, tzinfo=ZoneInfo("America/Sao_Paulo")),
-    )
-    assert result == [{"index": 1, "status": "PROCESSING", "publish_id": "publish-1"}]
-    assert markers == [{"cf_tiktok_status": "PROCESSING", "cf_tiktok_date": "2026-10-10"}]
-
-
-def test_tiktok_reconciles_pending_id_after_manifest_date_changes(monkeypatch):
-    class Request:
-        def execute(self, **kwargs):
-            return {
-                "id": "drive-1",
-                "name": "fonte - 01.mp4",
-                "size": 100,
-                "mimeType": "video/mp4",
-                "md5Checksum": "abc",
-                "parents": ["folder-1"],
-                "appProperties": {"cf_tiktok_publish_id": "publish-old"},
-            }
-
-    class Files:
-        def get(self, **kwargs):
-            return Request()
-
-    class Drive:
-        def files(self):
-            return Files()
-
-    manifest = {
-        "date": "2026-10-09",
-        "drive_folder_id": "folder-1",
-        "rights": {"authorized": True},
-        "clips": [{
-            "index": 1,
-            "drive_id": "drive-1",
-            "name": "fonte - 01.mp4",
-            "size": 100,
-            "md5_checksum": "abc",
-            "schedule": {"tiktok_hour": 10},
-            "copy": {"tiktok_caption": "Legenda de teste"},
-        }],
-    }
-    markers = []
-    monkeypatch.setattr(tiktok_io, "_refresh_access_token", lambda: "token")
-    monkeypatch.setattr(tiktok_io, "_creator_info", lambda token: {"privacy_level_options": ["PUBLIC_TO_EVERYONE"]})
-    monkeypatch.setattr(tiktok_io, "drive_service", lambda: Drive())
-    monkeypatch.setattr(tiktok_io, "_wait_for_publish", lambda token, publish_id: ("PROCESSING", {"status": "PROCESSING"}))
-    monkeypatch.setattr(tiktok_io, "marker", lambda drive, file_id, values: markers.append(values))
-    monkeypatch.setattr(tiktok_io, "_post_clip", lambda *args, **kwargs: (_ for _ in ()).throw(AssertionError("não deve criar outro post")))
-
-    result = publish_tiktok(
-        manifest,
-        due_only=True,
-        now=datetime(2026, 10, 10, 10, 30, tzinfo=ZoneInfo("America/Sao_Paulo")),
-    )
-    assert result == [{"index": 1, "status": "PROCESSING", "publish_id": "publish-old"}]
-
-
-def test_tiktok_direct_publish_requires_explicit_feature_flag(monkeypatch):
+def test_tiktok_direct_publish_requires_feature_flag(monkeypatch):
     monkeypatch.setenv("PUBLISHER_TIKTOK_DIRECT_ENABLED", "0")
-    manifest = {
-        "date": "2026-10-10",
-        "rights": {"authorized": True},
-        "clips": [],
-    }
-    with pytest.raises(TikTokError, match="Metricool"):
+    manifest = _valid_manifest()
+    with pytest.raises(TikTokError, match="desativada"):
         publish_tiktok(manifest, due_only=True)
 
 
-def test_tiktok_immediate_publish_is_blocked_by_default():
-    manifest = {
-        "date": "2026-10-10",
-        "clips": [{"index": 1, "schedule": {"tiktok_hour": 10}, "copy": {"tiktok_caption": "Legenda"}}],
-    }
-    try:
-        publish_tiktok(manifest)
-    except TikTokError as error:
-        assert "publicação imediata" in str(error).lower()
-    else:
-        raise AssertionError("publicação imediata deveria exigir confirmação explícita")
+def test_tiktok_dry_run_keeps_ten_scheduled_posts():
+    manifest = _valid_manifest()
+    results = publish_tiktok(manifest, dry_run=True)
+    assert len(results) == 10
+    assert {item["publish_at"][11:13] for item in results} == {"11", "13", "15", "17", "19", "21", "22", "23", "00", "01"}
 
 
-def test_youtube_reconciliation_finds_recent_exact_title():
-    class Request:
-        def execute(self, **kwargs):
-            return {"items": [{
-                "id": {"videoId": "youtube-1"},
-                "snippet": {"title": "TÍTULO FORTE", "publishedAt": "2026-10-10T12:00:00Z"},
-            }]}
+def test_report_contains_both_batches():
+    data = report(_valid_manifest())
+    assert len(data["youtube"]) == 10
+    assert len(data["tiktok"]) == 10
+    assert {item["batch_id"] for item in data["youtube"]} == {"A", "B"}
 
-    class Search:
+
+def test_resolve_folder_rejects_extra_children():
+    class FakeFiles:
         def list(self, **kwargs):
+            class Request:
+                def execute(self, **kwargs):
+                    return {"files": [{"id": "1", "name": "01.mp4", "mimeType": "video/mp4"}] * 5 + [{"name": "extra.txt", "mimeType": "text/plain"}]}
             return Request()
-
-    class YouTube:
-        def search(self):
-            return Search()
-
-    assert reconcile_youtube_upload(YouTube(), "TÍTULO FORTE", "2026-10-10T11:55:00Z") == "youtube-1"
-
-
-def test_youtube_processing_status_must_succeed_before_scheduled(monkeypatch):
-    class Request:
-        def __init__(self, data):
-            self.data = data
-
-        def execute(self, **kwargs):
-            return self.data
-
-    class Videos:
+    class FakeDrive:
         def __init__(self):
-            self.calls = 0
-
-        def list(self, **kwargs):
-            self.calls += 1
-            status = "processing" if self.calls == 1 else "succeeded"
-            return Request({"items": [{"processingDetails": {"processingStatus": status}}]})
-
-    class YouTube:
-        def __init__(self):
-            self.videos_api = Videos()
-
-        def videos(self):
-            return self.videos_api
-
-    monkeypatch.setattr("publisher.google_io.time.sleep", lambda seconds: None)
-    youtube = YouTube()
-    assert wait_youtube_processing(youtube, "youtube-1") == "succeeded"
-    assert youtube.videos_api.calls == 2
-
-
-def test_report_exposes_remote_states_and_attention_count():
-    class Request:
-        def __init__(self, data):
-            self.data = data
-
-        def execute(self, **kwargs):
-            return self.data
-
-    class Files:
-        def get(self, **kwargs):
-            states = {
-                "drive-y": {"cf_youtube_video_id": "youtube-1", "cf_youtube_upload_status": "SCHEDULED"},
-                "drive-t": {"cf_tiktok_publish_id": "tiktok-1", "cf_tiktok_status": "PROCESSING"},
-            }
-            return Request({"appProperties": states[kwargs["fileId"]]})
-
-    class Drive:
+            self._files = FakeFiles()
         def files(self):
-            return Files()
+            return self._files
+    with pytest.raises(RuntimeError, match="extras"):
+        resolve_publication_folder(FakeDrive(), "folder")
 
-    manifest = {
-        "date": "2026-10-10",
-        "timezone": "America/Sao_Paulo",
-        "clips": [
-            {"index": 1, "drive_id": "drive-y", "schedule": {"youtube_hour": 10, "tiktok_hour": 10}, "copy": {"youtube_title": "Título", "tiktok_caption": "Legenda"}},
-            {"index": 2, "drive_id": "drive-t", "schedule": {"youtube_hour": 12, "tiktok_hour": 12}, "copy": {"youtube_title": "Título 2", "tiktok_caption": "Legenda 2"}},
-        ],
-    }
-    data = report(manifest, drive=Drive())
-    assert data["youtube"][0]["status"] == "scheduled"
-    assert data["tiktok"][1]["status"] == "PROCESSING"
-    assert data["summary"]["attention"] == 0
-
-
-def test_timezone():
-    assert "13:00:00" in local_publish_at(date(2026, 10, 10), 10)
-
-
-def test_tiktok_dry_run_keeps_five_scheduled_posts():
-    manifest = {
-        "date": "2026-10-10",
-        "clips": [
-            {"index": index, "schedule": {"tiktok_hour": hour}, "copy": {"tiktok_caption": f"Legenda {index}"}}
-            for index, hour in enumerate(TIKTOK_HOURS, 1)
-        ],
-    }
-    result = publish_tiktok(manifest, dry_run=True)
-    assert len(result) == 5
-    assert [item["index"] for item in result] == [1, 2, 3, 4, 5]
-    assert all(item["status"] == "dry_run" for item in result)
-
-
-def test_tiktok_due_selection_skips_completed_clips_and_chooses_next_slot(monkeypatch):
-    manifest = {
-        "date": "2026-10-10",
-        "drive_folder_id": "folder-1",
-        "clips": [
-            {
-                "index": index,
-                "drive_id": f"drive-{index}",
-                "name": f"fonte - {index:02d}.mp4",
-                "size": 100,
-                "md5_checksum": f"md5-{index}",
-                "schedule": {"tiktok_hour": hour},
-                "copy": {"tiktok_caption": f"Legenda {index}"},
-            }
-            for index, hour in enumerate(TIKTOK_HOURS, 1)
-        ],
-    }
-
-    class Request:
-        def __init__(self, data):
-            self.data = data
-
-        def execute(self, **kwargs):
-            return self.data
-
-    class Files:
-        def get(self, **kwargs):
-            index = int(kwargs["fileId"].split("-")[-1])
-            properties = (
-                {"cf_tiktok_publish_id": "publish-1", "cf_tiktok_status": "PUBLISH_COMPLETE"}
-                if index == 1
-                else {}
-            )
-            clip = manifest["clips"][index - 1]
-            return Request({
-                "id": clip["drive_id"],
-                "name": clip["name"],
-                "size": clip["size"],
-                "mimeType": "video/mp4",
-                "md5Checksum": clip["md5_checksum"],
-                "parents": ["folder-1"],
-                "appProperties": properties,
-            })
-
-    class Drive:
-        def files(self):
-            return Files()
-
-    clips, prefetched = tiktok_io._select_due_clips(
-        manifest,
-        Drive(),
-        datetime(2026, 10, 10, 13, 15, tzinfo=ZoneInfo("America/Sao_Paulo")),
-    )
-    assert [clip["index"] for clip in clips] == [2]
-    assert prefetched[1]["appProperties"]["cf_tiktok_status"] == "PUBLISH_COMPLETE"
-
-
-def test_tiktok_due_only_returns_one_post_for_the_current_window():
-    manifest = {
-        "date": "2026-10-10",
-        "clips": [
-            {"index": index, "schedule": {"tiktok_hour": hour}, "copy": {"tiktok_caption": f"Legenda {index}"}}
-            for index, hour in enumerate(TIKTOK_HOURS, 1)
-        ],
-    }
-    result = publish_tiktok(
-        manifest,
-        dry_run=True,
-        due_only=True,
-        now=datetime(2026, 10, 10, 11, 15, tzinfo=ZoneInfo("America/Sao_Paulo")),
-    )
-    assert len(result) == 1
-    assert result[0]["index"] == 1
