@@ -449,6 +449,17 @@ def test_tiktok_reconciles_pending_id_after_manifest_date_changes(monkeypatch):
     assert result == [{"index": 1, "status": "PROCESSING", "publish_id": "publish-old"}]
 
 
+def test_tiktok_direct_publish_requires_explicit_feature_flag(monkeypatch):
+    monkeypatch.setenv("PUBLISHER_TIKTOK_DIRECT_ENABLED", "0")
+    manifest = {
+        "date": "2026-10-10",
+        "rights": {"authorized": True},
+        "clips": [],
+    }
+    with pytest.raises(TikTokError, match="Metricool"):
+        publish_tiktok(manifest, due_only=True)
+
+
 def test_tiktok_immediate_publish_is_blocked_by_default():
     manifest = {
         "date": "2026-10-10",
