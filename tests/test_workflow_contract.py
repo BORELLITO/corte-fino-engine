@@ -42,6 +42,7 @@ def test_tiktok_schedule_uses_due_only_and_shared_publisher_lock():
     text = TIKTOK_SCHEDULE_WORKFLOW.read_text(encoding="utf-8")
 
     assert 'cron: "0 * * * *"' in text
+    assert "workflow_dispatch:" in text
     assert "group: corte-fino-motor-2" in text
     assert "python -m publisher.cli tiktok --due-only" in text
     assert "PUBLISHER_TIKTOK_REFRESH_TOKEN" in text
