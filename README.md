@@ -1,63 +1,48 @@
 # Corte Fino Engine
 
-Motor de produção para preparar exatamente cinco cortes verticais por rodada aprovada, com transcrição local, seleção editorial fechada, renderização em 9:16 e entrega dos vídeos no Google Drive.
+Motor de produção e preparação de publicações curtas do Corte Fino, separado em duas etapas manuais e auditáveis.
 
-## Fluxo operacional em dois motores
+## Fluxo operacional
 
-- **Motor 1 — Gerar 5 Cortes:** lê o vídeo mais recente da pasta de entrada, gera exatamente cinco MP4 verticais e entrega os arquivos em uma única pasta de lote no Drive.
-- **Motor 2 — Publicar 5 Cortes:** é acionado separadamente pelo usuário, recebe obrigatoriamente o link exato da pasta, valida os cinco arquivos, cria as copies, agenda o YouTube e publica o TikTok conforme o modo escolhido.
-- Não existe handoff automático entre os motores: o Motor 1 termina depois da entrega e nunca inicia o Publisher.
-- O TikTok Sandbox possui um modo de teste real controlado; a Produção permanece bloqueada até a autorização e aprovação necessárias.
-- O workflow de troca de token do Sandbox só entrega refresh token em repositório privado; em repositório público, configure o secret manualmente.
+- **Motor 1 — Creator:** lê uma fonte autorizada, seleciona e renderiza exatamente cinco MP4 verticais e entrega uma pasta de lote no Google Drive.
+- **Motor 2 — Publisher:** recebe duas pastas exatas, cada uma com cinco cortes, e prepara dez publicações para o mesmo dia ou para datas/períodos informados.
+- Não existe handoff automático entre os motores: o Creator termina depois da entrega e nunca inicia o Publisher.
+- A postagem final ocorre exclusivamente no YouTube Studio e no TikTok Studio, por Cloud Web Browser. Não há Metricool, agendador externo ou publicação por API.
 
+## Grade fixa do Publisher
 
-## Contrato de entrega
+Fuso oficial: `America/Sao_Paulo`.
 
-Cada rodada aprovada entrega exatamente cinco arquivos na mesma pasta da rodada:
+- **Bloco diurno:** 08h, 10h, 12h, 14h e 16h.
+- **Bloco noturno:** 18h, 19h, 20h, 21h e 22h.
 
-- `NOME DA FONTE - 01.mp4` até `05.mp4`;
+Cada pasta recebe um período próprio. Os pares data/horário não podem se sobrepor. O workflow é manual e exige duas pastas, duas datas/períodos, as fontes originais e confirmação explícita dos direitos.
 
-Os vídeos são MP4 H.264/AAC em 1080x1920, com áudio original, fundo desfocado, cores originais, HUD `CORTE / FINO` no canto superior direito e legendas sincronizadas na área segura.
+## Contrato de qualidade
 
-A duração é um gate obrigatório: cada corte precisa ter estritamente mais de 60 segundos. O alvo editorial é 68 segundos e o limite máximo configurado é 90 segundos. Candidatos e arquivos finais com 60 segundos ou menos são reprovados automaticamente.
+Cada lote precisa conter diretamente os arquivos `01.mp4` a `05.mp4`, sem subpastas, extras ou atalhos. O preflight valida o MP4 original em 1080x1920, H.264 High, `yuv420p`, AAC, 48 kHz, 30 fps, bitrate mínimo, decodificação integral e duração superior a 60 segundos.
 
-A seleção narrativa também é obrigatória: o motor primeiro cria um mapa temporal da fonte, depois procura unidades de raciocínio com começo autônomo, contexto suficiente, desenvolvimento e conclusão real. O corte precisa ter pelo menos 45 palavras, não pode depender de uma fala anterior e não pode considerar silêncio ou fim da transcrição como prova de encerramento. A seleção rejeita trechos que começam no meio do raciocínio, atravessam uma mudança brusca de assunto sem transição ou terminam em palavras dependentes, como “de”, “que”, “para” ou “e”.
+O Publisher cria copy individual a partir da fala real: título do YouTube em caixa alta e sem pontuação, legenda em parágrafos arejados, dois emojis funcionais, CTA contextual, hashtags temáticas, vinte tags nativas do YouTube e crédito apenas à fonte original. ASR suspeito, título truncado, conflito de horário, checksum duplicado, fonte cruzada ou direitos não confirmados bloqueiam a rodada.
 
-Não são criados subdiretórios de plataforma, atalhos, ZIPs, relatórios, textos ou arquivos de QA dentro da pasta final. Relatórios e QA permanecem apenas como artefatos internos da execução. A publicação é feita pelo Publisher separado, usando exclusivamente o link exato do lote.
+## Pacote browser-only
 
-## O que ele faz
+O manifesto v6 guarda os dez cortes, lote, pasta, checksum, copy e timestamps absolutos. O `browser-package` acrescenta o horário local, o link da pasta, a configuração esperada de audiência e os dados exatos para preencher cada Studio. O estado persistido não inclui transcrições integrais.
 
-- processa o vídeo mais recentemente alterado na pasta de entrada do Google Drive;
-- aceita uma fonte manual pelo botão Run workflow;
-- transcreve em português com faster-whisper e timestamps por palavra;
-- analisa cada fonte individualmente para adaptar a leitura editorial;
-- pré-audita duração, legendas e seleciona exatamente cinco candidatos publicáveis, sem substituir um candidato reprovado depois do fechamento por um sexto;
-- bloqueia legenda suspeita, repetição, falta de continuidade, falha de render ou vídeo inválido;
-- renderiza os cinco vídeos;
-- faz upload idempotente e verificável na mesma pasta, podendo retomar uma rodada parcial;
-- move a fonte para `Processados` somente depois de confirmar os cinco arquivos;
-- nunca publica automaticamente.
+Operação manual:
 
-## Estados da rodada
+1. Abrir o TikTok Studio, selecionar o MP4 original da pasta indicada e inserir a legenda do pacote.
+2. Programar o horário local do lote e revisar a visibilidade antes de confirmar.
+3. Repetir no YouTube Studio com título, descrição, tags, audiência e configuração de conteúdo sintético indicadas.
+4. Conferir visualmente cada agendamento nas duas plataformas.
 
-- `NO_SOURCE`: nenhum vídeo novo na entrada;
-- `EDITORIAL_EMPTY`: nenhum acontecimento suficiente foi encontrado;
-- `TOP_FIVE_INCOMPLETE`: não foi possível aprovar os cinco candidatos fechados;
-- `READY_FOR_HUMAN_REVIEW`: cinco vídeos passaram pelos gates;
-- `CAPTION_REVIEW_REQUIRED`: risco de transcrição/ortografia exige revisão;
-- `TECHNICAL_FAILURE`: falha técnica real.
+## Motor 1
 
-O alvo confortável de leitura é 18 caracteres por segundo; até 24 caracteres por segundo é o limite duro para fala acelerada e fica marcado para revisão humana. Se qualquer item do Top 5 fechado falhar depois da seleção, a rodada não é enviada ao Drive e a fonte permanece disponível para nova tentativa. Não há substituição silenciosa depois do fechamento.
+O Creator mantém seus gates próprios: fonte autorizada, transcrição em português, mapa temporal, seleção fechada de cinco unidades de raciocínio, renderização vertical, validação técnica e upload idempotente na pasta do lote. Ele nunca publica automaticamente.
 
-## Como usar
+## Uso
 
-1. Configure os secrets do Google Drive usados pelo workflow.
-2. Coloque um vídeo autorizado na pasta de entrada ou informe `source_url` no Run workflow.
-3. Execute o workflow `Corte Fino Motor 1 — Gerar 5 Cortes`.
-4. Copie o link exato da pasta que contém os cinco cortes.
-5. Execute manualmente o workflow `Corte Fino Motor 2 — Publicar 5 Cortes` e cole o link no campo `drive_folder`.
-6. Faça o dry-run/preflight e só depois escolha a publicação.
+1. Execute o workflow manual do Creator e copie o link exato da pasta com os cinco cortes.
+2. Execute o workflow manual `Corte Fino Motor 2 — Publicar 10 Cortes` com as duas pastas, datas, períodos, fontes e confirmação de direitos.
+3. Rode `dry-run`, `preflight` ou `browser-package` e faça a revisão humana antes de preencher os Studios.
 
-Em uma execução local, coloque o MP4 em `work/source/`; o motor usa automaticamente o arquivo mais recentemente alterado, sem apagar a entrada antes do processamento.
-
-A responsabilidade por autorização, licenças e publicação permanece com o usuário. A seleção editorial usa heurísticas e não promete viralização.
+A ferramenta não promete alcance ou viralização. A responsabilidade por autorização, direitos e confirmação final das publicações permanece com o usuário.
