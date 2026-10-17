@@ -29,6 +29,7 @@ from publisher.core import (
     natural_index,
     truncate,
     truncate_utf8,
+    validate_credit_source,
     validate_manifest,
 )
 
@@ -342,7 +343,10 @@ def prepare(
     if len(files) != 5:
         raise RuntimeError(f"Pasta do Publisher precisa conter exatamente 5 vídeos; encontrados: {len(files)}")
 
-    source_name = (source_name or env("PUBLISHER_SOURCE_NAME")).strip()
+    source_name = validate_credit_source(
+        (source_name or env("PUBLISHER_SOURCE_NAME")).strip(),
+        required=True,
+    )
     source_episode = (source_episode or env("PUBLISHER_SOURCE_EPISODE")).strip()
 
     indexed = [natural_index(f.get("name", "")) for f in files]
