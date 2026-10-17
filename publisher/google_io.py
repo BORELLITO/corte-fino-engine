@@ -567,14 +567,14 @@ def _require_publish_rights(manifest: dict) -> None:
         )
 
 
-def _preflight_youtube_schedule(drive, manifest: dict) -> None:
+def _preflight_youtube_schedule(drive, manifest: dict, *, force_repost: bool = False) -> None:
     """Check every new slot before the first YouTube upload can occur."""
     now = _utc_now()
     expired: list[str] = []
     for clip in sorted(manifest["clips"], key=lambda item: item["index"]):
         item = verify_manifest_clip(drive, manifest, clip)
         properties = item.get("appProperties", {})
-        if properties.get("cf_youtube_video_id") or properties.get("cf_youtube_upload_status") == "PENDING":
+        if (not force_repost) and (properties.get("cf_youtube_video_id") or properties.get("cf_youtube_upload_status") == "PENDING"):
             continue
         publish_at = local_publish_at(
             date.fromisoformat(manifest["date"]),
@@ -592,12 +592,13 @@ def _preflight_youtube_schedule(drive, manifest: dict) -> None:
 
 
 def publish_youtube(manifest: dict, dry_run: bool = False) -> list[dict]:
+    force_repost = env("PUBLISHER_FORCE_REPOST", "0").strip() == "1"
     day = date.fromisoformat(manifest["date"])
     drive = drive_service()
     youtube = None
     if not dry_run:
         _require_publish_rights(manifest)
-        _preflight_youtube_schedule(drive, manifest)
+        _preflight_youtube_schedule(drive, manifest, force_repost=force_repost)
         from googleapiclient.discovery import build
 
         youtube = build(
@@ -612,7 +613,7 @@ def publish_youtube(manifest: dict, dry_run: bool = False) -> list[dict]:
         item = verify_manifest_clip(drive, manifest, clip)
         properties = item.get("appProperties", {})
         existing_video_id = properties.get("cf_youtube_video_id", "").strip()
-        if existing_video_id:
+        if existing_video_id and not force_repost:
             existing_status = properties.get("cf_youtube_upload_status", "")
             if existing_status == "FAILED":
                 raise RuntimeError(
@@ -682,11 +683,34 @@ def publish_youtube(manifest: dict, dry_run: bool = False) -> list[dict]:
 
         hour = int(clip["schedule"]["youtube_hour"])
         publish_at = local_publish_at(day, hour)
+
+        if existing_video_id and force_repost and not dry_run:
+            # Repost explícito: retira o agendamento anterior antes de criar
+            # um novo upload, mantendo o MP4 original do Drive.
+            youtube.videos().update(
+                part="status",
+                body={
+                    "id": existing_video_id,
+                    "status": {
+                        "privacyStatus": "private",
+                        "selfDeclaredMadeForKids": False,
+                        "containsSyntheticMedia": False,
+                    },
+                },
+            ).execute(num_retries=4)
+            marker(
+                drive,
+                clip["drive_id"],
+                {
+                    "cf_youtube_previous_video_id": existing_video_id,
+                    "cf_youtube_upload_status": "REPOSTING",
+                },
+            )
         title = truncate(clip["copy"]["youtube_title"], YOUTUBE_TITLE_LIMIT)
         description = truncate_utf8(clip["copy"]["youtube_description"], YOUTUBE_DESCRIPTION_LIMIT)
         tags = clip["copy"].get("youtube_tags", [])
 
-        if properties.get("cf_youtube_upload_status") == "PENDING":
+        if properties.get("cf_youtube_upload_status") == "PENDING" and not force_repost:
             if dry_run:
                 results.append({"index": clip["index"], "status": "recovery_required", "title": title})
                 continue
