@@ -9,11 +9,25 @@ from zoneinfo import ZoneInfo
 
 
 TIMEZONE = ZoneInfo("America/Sao_Paulo")
-YOUTUBE_HOURS = (11, 13, 16, 17, 19)
-TIKTOK_HOURS = (11, 13, 16, 17, 19)
-YOUTUBE_PRIORITY = (17, 16, 11, 13, 19)
-TIKTOK_PRIORITY = (17, 16, 11, 13, 19)
-MANIFEST_VERSION = 5
+YOUTUBE_HOURS = (8, 10, 12, 14, 16, 18, 19, 20, 21, 22)
+TIKTOK_HOURS = YOUTUBE_HOURS
+DAY_PERIOD_HOURS = (8, 10, 12, 14, 16)
+NIGHT_PERIOD_HOURS = (18, 19, 20, 21, 22)
+PERIOD_BLOCKS = {
+    "day": DAY_PERIOD_HOURS,
+    "morning": DAY_PERIOD_HOURS,
+    "first": DAY_PERIOD_HOURS,
+    "first_block": DAY_PERIOD_HOURS,
+    "bloco_a": DAY_PERIOD_HOURS,
+    "a": DAY_PERIOD_HOURS,
+    "night": NIGHT_PERIOD_HOURS,
+    "evening": NIGHT_PERIOD_HOURS,
+    "second": NIGHT_PERIOD_HOURS,
+    "second_block": NIGHT_PERIOD_HOURS,
+    "bloco_b": NIGHT_PERIOD_HOURS,
+    "b": NIGHT_PERIOD_HOURS,
+}
+MANIFEST_VERSION = 6
 BRANDING_VERSION = "hud-corte-fino-v1"
 BRANDING_FORMAT = "vertical_9x16_shared"
 BRANDING_LOGO_POSITION = "top-right"
@@ -683,11 +697,38 @@ def make_copy(transcript: str, source_name: str = "", source_episode: str = "") 
     return pack
 
 
-def assign_slots(clips: list[dict]) -> None:
-    ranked = sorted(clips, key=lambda clip: (-clip["copy"]["viral_score"], clip["index"]))
-    for clip, hour in zip(ranked, YOUTUBE_PRIORITY):
+def normalize_period(period: str) -> str:
+    key = fold(str(period or "")).replace("-", "_").replace(" ", "_")
+    if key not in PERIOD_BLOCKS:
+        allowed = "day/morning/first ou night/evening/second"
+        raise ValueError(f"Período inválido: {period!r}. Use {allowed}.")
+    return "day" if PERIOD_BLOCKS[key] == DAY_PERIOD_HOURS else "night"
+
+
+def period_hours(period: str) -> tuple[int, ...]:
+    return PERIOD_BLOCKS[normalize_period(period)]
+
+
+def assign_slots(clips: list[dict], slots: list[int] | tuple[int, ...] | None = None) -> None:
+    """Assign one isolated five-slot period to a batch.
+
+    The strongest clip receives the latest slot in the supplied period. This
+    keeps the two folders independent while still preserving the editorial
+    priority rule used by the original Publisher.
+    """
+    if slots is None:
+        if len(clips) == 10:
+            slots = YOUTUBE_HOURS
+        elif len(clips) == 5:
+            slots = DAY_PERIOD_HOURS
+        else:
+            raise ValueError("A atribuição de slots exige 5 cortes por período ou 10 cortes no manifesto.")
+    slots = tuple(int(hour) for hour in slots)
+    if len(clips) != len(slots) or len(set(slots)) != len(slots):
+        raise ValueError("A quantidade de cortes precisa coincidir com os slots únicos do período.")
+    ranked = sorted(clips, key=lambda clip: (-float(clip.get("copy", {}).get("viral_score", 0)), int(clip.get("index", 0))))
+    for clip, hour in zip(ranked, sorted(slots, reverse=True)):
         clip.setdefault("schedule", {})["youtube_hour"] = hour
-    for clip, hour in zip(ranked, TIKTOK_PRIORITY):
         clip.setdefault("schedule", {})["tiktok_hour"] = hour
 
 
@@ -724,7 +765,7 @@ def validate_manifest(
     require_rights: bool = False,
     require_transcripts: bool = False,
 ) -> None:
-    """Validate the immutable contract consumed by the publishing APIs."""
+    """Validate the immutable two-folder/ten-clip contract."""
     issues: list[str] = []
     try:
         version = int(manifest.get("version", 0) or 0)
@@ -736,27 +777,86 @@ def validate_manifest(
         date.fromisoformat(str(manifest.get("date", "")))
     except ValueError:
         issues.append("data ISO inválida")
-    if not str(manifest.get("timezone", "")).strip():
-        issues.append("fuso horário ausente")
-    if not str(manifest.get("drive_folder_id", "")).strip():
-        issues.append("pasta do Drive ausente")
+    if str(manifest.get("timezone", "")).strip() != "America/Sao_Paulo":
+        issues.append("fuso horário incompatível; esperado America/Sao_Paulo")
+
+    batches = manifest.get("batches")
+    if not isinstance(batches, list) or len(batches) != 2:
+        issues.append("o manifesto precisa conter exatamente dois lotes de cinco cortes")
+        batches = batches if isinstance(batches, list) else []
+    batch_by_id: dict[str, dict] = {}
+    batch_dates: dict[str, date] = {}
+    for position, batch in enumerate(batches, 1):
+        if not isinstance(batch, dict):
+            issues.append(f"lote {position} inválido")
+            continue
+        batch_id = str(batch.get("batch_id", "")).strip().upper()
+        folder = str(batch.get("drive_folder_id", "")).strip()
+        if not batch_id or batch_id in batch_by_id:
+            issues.append(f"lote {position}: identificador ausente ou duplicado")
+        if not folder:
+            issues.append(f"lote {position}: pasta do Drive ausente")
+        try:
+            batch_day = date.fromisoformat(str(batch.get("date", "")))
+        except ValueError:
+            issues.append(f"lote {batch_id or position}: data ISO inválida")
+            batch_day = None
+        try:
+            expected_hours = list(period_hours(str(batch.get("period", ""))))
+        except ValueError as exc:
+            issues.append(f"lote {batch_id or position}: {exc}")
+            expected_hours = []
+        try:
+            actual_hours = [int(item) for item in batch.get("hours", [])] if isinstance(batch.get("hours"), list) else []
+        except (TypeError, ValueError):
+            actual_hours = []
+            issues.append(f"lote {batch_id or position}: horários inválidos")
+        if expected_hours and actual_hours != expected_hours:
+            issues.append(f"lote {batch_id or position}: horários não correspondem ao período informado")
+        if batch_id:
+            batch_by_id[batch_id] = batch
+        if batch_id and batch_day:
+            batch_dates[batch_id] = batch_day
+
+    folders = [str(batch.get("drive_folder_id", "")).strip() for batch in batches if isinstance(batch, dict)]
+    if len(folders) != len(set(folders)):
+        issues.append("as duas pastas do Drive precisam ser diferentes")
+    if not str(manifest.get("drive_folder_id", "")).strip() and folders:
+        issues.append("pasta principal do Drive ausente")
+    elif folders and str(manifest.get("drive_folder_id", "")).strip() != folders[0]:
+        issues.append("pasta principal do manifesto não corresponde ao lote A")
+    declared_folders = manifest.get("drive_folder_ids")
+    if not isinstance(declared_folders, list) or set(str(item) for item in declared_folders) != set(folders):
+        issues.append("lista de pastas do manifesto não coincide com os dois lotes")
+
     source = manifest.get("source")
     if isinstance(source, dict):
         try:
             validate_credit_source(str(source.get("name", "")))
         except ValueError as exc:
             issues.append(str(exc))
+    sources = manifest.get("sources")
+    if not isinstance(sources, list) or len(sources) != 2:
+        issues.append("o manifesto precisa conter as duas fontes originais")
+    else:
+        for source_position, source_item in enumerate(sources, 1):
+            try:
+                validate_credit_source(str((source_item or {}).get("name", "")), required=True)
+            except (AttributeError, ValueError) as exc:
+                issues.append(f"fonte {source_position}: {exc}")
 
     clips = manifest.get("clips")
-    if not isinstance(clips, list) or len(clips) != 5:
-        issues.append("o manifesto precisa conter exatamente 5 cortes")
+    if not isinstance(clips, list) or len(clips) != 10:
+        issues.append("o manifesto precisa conter exatamente 10 cortes")
         clips = clips if isinstance(clips, list) else []
     indexes = [clip.get("index") for clip in clips if isinstance(clip, dict)]
-    if indexes != [1, 2, 3, 4, 5]:
-        issues.append("os cortes precisam estar numerados exatamente de 1 a 5")
+    if indexes != list(range(1, 11)):
+        issues.append("os cortes precisam estar numerados globalmente de 1 a 10")
 
-    youtube_schedule: list[int] = []
-    tiktok_schedule: list[int] = []
+    seen_drive_ids: set[str] = set()
+    seen_checksums: set[str] = set()
+    seen_slots: set[tuple[str, int]] = set()
+    by_batch: dict[str, list[dict]] = {batch_id: [] for batch_id in batch_by_id}
     for position, clip in enumerate(clips, 1):
         if not isinstance(clip, dict):
             issues.append(f"corte {position:02d} não é um objeto válido")
@@ -767,24 +867,64 @@ def validate_manifest(
         except (TypeError, ValueError):
             display_index = position
         label = f"corte {display_index:02d}"
-        required_keys = ("drive_id", "name", "md5_checksum")
+        required_keys = ("drive_id", "drive_folder_id", "batch_id", "batch_index", "name", "md5_checksum")
         if require_transcripts:
             required_keys += ("transcript",)
         for key in required_keys:
             if not str(clip.get(key, "")).strip():
                 issues.append(f"{label}: campo {key} ausente")
+        drive_id = str(clip.get("drive_id", "")).strip()
+        checksum = str(clip.get("md5_checksum", "")).strip()
+        if drive_id and drive_id in seen_drive_ids:
+            issues.append(f"{label}: arquivo Drive duplicado")
+        if checksum and checksum in seen_checksums:
+            issues.append(f"{label}: checksum duplicado")
+        if drive_id:
+            seen_drive_ids.add(drive_id)
+        if checksum:
+            seen_checksums.add(checksum)
+        batch_id = str(clip.get("batch_id", "")).strip().upper()
+        try:
+            batch_index = int(clip.get("batch_index"))
+        except (TypeError, ValueError):
+            batch_index = 0
+        if batch_id not in batch_by_id:
+            issues.append(f"{label}: lote inexistente")
+        elif str(clip.get("drive_folder_id", "")).strip() != str(batch_by_id[batch_id].get("drive_folder_id", "")).strip():
+            issues.append(f"{label}: pasta não corresponde ao lote")
+        else:
+            by_batch.setdefault(batch_id, []).append(clip)
         schedule = clip.get("schedule") or {}
         try:
             youtube_hour = int(schedule.get("youtube_hour"))
             tiktok_hour = int(schedule.get("tiktok_hour"))
         except (TypeError, ValueError):
             issues.append(f"{label}: horários inválidos")
-        else:
-            if youtube_hour not in YOUTUBE_HOURS or tiktok_hour not in TIKTOK_HOURS:
-                issues.append(f"{label}: horário fora da grade permitida")
-            else:
-                youtube_schedule.append(youtube_hour)
-                tiktok_schedule.append(tiktok_hour)
+            youtube_hour = tiktok_hour = -1
+        if youtube_hour != tiktok_hour:
+            issues.append(f"{label}: YouTube e TikTok precisam compartilhar o mesmo horário")
+        expected_batch_hours = list(period_hours(str(batch_by_id.get(batch_id, {}).get("period", "")))) if batch_id in batch_by_id else []
+        if expected_batch_hours and youtube_hour not in expected_batch_hours:
+            issues.append(f"{label}: horário fora do período do lote")
+        publish_at = str(schedule.get("youtube_publish_at", "")).strip()
+        tiktok_at = str(schedule.get("tiktok_publish_at", "")).strip()
+        if not publish_at or not tiktok_at or publish_at != tiktok_at:
+            issues.append(f"{label}: timestamps de publicação ausentes ou divergentes")
+        parsed_at = None
+        try:
+            parsed_at = datetime.fromisoformat(publish_at.replace("Z", "+00:00")).astimezone(TIMEZONE)
+        except (TypeError, ValueError):
+            if publish_at:
+                issues.append(f"{label}: timestamp de publicação inválido")
+        if parsed_at and parsed_at.hour != youtube_hour:
+            issues.append(f"{label}: hora do timestamp não corresponde ao slot")
+        if parsed_at and batch_id in batch_dates and parsed_at.date() != batch_dates[batch_id]:
+            issues.append(f"{label}: data do timestamp não corresponde ao lote")
+        if parsed_at:
+            slot_key = (parsed_at.date().isoformat(), parsed_at.hour)
+            if slot_key in seen_slots:
+                issues.append(f"{label}: conflito de horário com outro corte")
+            seen_slots.add(slot_key)
         raw_copy = clip.get("copy")
         if not isinstance(raw_copy, dict):
             issues.append(f"{label}: copy ausente")
@@ -796,6 +936,10 @@ def validate_manifest(
             continue
         for copy_issue in copy_quality_issues(pack):
             issues.append(f"{label}: {copy_issue}")
+        if not pack.credit or fold(pack.credit).startswith("creditos: fonte nao identificada"):
+            issues.append(f"{label}: crédito da fonte original ausente")
+        if "corte fino" in fold(pack.credit):
+            issues.append(f"{label}: crédito não pode ser o Publisher")
         if "\n\n" not in pack.tiktok_caption:
             issues.append(f"{label}: legenda TikTok sem separação de parágrafos")
         if "\n\n" not in pack.youtube_description:
@@ -807,10 +951,15 @@ def validate_manifest(
         if not pack.youtube_description.split("\n\n")[-1].startswith("#"):
             issues.append(f"{label}: hashtags YouTube ausentes ou fora do final")
 
-    if sorted(youtube_schedule) != list(YOUTUBE_HOURS):
-        issues.append("a grade do YouTube contém horários duplicados ou incompletos")
-    if sorted(tiktok_schedule) != list(TIKTOK_HOURS):
-        issues.append("a grade do TikTok contém horários duplicados ou incompletos")
+    for batch_id, batch in batch_by_id.items():
+        batch_clips = by_batch.get(batch_id, [])
+        if len(batch_clips) != 5:
+            issues.append(f"lote {batch_id}: esperado 5 cortes, encontrados {len(batch_clips)}")
+        if sorted(int(item.get("batch_index", 0)) for item in batch_clips) != [1, 2, 3, 4, 5]:
+            issues.append(f"lote {batch_id}: índices precisam ser exatamente 1 a 5")
+
+    if len(seen_slots) != len([clip for clip in clips if isinstance(clip, dict)]):
+        issues.append("existem timestamps de publicação duplicados")
 
     rights = manifest.get("rights")
     authorized = as_bool(rights.get("authorized")) if isinstance(rights, dict) else False
@@ -834,3 +983,4 @@ def validate_manifest(
             issues.append("contrato de HUD/legenda incompatível com o motor de renderização")
     if issues:
         raise RuntimeError("Manifesto inválido: " + "; ".join(dict.fromkeys(issues)))
+
