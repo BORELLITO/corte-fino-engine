@@ -1,4 +1,4 @@
-# Corte Fino Publisher 1.7
+# Corte Fino Publisher 1.8
 
 Módulo separado do gerador de cortes. Lê os 5 MP4 prontos no Google Drive, transcreve localmente com `faster-whisper`, cria copy completa para TikTok/YouTube, ranqueia os cortes e agenda os Shorts pela YouTube Data API.
 
@@ -71,6 +71,8 @@ Fluxo operacional oficial:
 
 O Publisher gera automaticamente ordem editorial, legenda e hashtags para cinco vídeos. A preparação do lote continua manual e exige o link exato da pasta. Depois que o manifesto é preparado, o modo `youtube` agenda os cinco Shorts pela API e o workflow `Corte Fino Motor 2 — TikTok Agendado` executa `--due-only` de hora em hora. Os campos opcionais `source_name` e `source_episode` alimentam os créditos sem permitir invenções. Cada arquivo é marcado no Drive para impedir duplicidade.
 
+A publicação do TikTok é direta pela API oficial e não depende de Metricool nem do limite mensal de uma ferramenta intermediária. O agendador possui também `workflow_dispatch` para recuperação manual: se o cron atrasar ou um envio ficar pendente, abra **Actions → Corte Fino Motor 2 — TikTok Agendado → Run workflow**. O manifesto persistido continua sendo a única fonte do lote e a marcação no Drive impede duplicações.
+
 Secrets exclusivos do Publisher:
 
 - `PUBLISHER_TIKTOK_CLIENT_KEY` — Client key do app Corte Fino Publisher.
@@ -79,7 +81,7 @@ Secrets exclusivos do Publisher:
 - `PUBLISHER_TIKTOK_EXPECTED_USERNAME` — opcional; @handle esperado para bloquear publicação na conta errada.
 - `PUBLISHER_TIKTOK_PRIVACY_LEVEL` — opcional; padrão `PUBLIC_TO_EVERYONE`, sempre validado contra as opções devolvidas pela conta.
 
-O modo `tiktok --dry-run` não acessa a API e valida as cinco copies. O modo `tiktok --allow-immediate` é usado somente quando o usuário escolhe explicitamente publicar pelo workflow manual. Depois do `init`, o `publish_id` é gravado imediatamente no Drive; novas execuções consultam esse ID antes de criar outro post. Uploads de chunks têm retry e estados ainda processando não são tratados como concluídos. A produção também exige confirmação de direitos no manifesto; o Sandbox privado continua disponível para testes controlados. A publicação real exige `video.publish`, autorização da conta TikTok e aprovação/auditoria do app para sair das limitações de teste da plataforma.
+O modo `tiktok --dry-run` não acessa a API e valida as cinco copies. O modo `tiktok --allow-immediate` é usado somente quando o usuário escolhe explicitamente publicar pelo workflow manual. Depois do `init`, o `publish_id` é gravado imediatamente no Drive; novas execuções consultam esse ID antes de criar outro post. Chamadas da API têm retry com backoff para erros transitórios/limites (429 e 5xx), uploads de chunks têm retry e estados ainda processando não são tratados como concluídos. A produção também exige confirmação de direitos no manifesto; o Sandbox privado continua disponível para testes controlados. A publicação real exige `video.publish`, autorização da conta TikTok e aprovação/auditoria do app para sair das limitações de teste da plataforma.
 Para o teste real controlado do Sandbox pelo GitHub Actions, use `mode=tiktok-now` e `tiktok_env=sandbox`. Esse modo prepara o lote e envia os cinco vídeos imediatamente apenas para a conta Sandbox configurada; ele é bloqueado quando o ambiente escolhido é Produção. Em Produção, use o modo manual `tiktok` quando quiser enviar os cinco vídeos.
 
 
