@@ -1,6 +1,10 @@
 name: Corte Fino Motor 0 — Radar Viral
 
 on:
+  push:
+    branches: [main]
+    paths:
+      - "radar/.run-once"
   workflow_dispatch:
     inputs:
       days:
