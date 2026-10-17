@@ -1,4 +1,4 @@
-# Corte Fino Publisher 1.6
+# Corte Fino Publisher 1.7
 
 Módulo separado do gerador de cortes. Lê os 5 MP4 prontos no Google Drive, transcreve localmente com `faster-whisper`, cria copy completa para TikTok/YouTube, ranqueia os cortes e agenda os Shorts pela YouTube Data API.
 
@@ -18,9 +18,10 @@ Contrato: exatamente 5 MP4 identificáveis como 01, 02, 03, 04 e 05. O Publisher
 ## Copy completa
 
 - Copy Editorial 2.0: cada corte recebe uma copy individual baseada no próprio transcript, com gancho, evidência textual, CTA contextual e hashtags derivadas do conteúdo.
-- Título em CAIXA ALTA, baseado na fala mais forte do trecho, com fallback editorial apenas quando a fala é curta demais.
-- Legenda com apelo emocional, contexto humano, pergunta de conversa e hashtags.
-- Hashtags próprias por plataforma: TikTok não recebe `#Shorts` e YouTube não recebe `#TikTok`.
+- Título em CAIXA ALTA e sem pontuação ou travessão, baseado na fala mais forte do trecho, com fallback editorial apenas quando a fala é curta demais.
+- Legenda com apelo emocional, contexto humano, CTA específico por tema, crédito natural e hashtags.
+- O QA bloqueia títulos com pontuação e impede que o motor invente fonte ou episódio não confirmados.
+- Hashtags de distribuição são relacionadas ao assunto; `#CorteFino` e marcadores genéricos de plataforma não são adicionados automaticamente.
 - Descrição do YouTube com a mesma linha editorial, CTA e bloco de hashtags.
 - Tags do YouTube também são enviadas no campo nativo `snippet.tags[]`, além das hashtags na descrição.
 - O texto é normalizado para respeitar 100 caracteres no título, 5.000 bytes UTF-8 na descrição e 500 caracteres nas tags.
@@ -30,12 +31,12 @@ Contrato: exatamente 5 MP4 identificáveis como 01, 02, 03, 04 e 05. O Publisher
 
 ## Slots editoriais — America/Sao_Paulo
 
-- YouTube Shorts: 10h, 12h, 14h, 16h e 18h (usados para agendamento pela API).
-- TikTok: 10h, 12h, 16h, 18h e 20h (mantidos como ordem editorial do manifesto).
+- YouTube Shorts: 10h, 12h, 15h, 17h e 19h (usados para agendamento pela API).
+- TikTok: 10h, 12h, 15h, 17h e 19h (mesma grade editorial do manifesto).
 
-Os cortes mais fortes recebem os slots prioritários de cada rede. Esses slots não acionam
-workflow nem cron: o TikTok só é enviado quando o usuário escolhe explicitamente o modo
-manual `tiktok` ou `all`.
+Os cortes mais fortes recebem os slots prioritários de cada rede. O YouTube é agendado
+diretamente pela API. O TikTok é publicado pelo workflow automático de hora em hora,
+que lê o manifesto persistido e envia somente o corte cujo horário local já venceu.
 
 ## YouTube
 
@@ -66,9 +67,9 @@ Fluxo operacional oficial:
 3. O Motor 1 encerra após entregar os cinco MP4; ele não aciona o Publisher.
 4. Você copia o link exato da pasta com os cinco MP4.
 5. O workflow **Corte Fino Motor 2 — Publicar 5 Cortes** é iniciado manualmente com esse link obrigatório.
-6. O Publisher prepara um manifesto v4, cria as copies e executa YouTube/TikTok conforme o modo escolhido, usando os mesmos cinco arquivos e marcadores anti-duplicidade no Drive.
+6. O Publisher prepara um manifesto v5, cria as copies e executa YouTube/TikTok conforme o modo escolhido, usando os mesmos cinco arquivos e marcadores anti-duplicidade no Drive.
 
-O Publisher gera automaticamente ordem editorial, legenda e hashtags para cinco vídeos. O workflow não possui agendamento próprio nem descobre lotes automaticamente: cada execução é iniciada manualmente com o link da pasta. O modo `youtube` agenda os cinco Shorts pela API; o modo `tiktok` publica os cinco TikToks imediatamente após a escolha explícita desse modo. Cada arquivo é marcado no Drive para impedir duplicidade.
+O Publisher gera automaticamente ordem editorial, legenda e hashtags para cinco vídeos. A preparação do lote continua manual e exige o link exato da pasta. Depois que o manifesto é preparado, o modo `youtube` agenda os cinco Shorts pela API e o workflow `Corte Fino Motor 2 — TikTok Agendado` executa `--due-only` de hora em hora. Os campos opcionais `source_name` e `source_episode` alimentam os créditos sem permitir invenções. Cada arquivo é marcado no Drive para impedir duplicidade.
 
 Secrets exclusivos do Publisher:
 
@@ -132,8 +133,8 @@ python -m publisher.cli prepare --target-date 2026-10-07
 - intenção pendente e reconciliação do upload do YouTube;
 - estados TikTok pendente, processando, concluído e falho persistidos no Drive;
 - preflight read-only separado para Google e TikTok;
-- Publisher independente, sem cron e sem descoberta automática de lote;
-- manifesto v4 com `run_id`, fonte imutável, direitos confirmados, versão da HUD e lote exato do Drive;
+- Publisher independente do Motor 1; preparação manual por pasta exata e agendamento TikTok separado, sem descoberta automática de lote;
+- manifesto v5 com `run_id`, fonte imutável, direitos confirmados, versão da HUD, créditos editoriais e lote exato do Drive;
 - estado persistido no Git sem a transcrição integral dos cortes;
 - reconciliação de TikTok pendente mesmo depois da virada do dia;
 - pré-flight de todos os horários do YouTube antes do primeiro upload;

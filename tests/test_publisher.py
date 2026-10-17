@@ -22,11 +22,11 @@ def test_bets_copy():
     assert pack.topic == "apostas"
     assert len(pack.youtube_title) <= 100
     assert pack.youtube_title == pack.youtube_title.upper()
-    assert "#Apostas" in pack.tiktok_caption
-    assert "#CorteFino" in pack.tiktok_caption
-    assert "#TikTok" in pack.tiktok_caption
+    assert "#apostas" in pack.tiktok_caption
+    assert "#corteFino" not in pack.tiktok_caption
+    assert "#TikTok" not in pack.tiktok_caption
     assert "#Shorts" not in pack.tiktok_caption
-    assert "#Shorts" in pack.youtube_description
+    assert "#Shorts" not in pack.youtube_description
     assert "#Problema" not in pack.tiktok_caption
     assert pack.youtube_tags
     assert any("cassino" in tag.lower() for tag in pack.youtube_tags)
@@ -51,13 +51,34 @@ def test_politics():
 def test_general_copy_does_not_turn_transcription_noise_into_tags():
     pack = make_copy("E falo mais, Jikei, você tem sangue nas mãos, tá?")
     assert pack.topic == "geral"
-    assert pack.tiktok_caption.endswith("#Debate #CorteFino #TikTok")
+    assert "#debate" in pack.tiktok_caption
+    assert "#cortefino" not in pack.tiktok_caption.casefold()
+    assert "#tiktok" not in pack.tiktok_caption.casefold()
     assert all("jikei" not in tag.lower() for tag in pack.youtube_tags)
 
 
 def test_title_uses_the_strongest_hook():
     pack = make_copy("A casa sempre ganha. O problema é quando a pessoa perde tudo no vício de aposta.")
     assert "PERDE TUDO" in pack.youtube_title
+
+
+def test_titles_are_uppercase_and_have_no_punctuation():
+    pack = make_copy("A casa sempre ganha. O problema é quando a pessoa perde tudo no vício de aposta.")
+    assert pack.youtube_title == pack.youtube_title.upper()
+    assert not any(char in pack.youtube_title for char in ".,;:!?—–-")
+    assert pack.tiktok_caption.split("\n", 1)[0] == pack.youtube_title
+
+
+def test_copy_uses_natural_credit_and_exactly_two_emojis():
+    pack = make_copy(
+        "A inteligência artificial está mudando o trabalho. O ser humano pode virar o gargalo.",
+        "Flow Podcast",
+        "434",
+    )
+    assert "Créditos: Flow Podcast, episódio 434." in pack.tiktok_caption
+    assert "—" not in pack.tiktok_caption
+    assert "🧠" in pack.tiktok_caption
+    assert "⚖️" in pack.tiktok_caption
 
 
 def test_copy_editorial_qa_cleans_fillers_and_safe_spelling_errors():
@@ -140,7 +161,7 @@ def _valid_manifest():
     }
 
 
-def test_manifest_v4_validates_copy_rights_and_branding():
+def test_manifest_v5_validates_copy_rights_and_branding():
     validate_manifest(_valid_manifest())
 
 
@@ -176,7 +197,7 @@ def test_copy_qa_rejects_lowercase_sentence_starts():
     pack = make_copy(
         "A casa sempre ganha. O problema é quando a pessoa entra no vício de aposta e cassino. Você concorda com essa aposta?"
     )
-    pack.youtube_description = pack.youtube_description.replace("Essa pergunta", "essa pergunta", 1)
+    pack.youtube_description = pack.youtube_description.replace("Quem deveria", "quem deveria", 1)
     assert "início de frase não está em maiúscula" in copy_quality_issues(pack)
 
 
@@ -312,6 +333,14 @@ def test_tiktok_privacy_level_is_explicit_and_available(monkeypatch):
     monkeypatch.setenv("PUBLISHER_TIKTOK_ENV", "sandbox")
     monkeypatch.setenv("PUBLISHER_TIKTOK_PRIVACY_LEVEL", "PUBLIC_TO_EVERYONE")
     assert choose_privacy_level(creator) == "SELF_ONLY"
+
+
+def test_tiktok_publish_checks_expected_account(monkeypatch):
+    monkeypatch.setenv("PUBLISHER_TIKTOK_EXPECTED_USERNAME", "cortefinoshorts")
+    with pytest.raises(TikTokError, match="Conta TikTok incorreta"):
+        tiktok_io._assert_expected_username({"creator_username": "outra_conta"})
+    with pytest.raises(TikTokError, match="Conta TikTok incorreta"):
+        tiktok_io._assert_expected_username({})
 
 
 def test_tiktok_existing_processing_id_is_reconciled_without_duplicate(monkeypatch):

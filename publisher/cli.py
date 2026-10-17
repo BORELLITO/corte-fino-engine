@@ -73,6 +73,8 @@ def main() -> int:
     parser.add_argument("--due-only", action="store_true", help="modo legado: publica no máximo um TikTok já vencido no horário local")
     parser.add_argument("--allow-immediate", action="store_true", help="confirma publicação imediata de todos os TikToks")
     parser.add_argument("--target-date", default="", help="data ISO do manifesto; útil para recuperação manual (AAAA-MM-DD)")
+    parser.add_argument("--source-name", default=os.environ.get("PUBLISHER_SOURCE_NAME", ""), help="nome confirmado da fonte para os créditos")
+    parser.add_argument("--source-episode", default=os.environ.get("PUBLISHER_SOURCE_EPISODE", ""), help="episódio confirmado da fonte")
     parser.add_argument("--confirm-rights", action="store_true", help="confirma que a fonte está autorizada para publicação")
     parser.add_argument("--remote", action="store_true", help="inclui estados persistidos no Drive no relatório")
     args = parser.parse_args()
@@ -92,6 +94,8 @@ def main() -> int:
             path,
             target_date=args.target_date or None,
             rights_authorized=args.confirm_rights or os.environ.get("PUBLISHER_RIGHTS_AUTHORIZED", "").casefold() in {"1", "true", "yes", "sim", "on"},
+            source_name=args.source_name,
+            source_episode=args.source_episode,
         )
         print(json.dumps({"status": "prepared", "date": data["date"], "clips": 5}, ensure_ascii=False))
         return 0

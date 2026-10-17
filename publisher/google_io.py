@@ -333,12 +333,17 @@ def prepare(
     *,
     rights_authorized: bool | None = None,
     rights_status: str | None = None,
+    source_name: str = "",
+    source_episode: str = "",
 ) -> dict:
     drive = drive_service()
     folder_id = resolve_publication_folder(drive, folder_id)
     files = list_videos(drive, folder_id)
     if len(files) != 5:
         raise RuntimeError(f"Pasta do Publisher precisa conter exatamente 5 vídeos; encontrados: {len(files)}")
+
+    source_name = (source_name or env("PUBLISHER_SOURCE_NAME")).strip()
+    source_episode = (source_episode or env("PUBLISHER_SOURCE_EPISODE")).strip()
 
     indexed = [natural_index(f.get("name", "")) for f in files]
     if indexed != [1, 2, 3, 4, 5]:
@@ -364,7 +369,7 @@ def prepare(
                     "modified_time": item.get("modifiedTime", ""),
                     "video_profile": profile,
                     "transcript": transcript,
-                    "copy": copy_dict(make_copy(transcript)),
+                    "copy": copy_dict(make_copy(transcript, source_name, source_episode)),
                     "schedule": {},
                 }
             )
@@ -384,6 +389,10 @@ def prepare(
         "rights": {
             "authorized": bool(rights_authorized),
             "status": (rights_status or env("PUBLISHER_RIGHTS_STATUS", "revisão manual necessária")).strip(),
+        },
+        "source": {
+            "name": source_name,
+            "episode": source_episode,
         },
         "branding": {
             "version": BRANDING_VERSION,

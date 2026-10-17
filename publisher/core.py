@@ -9,11 +9,11 @@ from zoneinfo import ZoneInfo
 
 
 TIMEZONE = ZoneInfo("America/Sao_Paulo")
-YOUTUBE_HOURS = (10, 12, 14, 16, 18)
-TIKTOK_HOURS = (10, 12, 16, 18, 20)
-YOUTUBE_PRIORITY = (16, 14, 10, 12, 18)
-TIKTOK_PRIORITY = (18, 10, 12, 16, 20)
-MANIFEST_VERSION = 4
+YOUTUBE_HOURS = (10, 12, 15, 17, 19)
+TIKTOK_HOURS = (10, 12, 15, 17, 19)
+YOUTUBE_PRIORITY = (17, 15, 10, 12, 19)
+TIKTOK_PRIORITY = (17, 15, 10, 12, 19)
+MANIFEST_VERSION = 5
 BRANDING_VERSION = "hud-corte-fino-v1"
 BRANDING_FORMAT = "vertical_9x16_shared"
 BRANDING_LOGO_POSITION = "top-right"
@@ -42,12 +42,18 @@ TOPIC_RULES = {
     "politica": "lula bolsonaro stf moraes governo presidente congresso senado politica esquerda direita".split(),
     "seguranca": "crime crimes policia bandido bandidos seguranca prisao roubo assalto".split(),
     "midia": "midia noticia jornalista jornalismo tragedia audiencia".split(),
+    "ia": "ia inteligencia artificial agentes agi algoritmo algoritmos tecnologia automacao".split(),
+    "petroleo": "petroleo gasolina energia barril macae plataforma refinaria".split(),
+    "espaco": "marte espaco nasa foguete foguetes planeta astronauta astronomia".split(),
 }
 TOPIC_TERMS = {
     "apostas": ("apostas", "bet", "cassino", "jogos de aposta"),
     "politica": ("politica", "politica brasileira", "governo", "debate publico"),
     "seguranca": ("seguranca", "seguranca publica", "crime", "policia"),
     "midia": ("midia", "jornalismo", "noticias", "audiencia"),
+    "ia": ("inteligencia artificial", "tecnologia", "futuro do trabalho"),
+    "petroleo": ("petroleo", "energia", "economia", "geopolitica"),
+    "espaco": ("Marte", "espaco", "ciencia", "exploracao espacial"),
     "geral": ("debate",),
 }
 TOPIC_KEYWORDS = {
@@ -55,6 +61,9 @@ TOPIC_KEYWORDS = {
     "politica": set("lula bolsonaro stf moraes governo presidente congresso senado politica esquerda direita".split()),
     "seguranca": set("crime crimes policia bandido bandidos seguranca prisao roubo assalto".split()),
     "midia": set("midia noticia jornalista jornalismo tragedia audiencia".split()),
+    "ia": set("ia inteligencia artificial agentes agi algoritmo algoritmos tecnologia automacao".split()),
+    "petroleo": set("petroleo gasolina energia barril macae plataforma refinaria".split()),
+    "espaco": set("marte espaco nasa foguete foguetes planeta astronauta astronomia".split()),
     "geral": set(),
 }
 KEYWORD_ALIASES = {
@@ -67,21 +76,34 @@ KEYWORD_ALIASES = {
     "midia": "mídia",
     "tragedia": "tragédia",
     "vicio": "vício",
-}
-TOPIC_TAGS = {
-    "apostas": "#Apostas",
-    "politica": "#Politica",
-    "seguranca": "#SegurancaPublica",
-    "midia": "#Midia",
-    "geral": "#Debate",
+    "ia": "inteligência artificial",
+    "agi": "AGI",
+    "petroleo": "petróleo",
+    "macae": "Macaé",
+    "espaco": "espaço",
+    "marte": "Marte",
 }
 TOPIC_LABELS = {
     "apostas": "apostas",
     "politica": "política",
     "seguranca": "segurança",
     "midia": "mídia",
+    "ia": "inteligência artificial",
+    "petroleo": "petróleo",
+    "espaco": "espaço",
     "geral": "essa fala",
 }
+TOPIC_DISCOVERY_TAGS = {
+    "apostas": ("#apostas", "#jogosdeaposta", "#economia"),
+    "politica": ("#politicabrasileira", "#governo", "#debatepublico"),
+    "seguranca": ("#segurancapublica", "#crime", "#sociedade"),
+    "midia": ("#jornalismo", "#noticias", "#comunicacao"),
+    "ia": ("#inteligenciaartificial", "#tecnologia", "#futurodotrabalho"),
+    "petroleo": ("#petroleo", "#economia", "#geopolitica"),
+    "espaco": ("#marte", "#ciencia", "#exploracaoespacial"),
+    "geral": ("#podcast", "#debate"),
+}
+HASH_FRAGMENT_WORDS = {"inteligencia", "artificial", "publica", "brasileira"}
 GENERIC_COPY_PATTERNS = (
     "o trecho transforma",
     "a conversa coloca",
@@ -132,6 +154,16 @@ LEADING_FILLER_RE = re.compile(
     re.IGNORECASE,
 )
 BAD_TITLE_ENDINGS = (" DE", " DA", " DO", " EM", " PARA", " COM", " E", " OU", " MAS")
+EMOJIS_BY_TOPIC = {
+    "apostas": ("🎰", "⚠️"),
+    "politica": ("🏛️", "🗣️"),
+    "seguranca": ("🚨", "⚠️"),
+    "midia": ("📺", "👀"),
+    "ia": ("🧠", "⚖️"),
+    "petroleo": ("🛢️", "🌍"),
+    "espaco": ("🚀", "🔴"),
+    "geral": ("🧠", "💬"),
+}
 
 
 @dataclass
@@ -144,6 +176,7 @@ class CopyPack:
     youtube_title: str
     youtube_description: str
     youtube_tags: list[str]
+    credit: str = ""
     evidence: list[str] = field(default_factory=list)
     cta: str = ""
     editorial_mode: str = "grounded_context"
@@ -197,6 +230,7 @@ def _capitalize_sentence_starts(text: str) -> str:
 def format_copy_text(text: str, *, final_punctuation: bool = False) -> str:
     """Normalize spacing and punctuation while preserving the source meaning."""
     normalized = re.sub(r"\s+", " ", text or "").strip()
+    normalized = re.sub(r"[–—]", ",", normalized)
     normalized = re.sub(r"\s+([,.;!?…])", r"\1", normalized)
     normalized = re.sub(r"([,;:!?])(?=[A-Za-zÀ-ÿ0-9#])", r"\1 ", normalized)
     normalized = re.sub(r",\s*,+", ", ", normalized)
@@ -260,8 +294,17 @@ def get_keywords(text: str, limit: int = 4) -> list[str]:
 
 def detect_topic(text: str) -> str:
     words = set(tokens(fold(text)))
-    ranked = [(len(words & set(rule)), topic) for topic, rule in TOPIC_RULES.items()]
-    score, topic = max(ranked, default=(0, "geral"))
+    specific = {
+        "ia": {"inteligencia", "agentes", "agi", "algoritmo"},
+        "petroleo": {"petroleo", "barril", "macae", "refinaria"},
+        "espaco": {"marte", "nasa", "foguete", "astronauta", "astronomia"},
+    }
+    ranked = []
+    for order, (topic, rule) in enumerate(TOPIC_RULES.items()):
+        overlap = words & set(rule)
+        score = len(overlap) + 2 * len(words & specific.get(topic, set()))
+        ranked.append((score, -order, topic))
+    score, _, topic = max(ranked, default=(0, 0, "geral"))
     return topic if score else "geral"
 
 
@@ -308,7 +351,15 @@ def clean_hook(text: str) -> str:
     return cleaned[:1].upper() + cleaned[1:] if cleaned else ""
 
 
-def build_title(hook: str, topic: str) -> str:
+def remove_title_punctuation(text: str) -> str:
+    """Remove punctuation while preserving accents, spaces and emojis."""
+    chars = []
+    for char in text or "":
+        chars.append(" " if unicodedata.category(char).startswith("P") else char)
+    return re.sub(r"\s+", " ", "".join(chars)).strip()
+
+
+def build_title(hook: str, topic: str, emoji: str = "") -> str:
     del topic  # Mantido na assinatura para compatibilidade com o manifesto atual.
     candidate = clean_hook(hook)
     if len(candidate) > YOUTUBE_TITLE_LIMIT or candidate.upper().endswith(BAD_TITLE_ENDINGS) or "…" in candidate:
@@ -317,7 +368,16 @@ def build_title(hook: str, topic: str) -> str:
         candidate = max(clauses, key=len, default="")
     if not candidate or len(candidate) > YOUTUBE_TITLE_LIMIT or candidate.upper().endswith(BAD_TITLE_ENDINGS) or "…" in candidate:
         raise ValueError("Copy reprovada: não foi possível formar um título completo a partir da fala real.")
-    return candidate.upper().strip(" .,:;")
+    title = remove_title_punctuation(candidate).upper()
+    if emoji:
+        title = f"{title} {emoji}".strip()
+    if len(title) > YOUTUBE_TITLE_LIMIT:
+        words = [word for word in title.split() if word != emoji]
+        suffix = f" {emoji}" if emoji else ""
+        while words and len((" ".join(words) + suffix)) > YOUTUBE_TITLE_LIMIT:
+            words.pop()
+        title = (" ".join(words) + suffix).strip()
+    return title
 
 
 def viral_score(text: str) -> float:
@@ -329,7 +389,7 @@ def viral_score(text: str) -> float:
 
 def hashtag(word: str) -> str:
     clean = re.sub(r"[^a-z0-9]", "", fold(word))
-    return f"#{clean.title()}" if clean else ""
+    return f"#{clean}" if clean else ""
 
 
 def copy_quality_issues(pack: CopyPack) -> list[str]:
@@ -338,6 +398,8 @@ def copy_quality_issues(pack: CopyPack) -> list[str]:
     issues: list[str] = []
     if pack.youtube_title and pack.youtube_title != pack.youtube_title.upper():
         issues.append("título do YouTube não está totalmente em maiúsculas")
+    if any(unicodedata.category(char).startswith("P") for char in pack.youtube_title):
+        issues.append("título contém pontuação; títulos devem ser sem pontuação")
     if len(pack.youtube_title) > YOUTUBE_TITLE_LIMIT:
         issues.append("título do YouTube excede 100 caracteres")
     if len(pack.tiktok_caption) > TIKTOK_CAPTION_LIMIT:
@@ -360,6 +422,8 @@ def copy_quality_issues(pack: CopyPack) -> list[str]:
         issues.append("TikTok não pode conter #Shorts")
     if "#tiktok" in fold(pack.youtube_description):
         issues.append("YouTube não pode conter #TikTok")
+    if any(dash in text for text in texts for dash in ("–", "—")):
+        issues.append("travessão longo não permitido na copy")
     if "…" in pack.youtube_title or pack.youtube_title.upper().endswith(BAD_TITLE_ENDINGS):
         issues.append("título incompleto ou truncado")
     for text in texts:
@@ -402,7 +466,16 @@ def _evidence_sentences(transcript: str, hook: str, keywords: list[str]) -> list
         relevance += 0.75 * len(keyword_overlap)
         candidates.append((relevance, sentence))
     candidates.sort(key=lambda item: (-item[0], item[1]))
-    return [sentence for _, sentence in candidates[:1]]
+    if candidates:
+        return [sentence for _, sentence in candidates[:1]]
+    # Quando o corte tem frases curtas e complementares, a segunda melhor
+    # evidência pode não repetir nenhuma palavra do gancho. Ainda assim, ela
+    # é segura quando vem imediatamente depois dele e permanece literal.
+    sentences = split_sentences(transcript)
+    for sentence in sentences:
+        if fold(sentence) != hook_key:
+            return [sentence]
+    return []
 
 
 def _question_anchor(topic: str, keywords: list[str], transcript: str) -> str:
@@ -426,9 +499,42 @@ def _question_anchor(topic: str, keywords: list[str], transcript: str) -> str:
 
 
 def build_contextual_cta(transcript: str, topic: str, keywords: list[str], hook: str) -> str:
-    """Use curiosity and tension as questions, without asserting new facts."""
+    """Vary CTAs by theme while remaining grounded in the transcript."""
     normalized = fold(transcript)
     anchor = _question_anchor(topic, keywords, transcript)
+    options = {
+        "apostas": (
+            "Onde termina o entretenimento e começa o prejuízo?",
+            "Quem deveria responder por esse problema?",
+        ),
+        "politica": (
+            "Qual é o ponto mais difícil de ignorar nessa discussão?",
+            "Essa decisão resolve o problema ou apenas muda o conflito de lugar?",
+        ),
+        "seguranca": (
+            "O que deveria mudar primeiro nessa situação?",
+            "Esse problema é tratado na causa ou apenas na consequência?",
+        ),
+        "midia": (
+            "O que ficou de fora dessa narrativa?",
+            "A forma de contar muda a maneira como o público entende o fato?",
+        ),
+        "ia": (
+            "A tecnologia está ajudando o ser humano ou substituindo funções demais?",
+            "Em que momento a ferramenta passa a tomar o lugar da pessoa?",
+        ),
+        "petroleo": (
+            "Riqueza natural significa desenvolvimento garantido?",
+            "Um país consegue prosperar dependendo de uma única riqueza?",
+        ),
+        "espaco": (
+            "Você aceitaria correr esse risco para chegar a outro planeta?",
+            "O desejo de explorar justifica um risco desse tamanho?",
+        ),
+    }
+    if topic in options:
+        index = sum(ord(char) for char in normalized) % len(options[topic])
+        return options[topic][index]
     if "?" in hook or "?" in transcript:
         return f"Essa pergunta sobre {anchor} responde ao problema ou deixa algo importante de fora?"
     if any(marker in normalized for marker in (" mas ", " porem ", " porém ", " so que ", " só que ", " nao ", " não ")):
@@ -439,17 +545,28 @@ def build_contextual_cta(transcript: str, topic: str, keywords: list[str], hook:
 
 
 def build_hashtags(topic: str, keywords: list[str], platform: str = "youtube") -> list[str]:
-    tags = [TOPIC_TAGS.get(topic, TOPIC_TAGS["geral"])]
+    tags = list(TOPIC_DISCOVERY_TAGS.get(topic, TOPIC_DISCOVERY_TAGS["geral"]))
     allowed = TOPIC_KEYWORDS.get(topic, set())
     for word in keywords[:3]:
-        if not allowed or word not in allowed:
+        if allowed and word not in allowed:
             continue
-        if word not in COPY_NOISE:
-            tags.append(hashtag(KEYWORD_ALIASES.get(word, word)))
-    platform_tag = "#TikTok" if platform.casefold() == "tiktok" else "#Shorts"
-    tags.extend(("#CorteFino", platform_tag))
+        if word not in COPY_NOISE and word not in HASH_FRAGMENT_WORDS:
+            candidate = hashtag(KEYWORD_ALIASES.get(word, word))
+            if candidate not in tags:
+                tags.append(candidate)
     limit = 5 if platform.casefold() == "tiktok" else 6
     return list(dict.fromkeys(tag for tag in tags if tag))[:limit]
+
+
+def build_credit(source_name: str = "", source_episode: str = "") -> str:
+    """Create a transparent, natural credit without inventing a source."""
+    name = format_copy_text(source_name, final_punctuation=False)
+    episode = format_copy_text(source_episode, final_punctuation=False)
+    if name and episode:
+        return f"Créditos: {name}, episódio {episode}."
+    if name:
+        return f"Créditos: {name}."
+    return "Créditos: fonte não identificada."
 
 
 def build_youtube_tags(topic: str, keywords: list[str]) -> list[str]:
@@ -477,6 +594,8 @@ def sentence_case_issues(text: str) -> list[str]:
     """Find sentence starts that are visibly lowercase in platform copy."""
     issues: list[str] = []
     for paragraph in re.split(r"\n\s*\n", text or ""):
+        if paragraph.lstrip().startswith("#"):
+            continue
         first = re.search(r"[A-Za-zÀ-ÿ]", paragraph)
         if first and first.group(0) != first.group(0).upper():
             issues.append(first.group(0))
@@ -486,7 +605,7 @@ def sentence_case_issues(text: str) -> list[str]:
     return issues
 
 
-def make_copy(transcript: str) -> CopyPack:
+def make_copy(transcript: str, source_name: str = "", source_episode: str = "") -> CopyPack:
     transcript = normalize_transcript(transcript)
     if len(transcript.split()) < 6:
         raise ValueError("Copy reprovada: transcrição insuficiente para uma criação individual.")
@@ -495,17 +614,20 @@ def make_copy(transcript: str) -> CopyPack:
     hook = format_copy_text(clean_hook(choose_hook(transcript)))
     if not hook:
         raise ValueError("Copy reprovada: não foi encontrado um gancho completo na fala real.")
-    title = build_title(hook, topic)
+    emoji_title, emoji_cta = EMOJIS_BY_TOPIC.get(topic, EMOJIS_BY_TOPIC["geral"])
+    title = build_title(hook, topic, emoji_title)
 
     raw_evidence = _evidence_sentences(transcript, hook, keys)
     evidence = [format_copy_text(sentence, final_punctuation=True) for sentence in raw_evidence]
     cta = format_copy_text(build_contextual_cta(transcript, topic, keys, hook), final_punctuation=True)
+    cta = f"{cta} {emoji_cta}"
     tiktok_hashtag_text = " ".join(build_hashtags(topic, keys, "tiktok"))
     youtube_hashtag_text = " ".join(build_hashtags(topic, keys, "youtube"))
-    evidence_block = f'“{evidence[0]}”\n\n' if evidence else ""
-    tiktok = f"{title}\n\n{evidence_block}{cta}\n\n{tiktok_hashtag_text}"
+    credit = build_credit(source_name, source_episode)
+    evidence_block = f"{evidence[0]}\n\n" if evidence else ""
+    tiktok = f"{title}\n\n{evidence_block}{cta}\n\n{credit}\n\n{tiktok_hashtag_text}"
     description_hook = format_copy_text(hook, final_punctuation=True)
-    youtube_description = f"{description_hook}\n\n{evidence_block}{cta}\n\n{youtube_hashtag_text}"
+    youtube_description = f"{description_hook}\n\n{evidence_block}{cta}\n\n{credit}\n\n{youtube_hashtag_text}"
     pack = CopyPack(
         topic,
         hook,
@@ -515,6 +637,7 @@ def make_copy(transcript: str) -> CopyPack:
         title,
         truncate_chars(youtube_description, YOUTUBE_DESCRIPTION_LIMIT),
         build_youtube_tags(topic, keys),
+        credit=credit,
         evidence=evidence,
         cta=cta,
     )
@@ -557,6 +680,7 @@ def _copy_pack_from_dict(raw: dict) -> CopyPack:
         youtube_title=str(raw.get("youtube_title", "")),
         youtube_description=str(raw.get("youtube_description", "")),
         youtube_tags=[str(item) for item in raw.get("youtube_tags", [])],
+        credit=str(raw.get("credit", "")),
         evidence=[str(item) for item in raw.get("evidence", [])],
         cta=str(raw.get("cta", "")),
         editorial_mode=str(raw.get("editorial_mode", "")),
@@ -641,9 +765,9 @@ def validate_manifest(
             issues.append(f"{label}: descrição YouTube sem separação de parágrafos")
         if not pack.youtube_title or pack.youtube_title != pack.youtube_title.upper():
             issues.append(f"{label}: título YouTube não está totalmente em maiúsculas")
-        if not pack.tiktok_caption.endswith("#TikTok"):
+        if not pack.tiktok_caption.split("\n\n")[-1].startswith("#"):
             issues.append(f"{label}: hashtags TikTok ausentes ou fora do final")
-        if not pack.youtube_description.endswith("#Shorts"):
+        if not pack.youtube_description.split("\n\n")[-1].startswith("#"):
             issues.append(f"{label}: hashtags YouTube ausentes ou fora do final")
 
     if sorted(youtube_schedule) != list(YOUTUBE_HOURS):

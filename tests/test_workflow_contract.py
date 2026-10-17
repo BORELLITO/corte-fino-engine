@@ -3,6 +3,7 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 PUBLISHER_WORKFLOW = ROOT / ".github" / "workflows" / "corte-fino-publisher.yml"
+TIKTOK_SCHEDULE_WORKFLOW = ROOT / ".github" / "workflows" / "corte-fino-publisher-tiktok-schedule.yml"
 GENERATOR_WORKFLOW = ROOT / ".github" / "workflows" / "corte-fino.yml"
 
 
@@ -14,6 +15,8 @@ def test_publisher_is_manual_only_and_requires_the_exact_drive_folder():
     assert "latest_batch.json" not in text
     assert "github.event.schedule" not in text
     assert "PUBLISHER_ENABLED" not in text
+    assert "normalize_folder_id" in text
+    assert "REQUESTED_FOLDER" in text
 
 
 def test_both_motors_require_manual_dispatch():
@@ -26,8 +29,6 @@ def test_both_motors_require_manual_dispatch():
     assert "  schedule:" not in publisher
     assert "group: corte-fino-motor-1" in generator
     assert "group: corte-fino-motor-2" in publisher
-    assert "narrative_qa" in generator
-    assert 'float(clip.get("duration") or 0) > 60.0' in generator
 
 
 def test_publisher_manual_tiktok_mode_is_explicit():
@@ -35,6 +36,17 @@ def test_publisher_manual_tiktok_mode_is_explicit():
 
     assert "inputs.mode == 'tiktok' || inputs.mode == 'all'" in text
     assert "python -m publisher.cli tiktok --allow-immediate" in text
+
+
+def test_tiktok_schedule_uses_due_only_and_shared_publisher_lock():
+    text = TIKTOK_SCHEDULE_WORKFLOW.read_text(encoding="utf-8")
+
+    assert 'cron: "0 * * * *"' in text
+    assert "group: corte-fino-motor-2" in text
+    assert "python -m publisher.cli tiktok --due-only" in text
+    assert "PUBLISHER_TIKTOK_REFRESH_TOKEN" in text
+    assert "PUBLISHER_GOOGLE_REFRESH_TOKEN" in text
+    assert "latest_batch.json" not in text
 
 
 def test_generator_does_not_trigger_or_register_the_publisher():

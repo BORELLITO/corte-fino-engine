@@ -1,0 +1,78 @@
+name: Corte Fino Motor 2 — TikTok Agendado
+
+on:
+  # GitHub Actions usa UTC. O job roda de hora em hora e o Publisher decide
+  # localmente, em America/Sao_Paulo, se existe algum corte vencido.
+  schedule:
+    - cron: "0 * * * *"
+
+permissions:
+  contents: read
+
+concurrency:
+  # Compartilha o lock do Publisher manual para impedir corrida entre envio
+  # imediato, recuperação e publicação agendada.
+  group: corte-fino-motor-2
+  cancel-in-progress: false
+
+jobs:
+  tiktok-scheduler:
+    runs-on: ubuntu-22.04
+    timeout-minutes: 30
+    env:
+      PYTHONUNBUFFERED: "1"
+      PUBLISHER_TIKTOK_ENV: production
+      PUBLISHER_TIKTOK_CLIENT_KEY: ${{ secrets.PUBLISHER_TIKTOK_CLIENT_KEY }}
+      PUBLISHER_TIKTOK_CLIENT_SECRET: ${{ secrets.PUBLISHER_TIKTOK_CLIENT_SECRET }}
+      PUBLISHER_TIKTOK_REFRESH_TOKEN: ${{ secrets.PUBLISHER_TIKTOK_REFRESH_TOKEN }}
+      PUBLISHER_TIKTOK_EXPECTED_USERNAME: ${{ secrets.PUBLISHER_TIKTOK_EXPECTED_USERNAME }}
+      PUBLISHER_TIKTOK_PRIVACY_LEVEL: PUBLIC_TO_EVERYONE
+      PUBLISHER_GOOGLE_CLIENT_ID: ${{ secrets.PUBLISHER_GOOGLE_CLIENT_ID }}
+      PUBLISHER_GOOGLE_CLIENT_SECRET: ${{ secrets.PUBLISHER_GOOGLE_CLIENT_SECRET }}
+      PUBLISHER_GOOGLE_REFRESH_TOKEN: ${{ secrets.PUBLISHER_GOOGLE_REFRESH_TOKEN }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+
+      - name: Python
+        uses: actions/setup-python@v7
+        with:
+          python-version: "3.11"
+          cache: pip
+
+      - name: Dependências
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install \
+            google-api-python-client \
+            google-auth \
+            google-auth-httplib2 \
+            google-auth-oauthlib
+
+      - name: Validar manifesto do lote
+        id: manifest
+        run: |
+          if [ ! -f publisher/state/current.json ]; then
+            echo "Nenhum lote preparado. O agendador não tem trabalho nesta hora."
+            echo "ready=0" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          from publisher.core import validate_manifest
+
+          data = json.loads(Path("publisher/state/current.json").read_text(encoding="utf-8"))
+          validate_manifest(data)
+          print(f"Manifesto válido: {data['date']} | {data['timezone']}")
+          PY
+          echo "ready=1" >> "$GITHUB_OUTPUT"
+
+      - name: Publicar cortes vencidos
+        if: steps.manifest.outputs.ready == '1'
+        run: python -m publisher.cli tiktok --due-only
+
+      - name: Relatório de reconciliação
+        if: always() && steps.manifest.outputs.ready == '1'
+        run: python -m publisher.cli report --remote

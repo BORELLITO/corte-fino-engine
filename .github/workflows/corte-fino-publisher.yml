@@ -19,6 +19,16 @@ on:
         required: true
         default: ""
         type: string
+      source_name:
+        description: "Nome confirmado da fonte para o crédito"
+        required: false
+        default: ""
+        type: string
+      source_episode:
+        description: "Episódio confirmado da fonte, se houver"
+        required: false
+        default: ""
+        type: string
       rights_confirmed:
         description: "Confirme true somente após revisar a autorização da fonte"
         required: false
@@ -135,8 +145,12 @@ jobs:
       - name: Verificar manifesto persistido
         id: state
         if: steps.guard.outputs.run == '1'
+        env:
+          REQUESTED_FOLDER: ${{ steps.folder.outputs.value }}
+          REQUESTED_MODE: ${{ inputs.mode }}
         run: |
           needs_prepare=1
+          folder_match=0
           if [ -f publisher/state/current.json ]; then
             version="$(python - <<'PY'
           import json
@@ -147,24 +161,34 @@ jobs:
               print(0)
           PY
             )"
-            if [ "$version" -ge 4 ] 2>/dev/null && python - <<'PY'
+            if [ "$version" -ge 5 ] 2>/dev/null && python - <<'PY'
           import json
+          import os
           from pathlib import Path
           from publisher.core import validate_manifest
+          from publisher.google_io import normalize_folder_id
 
           try:
-              validate_manifest(json.loads(Path('publisher/state/current.json').read_text(encoding='utf-8')))
+              data = json.loads(Path('publisher/state/current.json').read_text(encoding='utf-8'))
+              validate_manifest(data)
+              requested = normalize_folder_id(os.environ['REQUESTED_FOLDER'])
+              if requested != normalize_folder_id(str(data.get('drive_folder_id', ''))):
+                  raise SystemExit(1)
           except Exception:
               raise SystemExit(1)
           PY
             then
-              needs_prepare=0
+              if [ "${REQUESTED_MODE:-}" != "prepare" ]; then
+                needs_prepare=0
+                folder_match=1
+              fi
             fi
           fi
           if [ "${{ inputs.mode }}" = "verify-tiktok" ] || [ "${{ inputs.mode }}" = "verify-google" ] || [ "${{ inputs.mode }}" = "preflight" ]; then
             needs_prepare=0
           fi
           echo "needs_prepare=$needs_prepare" >> "$GITHUB_OUTPUT"
+          echo "folder_match=$folder_match" >> "$GITHUB_OUTPUT"
 
       - name: Preparar
         id: prepare
@@ -172,7 +196,7 @@ jobs:
         env:
           PUBLISHER_RIGHTS_AUTHORIZED: ${{ steps.folder.outputs.rights_authorized }}
           PUBLISHER_RIGHTS_STATUS: ${{ steps.folder.outputs.rights_status }}
-        run: python -m publisher.cli prepare --folder-id "${{ steps.folder.outputs.value }}" --target-date "${{ inputs.target_date }}"
+        run: python -m publisher.cli prepare --folder-id "${{ steps.folder.outputs.value }}" --target-date "${{ inputs.target_date }}" --source-name "${{ inputs.source_name }}" --source-episode "${{ inputs.source_episode }}"
 
       - name: Dry-run YouTube
         if: steps.guard.outputs.run == '1' && inputs.mode == 'dry-run'

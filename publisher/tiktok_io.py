@@ -96,6 +96,17 @@ def _creator_info(token: str) -> dict:
     return data
 
 
+def _assert_expected_username(creator: dict) -> None:
+    expected = env("PUBLISHER_TIKTOK_EXPECTED_USERNAME")
+    username = str(creator.get("creator_username", "")).strip()
+    if expected and (not username or username.casefold() != expected.lstrip("@").casefold()):
+        actual = f"@{username}" if username else "sem usuário retornado"
+        raise TikTokError(
+            f"Conta TikTok incorreta: token pertence a {actual}, "
+            f"mas o Publisher espera @{expected.lstrip('@')}."
+        )
+
+
 def verify_tiktok_account() -> dict:
     """Validate TikTok OAuth and return non-secret account metadata.
 
@@ -104,13 +115,9 @@ def verify_tiktok_account() -> dict:
     """
     token = _refresh_access_token()
     creator = _creator_info(token)
+    _assert_expected_username(creator)
     username = str(creator.get("creator_username", "")).strip()
     expected = env("PUBLISHER_TIKTOK_EXPECTED_USERNAME")
-    if expected and username and username.casefold() != expected.lstrip("@").casefold():
-        raise TikTokError(
-            f"Conta TikTok incorreta: token pertence a @{username}, "
-            f"mas o Publisher espera @{expected.lstrip('@')}."
-        )
     return {
         "status": "ok",
         "creator_username": username or None,
@@ -284,6 +291,7 @@ def publish_tiktok(
 
     token, creator = _refresh_access_token(), None
     creator = _creator_info(token)
+    _assert_expected_username(creator)
     results: list[dict] = []
     for clip in clips:
         item = prefetched.get(int(clip["index"])) or verify_manifest_clip(drive, manifest, clip)
