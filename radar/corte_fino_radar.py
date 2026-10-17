@@ -1639,10 +1639,7 @@ def main() -> int:
         candidates,
         trends,
         signals,
-        top_n=max(
-            1,
-            min(args.top_n, 25),
-        ),
+        top_n=5,
         generated_at=generated_at,
     )
 
