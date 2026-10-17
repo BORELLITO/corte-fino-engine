@@ -1,7 +1,6 @@
 from pathlib import Path
 
 PUBLISHER_WORKFLOW = Path(".github/workflows/corte-fino-publisher.yml")
-TIKTOK_WORKFLOW = Path(".github/workflows/corte-fino-publisher-tiktok-schedule.yml")
 GENERATOR_WORKFLOW = Path(".github/workflows/corte-fino.yml")
 
 
@@ -13,18 +12,14 @@ def test_publisher_requires_two_exact_drive_folders_and_periods():
     assert "date_2:" in text
     assert "period_1:" in text
     assert "period_2:" in text
-    assert "PUBLISHER_TIKTOK_DIRECT_ENABLED: \"1\"" in text
+    assert "PUBLISHER_BROWSER_ONLY: \"1\"" in text
+    assert "PUBLISHER_TIKTOK_DIRECT_ENABLED: \"0\"" in text
     assert "python -m publisher.cli prepare" in text
-    assert "python -m publisher.cli youtube" in text
+    assert "python -m publisher.cli browser-package" in text
 
 
-def test_tiktok_is_direct_and_automatic():
-    text = TIKTOK_WORKFLOW.read_text(encoding="utf-8")
-    assert "schedule:" in text
-    assert 'cron: "0 11-23 * * *"' in text
-    assert 'cron: "0 0-1 * * *"' in text
-    assert "python -m publisher.cli tiktok --due-only" in text
-    assert "Metricool" not in text
+def test_publication_api_scheduler_is_removed():
+    assert not Path(".github/workflows/corte-fino-publisher-tiktok-schedule.yml").exists()
 
 
 def test_publisher_has_no_metricool_route():
