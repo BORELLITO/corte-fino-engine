@@ -744,6 +744,12 @@ def validate_manifest(
         issues.append("fuso horário ausente")
     if not str(manifest.get("drive_folder_id", "")).strip():
         issues.append("pasta do Drive ausente")
+    source = manifest.get("source")
+    if isinstance(source, dict):
+        try:
+            validate_credit_source(str(source.get("name", "")))
+        except ValueError as exc:
+            issues.append(str(exc))
 
     clips = manifest.get("clips")
     if not isinstance(clips, list) or len(clips) != 5:
