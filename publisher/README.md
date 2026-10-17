@@ -1,6 +1,6 @@
-# Corte Fino Publisher 2.0
+# Corte Fino Publisher 2.1
 
-O Publisher é o Motor 2 do Corte Fino. Ele recebe **duas pastas exatas do Google Drive**, cada uma com cinco MP4s prontos pelo Creator, e prepara dez publicações por rodada para YouTube Shorts e TikTok.
+O Publisher é o Motor 2 do Corte Fino. Ele recebe duas pastas exatas do Google Drive, cada uma com cinco MP4s prontos pelo Creator, prepara dez publicações e entrega um pacote fechado para postagem no Cloud Web Browser.
 
 ## Contrato de entrada
 
@@ -12,20 +12,18 @@ Cada rodada exige:
 - canal/fonte original de cada pasta;
 - confirmação de direitos das duas fontes.
 
-O Publisher nunca procura subpastas, pastas vizinhas, lotes anteriores ou arquivos de outra rodada. Qualquer arquivo extra, subpasta, duplicidade de pasta, duplicidade de checksum ou numeração incorreta bloqueia o preparo.
-
-Períodos fixos em America/Sao_Paulo:
+Períodos em America/Sao_Paulo:
 
 - day: 08h, 10h, 12h, 14h e 16h;
 - night: 18h, 19h, 20h, 21h e 22h.
 
-A pasta A e a pasta B podem ter datas diferentes, mas seus pares data/horário não podem se sobrepor. O corte de cada pasta é usado nos dois canais.
+As duas pastas podem ter datas diferentes, mas seus pares data/horário não podem se sobrepor. A pasta é uma fronteira rígida: subpastas, arquivos extras, lotes vizinhos, duplicidade de checksum ou numeração incorreta bloqueiam o preparo.
 
 ## Qualidade e copy
 
-O Publisher baixa o MP4 original do Drive e não reencoda o arquivo. O preflight exige 1080x1920, H.264 High, yuv420p, AAC, 48 kHz, 30 fps, bitrate mínimo, decodificação integral e duração superior a 60 segundos.
+O Publisher baixa e valida o MP4 original. O preflight exige 1080x1920, H.264 High, yuv420p, AAC, 48 kHz, 30 fps, bitrate mínimo, decodificação integral e duração superior a 60 segundos.
 
-Cada corte recebe transcrição local e copy individual:
+Cada corte recebe copy individual:
 
 - título do YouTube em caixa alta, sem pontuação;
 - legenda em blocos arejados, com CTA contextual;
@@ -33,44 +31,26 @@ Cada corte recebe transcrição local e copy individual:
 - hashtags derivadas do assunto, sem branding automático do Corte Fino;
 - crédito somente ao canal/fonte original;
 - tags nativas do YouTube;
-- QA bloqueante para ortografia, ASR suspeito, truncamento, espaçamento, hashtags e evidência desconectada do corte.
+- QA bloqueante para ortografia, ASR suspeito, truncamento, espaçamento e evidência desconectada do corte.
 
 ## Manifesto v6
 
-O manifesto contém dois lotes, dez cortes globais e o índice local de cada corte. Cada item também guarda a pasta, checksum, tamanho, copy, data/hora absoluta de YouTube e TikTok e estado de reconciliação.
+O manifesto contém dois lotes, dez cortes globais, índice local, pasta, checksum, copy e timestamp absoluto de cada publicação. Manifestos de cinco cortes ou versões anteriores são rejeitados.
 
-Antes da publicação, o Publisher reconfirma no Drive:
+O estado persistido no Git não contém transcrições integrais. O pacote browser-package contém somente os dados necessários para preencher os Studios.
 
-- ID e pasta pai;
-- nome e tipo MIME;
-- tamanho;
-- checksum;
-- ausência de lixeira;
-- marcador anti-duplicidade.
+## Publicação oficial
 
-Manifestos v5 ou de cinco cortes são rejeitados. O estado persistido no Git não contém transcrições integrais.
+A publicação é feita exclusivamente por Cloud Web Browser, diretamente nas interfaces oficiais:
 
-## YouTube
+1. abrir o TikTok Studio;
+2. carregar o MP4 original da pasta correta;
+3. inserir a legenda revisada;
+4. programar o horário do lote;
+5. repetir no YouTube Studio com título, descrição, tags e configuração de audiência;
+6. revisar o resultado final em cada plataforma.
 
-Os dez vídeos são enviados diretamente pela API oficial como private com publishAt, idioma pt-BR, categoria 24, selfDeclaredMadeForKids=false, containsSyntheticMedia=false quando aplicável e notifySubscribers=false.
-
-O Publisher grava uma intenção antes do upload, persiste o ID imediatamente depois do insert, aguarda o processamento e reconcilia estados pendentes antes de permitir qualquer reenvio.
-
-## TikTok
-
-O agendamento externo não participa do fluxo do Corte Fino.
-
-O workflow dedicado roda automaticamente em UTC nas janelas que cobrem 08h–22h de São Paulo. Em cada execução ele:
-
-1. carrega o manifesto v6;
-2. valida conta e usuário esperado;
-3. seleciona apenas o próximo corte vencido;
-4. verifica novamente o arquivo no Drive;
-5. publica diretamente pela API oficial;
-6. grava publish_id e estado no Drive;
-7. reconcilia IDs pendentes antes de iniciar novo upload.
-
-A publicação direta exige PUBLISHER_TIKTOK_DIRECT_ENABLED=1, OAuth válido, escopo video.publish, aprovação/auditoria do app quando exigida e PUBLISHER_TIKTOK_EXPECTED_USERNAME correto.
+O Publisher não publica por API ou qualquer agendador externo. Os comandos de publicação por API permanecem bloqueados por PUBLISHER_BROWSER_ONLY=1 para impedir conflito ou duplicidade.
 
 ## Comandos
 
@@ -81,24 +61,19 @@ A publicação direta exige PUBLISHER_TIKTOK_DIRECT_ENABLED=1, OAuth válido, es
     --source-name "CANAL A" --source-name-2 "CANAL B" \
     --confirm-rights
 
+  python -m publisher.cli browser-package
   python -m publisher.cli report
-  python -m publisher.cli report --remote
   python -m publisher.cli youtube --dry-run
-  python -m publisher.cli youtube
   python -m publisher.cli tiktok --dry-run
-  python -m publisher.cli tiktok --due-only
-  python -m publisher.cli verify-tiktok
-  python -m publisher.cli verify-google --folder-id "LINK_A" --folder-2-id "LINK_B"
-  python -m publisher.cli preflight --folder-id "LINK_A" --folder-2-id "LINK_B"
 
 ## Proteções operacionais
 
 - duas pastas obrigatórias e isoladas;
 - dez slots únicos;
-- nenhuma publicação adiantada;
-- um TikTok vencido por execução automática;
-- concorrência serializada entre preparo e publicação;
-- direitos, conta, fonte, checksum e manifesto validados;
+- timestamps locais convertidos e revisados antes da postagem;
+- validação de conta e tela correta no Studio;
+- revisão visual antes de confirmar cada agendamento;
+- marcadores anti-duplicidade no manifesto e no Drive;
 - falha parcial interrompe a rodada e exige reconciliação;
-- o Creator continua separado e não é acionado automaticamente pelo Publisher.
+- Creator e Publisher continuam separados.
 
