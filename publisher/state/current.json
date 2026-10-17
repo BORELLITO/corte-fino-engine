@@ -6,16 +6,16 @@
   "timezone": "America/Sao_Paulo",
   "drive_folder_id": "1uDoJeYbJLj8-i8doY_2B64w98xMLPbIL",
   "youtube_hours": [
-    10,
-    12,
-    15,
+    11,
+    13,
+    16,
     17,
     19
   ],
   "tiktok_hours": [
-    10,
-    12,
-    15,
+    11,
+    13,
+    16,
     17,
     19
   ],
@@ -50,7 +50,7 @@
         "pixel_format": "yuv420p",
         "video_profile": "High",
         "sample_aspect_ratio": "1:1",
-        "frame_rate": 30.0,
+        "frame_rate": 30,
         "audio_sample_rate": "48000",
         "audio_bitrate": "194668",
         "duration": 87.367
@@ -98,8 +98,8 @@
         "editorial_mode": "grounded_context"
       },
       "schedule": {
-        "youtube_hour": 12,
-        "tiktok_hour": 12
+        "youtube_hour": 13,
+        "tiktok_hour": 13
       }
     },
     {
@@ -118,7 +118,7 @@
         "pixel_format": "yuv420p",
         "video_profile": "High",
         "sample_aspect_ratio": "1:1",
-        "frame_rate": 30.0,
+        "frame_rate": 30,
         "audio_sample_rate": "48000",
         "audio_bitrate": "195320",
         "duration": 89.367
@@ -132,7 +132,7 @@
           "tribos",
           "indigenas"
         ],
-        "viral_score": 3.0,
+        "viral_score": 3,
         "tiktok_caption": "O QUE QUE ELES TINHAM DEMAIS 🏛️\n\nÉ o tipo de ritual que tribos indígenas que nunca tiver acesso ao cristianismo fazem até hoje.\n\nEssa decisão resolve o problema ou apenas muda o conflito de lugar? 🗣️\n\nCréditos: Redcast Feminismo.\n\n#politicabrasileira #governo #debatepublico",
         "youtube_title": "O QUE QUE ELES TINHAM DEMAIS 🏛️",
         "youtube_description": "O que que eles tinham demais?\n\nÉ o tipo de ritual que tribos indígenas que nunca tiver acesso ao cristianismo fazem até hoje.\n\nEssa decisão resolve o problema ou apenas muda o conflito de lugar? 🗣️\n\nCréditos: Redcast Feminismo.\n\n#politicabrasileira #governo #debatepublico",
@@ -166,8 +166,8 @@
         "editorial_mode": "grounded_context"
       },
       "schedule": {
-        "youtube_hour": 10,
-        "tiktok_hour": 10
+        "youtube_hour": 11,
+        "tiktok_hour": 11
       }
     },
     {
@@ -186,7 +186,7 @@
         "pixel_format": "yuv420p",
         "video_profile": "High",
         "sample_aspect_ratio": "1:1",
-        "frame_rate": 30.0,
+        "frame_rate": 30,
         "audio_sample_rate": "48000",
         "audio_bitrate": "194825",
         "duration": 89.167
@@ -234,8 +234,8 @@
         "editorial_mode": "grounded_context"
       },
       "schedule": {
-        "youtube_hour": 15,
-        "tiktok_hour": 15
+        "youtube_hour": 16,
+        "tiktok_hour": 16
       }
     },
     {
@@ -254,7 +254,7 @@
         "pixel_format": "yuv420p",
         "video_profile": "High",
         "sample_aspect_ratio": "1:1",
-        "frame_rate": 30.0,
+        "frame_rate": 30,
         "audio_sample_rate": "48000",
         "audio_bitrate": "194103",
         "duration": 66.434
@@ -322,7 +322,7 @@
         "pixel_format": "yuv420p",
         "video_profile": "High",
         "sample_aspect_ratio": "1:1",
-        "frame_rate": 30.0,
+        "frame_rate": 30,
         "audio_sample_rate": "48000",
         "audio_bitrate": "193592",
         "duration": 83.067
