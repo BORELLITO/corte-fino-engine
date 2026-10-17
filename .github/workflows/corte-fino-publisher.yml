@@ -4,11 +4,11 @@ on:
   workflow_dispatch:
     inputs:
       mode:
-        description: "prepare, dry-run, preflight, verify-google, verify-tiktok, youtube, tiktok, tiktok-now ou all"
+        description: "prepare, dry-run, preflight, verify-google, verify-tiktok ou youtube"
         required: true
         default: "dry-run"
         type: choice
-        options: [dry-run, prepare, preflight, verify-google, verify-tiktok, youtube, tiktok, tiktok-now, all]
+        options: [dry-run, prepare, preflight, verify-google, verify-tiktok, youtube]
       target_date:
         description: "data ISO opcional para recovery manual (AAAA-MM-DD)"
         required: false
@@ -70,6 +70,8 @@ jobs:
       PUBLISHER_TIKTOK_ENV: ${{ github.event_name == 'workflow_dispatch' && inputs.tiktok_env || 'production' }}
       PUBLISHER_TIKTOK_EXPECTED_USERNAME: ${{ github.event_name == 'workflow_dispatch' && inputs.tiktok_env == 'sandbox' && 'absurdodocumentado' || secrets.PUBLISHER_TIKTOK_EXPECTED_USERNAME }}
       PUBLISHER_TIKTOK_PRIVACY_LEVEL: PUBLIC_TO_EVERYONE
+      # TikTok fica roteado pelo Metricool temporariamente; evita publicação direta duplicada.
+      PUBLISHER_TIKTOK_DIRECT_ENABLED: "0"
       PUBLISHER_RIGHTS_AUTHORIZED: ${{ secrets.PUBLISHER_RIGHTS_AUTHORIZED }}
       PUBLISHER_RIGHTS_STATUS: ${{ secrets.PUBLISHER_RIGHTS_STATUS }}
 
@@ -222,22 +224,8 @@ jobs:
         if: steps.guard.outputs.run == '1' && (inputs.mode == 'youtube' || inputs.mode == 'all')
         run: python -m publisher.cli youtube
 
-      - name: Publicar TikTok
-        if: steps.guard.outputs.run == '1' && (inputs.mode == 'tiktok' || inputs.mode == 'all')
-        run: python -m publisher.cli tiktok --allow-immediate
-
-      - name: Bloquear publicação imediata fora do Sandbox
-        if: steps.guard.outputs.run == '1' && inputs.mode == 'tiktok-now' && inputs.tiktok_env != 'sandbox'
-        run: |
-          echo "O modo tiktok-now é exclusivo do Sandbox; use tiktok para a publicação controlada em Produção."
-          exit 1
-
-      - name: Teste de publicação TikTok no Sandbox
-        if: steps.guard.outputs.run == '1' && inputs.mode == 'tiktok-now' && inputs.tiktok_env == 'sandbox'
-        env:
-          # Apps Sandbox não auditados só podem publicar como privado.
-          PUBLISHER_TIKTOK_PRIVACY_LEVEL: SELF_ONLY
-        run: python -m publisher.cli tiktok --allow-immediate
+      # O TikTok é agendado manualmente pelo Metricool nesta fase.
+      # O Publisher permanece responsável pelo YouTube direto e ilimitado.
 
       - name: Relatório final
         if: always() && steps.guard.outputs.run == '1' && steps.prepare.outcome == 'success' && inputs.mode != 'verify-tiktok' && inputs.mode != 'verify-google' && inputs.mode != 'preflight'
