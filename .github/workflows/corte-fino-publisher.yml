@@ -221,7 +221,7 @@ jobs:
         run: python -m publisher.cli preflight --folder-id "${{ steps.folder.outputs.value }}"
 
       - name: Agendar YouTube
-        if: steps.guard.outputs.run == '1' && (inputs.mode == 'youtube' || inputs.mode == 'all')
+        if: steps.guard.outputs.run == '1' && inputs.mode == 'youtube'
         run: python -m publisher.cli youtube
 
       # O TikTok é agendado manualmente pelo Metricool nesta fase.
