@@ -15,7 +15,12 @@ from main import (
     build_filter_complex,
     VIDEO_AUDIO_BITRATE,
     VIDEO_AUDIO_MIN_BITRATE,
+    VIDEO_BITRATE,
+    VIDEO_BUFSIZE,
     VIDEO_CRF,
+    VIDEO_MAXRATE,
+    VIDEO_MINRATE,
+    VIDEO_MIN_BITRATE,
     VIDEO_PRESET,
     LOGO_PATH,
     CLIP_DURATION_FLOOR_SECONDS,
@@ -373,6 +378,11 @@ def test_visual_identity_uses_off_white_and_copper_caption_tokens(tmp_path):
 def test_output_encoding_profile_is_youtube_ready():
     assert VIDEO_CRF == 18
     assert VIDEO_PRESET == "medium"
+    assert VIDEO_BITRATE == "8M"
+    assert VIDEO_MINRATE == "6M"
+    assert VIDEO_MAXRATE == "10M"
+    assert VIDEO_BUFSIZE == "20M"
+    assert VIDEO_MIN_BITRATE == 6000000
     assert VIDEO_AUDIO_BITRATE == "192k"
     assert VIDEO_AUDIO_MIN_BITRATE == 128000
 
