@@ -39,11 +39,18 @@ MAX_SOURCE_DURATION_SECONDS = int(os.environ.get("MAX_SOURCE_DURATION_SECONDS", 
 TRANSCRIBE_BEAM_SIZE = max(1, int(os.environ.get("TRANSCRIBE_BEAM_SIZE", "3")))
 TRANSCRIBE_CPU_THREADS = max(1, int(os.environ.get("TRANSCRIBE_CPU_THREADS", "4")))
 TRANSCRIBE_PROGRESS_SECONDS = max(15, int(os.environ.get("TRANSCRIBE_PROGRESS_SECONDS", "45")))
-# Perfil técnico travado para uma saída mais limpa no YouTube sem alterar a identidade visual.
+# Perfil técnico travado para preservar texto, HUD e detalhes finos depois da
+# recompressão inevitável das plataformas. CRF sozinho permitia arquivos abaixo
+# de 3 Mbps; agora usamos VBR controlado com piso de qualidade.
 VIDEO_CRF = max(16, min(23, int(os.environ.get("VIDEO_CRF", "18"))))
 VIDEO_PRESET = os.environ.get("VIDEO_PRESET", "medium").strip() or "medium"
 if VIDEO_PRESET not in {"fast", "veryfast", "medium", "slow"}:
     VIDEO_PRESET = "medium"
+VIDEO_BITRATE = os.environ.get("VIDEO_BITRATE", "8M").strip() or "8M"
+VIDEO_MINRATE = os.environ.get("VIDEO_MINRATE", "6M").strip() or "6M"
+VIDEO_MAXRATE = os.environ.get("VIDEO_MAXRATE", "10M").strip() or "10M"
+VIDEO_BUFSIZE = os.environ.get("VIDEO_BUFSIZE", "20M").strip() or "20M"
+VIDEO_MIN_BITRATE = int(os.environ.get("VIDEO_MIN_BITRATE", "6000000"))
 VIDEO_AUDIO_BITRATE = os.environ.get("VIDEO_AUDIO_BITRATE", "192k").strip() or "192k"
 # AAC pode ser reportado com bitrate variável abaixo do alvo nominal. O piso
 # evita reprovar falsos negativos sem abrir mão de uma trilha de boa qualidade.
@@ -2119,7 +2126,8 @@ def render_clip(source: Path, captions: Path, candidate: Candidate, output: Path
     run([
         "ffmpeg", "-y", "-ss", f"{candidate.start:.3f}", "-i", str(source), "-t", f"{candidate.duration:.3f}",
         "-filter_complex", filter_complex, "-map", "[v]", "-map", "0:a:0?", "-c:v", "libx264", "-preset", VIDEO_PRESET,
-        "-crf", str(VIDEO_CRF), "-profile:v", "high", "-level:v", "4.2", "-pix_fmt", "yuv420p", "-r", "30",
+        "-b:v", VIDEO_BITRATE, "-minrate", VIDEO_MINRATE, "-maxrate", VIDEO_MAXRATE, "-bufsize", VIDEO_BUFSIZE,
+        "-profile:v", "high", "-level:v", "4.2", "-pix_fmt", "yuv420p", "-r", "30",
         # Pequena margem contra pico de codificação em 0 dBFS; mantém a fala intacta
         # e evita falsos negativos no gate de clipping do AAC.
         "-af", "volume=-1dB",
@@ -2207,6 +2215,7 @@ def validate_video(path: Path, expected_duration: float) -> dict[str, Any]:
         "audio_aac": bool(audio and audio.get("codec_name") == "aac"),
         "audio_sample_rate_48k": bool(audio and str(audio.get("sample_rate") or "") == "48000"),
         "sample_aspect_ratio_1_1": bool(video and str(video.get("sample_aspect_ratio") or "") in {"1:1", "1/1"}),
+        "video_quality_target": video_bitrate >= VIDEO_MIN_BITRATE,
         "audio_quality_target": audio_bitrate >= VIDEO_AUDIO_MIN_BITRATE,
         "audio_not_silent": mean_volume is not None and mean_volume > -50.0,
         "audio_not_clipped": max_volume is not None and max_volume <= 0.0,
@@ -2228,7 +2237,11 @@ def validate_video(path: Path, expected_duration: float) -> dict[str, Any]:
         "mean_volume_db": mean_volume,
         "max_volume_db": max_volume,
         "encoding_profile": {
-            "crf": VIDEO_CRF,
+            "rate_control": "VBR",
+            "video_bitrate": VIDEO_BITRATE,
+            "video_minrate": VIDEO_MINRATE,
+            "video_maxrate": VIDEO_MAXRATE,
+            "video_min_bitrate": VIDEO_MIN_BITRATE,
             "preset": VIDEO_PRESET,
             "scale": "lanczos",
             "audio_bitrate": VIDEO_AUDIO_BITRATE,
