@@ -561,9 +561,35 @@ def build_hashtags(topic: str, keywords: list[str], platform: str = "youtube") -
     return list(dict.fromkeys(tag for tag in tags if tag))[:limit]
 
 
+_PUBLISHER_CREDIT_NAMES = {
+    "cortefino",
+    "cortefinopublisher",
+    "cortefinoengine",
+}
+
+def validate_credit_source(source_name: str = "", *, required: bool = False) -> str:
+    """Validate the original channel used in the public credit line.
+
+    Corte Fino is the publishing tool, not the source of a clip. A missing
+    source is tolerated only by low-level unit-copy generation; production
+    manifest preparation must pass required=True.
+    """
+    name = format_copy_text(source_name, final_punctuation=False)
+    compact = re.sub(r"[^a-z0-9]", "", fold(name))
+    if required and not name:
+        raise ValueError(
+            "Crédito obrigatório: informe o canal ou a fonte original do corte."
+        )
+    if compact in _PUBLISHER_CREDIT_NAMES:
+        raise ValueError(
+            "Crédito inválido: use o canal ou a fonte original; nunca use Corte Fino."
+        )
+    return name
+
+
 def build_credit(source_name: str = "", source_episode: str = "") -> str:
     """Create a transparent, natural credit without inventing a source."""
-    name = format_copy_text(source_name, final_punctuation=False)
+    name = validate_credit_source(source_name)
     episode = format_copy_text(source_episode, final_punctuation=False)
     if name and episode:
         return f"Créditos: {name}, episódio {episode}."
