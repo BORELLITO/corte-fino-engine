@@ -461,3 +461,73 @@ def test_output_hard_locks_to_five(tmp_path, monkeypatch):
         (tmp_path / "radar_latest.json").read_text(encoding="utf-8")
     )
     assert len(payload["ranked_nonpolitical"]) == 5
+
+
+
+def test_weak_comment_heat_without_semantic_tension_is_dropped():
+    candidate = VideoCandidate(
+        video_id="weak-comments",
+        title="Podcast genérico",
+        channel_title="Canal",
+        channel_id="UC_WEAK",
+        category_id="22",
+        made_for_kids=False,
+        published_at=datetime.now(timezone.utc).isoformat(),
+        description="",
+        duration_seconds=3600,
+        view_count=100000,
+        like_count=5000,
+        comment_count=1000,
+        youtube_license="youtube",
+        political_or_electoral=False,
+        velocity_score=90,
+        engagement_score=80,
+        comment_heat_score=22,
+        comment_divergence=True,
+        controversy_score=0,
+        emotion_score=0,
+        chapter_heat_score=0,
+        search_gap_score=80,
+        freshness_score=90,
+        source_score=100,
+        momentum_score=70,
+        breakout_score=90,
+        cutability_score=70,
+    )
+    finalize_score(candidate)
+    assert candidate.radar_score is None
+    assert candidate.rank_status == "DROP"
+
+
+def test_strong_organic_comment_conflict_can_pass_without_keywords():
+    candidate = VideoCandidate(
+        video_id="organic-conflict",
+        title="Podcast com conflito orgânico",
+        channel_title="Canal",
+        channel_id="UC_ORGANIC",
+        category_id="22",
+        made_for_kids=False,
+        published_at=datetime.now(timezone.utc).isoformat(),
+        description="",
+        duration_seconds=3600,
+        view_count=100000,
+        like_count=5000,
+        comment_count=3000,
+        youtube_license="youtube",
+        political_or_electoral=False,
+        velocity_score=95,
+        engagement_score=90,
+        comment_heat_score=55,
+        comment_divergence=True,
+        controversy_score=0,
+        emotion_score=0,
+        chapter_heat_score=0,
+        search_gap_score=50,
+        freshness_score=90,
+        source_score=25,
+        momentum_score=80,
+        breakout_score=90,
+        cutability_score=70,
+    )
+    finalize_score(candidate)
+    assert candidate.radar_score is not None
