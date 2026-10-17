@@ -50,7 +50,7 @@ A publicação é feita exclusivamente por Cloud Web Browser, diretamente nas in
 5. repetir no YouTube Studio com título, descrição, tags e configuração de audiência;
 6. revisar o resultado final em cada plataforma.
 
-O Publisher não publica por API ou qualquer agendador externo. Os comandos de publicação por API permanecem bloqueados por PUBLISHER_BROWSER_ONLY=1 para impedir conflito ou duplicidade.
+O Publisher não publica por API ou qualquer agendador externo. As funções legadas de publicação permanecem bloqueadas no código para impedir conflito ou duplicidade.
 
 ## Comandos
 
