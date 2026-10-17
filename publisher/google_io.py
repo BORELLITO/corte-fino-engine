@@ -467,6 +467,9 @@ def effective_youtube_publish_at(day: date, hour: int) -> str:
     desired = local_publish_at(day, hour)
     parsed = _parse_utc(desired)
     if parsed and parsed <= _utc_now() and day == datetime.now(TIMEZONE).date():
+        candidate = datetime.combine(day, time(11, 30), tzinfo=TIMEZONE)
+        if candidate > datetime.now(TIMEZONE):
+            return candidate.astimezone(timezone.utc).isoformat().replace("+00:00", "Z")
         return (_utc_now() + timedelta(minutes=5)).replace(microsecond=0).isoformat().replace("+00:00", "Z")
     return desired
 
