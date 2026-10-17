@@ -31,22 +31,23 @@ def test_both_motors_require_manual_dispatch():
     assert "group: corte-fino-motor-2" in publisher
 
 
-def test_publisher_manual_tiktok_mode_is_explicit():
+def test_publisher_routes_tiktok_to_metricool_and_keeps_youtube_direct():
     text = PUBLISHER_WORKFLOW.read_text(encoding="utf-8")
 
-    assert "inputs.mode == 'tiktok' || inputs.mode == 'all'" in text
-    assert "python -m publisher.cli tiktok --allow-immediate" in text
+    assert "PUBLISHER_TIKTOK_DIRECT_ENABLED: \"0\"" in text
+    assert "python -m publisher.cli tiktok --allow-immediate" not in text
+    assert "O TikTok é agendado manualmente pelo Metricool" in text
+    assert "python -m publisher.cli youtube" in text
 
 
-def test_tiktok_schedule_uses_due_only_and_shared_publisher_lock():
+def test_tiktok_schedule_is_disabled_when_metricool_is_the_route():
     text = TIKTOK_SCHEDULE_WORKFLOW.read_text(encoding="utf-8")
 
-    assert 'cron: "0 * * * *"' in text
+    assert "  schedule:" not in text
     assert "workflow_dispatch:" in text
     assert "group: corte-fino-motor-2" in text
-    assert "python -m publisher.cli tiktok --due-only" in text
-    assert "PUBLISHER_TIKTOK_REFRESH_TOKEN" in text
-    assert "PUBLISHER_GOOGLE_REFRESH_TOKEN" in text
+    assert "python -m publisher.cli tiktok --due-only" not in text
+    assert "Metricool" in text
     assert "latest_batch.json" not in text
 
 
