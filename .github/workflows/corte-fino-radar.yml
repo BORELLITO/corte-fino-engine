@@ -10,14 +10,14 @@ on:
       top_n:
         description: "Quantidade de oportunidades no relatório"
         required: false
-        default: "12"
+        default: "5"
       extra_topics:
         description: "Temas extras separados por vírgula"
         required: false
         default: ""
   schedule:
-    # 08:30, 14:30 e 20:30 no horário de Brasília (UTC-3).
-    - cron: "30 11,17,23 * * *"
+    # 08:30 e 20:30 no horário de Brasília (UTC-3).
+    - cron: "30 11,23 * * *"
 
 permissions:
   contents: read
@@ -78,7 +78,7 @@ jobs:
         env:
           YOUTUBE_API_KEY: ${{ secrets.YOUTUBE_API_KEY }}
           RADAR_DAYS: ${{ inputs.days || '7' }}
-          RADAR_TOP_N: ${{ inputs.top_n || '12' }}
+          RADAR_TOP_N: ${{ inputs.top_n || '5' }}
           RADAR_TREND_LIMIT: "6"
           RADAR_MAX_QUERIES: "18"
           RADAR_EXTRA_TOPICS: ${{ inputs.extra_topics || '' }}
