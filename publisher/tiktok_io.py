@@ -89,15 +89,30 @@ def _refresh_access_token() -> str:
             "refresh_token": env(f"{prefix}_REFRESH_TOKEN"),
         }
     ).encode("utf-8")
-    request = urllib.request.Request(TOKEN_URL, data=form, headers={"Content-Type": "application/x-www-form-urlencoded"}, method="POST")
-    try:
-        with urllib.request.urlopen(request, timeout=60) as response:
-            result = json.loads(response.read().decode("utf-8"))
-    except urllib.error.HTTPError as exc:
-        detail = exc.read().decode("utf-8", errors="replace")
-        raise TikTokError(f"TikTok token HTTP {exc.code}: {detail[:500]}") from exc
-    except (urllib.error.URLError, json.JSONDecodeError) as exc:
-        raise TikTokError("Não foi possível renovar o token do TikTok.") from exc
+    for attempt in range(API_RETRY_ATTEMPTS):
+        request = urllib.request.Request(
+            TOKEN_URL,
+            data=form,
+            headers={"Content-Type": "application/x-www-form-urlencoded"},
+            method="POST",
+        )
+        try:
+            with urllib.request.urlopen(request, timeout=60) as response:
+                result = json.loads(response.read().decode("utf-8"))
+            break
+        except urllib.error.HTTPError as exc:
+            detail = exc.read().decode("utf-8", errors="replace")
+            if exc.code in RETRYABLE_HTTP_STATUS and attempt < API_RETRY_ATTEMPTS - 1:
+                time.sleep(_retry_delay(attempt, exc.headers.get("Retry-After")))
+                continue
+            raise TikTokError(f"TikTok token HTTP {exc.code}: {detail[:500]}") from exc
+        except urllib.error.URLError as exc:
+            if attempt < API_RETRY_ATTEMPTS - 1:
+                time.sleep(_retry_delay(attempt))
+                continue
+            raise TikTokError("Não foi possível renovar o token do TikTok.") from exc
+        except json.JSONDecodeError as exc:
+            raise TikTokError("TikTok devolveu uma resposta de token inválida.") from exc
     if result.get("error"):
         raise TikTokError(f"TikTok token {result.get('error')}: {result.get('error_description', '')}".strip())
     token = result.get("access_token", "")
@@ -176,14 +191,18 @@ def _upload_file(upload_url: str, path: Path) -> None:
             if not chunk:
                 break
             end = start + len(chunk) - 1
-            request = urllib.request.Request(
-                upload_url,
-                data=chunk,
-                headers={"Content-Type": "video/mp4", "Content-Length": str(len(chunk)), "Content-Range": f"bytes {start}-{end}/{size}"},
-                method="PUT",
-            )
             last_error: Exception | None = None
             for attempt in range(UPLOAD_ATTEMPTS):
+                request = urllib.request.Request(
+                    upload_url,
+                    data=chunk,
+                    headers={
+                        "Content-Type": "video/mp4",
+                        "Content-Length": str(len(chunk)),
+                        "Content-Range": f"bytes {start}-{end}/{size}",
+                    },
+                    method="PUT",
+                )
                 try:
                     with urllib.request.urlopen(request, timeout=120) as response:
                         if response.status not in (200, 201, 204):
@@ -193,10 +212,14 @@ def _upload_file(upload_url: str, path: Path) -> None:
                 except urllib.error.HTTPError as exc:
                     detail = exc.read().decode("utf-8", errors="replace")
                     last_error = TikTokError(f"Upload TikTok HTTP {exc.code}: {detail[:500]}")
+                    if exc.code not in RETRYABLE_HTTP_STATUS:
+                        break
+                    if attempt < UPLOAD_ATTEMPTS - 1:
+                        time.sleep(_retry_delay(attempt, exc.headers.get("Retry-After")))
                 except urllib.error.URLError as exc:
                     last_error = TikTokError(f"Falha de rede no upload TikTok: {exc.reason}")
-                if attempt < UPLOAD_ATTEMPTS - 1:
-                    time.sleep(2**attempt)
+                    if attempt < UPLOAD_ATTEMPTS - 1:
+                        time.sleep(_retry_delay(attempt))
             if last_error:
                 raise last_error
             start = end + 1
