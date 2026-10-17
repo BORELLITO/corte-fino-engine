@@ -34,6 +34,11 @@ on:
         required: false
         default: false
         type: boolean
+      force_repost:
+        description: "Reenvia os cinco MP4s e desativa agendamentos YouTube anteriores"
+        required: false
+        default: false
+        type: boolean
 
       tiktok_env:
         description: "Credenciais TikTok usadas nesta execução manual"
@@ -74,6 +79,7 @@ jobs:
       PUBLISHER_TIKTOK_DIRECT_ENABLED: "0"
       PUBLISHER_RIGHTS_AUTHORIZED: ${{ secrets.PUBLISHER_RIGHTS_AUTHORIZED }}
       PUBLISHER_RIGHTS_STATUS: ${{ secrets.PUBLISHER_RIGHTS_STATUS }}
+      PUBLISHER_FORCE_REPOST: ${{ inputs.force_repost && '1' || '0' }}
 
     steps:
       - name: Confirmar execução manual
