@@ -1,4 +1,4 @@
-name: Corte Fino Motor 2 — Publicar 5 Cortes
+name: Corte Fino Motor 2 — Publicar 10 Cortes
 
 on:
   workflow_dispatch:
@@ -9,56 +9,80 @@ on:
         default: "dry-run"
         type: choice
         options: [dry-run, prepare, preflight, verify-google, verify-tiktok, youtube]
-      target_date:
-        description: "data ISO opcional para recovery manual (AAAA-MM-DD)"
-        required: false
-        default: ""
-        type: string
-      drive_folder:
-        description: "URL ou ID exato da pasta do lote com os 5 MP4"
+      folder_1:
+        description: "URL/ID da primeira pasta com 5 MP4"
         required: true
-        default: ""
         type: string
-      source_name:
-        description: "Nome confirmado da fonte para o crédito"
+      folder_2:
+        description: "URL/ID da segunda pasta com 5 MP4"
+        required: true
+        type: string
+      date_1:
+        description: "Data local da primeira pasta (AAAA-MM-DD)"
+        required: true
+        type: string
+      date_2:
+        description: "Data local da segunda pasta (AAAA-MM-DD)"
+        required: true
+        type: string
+      period_1:
+        description: "Período da primeira pasta"
+        required: true
+        default: "day"
+        type: choice
+        options: [day, night]
+      period_2:
+        description: "Período da segunda pasta"
+        required: true
+        default: "night"
+        type: choice
+        options: [day, night]
+      source_name_1:
+        description: "Canal/fonte original da primeira pasta"
+        required: true
+        type: string
+      source_episode_1:
+        description: "Episódio confirmado da primeira pasta"
         required: false
         default: ""
         type: string
-      source_episode:
-        description: "Episódio confirmado da fonte, se houver"
+      source_name_2:
+        description: "Canal/fonte original da segunda pasta"
+        required: true
+        type: string
+      source_episode_2:
+        description: "Episódio confirmado da segunda pasta"
         required: false
         default: ""
         type: string
       rights_confirmed:
-        description: "Confirme true somente após revisar a autorização da fonte"
-        required: false
+        description: "Confirme somente após revisar os direitos das duas fontes"
+        required: true
         default: false
         type: boolean
       force_repost:
-        description: "Reenvia os cinco MP4s e desativa agendamentos YouTube anteriores"
+        description: "Desativa vídeos YouTube anteriores e cria novo upload"
         required: false
         default: false
         type: boolean
-
       tiktok_env:
-        description: "Credenciais TikTok usadas nesta execução manual"
+        description: "Credenciais TikTok desta execução"
         required: true
         default: "production"
         type: choice
         options: [production, sandbox]
+
 permissions:
   contents: write
 
 concurrency:
-  # O Publisher persiste manifesto e relatório no git; serialize somente suas
-  # próprias execuções para impedir dois lotes publicando ao mesmo tempo.
-  group: corte-fino-motor-2
+  group: corte-fino-publisher
   cancel-in-progress: false
 
 jobs:
   publisher:
     runs-on: ubuntu-22.04
-    timeout-minutes: 90
+    timeout-minutes: 120
     env:
       PYTHONUNBUFFERED: "1"
       PUBLISHER_WHISPER_MODEL: small
@@ -72,115 +96,84 @@ jobs:
       PUBLISHER_TIKTOK_SANDBOX_CLIENT_KEY: ${{ secrets.TIKTOK_SANDBOX_CLIENT_KEY }}
       PUBLISHER_TIKTOK_SANDBOX_CLIENT_SECRET: ${{ secrets.TIKTOK_SANDBOX_CLIENT_SECRET }}
       PUBLISHER_TIKTOK_SANDBOX_REFRESH_TOKEN: ${{ secrets.TIKTOK_SANDBOX_REFRESH_TOKEN }}
-      PUBLISHER_TIKTOK_ENV: ${{ github.event_name == 'workflow_dispatch' && inputs.tiktok_env || 'production' }}
-      PUBLISHER_TIKTOK_EXPECTED_USERNAME: ${{ github.event_name == 'workflow_dispatch' && inputs.tiktok_env == 'sandbox' && 'absurdodocumentado' || secrets.PUBLISHER_TIKTOK_EXPECTED_USERNAME }}
+      PUBLISHER_TIKTOK_ENV: ${{ inputs.tiktok_env }}
+      PUBLISHER_TIKTOK_EXPECTED_USERNAME: ${{ inputs.tiktok_env == 'sandbox' && 'absurdodocumentado' || secrets.PUBLISHER_TIKTOK_EXPECTED_USERNAME }}
       PUBLISHER_TIKTOK_PRIVACY_LEVEL: PUBLIC_TO_EVERYONE
-      # TikTok fica roteado pelo Metricool temporariamente; evita publicação direta duplicada.
-      PUBLISHER_TIKTOK_DIRECT_ENABLED: "0"
-      PUBLISHER_RIGHTS_AUTHORIZED: ${{ secrets.PUBLISHER_RIGHTS_AUTHORIZED }}
-      PUBLISHER_RIGHTS_STATUS: ${{ secrets.PUBLISHER_RIGHTS_STATUS }}
+      PUBLISHER_TIKTOK_DIRECT_ENABLED: "1"
+      PUBLISHER_RIGHTS_AUTHORIZED: ${{ inputs.rights_confirmed && '1' || '0' }}
+      PUBLISHER_RIGHTS_STATUS: "AUTORIZADO — confirmação manual das duas fontes"
       PUBLISHER_FORCE_REPOST: ${{ inputs.force_repost && '1' || '0' }}
 
     steps:
-      - name: Confirmar execução manual
+      - name: Guardar acionamento manual
         id: guard
         run: |
           if [ "${{ github.event_name }}" != "workflow_dispatch" ]; then
-            echo "O Publisher só aceita acionamento manual com o link exato da pasta." >&2
+            echo "O Publisher só aceita acionamento manual com duas pastas exatas." >&2
             exit 1
           fi
           echo "run=1" >> "$GITHUB_OUTPUT"
 
       - name: Checkout
-        if: steps.guard.outputs.run == '1'
         uses: actions/checkout@v7
 
       - name: Python
-        if: steps.guard.outputs.run == '1'
         uses: actions/setup-python@v7
         with:
           python-version: "3.11"
           cache: pip
 
       - name: Ferramentas de vídeo
-        if: steps.guard.outputs.run == '1'
         run: sudo apt-get update && sudo apt-get install -y ffmpeg fonts-dejavu-core
 
       - name: Dependências
-        if: steps.guard.outputs.run == '1'
         run: |
           python -m pip install --upgrade pip
           python -m pip install -r requirements.txt
 
-      - name: Resolver pasta do Drive
-        id: folder
-        if: steps.guard.outputs.run == '1'
-        env:
-          DEFAULT_RIGHTS: ${{ env.PUBLISHER_RIGHTS_AUTHORIZED }}
-          DEFAULT_RIGHTS_STATUS: ${{ env.PUBLISHER_RIGHTS_STATUS }}
-          REQUESTED_FOLDER: ${{ inputs.drive_folder }}
-          REQUESTED_RIGHTS: ${{ inputs.rights_confirmed }}
-        run: |
-          folder="${REQUESTED_FOLDER:-}"
-          rights="${DEFAULT_RIGHTS:-0}"
-          rights_status="${DEFAULT_RIGHTS_STATUS:-revisão manual necessária}"
-          if [ "$REQUESTED_RIGHTS" = "true" ]; then
-            rights="1"
-            rights_status="AUTORIZADO — confirmação manual do proprietário/licenciante"
-          elif [ "$rights" = "1" ] && { [ -z "${rights_status// }" ] || [ "$rights_status" = "revisão manual necessária" ]; }; then
-            rights_status="AUTORIZADO — configuração persistente do Publisher"
-          fi
-          if [ -z "$folder" ]; then
-            echo "O link ou ID exato da pasta do lote é obrigatório." >&2
-            exit 1
-          fi
-          echo "value=$folder" >> "$GITHUB_OUTPUT"
-          echo "rights_authorized=$rights" >> "$GITHUB_OUTPUT"
-          echo "rights_status=$rights_status" >> "$GITHUB_OUTPUT"
-
       - name: Cache Whisper
-        if: steps.guard.outputs.run == '1'
         uses: actions/cache@v6
         with:
           path: ~/.cache/huggingface
           key: publisher-whisper-${{ runner.os }}-${{ env.PUBLISHER_WHISPER_MODEL }}
           restore-keys: publisher-whisper-${{ runner.os }}-
 
-      - name: Testes
-        if: steps.guard.outputs.run == '1'
-        run: PUBLISHER_TIKTOK_DIRECT_ENABLED=1 python -m pytest -q tests/test_publisher.py tests/test_quality_guards.py
+      - name: Testes completos
+        run: python -m pytest -q
 
       - name: Verificar manifesto persistido
         id: state
-        if: steps.guard.outputs.run == '1'
         env:
-          REQUESTED_FOLDER: ${{ steps.folder.outputs.value }}
+          REQUESTED_FOLDER_1: ${{ inputs.folder_1 }}
+          REQUESTED_FOLDER_2: ${{ inputs.folder_2 }}
+          REQUESTED_DATE_1: ${{ inputs.date_1 }}
+          REQUESTED_DATE_2: ${{ inputs.date_2 }}
+          REQUESTED_PERIOD_1: ${{ inputs.period_1 }}
+          REQUESTED_PERIOD_2: ${{ inputs.period_2 }}
           REQUESTED_MODE: ${{ inputs.mode }}
         run: |
           needs_prepare=1
-          folder_match=0
           if [ -f publisher/state/current.json ]; then
-            version="$(python - <<'PY'
-          import json
-          from pathlib import Path
-          try:
-              print(json.loads(Path('publisher/state/current.json').read_text(encoding='utf-8')).get('version', 0))
-          except Exception:
-              print(0)
-          PY
-            )"
-            if [ "$version" -ge 5 ] 2>/dev/null && python - <<'PY'
+            if python - <<'PY'
           import json
           import os
           from pathlib import Path
-          from publisher.core import validate_manifest
+          from publisher.core import normalize_period, validate_manifest
           from publisher.google_io import normalize_folder_id
 
           try:
-              data = json.loads(Path('publisher/state/current.json').read_text(encoding='utf-8'))
+              data = json.loads(Path("publisher/state/current.json").read_text(encoding="utf-8"))
               validate_manifest(data)
-              requested = normalize_folder_id(os.environ['REQUESTED_FOLDER'])
-              if requested != normalize_folder_id(str(data.get('drive_folder_id', ''))):
+              requested = {
+                  normalize_folder_id(os.environ["REQUESTED_FOLDER_1"]),
+                  normalize_folder_id(os.environ["REQUESTED_FOLDER_2"]),
+              }
+              actual = {normalize_folder_id(str(item.get("drive_folder_id", ""))) for item in data.get("batches", [])}
+              periods = [normalize_period(os.environ["REQUESTED_PERIOD_1"]), normalize_period(os.environ["REQUESTED_PERIOD_2"])]
+              actual_periods = [normalize_period(str(item.get("period", ""))) for item in data.get("batches", [])]
+              dates = [os.environ["REQUESTED_DATE_1"], os.environ["REQUESTED_DATE_2"]]
+              actual_dates = [str(item.get("date", "")) for item in data.get("batches", [])]
+              if requested != actual or periods != actual_periods or dates != actual_dates:
                   raise SystemExit(1)
           except Exception:
               raise SystemExit(1)
@@ -188,7 +181,6 @@ jobs:
             then
               if [ "${REQUESTED_MODE:-}" != "prepare" ]; then
                 needs_prepare=0
-                folder_match=1
               fi
             fi
           fi
@@ -196,74 +188,73 @@ jobs:
             needs_prepare=0
           fi
           echo "needs_prepare=$needs_prepare" >> "$GITHUB_OUTPUT"
-          echo "folder_match=$folder_match" >> "$GITHUB_OUTPUT"
 
-      - name: Preparar
+      - name: Preparar manifesto v6
         id: prepare
-        if: steps.guard.outputs.run == '1' && steps.state.outputs.needs_prepare == '1' && inputs.mode != 'verify-tiktok' && inputs.mode != 'verify-google' && inputs.mode != 'preflight'
-        env:
-          PUBLISHER_RIGHTS_AUTHORIZED: ${{ steps.folder.outputs.rights_authorized }}
-          PUBLISHER_RIGHTS_STATUS: ${{ steps.folder.outputs.rights_status }}
-        run: python -m publisher.cli prepare --folder-id "${{ steps.folder.outputs.value }}" --target-date "${{ inputs.target_date }}" --source-name "${{ inputs.source_name }}" --source-episode "${{ inputs.source_episode }}"
+        if: steps.state.outputs.needs_prepare == '1' && inputs.mode != 'verify-tiktok' && inputs.mode != 'verify-google' && inputs.mode != 'preflight'
+        run: |
+          python -m publisher.cli prepare \
+            --folder-id "${{ inputs.folder_1 }}" \
+            --folder-2-id "${{ inputs.folder_2 }}" \
+            --date-1 "${{ inputs.date_1 }}" \
+            --date-2 "${{ inputs.date_2 }}" \
+            --period-1 "${{ inputs.period_1 }}" \
+            --period-2 "${{ inputs.period_2 }}" \
+            --source-name "${{ inputs.source_name_1 }}" \
+            --source-episode "${{ inputs.source_episode_1 }}" \
+            --source-name-2 "${{ inputs.source_name_2 }}" \
+            --source-episode-2 "${{ inputs.source_episode_2 }}" \
+            ${{ inputs.rights_confirmed && '--confirm-rights' || '' }}
 
       - name: Dry-run YouTube
-        if: steps.guard.outputs.run == '1' && inputs.mode == 'dry-run'
+        if: inputs.mode == 'dry-run'
         run: python -m publisher.cli youtube --dry-run
 
       - name: Dry-run TikTok
-        if: steps.guard.outputs.run == '1' && inputs.mode == 'dry-run'
+        if: inputs.mode == 'dry-run'
         run: python -m publisher.cli tiktok --dry-run
 
       - name: Verificar conta TikTok
-        if: steps.guard.outputs.run == '1' && inputs.mode == 'verify-tiktok'
+        if: inputs.mode == 'verify-tiktok'
         run: python -m publisher.cli verify-tiktok
 
       - name: Verificar Google
-        if: steps.guard.outputs.run == '1' && inputs.mode == 'verify-google'
-        run: python -m publisher.cli verify-google --folder-id "${{ steps.folder.outputs.value }}"
+        if: inputs.mode == 'verify-google'
+        run: python -m publisher.cli verify-google --folder-id "${{ inputs.folder_1 }}" --folder-2-id "${{ inputs.folder_2 }}"
 
       - name: Preflight de produção
-        if: steps.guard.outputs.run == '1' && inputs.mode == 'preflight'
-        run: python -m publisher.cli preflight --folder-id "${{ steps.folder.outputs.value }}"
+        if: inputs.mode == 'preflight'
+        run: python -m publisher.cli preflight --folder-id "${{ inputs.folder_1 }}" --folder-2-id "${{ inputs.folder_2 }}"
 
       - name: Agendar YouTube
-        if: steps.guard.outputs.run == '1' && inputs.mode == 'youtube'
+        if: inputs.mode == 'youtube'
         run: python -m publisher.cli youtube
 
-      # O TikTok é agendado manualmente pelo Metricool nesta fase.
-      # O Publisher permanece responsável pelo YouTube direto e ilimitado.
-
       - name: Relatório final
-        if: always() && steps.guard.outputs.run == '1' && steps.prepare.outcome == 'success' && inputs.mode != 'verify-tiktok' && inputs.mode != 'verify-google' && inputs.mode != 'preflight'
+        if: always() && steps.prepare.outcome == 'success' && inputs.mode != 'verify-tiktok' && inputs.mode != 'verify-google' && inputs.mode != 'preflight'
         run: python -m publisher.cli report --remote | tee publisher/state/report.json
 
       - name: Guard de falhas parciais
-        if: always() && steps.guard.outputs.run == '1' && steps.prepare.outcome == 'success' && inputs.mode != 'verify-tiktok' && inputs.mode != 'verify-google' && inputs.mode != 'preflight'
+        if: always() && steps.prepare.outcome == 'success' && inputs.mode != 'verify-tiktok' && inputs.mode != 'verify-google' && inputs.mode != 'preflight'
         run: |
           python - <<'PY'
           import json
           from pathlib import Path
-
           path = Path("publisher/state/report.json")
           if not path.exists():
               raise SystemExit(0)
           report = json.loads(path.read_text(encoding="utf-8"))
           attention = report.get("summary", {}).get("attention", 0)
           if attention:
-              print(f"Publisher encontrou {attention} item(ns) que exigem reconciliação.")
-              raise SystemExit(1)
+              raise SystemExit(f"Publisher encontrou {attention} item(ns) para reconciliação.")
           PY
 
-      - name: Persistir manifesto
-        if: always() && steps.guard.outputs.run == '1' && steps.prepare.outcome == 'success' && inputs.mode != 'verify-tiktok' && inputs.mode != 'verify-google' && inputs.mode != 'preflight'
+      - name: Persistir manifesto sanitizado
+        if: always() && steps.prepare.outcome == 'success' && inputs.mode != 'verify-tiktok' && inputs.mode != 'verify-google' && inputs.mode != 'preflight'
         run: |
           python - <<'PY'
           import json
           from pathlib import Path
-
-          # current.json atravessa um repositório público e só precisa de copy,
-          # horários e IDs para reconciliar publicações. Não persista a
-          # transcrição integral, que pode conter conteúdo protegido ou pessoal.
           path = Path("publisher/state/current.json")
           if path.exists():
               data = json.loads(path.read_text(encoding="utf-8"))
@@ -277,7 +268,7 @@ jobs:
           git config user.email "corte-fino-publisher[bot]@users.noreply.github.com"
           git add publisher/state/current.json publisher/state/report.json
           if ! git diff --cached --quiet; then
-            git commit -m "chore(publisher): atualizar manifesto do lote"
+            git commit -m "chore(publisher): atualizar manifesto v6 da rodada"
             for attempt in 1 2 3; do
               if git pull --rebase origin main && git push; then
                 exit 0
@@ -285,6 +276,7 @@ jobs:
               git rebase --abort 2>/dev/null || true
               sleep $((attempt * 3))
             done
-            echo "Não foi possível sincronizar o estado do Publisher após 3 tentativas." >&2
+            echo "Não foi possível sincronizar o estado do Publisher." >&2
             exit 1
           fi
+
