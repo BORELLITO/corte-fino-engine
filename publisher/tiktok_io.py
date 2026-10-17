@@ -352,6 +352,11 @@ def publish_tiktok(
             raise TikTokError(
                 "Publicação bloqueada: os direitos da fonte não foram confirmados no manifesto."
             )
+        if env("PUBLISHER_TIKTOK_DIRECT_ENABLED", "0").strip() != "1":
+            raise TikTokError(
+                "Publicação direta no TikTok está desativada enquanto o fluxo usa o Metricool. "
+                "Agende o TikTok pelo Metricool; o YouTube continua no Publisher."
+            )
 
     # O estado de um publish_id precisa ser reconciliado mesmo quando o
     # manifesto já não está na data original. Assim uma execução pendente não
