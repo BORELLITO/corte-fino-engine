@@ -645,7 +645,7 @@ def test_tiktok_due_selection_skips_completed_clips_and_chooses_next_slot(monkey
     clips, prefetched = tiktok_io._select_due_clips(
         manifest,
         Drive(),
-        datetime(2026, 10, 10, 12, 15, tzinfo=ZoneInfo("America/Sao_Paulo")),
+        datetime(2026, 10, 10, 13, 15, tzinfo=ZoneInfo("America/Sao_Paulo")),
     )
     assert [clip["index"] for clip in clips] == [2]
     assert prefetched[1]["appProperties"]["cf_tiktok_status"] == "PUBLISH_COMPLETE"
@@ -663,7 +663,7 @@ def test_tiktok_due_only_returns_one_post_for_the_current_window():
         manifest,
         dry_run=True,
         due_only=True,
-        now=datetime(2026, 10, 10, 10, 15, tzinfo=ZoneInfo("America/Sao_Paulo")),
+        now=datetime(2026, 10, 10, 11, 15, tzinfo=ZoneInfo("America/Sao_Paulo")),
     )
     assert len(result) == 1
     assert result[0]["index"] == 1
