@@ -270,6 +270,8 @@ def test_report_contains_both_batches():
     assert len(data["youtube"]) == 10
     assert len(data["tiktok"]) == 10
     assert {item["batch_id"] for item in data["youtube"]} == {"A", "B"}
+    assert {item["status"] for item in data["youtube"]} == {"pending_browser"}
+    assert {item["status"] for item in data["tiktok"]} == {"pending_browser"}
 
 
 def test_resolve_folder_rejects_extra_children():
