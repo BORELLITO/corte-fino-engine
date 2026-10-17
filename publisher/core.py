@@ -179,6 +179,7 @@ EMOJIS_BY_TOPIC = {
     "espaco": ("🚀", "🔴"),
     "geral": ("🧠", "💬"),
 }
+FUNCTIONAL_EMOJIS = frozenset(emoji for pair in EMOJIS_BY_TOPIC.values() for emoji in pair)
 
 
 @dataclass
@@ -439,6 +440,12 @@ def copy_quality_issues(pack: CopyPack) -> list[str]:
         issues.append("TikTok não pode conter #Shorts")
     if "#tiktok" in fold(pack.youtube_description):
         issues.append("YouTube não pode conter #TikTok")
+    if "#cortefino" in fold(pack.tiktok_caption) or "#cortefino" in fold(pack.youtube_description):
+        issues.append("hashtags não podem usar o branding do Publisher")
+    if sum(pack.youtube_title.count(emoji) for emoji in FUNCTIONAL_EMOJIS) != 1:
+        issues.append("título precisa conter exatamente um emoji funcional")
+    if sum(pack.cta.count(emoji) for emoji in FUNCTIONAL_EMOJIS) != 1:
+        issues.append("CTA precisa conter exatamente um emoji funcional")
     if any(dash in text for text in texts for dash in ("–", "—")):
         issues.append("travessão longo não permitido na copy")
     if "…" in pack.youtube_title or pack.youtube_title.upper().endswith(BAD_TITLE_ENDINGS):
@@ -766,15 +773,18 @@ def validate_manifest(
     require_transcripts: bool = False,
 ) -> None:
     """Validate the immutable two-folder/ten-clip contract."""
+    if not isinstance(manifest, dict):
+        raise RuntimeError("Manifesto inválido: a raiz precisa ser um objeto JSON.")
     issues: list[str] = []
     try:
         version = int(manifest.get("version", 0) or 0)
     except (TypeError, ValueError):
         version = 0
-    if version < MANIFEST_VERSION:
-        issues.append(f"versão {version} incompatível; esperado {MANIFEST_VERSION}")
+    if version != MANIFEST_VERSION:
+        issues.append(f"versão {version} incompatível; esperado exatamente {MANIFEST_VERSION}")
+    manifest_day: date | None = None
     try:
-        date.fromisoformat(str(manifest.get("date", "")))
+        manifest_day = date.fromisoformat(str(manifest.get("date", "")))
     except ValueError:
         issues.append("data ISO inválida")
     if str(manifest.get("timezone", "")).strip() != "America/Sao_Paulo":
@@ -790,6 +800,8 @@ def validate_manifest(
         batches = batches if isinstance(batches, list) else []
     batch_by_id: dict[str, dict] = {}
     batch_dates: dict[str, date] = {}
+    batch_order: list[str] = []
+    batch_sources: dict[str, tuple[str, str]] = {}
     for position, batch in enumerate(batches, 1):
         if not isinstance(batch, dict):
             issues.append(f"lote {position} inválido")
@@ -819,8 +831,19 @@ def validate_manifest(
             issues.append(f"lote {batch_id or position}: horários não correspondem ao período informado")
         if batch_id:
             batch_by_id[batch_id] = batch
+            batch_order.append(batch_id)
         if batch_id and batch_day:
             batch_dates[batch_id] = batch_day
+        batch_source = batch.get("source")
+        if not isinstance(batch_source, dict):
+            issues.append(f"lote {batch_id or position}: fonte original ausente")
+        else:
+            try:
+                source_name = validate_credit_source(str(batch_source.get("name", "")), required=True)
+                source_episode = format_copy_text(str(batch_source.get("episode", "") or ""), final_punctuation=False)
+                batch_sources[batch_id] = (source_name, source_episode)
+            except ValueError as exc:
+                issues.append(f"lote {batch_id or position}: {exc}")
 
     folders = [str(batch.get("drive_folder_id", "")).strip() for batch in batches if isinstance(batch, dict)]
     if len(folders) != len(set(folders)):
@@ -830,24 +853,48 @@ def validate_manifest(
     elif folders and str(manifest.get("drive_folder_id", "")).strip() != folders[0]:
         issues.append("pasta principal do manifesto não corresponde ao lote A")
     declared_folders = manifest.get("drive_folder_ids")
-    if not isinstance(declared_folders, list) or set(str(item) for item in declared_folders) != set(folders):
+    if not isinstance(declared_folders, list) or [str(item) for item in declared_folders] != folders:
         issues.append("lista de pastas do manifesto não coincide com os dois lotes")
+    if manifest_day and batches and isinstance(batches[0], dict):
+        first_batch_date = str(batches[0].get("date", ""))
+        if first_batch_date != manifest_day.isoformat():
+            issues.append("data principal do manifesto não corresponde ao lote A")
 
     source = manifest.get("source")
+    source_signature: tuple[str, str] | None = None
     if isinstance(source, dict):
         try:
-            validate_credit_source(str(source.get("name", "")))
+            source_signature = (
+                validate_credit_source(str(source.get("name", "")), required=True),
+                format_copy_text(str(source.get("episode", "") or ""), final_punctuation=False),
+            )
         except ValueError as exc:
             issues.append(str(exc))
+    else:
+        issues.append("fonte principal do manifesto ausente")
     sources = manifest.get("sources")
     if not isinstance(sources, list) or len(sources) != 2:
         issues.append("o manifesto precisa conter as duas fontes originais")
     else:
+        source_signatures: list[tuple[str, str]] = []
         for source_position, source_item in enumerate(sources, 1):
             try:
-                validate_credit_source(str((source_item or {}).get("name", "")), required=True)
+                if not isinstance(source_item, dict):
+                    raise ValueError("objeto de fonte ausente")
+                source_signatures.append(
+                    (
+                        validate_credit_source(str(source_item.get("name", "")), required=True),
+                        format_copy_text(str(source_item.get("episode", "") or ""), final_punctuation=False),
+                    )
+                )
             except (AttributeError, ValueError) as exc:
                 issues.append(f"fonte {source_position}: {exc}")
+        if len(source_signatures) == 2:
+            if source_signature and source_signature != source_signatures[0]:
+                issues.append("fonte principal não corresponde à fonte do lote A")
+            expected_batch_sources = [batch_sources.get(batch_id) for batch_id in batch_order]
+            if expected_batch_sources != source_signatures:
+                issues.append("fontes declaradas não correspondem às fontes dos lotes")
 
     clips = manifest.get("clips")
     if not isinstance(clips, list) or len(clips) != 10:
@@ -898,7 +945,10 @@ def validate_manifest(
             issues.append(f"{label}: pasta não corresponde ao lote")
         else:
             by_batch.setdefault(batch_id, []).append(clip)
-        schedule = clip.get("schedule") or {}
+        schedule = clip.get("schedule")
+        if not isinstance(schedule, dict):
+            issues.append(f"{label}: bloco de agendamento inválido")
+            schedule = {}
         try:
             youtube_hour = int(schedule.get("youtube_hour"))
             tiktok_hour = int(schedule.get("tiktok_hour"))
@@ -916,7 +966,10 @@ def validate_manifest(
             issues.append(f"{label}: timestamps de publicação ausentes ou divergentes")
         parsed_at = None
         try:
-            parsed_at = datetime.fromisoformat(publish_at.replace("Z", "+00:00")).astimezone(TIMEZONE)
+            raw_parsed_at = datetime.fromisoformat(publish_at.replace("Z", "+00:00"))
+            if raw_parsed_at.tzinfo is None:
+                raise ValueError("timestamp sem fuso horário")
+            parsed_at = raw_parsed_at.astimezone(TIMEZONE)
         except (TypeError, ValueError):
             if publish_at:
                 issues.append(f"{label}: timestamp de publicação inválido")
@@ -940,6 +993,11 @@ def validate_manifest(
             continue
         for copy_issue in copy_quality_issues(pack):
             issues.append(f"{label}: {copy_issue}")
+        expected_source = batch_sources.get(batch_id)
+        if expected_source:
+            expected_credit = build_credit(*expected_source)
+            if fold(pack.credit) != fold(expected_credit):
+                issues.append(f"{label}: crédito não corresponde à fonte do lote")
         if not pack.credit or fold(pack.credit).startswith("creditos: fonte nao identificada"):
             issues.append(f"{label}: crédito da fonte original ausente")
         if "corte fino" in fold(pack.credit):
@@ -959,7 +1017,13 @@ def validate_manifest(
         batch_clips = by_batch.get(batch_id, [])
         if len(batch_clips) != 5:
             issues.append(f"lote {batch_id}: esperado 5 cortes, encontrados {len(batch_clips)}")
-        if sorted(int(item.get("batch_index", 0)) for item in batch_clips) != [1, 2, 3, 4, 5]:
+        normalized_batch_indexes: list[int] = []
+        for item in batch_clips:
+            try:
+                normalized_batch_indexes.append(int(item.get("batch_index", 0)))
+            except (TypeError, ValueError):
+                normalized_batch_indexes.append(0)
+        if sorted(normalized_batch_indexes) != [1, 2, 3, 4, 5]:
             issues.append(f"lote {batch_id}: índices precisam ser exatamente 1 a 5")
 
     if len(seen_slots) != len([clip for clip in clips if isinstance(clip, dict)]):
