@@ -1307,6 +1307,28 @@ def select_candidates(
             if len(selected) >= MAX_CLIPS:
                 break
 
+    # O modo FORCE_TOP_FIVE só pode relaxar a diversidade quando os gates
+    # objetivos já aprovaram o candidato. Isso evita falhas em fontes com
+    # poucos blocos editoriais independentes sem liberar legenda ilegível,
+    # narrativa incompleta ou cortes fora da duração contratada.
+    if len(selected) < MAX_CLIPS and force_top_five:
+        fallback_pool = [
+            candidate for candidate in pool
+            if candidate not in selected
+        ]
+        for candidate in fallback_pool:
+            if any(
+                abs(candidate.start - other.start) < 8.0
+                or text_similarity(candidate.text, other.text) >= 0.86
+                for other in selected
+            ):
+                continue
+            selected.append(candidate)
+            candidate.accepted = True
+            candidate.rejection = "override Top 5 solicitado (fallback de diversidade controlado)"
+            if len(selected) >= MAX_CLIPS:
+                break
+
     top_caption_failures = sorted(
         caption_failure_counts.items(),
         key=lambda item: (-item[1], item[0]),
