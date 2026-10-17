@@ -133,7 +133,7 @@ python -m publisher.cli prepare --target-date 2026-10-07
 
 - exatamente 5 vídeos MP4 diretos e sequência 01..05;
 - checksum, tamanho, nome e pasta dos cinco arquivos revalidados antes de cada publicação;
-- MP4 validado com `ffprobe`/`ffmpeg`: 1080x1920, H.264, AAC, 30 fps, yuv420p, áudio 48 kHz, decodificação integral e duração entre 45 e 90 segundos;
+- MP4 validado com `ffprobe`/`ffmpeg`: 1080x1920, H.264, AAC, 30 fps, yuv420p, bitrate de vídeo mínimo de 6 Mbps, áudio 48 kHz, decodificação integral e duração entre 45 e 90 segundos;
 - transcrição local;
 - YouTube direto sem Metricool; TikTok roteado pelo Metricool temporariamente;
 - copy completa com limites de caracteres/bytes;
