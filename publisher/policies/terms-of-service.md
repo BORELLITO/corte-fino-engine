@@ -2,7 +2,7 @@
 
 Última atualização: 10 de outubro de 2026
 
-O Corte Fino Publisher é uma ferramenta privada de organização e publicação de vídeos editoriais autorizados pelo responsável pela conta. O serviço recebe arquivos já produzidos, prepara metadados editoriais e, quando autorizado pelo usuário, publica conteúdo nas plataformas conectadas.
+O Corte Fino Publisher é uma ferramenta privada de organização e preparação de vídeos editoriais autorizados pelo responsável pela conta. O serviço recebe arquivos já produzidos e prepara metadados editoriais para confirmação manual nas plataformas oficiais.
 
 ## Uso autorizado
 
@@ -10,11 +10,11 @@ O usuário é responsável por possuir os direitos, licenças e autorizações n
 
 ## Contas e permissões
 
-As conexões com plataformas externas são feitas mediante autorização do usuário. O usuário pode revogar uma conexão a qualquer momento nas configurações da plataforma correspondente. O Publisher não solicita nem armazena senhas de contas de terceiros.
+A leitura do Drive ocorre mediante autorização do usuário. O usuário pode revogar essa autorização a qualquer momento nas configurações correspondentes. O Publisher não solicita nem armazena senhas de contas de terceiros.
 
 ## Publicação
 
-O usuário é responsável por revisar o conteúdo e a agenda antes de habilitar a publicação automática. O serviço pode interromper uma publicação quando houver erro técnico, token revogado, conteúdo ausente ou falha de validação.
+O usuário é responsável por revisar o conteúdo e a agenda antes de confirmar cada item no YouTube Studio e no TikTok Studio. O preparo pode ser interrompido quando houver erro técnico, pasta incorreta, conteúdo ausente ou falha de validação.
 
 ## Contato
 
