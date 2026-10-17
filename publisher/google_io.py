@@ -41,6 +41,7 @@ PUBLISHER_MIN_CLIP_SECONDS = 45.0
 PUBLISHER_MAX_CLIP_SECONDS = 90.0
 PUBLISHER_MIN_FILE_BYTES = 50_000
 PUBLISHER_MIN_AUDIO_BITRATE = 128_000
+PUBLISHER_MIN_VIDEO_BITRATE = 6_000_000
 _WHISPER_MODEL = None
 
 
@@ -248,6 +249,16 @@ def probe_video(path: Path) -> dict:
     else:
         if (video.get("width"), video.get("height")) != (1080, 1920):
             errors.append(f"resolução {video.get('width')}x{video.get('height')} (esperado 1080x1920)")
+        try:
+            video_bitrate = int(video.get("bit_rate") or 0)
+        except (TypeError, ValueError):
+            video_bitrate = 0
+        if not video_bitrate:
+            errors.append("bitrate de vídeo ausente (não foi possível verificar o piso de qualidade)")
+        elif video_bitrate < PUBLISHER_MIN_VIDEO_BITRATE:
+            errors.append(
+                f"bitrate de vídeo {video_bitrate} (mínimo {PUBLISHER_MIN_VIDEO_BITRATE})"
+            )
         if video.get("codec_name") != "h264":
             errors.append(f"codec de vídeo {video.get('codec_name')} (esperado h264)")
         if str(video.get("profile") or "").lower() != "high":
@@ -307,6 +318,7 @@ def probe_video(path: Path) -> dict:
         "width": video["width"],
         "height": video["height"],
         "video_codec": video["codec_name"],
+        "video_bitrate": video_bitrate,
         "audio_codec": audio["codec_name"],
         "pixel_format": video.get("pix_fmt"),
         "video_profile": video.get("profile"),
