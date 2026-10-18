@@ -93,7 +93,8 @@ def test_political_candidate_has_no_editorial_score():
         source_score=100,
     )
     finalize_score(candidate)
-    assert candidate.radar_score is not None
+    assert candidate.radar_score is None
+    assert candidate.review_priority_score > 0
     assert candidate.rank_status == "POLITICAL_REVIEW"
 
 
@@ -707,6 +708,11 @@ def test_output_fills_top_five_with_review_fallbacks(tmp_path, monkeypatch):
     ranked = payload["ranked_nonpolitical"]
     assert len(ranked) == 5
     assert ranked[0]["selection_tier"] == "QUALIFIED"
+    assert ranked[0]["downstream_eligible"] is True
+    assert all(
+        not item["downstream_eligible"]
+        for item in ranked[1:]
+    )
     assert all(
         item["selection_tier"] == "LOW_SIGNAL_BACKFILL"
         for item in ranked[1:]
@@ -731,10 +737,12 @@ def test_radar_workflow_contract_is_explicit():
         encoding="utf-8"
     )
     assert 'cron: "30 11,23 * * *"' in workflow
+    assert "cancel-in-progress: false" in workflow
     assert 'RADAR_TOP_N: "5"' in workflow
     assert "RADAR_DRIVE_FOLDER_ID ||" in workflow
     assert "python -m radar.drive_state pull" in workflow
     assert "python -m radar.upload_reports_drive" in workflow
     assert "python -m radar.drive_state push" in workflow
     assert "if: success()" in workflow
+    assert "Validar contrato editorial" in workflow
     assert "Nenhum ranking editorial completo é publicado no GitHub." in workflow

@@ -20,7 +20,7 @@ permissions:
 
 concurrency:
   group: corte-fino-radar-viral
-  cancel-in-progress: true
+  cancel-in-progress: false
 
 jobs:
   radar:
@@ -88,6 +88,36 @@ jobs:
           --extra-topics "$RADAR_EXTRA_TOPICS"
           --state-file "$RADAR_STATE_FILE"
 
+      - name: Validar contrato editorial
+        if: success()
+        run: |
+          python - <<'PY'
+          import json
+          from pathlib import Path
+
+          report = json.loads(
+              (Path("radar") / "output" / "radar_latest.json").read_text(
+                  encoding="utf-8"
+              )
+          )
+          ranked = report.get("ranked_nonpolitical", [])
+          assert len(ranked) == 5, "O relatório precisa conter exatamente 5 links."
+          assert all(
+              "downstream_eligible" in item
+              for item in ranked
+          ), "Todo item precisa declarar elegibilidade downstream."
+          assert all(
+              item["downstream_eligible"]
+              == (item["selection_tier"] == "QUALIFIED")
+              for item in ranked
+          ), "Somente QUALIFIED pode ser elegível para o Creator."
+          selection = report.get("selection", {})
+          print(
+              f"Contrato validado: {len(ranked)} links, "
+              f"{selection.get('qualified_count', 0)} qualificados."
+          )
+          PY
+
       - name: Enviar relatório ao Google Drive
         if: success()
         env:
@@ -109,7 +139,7 @@ jobs:
       - name: Resumo seguro
         if: success()
         run: |
-          echo "## 🎯 Corte Fino — Radar Viral V2.4" >> "$GITHUB_STEP_SUMMARY"
+          echo "## 🎯 Corte Fino — Radar Viral V2.5" >> "$GITHUB_STEP_SUMMARY"
           echo "" >> "$GITHUB_STEP_SUMMARY"
           echo "Varredura concluída e relatório enviado para a pasta privada RADAR_CORTE_FINO no Google Drive." >> "$GITHUB_STEP_SUMMARY"
           echo "Nenhum ranking editorial completo é publicado no GitHub." >> "$GITHUB_STEP_SUMMARY"

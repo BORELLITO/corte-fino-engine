@@ -26,7 +26,7 @@ YOUTUBE_API = "https://www.googleapis.com/youtube/v3"
 GOOGLE_TRENDS_RSS = "https://trends.google.com/trending/rss?geo=BR"
 STATE_SCHEMA_VERSION = 3
 REPORT_TOP_N = 5
-RADAR_VERSION = "V2.4"
+RADAR_VERSION = "V2.5"
 TRANSCRIPT_PROBE_LIMIT = 12
 REPEAT_COOLDOWN_HOURS = 48
 DEFAULT_STATE_FILE = ROOT / "state" / "history.json"
@@ -288,6 +288,7 @@ class VideoCandidate:
     search_gap_score: float = 0.0
     source_score: float = 0.0
     confidence_score: float = 0.0
+    review_priority_score: float = 0.0
     previous_score: float | None = None
     score_delta: float | None = None
     rank_status: str = "DROP"
@@ -962,10 +963,12 @@ def update_state(
     state["schema_version"] = STATE_SCHEMA_VERSION
     state["updated_at"] = now_iso
     path.parent.mkdir(parents=True, exist_ok=True)
-    path.write_text(
+    temporary = path.with_name(path.name + ".tmp")
+    temporary.write_text(
         json.dumps(state, ensure_ascii=False, indent=2),
         encoding="utf-8",
     )
+    os.replace(temporary, path)
 
 
 def risk_flags(text: str) -> list[str]:
@@ -1152,10 +1155,28 @@ def compute_confidence(candidate: VideoCandidate) -> float:
     return clamp(score)
 
 
+def compute_review_priority(candidate: VideoCandidate) -> float:
+    """Prioridade operacional de revisão; não é recomendação editorial."""
+    return round(clamp(
+        candidate.velocity_score * 0.35
+        + candidate.engagement_score * 0.15
+        + candidate.comment_heat_score * 0.20
+        + candidate.freshness_score * 0.15
+        + candidate.confidence_score * 0.15
+    ), 2)
+
+
 def finalize_score(candidate: VideoCandidate) -> None:
     if candidate.made_for_kids:
         candidate.radar_score = None
         candidate.rank_status = "DROP"
+        return
+
+    if candidate.political_or_electoral:
+        candidate.confidence_score = round(compute_confidence(candidate), 2)
+        candidate.review_priority_score = compute_review_priority(candidate)
+        candidate.radar_score = None
+        candidate.rank_status = "POLITICAL_REVIEW"
         return
 
     semantic_signal = max(
@@ -1306,7 +1327,13 @@ def collect_candidates(
     max_queries: int,
     extra_topics: list[str],
     state_file: Path,
-) -> tuple[list[VideoCandidate], list[Trend], list[QuerySignal]]:
+) -> tuple[
+    list[VideoCandidate],
+    list[Trend],
+    list[QuerySignal],
+    dict[str, Any],
+    dict[str, Any],
+]:
     now = datetime.now(timezone.utc)
     published_after = (
         now - timedelta(days=days)
@@ -1324,8 +1351,16 @@ def collect_candidates(
 
     video_signals: dict[str, list[QuerySignal]] = {}
     all_signals: list[QuerySignal] = []
+    diagnostics: dict[str, Any] = {
+        "queries_requested": len(queries),
+        "queries_attempted": 0,
+        "queries_succeeded": 0,
+        "queries_failed": 0,
+        "failed_queries": [],
+    }
 
     for index, (query, source, trend) in enumerate(queries, 1):
+        diagnostics["queries_attempted"] += 1
         print(f"[RADAR] Busca {index}/{len(queries)} ({source})")
         try:
             ids, total = youtube_search(
@@ -1335,12 +1370,19 @@ def collect_candidates(
                 order="date",
             )
         except Exception as exc:
+            diagnostics["queries_failed"] += 1
+            diagnostics["failed_queries"].append({
+                "query": query,
+                "source": source,
+                "error": type(exc).__name__,
+            })
             print(
                 f"[WARN] Busca {index}/{len(queries)} ({source}) falhou: {exc}",
                 file=sys.stderr,
             )
             continue
 
+        diagnostics["queries_succeeded"] += 1
         signal = QuerySignal(
             query=query,
             source=source,
@@ -1354,8 +1396,10 @@ def collect_candidates(
         for video_id in ids:
             video_signals.setdefault(video_id, []).append(signal)
 
+    diagnostics["raw_video_ids"] = len(video_signals)
     if not video_signals:
-        return [], trends, all_signals
+        diagnostics["candidates_after_filters"] = 0
+        return [], trends, all_signals, state, diagnostics
 
     details = youtube_video_details(
         api_key,
@@ -1407,6 +1451,7 @@ def collect_candidates(
 
         candidates.append(candidate)
 
+    diagnostics["candidates_after_filters"] = len(candidates)
     apply_channel_baselines(candidates)
     apply_momentum(candidates, state, now)
     mark_recent_repeats(candidates, state, now)
@@ -1450,6 +1495,14 @@ def collect_candidates(
         )
 
     probe_transcripts(pre_ranked)
+    diagnostics["transcript_probe_requested"] = min(
+        TRANSCRIPT_PROBE_LIMIT,
+        len(pre_ranked),
+    )
+    diagnostics["transcripts_available"] = sum(
+        candidate.transcript_status == "available"
+        for candidate in pre_ranked
+    )
 
     for candidate in pre_ranked[:min(24, len(pre_ranked))]:
         relevant, relevant_replies = youtube_comments(
@@ -1491,8 +1544,15 @@ def collect_candidates(
     for candidate in candidates:
         finalize_score(candidate)
 
-    update_state(state_file, state, candidates, now)
-    return candidates, trends, all_signals
+    diagnostics["comment_probe_candidates"] = min(24, len(pre_ranked))
+    diagnostics["qualified_candidates"] = sum(
+        candidate.radar_score is not None
+        and candidate.rank_status != "DROP"
+        and not candidate.political_or_electoral
+        and not candidate.recently_seen
+        for candidate in candidates
+    )
+    return candidates, trends, all_signals, state, diagnostics
 
 
 def fmt_int(value: int) -> str:
@@ -1541,6 +1601,7 @@ def write_outputs(
     *,
     top_n: int,
     generated_at: datetime,
+    diagnostics: dict[str, Any] | None = None,
 ) -> None:
     if top_n != REPORT_TOP_N:
         raise ValueError(f"Top N fixo em {REPORT_TOP_N}; recebido {top_n}.")
@@ -1664,17 +1725,17 @@ def write_outputs(
             and not c.made_for_kids
         ],
         key=lambda c: (
-            c.radar_score
-            if c.radar_score is not None
-            else fallback_score(c)
+            c.review_priority_score
+            if c.review_priority_score > 0
+            else compute_review_priority(c)
         ),
         reverse=True,
     )[:top_n]
     for candidate in political:
-        if candidate.radar_score is None:
-            candidate.radar_score = fallback_score(candidate)
-            candidate.confidence_score = round(compute_confidence(candidate), 2)
         candidate.rank_status = "POLITICAL_REVIEW"
+        if candidate.review_priority_score <= 0:
+            candidate.confidence_score = round(compute_confidence(candidate), 2)
+            candidate.review_priority_score = compute_review_priority(candidate)
 
     qualified_queries = {
         query
@@ -1712,6 +1773,12 @@ def write_outputs(
                 for c in candidates
             ),
         },
+        "coverage": diagnostics or {},
+        "selection": {
+            "qualified_count": len(qualified),
+            "contractual_links": len(ranked),
+            "creator_input_rule": "only QUALIFIED items may proceed to Creator",
+        },
         "method": {
             "ranking_scope": "non-political content only",
             "political_content": (
@@ -1736,6 +1803,7 @@ def write_outputs(
             | {
                 "url": c.url,
                 "reasons": explain(c),
+                "downstream_eligible": c.video_id in qualified_ids,
                 "selection_tier": (
                     "QUALIFIED"
                     if c.video_id in qualified_ids
@@ -1751,6 +1819,27 @@ def write_outputs(
                 ),
             }
             for c in ranked
+        ],
+        "qualified_nonpolitical": [
+            asdict(c)
+            | {
+                "url": c.url,
+                "downstream_eligible": True,
+                "selection_tier": "QUALIFIED",
+                "reasons": explain(c),
+            }
+            for c in qualified
+        ],
+        "review_queue_nonpolitical": [
+            asdict(c)
+            | {
+                "url": c.url,
+                "downstream_eligible": False,
+                "selection_tier": "REVIEW_ONLY",
+                "reasons": explain(c),
+            }
+            for c in ranked
+            if c.video_id not in qualified_ids
         ],
         "political_watchlist_raw": [
             asdict(c)
@@ -1882,6 +1971,11 @@ def write_outputs(
         "",
         f"## 🔥 Prioridades ({len(ranked)}/5)",
         "",
+        (
+            f"Qualificados: **{len(qualified)}/5**. "
+            "Apenas itens **QUALIFIED** podem seguir para o Creator."
+        ),
+        "",
         "Leitura rápida: prioridade, motivo, link.",
         "",
     ]
@@ -1938,6 +2032,8 @@ def write_outputs(
                 f"{fmt_int(c.view_count)} views | "
                 f"{c.momentum_state} | {rights}"
             ),
+            f"   **Status de uso:** "
+            f"{'QUALIFIED' if c.video_id in qualified_ids else 'REVIEW_ONLY — não enviar ao Creator'}",
             f"   **Por que agora:** {reason}{chapter}",
             (
                 f"   **Janela sugerida:** "
@@ -1968,8 +2064,7 @@ def write_outputs(
                     f"{index}. 🗳️ **{c.title}** — {c.channel_title}"
                 ),
                 (
-                    f"   POLITICAL_REVIEW | "
-                    f"{c.radar_score:.1f}/100 | "
+                    f"   POLITICAL_REVIEW | revisão {c.review_priority_score:.1f}/100 | "
                     f"{fmt_int(c.view_count)} views"
                 ),
                 f"   {c.url}",
@@ -1980,11 +2075,10 @@ def write_outputs(
         "## Resumo",
         "",
         (
-            "Fila principal encerrada no Top 5. "
-            "Itens REVIEW/FALLBACK completam a lista quando não há cinco aprovados "
-            "pelo gate editorial; itens REPEAT BACKFILL só entram quando faltam "
-            "alternativas novas. LOW_SIGNAL_BACKFILL não é recomendação: é apenas "
-            "uma vaga transparente para manter cinco links e exige revisão manual. "
+            "A lista contratual mantém cinco links, mas isso não significa cinco aprovações. "
+            "Somente itens QUALIFIED podem seguir para o Creator. "
+            "Itens REVIEW/FALLBACK, REPEAT BACKFILL e LOW_SIGNAL_BACKFILL são apenas "
+            "fila de revisão manual e não devem ser tratados como recomendação automática. "
             "A análise de legenda é enriquecimento: "
             "indisponibilidade não elimina o vídeo, mas reduz a confiança. "
             "Direitos, riscos, política e métricas completas permanecem no JSON/CSV "
@@ -2075,7 +2169,7 @@ def main() -> int:
 
     generated_at = datetime.now(timezone.utc)
 
-    candidates, trends, signals = collect_candidates(
+    candidates, trends, signals, state, diagnostics = collect_candidates(
         api_key,
         days=max(
             1,
@@ -2099,7 +2193,10 @@ def main() -> int:
         signals,
         top_n=REPORT_TOP_N,
         generated_at=generated_at,
+        diagnostics=diagnostics,
     )
+
+    update_state(Path(args.state_file), state, candidates, generated_at)
 
     print(
         f"[RADAR] {len(candidates)} candidatos coletados."
