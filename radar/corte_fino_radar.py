@@ -25,6 +25,7 @@ OUTPUT_DIR = ROOT / "output"
 YOUTUBE_API = "https://www.googleapis.com/youtube/v3"
 GOOGLE_TRENDS_RSS = "https://trends.google.com/trending/rss?geo=BR"
 STATE_SCHEMA_VERSION = 2
+REPORT_TOP_N = 5
 DEFAULT_STATE_FILE = ROOT / "state" / "history.json"
 CHAPTER_RE = re.compile(
     r"(?m)^\s*(?:(?P<h>\d{1,2}):)?(?P<m>\d{1,2}):(?P<s>\d{2})"
@@ -1251,6 +1252,9 @@ def write_outputs(
     top_n: int,
     generated_at: datetime,
 ) -> None:
+    if top_n != REPORT_TOP_N:
+        raise ValueError(f"Top N fixo em {REPORT_TOP_N}; recebido {top_n}.")
+
     OUTPUT_DIR.mkdir(
         parents=True,
         exist_ok=True,
@@ -1551,7 +1555,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument(
         "--top-n",
         type=int,
-        default=int(os.environ.get("RADAR_TOP_N", "5")),
+        default=int(os.environ.get("RADAR_TOP_N", str(REPORT_TOP_N))),
     )
     parser.add_argument(
         "--trend-limit",
@@ -1604,6 +1608,13 @@ def main() -> int:
         if item.strip()
     ]
 
+    if args.top_n != REPORT_TOP_N:
+        print(
+            f"RADAR_TOP_N é fixo em {REPORT_TOP_N}; ajuste a configuração antes de executar.",
+            file=sys.stderr,
+        )
+        return 2
+
     generated_at = datetime.now(timezone.utc)
 
     candidates, trends, signals = collect_candidates(
@@ -1628,12 +1639,12 @@ def main() -> int:
         candidates,
         trends,
         signals,
-        top_n=5,
+        top_n=REPORT_TOP_N,
         generated_at=generated_at,
     )
 
     print(
-        f"[RADAR] {len(candidates)} vídeos qualificados."
+        f"[RADAR] {len(candidates)} candidatos coletados."
     )
     print(
         f"[RADAR] Relatório: {OUTPUT_DIR / 'radar_latest.md'}"
