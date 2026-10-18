@@ -86,7 +86,19 @@ PREFERRED_SOURCE_PATTERNS = [
 LONGFORM_MARKERS = {
     "podcast", "entrevista", "debate", "sabatina", "talk show", "talkshow",
     "papo", "conversa", "mesa", "episódio", "episodio", "especial",
-    "react", "reação", "reacao", "ao vivo",
+    "react", "reação", "reacao",
+}
+
+NON_EDITORIAL_CATEGORY_IDS = {"10", "17", "20"}
+FOREIGN_SIGNAL_WORDS = {
+    "las", "los", "una", "uno", "del", "the", "and", "with",
+    "from", "this", "that",
+}
+SPORTS_TERMS = {
+    "futebol", "futebol", "brasileirão", "brasileirao", "flamengo",
+    "corinthians", "palmeiras", "vasco", "grêmio", "gremio", "nba",
+    "nfl", "champions", "liga", "rodada", "jogo", "partida", "gol",
+    "torino", "udinese",
 }
 
 PORTUGUESE_SIGNAL_WORDS = {
@@ -642,11 +654,15 @@ def likely_portuguese(text: str) -> bool:
     tokens = re.findall(r"[a-záàâãéêíóôõúç]+", norm)
     if not tokens:
         return False
-    hits = sum(token in PORTUGUESE_SIGNAL_WORDS for token in tokens[:120])
+    sample = tokens[:120]
+    hits = sum(token in PORTUGUESE_SIGNAL_WORDS for token in sample)
+    foreign_hits = sum(token in FOREIGN_SIGNAL_WORDS for token in sample)
     accented = sum(
         any(char in token for char in "áàâãéêíóôõúç")
-        for token in tokens[:120]
+        for token in sample
     )
+    if foreign_hits >= 2 and accented < 2:
+        return False
     return hits >= 2 or accented >= 2
 
 
@@ -654,10 +670,21 @@ def editorial_format_fit(
     title: str,
     description: str,
     channel_title: str,
+    category_id: str = "",
 ) -> bool:
+    if category_id in NON_EDITORIAL_CATEGORY_IDS:
+        return False
     if preferred_source(channel_title):
         return True
     surface = normalize(f"{title} {channel_title}")
+    if "ao vivo" in surface and not any(
+        marker in surface
+        for marker in {
+            "podcast", "entrevista", "debate", "sabatina",
+            "conversa", "papo", "mesa",
+        }
+    ):
+        return False
     if any(marker in surface for marker in LONGFORM_MARKERS):
         return True
     # Descrição é evidência mais fraca: exige dois marcadores para evitar
@@ -1302,10 +1329,15 @@ def collect_candidates(
             candidate.title,
             candidate.description,
             candidate.channel_title,
+            candidate.category_id,
         ):
             continue
 
         title_norm = normalize(candidate.title)
+        if candidate.category_id in NON_EDITORIAL_CATEGORY_IDS:
+            continue
+        if any(term in title_norm for term in SPORTS_TERMS):
+            continue
         if candidate.made_for_kids or any(
             term in title_norm
             for term in {" kids", "infantil", "para crianças", "para criancas"}
