@@ -8,8 +8,10 @@ import shutil
 import subprocess
 import sys
 import time
+import unicodedata
 from dataclasses import asdict, dataclass, field
 from datetime import datetime, timezone
+from functools import lru_cache
 from pathlib import Path
 from typing import Any
 
@@ -35,6 +37,10 @@ TARGET_CLIP_SECONDS = max(
     min(MAX_CLIP_SECONDS, int(os.environ.get("TARGET_CLIP_SECONDS", "68"))),
 )
 WHISPER_MODEL = os.environ.get("WHISPER_MODEL", "small").strip() or "small"
+TRANSCRIBE_INITIAL_PROMPT = os.environ.get(
+    "TRANSCRIBE_INITIAL_PROMPT",
+    "Português brasileiro. Entrevista ou podcast com fala natural, nomes próprios e termos coloquiais. Preserve a pontuação e o sentido da fala.",
+).strip()
 MAX_SOURCE_DURATION_SECONDS = int(os.environ.get("MAX_SOURCE_DURATION_SECONDS", "10800"))
 TRANSCRIBE_BEAM_SIZE = max(1, int(os.environ.get("TRANSCRIBE_BEAM_SIZE", "3")))
 TRANSCRIBE_CPU_THREADS = max(1, int(os.environ.get("TRANSCRIBE_CPU_THREADS", "4")))
@@ -82,6 +88,15 @@ CAPTION_MAX_CPS = float(os.environ.get("CAPTION_MAX_CPS", "18.0"))
 # acomodando a variação dos timestamps de palavra do ASR sem liberar leitura
 # excessivamente rápida. Acima disso, o candidato continua sendo reprovado.
 CAPTION_HARD_MAX_CPS = float(os.environ.get("CAPTION_HARD_MAX_CPS", "30.0"))
+CAPTION_PUNCTUATION_PAUSE = float(os.environ.get("CAPTION_PUNCTUATION_PAUSE_SECONDS", "0.85"))
+CAPTION_PERIOD_PAUSE = float(os.environ.get("CAPTION_PERIOD_PAUSE_SECONDS", "1.30"))
+CAPTION_AUTO_CORRECTION_MIN_ZIPF = float(
+    os.environ.get("CAPTION_AUTO_CORRECTION_MIN_ZIPF", "3.80")
+)
+CAPTION_AUTO_CORRECTION_MAX_DISTANCE = int(
+    os.environ.get("CAPTION_AUTO_CORRECTION_MAX_DISTANCE", "3")
+)
+CAPTION_PT_LEXICON_SIZE = int(os.environ.get("CAPTION_PT_LEXICON_SIZE", "50000"))
 # Baixa confiança isolada do ASR vira alerta; erros conhecidos e limites de
 # leitura continuam fatais. Isso evita reprovar palavras comuns por uma
 # probabilidade baixa sem evidência de transcrição incorreta.
@@ -110,24 +125,45 @@ CAPTION_SAFE_CORRECTIONS = {
     "danapolítica": "na política",
     "coneste": "conhece",
     "pim": "PIB",
+    # Erro observado em uma fonte do Lito: o ASR fragmenta “borracharia”.
+    "balrrach aria": "borracharia",
+    "balrracharia": "borracharia",
+    "balrach aria": "borracharia",
+    "balracharia": "borracharia",
     # Formas sem acento que o ASR produz com frequência.
     "nao": "não",
     "voce": "você",
     "tambem": "também",
     "ja": "já",
     "ate": "até",
+    "ceu": "céu",
+    "politica": "política",
+    "publico": "público",
+    "publica": "pública",
+    "familia": "família",
+    "historia": "história",
+    "negocio": "negócio",
+    "consequencia": "consequência",
+    "emocao": "emoção",
+    "analise": "análise",
+    "numero": "número",
+    "proximo": "próximo",
     "aviao": "avião",
     "avioes": "aviões",
     "facil": "fácil",
 }
-CAPTION_CORRECTION_FIXED_CASE = {"violins", "bradão", "bradio", "pim"}
+CAPTION_CORRECTION_FIXED_CASE = {
+    "violins", "bradão", "bradio", "pim", "balrrach aria", "balrracharia",
+    "balrach aria", "balracharia",
+}
 CAPTION_MIN_WORD_PROBABILITY = float(os.environ.get("CAPTION_MIN_WORD_PROBABILITY", "0.40"))
 CAPTION_SPELLING_MIN_ZIPF = float(os.environ.get("CAPTION_SPELLING_MIN_ZIPF", "2.30"))
 CAPTION_ALLOWED_TOKENS = {
     "corte", "fino", "shorts", "tiktok", "youtube", "podcast", "stf", "ia",
     "acre", "lito", "bolsonaro", "lula", "moraes", "brasil", "brasileiro",
     "brasileira", "aviação", "aviao", "avião", "helicóptero",
-    "helicoptero", "whatsapp", "chatgpt", "openai",
+    "helicoptero", "whatsapp", "chatgpt", "openai", "bianquinha", "tigrinho",
+    "bets", "descredibilizar", "bloqueava", "consegui",
 }
 CAPTION_COMMON_WORDS = {
     "a", "as", "à", "às", "ao", "aos", "e", "é", "de", "da", "das", "do",
@@ -143,6 +179,13 @@ CAPTION_COMMON_WORDS = {
     "havia", "aquela", "aquele", "aquelas", "aqueles", "agora", "ainda",
 }
 CAPTION_TERMINAL_PUNCTUATION = ".!?…"
+CAPTION_PRESERVED_ACRONYMS = {
+    "AI", "CEO", "CPF", "EUA", "IA", "NASA", "ONU", "PF", "PM", "RJ", "SP",
+    "STF", "SUS", "TV", "USP", "VIP", "YouTube", "TikTok", "WhatsApp",
+}
+CAPTION_PRESERVED_CASE = {
+    token.upper(): token for token in CAPTION_PRESERVED_ACRONYMS
+}
 ROOT = Path(__file__).resolve().parent
 WORK = ROOT / "work"
 OUTPUT = ROOT / "output"
@@ -450,6 +493,7 @@ def transcribe(source: Path) -> list[Segment]:
         vad_parameters={"min_silence_duration_ms": 500},
         beam_size=TRANSCRIBE_BEAM_SIZE,
         condition_on_previous_text=False,
+        initial_prompt=TRANSCRIBE_INITIAL_PROMPT or None,
     )
     result: list[Segment] = []
     last_progress = -TRANSCRIBE_PROGRESS_SECONDS
@@ -627,6 +671,8 @@ def analyze_source_profile(
     else:
         pace = "conversacional"
     return {
+        "source_title": info.get("title", ""),
+        "source_channel": info.get("channel", ""),
         "niche": dominant_niche,
         "niche_confidence": round(min(1.0, dominant_score / 8.0), 2),
         "niche_scores": niche_scores,
@@ -751,7 +797,12 @@ def _narrative_content_tokens(text: str) -> set[str]:
 
 
 def _narrative_cohesion(text: str) -> float:
-    tokens = list(_narrative_content_tokens(text))
+    # Preserve the temporal order. Iterating over a set made this score
+    # dependent on Python's hash order and could change between executions.
+    tokens = [
+        token for token in words_of(text)
+        if token not in CAPTION_COMMON_WORDS and len(token) >= 4
+    ]
     if len(tokens) < 6:
         return 0.0
     third = max(1, len(tokens) // 3)
@@ -760,6 +811,49 @@ def _narrative_cohesion(text: str) -> float:
     last = set(tokens[third * 2:])
     links = sum(bool(left & right) for left, right in ((first, middle), (middle, last)))
     return round(links / 2.0, 2)
+
+
+def _set_overlap(left: set[str], right: set[str]) -> float:
+    if not left or not right:
+        return 0.0
+    return round(len(left & right) / max(1, min(len(left), len(right))), 3)
+
+
+def _narrative_arc_analysis(text: str, units: list[str]) -> dict[str, Any]:
+    """Avalia se o mesmo raciocínio atravessa início, desenvolvimento e fim."""
+    if len(units) < 2:
+        return {
+            "opening_development_bridge": 0.0,
+            "development_closure_bridge": 0.0,
+            "resolution_signal": 0,
+            "cause_effect_signal": 0,
+            "structure_score": 0.0,
+        }
+    opening = _narrative_content_tokens(units[0])
+    closure = _narrative_content_tokens(units[-1])
+    development_text = " ".join(units[1:-1]) if len(units) > 2 else units[0]
+    development = _narrative_content_tokens(development_text)
+    opening_development = _set_overlap(opening, development)
+    development_closure = _set_overlap(development, closure)
+    resolution_signal = contains_signal(units[-1], NARRATIVE_RESOLUTION_MARKERS)
+    cause_effect_signal = contains_signal(
+        units[-1],
+        {"por isso", "por causa disso", "então", "entao", "logo", "portanto", "resultado"},
+    )
+    structure_score = min(
+        1.0,
+        opening_development * 0.35
+        + development_closure * 0.35
+        + min(1.0, resolution_signal / 2.0) * 0.20
+        + min(1.0, cause_effect_signal / 2.0) * 0.10,
+    )
+    return {
+        "opening_development_bridge": opening_development,
+        "development_closure_bridge": development_closure,
+        "resolution_signal": resolution_signal,
+        "cause_effect_signal": cause_effect_signal,
+        "structure_score": round(structure_score, 3),
+    }
 
 
 def _narrative_closure(
@@ -881,6 +975,7 @@ def narrative_quality(
     has_conclusion = bool(closure["passed"] or gap_closure or coverage_closure)
     natural_end = has_conclusion
     topic_cohesion = _narrative_cohesion(text)
+    arc = _narrative_arc_analysis(text, units)
     resolution_hits = int(closure["resolution_hits"])
 
     issues: list[str] = []
@@ -894,6 +989,13 @@ def narrative_quality(
         issues.append("termina antes de uma conclusão natural")
     if incomplete_ending:
         issues.append(f"termina em palavra dependente: {tokens[-1] if tokens else ''}")
+    if (
+        len(units) >= 3
+        and arc["structure_score"] < 0.12
+        and not development_hits
+        and not resolution_hits
+    ):
+        issues.append("linha de raciocínio pouco conectada entre começo, desenvolvimento e fechamento")
 
     passed = not issues
     score_bonus = sum((
@@ -904,6 +1006,8 @@ def narrative_quality(
         1.0 if terminal_ending else 0.0,
         1.0 if development_hits else 0.0,
         1.0 if resolution_hits else 0.0,
+        round(float(arc["structure_score"]), 2),
+        1.0 if topic_cohesion >= 0.25 else 0.0,
     ))
     return {
         "passed": passed,
@@ -916,6 +1020,8 @@ def narrative_quality(
                 if dependent_opening and passed else "",
                 "coesão temática baixa entre começo, desenvolvimento e fechamento"
                 if topic_cohesion < 0.25 and passed else "",
+                "ponte temática fraca entre as unidades do raciocínio"
+                if arc["structure_score"] < 0.20 and passed else "",
                 "fechamento inferido por pausa; revisão contextual recomendada"
                 if gap_closure and not terminal_ending and passed else "",
                 "limite de cobertura ASR; revisão contextual recomendada"
@@ -949,6 +1055,7 @@ def narrative_quality(
         "development_hits": development_hits,
         "resolution_hits": resolution_hits,
         "topic_cohesion": topic_cohesion,
+        "arc_analysis": arc,
         "end_gap_seconds": round(end_gap, 3),
         "components": {
             "narrative_start": 2.0 if autonomous_start else 0.0,
@@ -961,6 +1068,7 @@ def narrative_quality(
             "narrative_development_signal": 1.0 if development_hits else 0.0,
             "narrative_resolution_signal": 1.0 if resolution_hits else 0.0,
             "narrative_topic_cohesion": round(topic_cohesion * 2.0, 2),
+            "narrative_arc": round(float(arc["structure_score"]) * 2.0, 2),
         },
         "score_bonus": round(score_bonus, 2),
         "summary": (
@@ -1019,7 +1127,7 @@ def build_candidates(
     for index in range(0, len(segments), step):
         start = segments[index].start
         eligible: list[tuple[int, float, dict[str, Any]]] = []
-        for end_index in range(index + 1, len(segments)):
+        for end_index in range(index + 1, len(segments) + 1):
             duration = segments[end_index - 1].end - start
             if duration > MAX_CLIP_SECONDS:
                 break
@@ -1074,7 +1182,7 @@ def build_candidates(
     if len(unique) < MAX_CLIPS:
         for index in range(0, len(segments), step):
             start = segments[index].start
-            for end_index in range(index + 1, len(segments)):
+            for end_index in range(index + 1, len(segments) + 1):
                 duration = segments[end_index - 1].end - start
                 if duration > MAX_CLIP_SECONDS:
                     break
@@ -1118,7 +1226,7 @@ def build_candidates(
     if len(unique) < MAX_CLIPS:
         for index in range(0, len(segments), step):
             start = segments[index].start
-            for end_index in range(index + 1, len(segments)):
+            for end_index in range(index + 1, len(segments) + 1):
                 duration = segments[end_index - 1].end - start
                 if duration > MAX_CLIP_SECONDS:
                     break
@@ -1173,6 +1281,34 @@ def text_similarity(left: str, right: str) -> float:
     return len(a & b) / len(a | b)
 
 
+def build_caption_context(
+    profile: dict[str, Any] | None = None,
+    info: dict[str, Any] | None = None,
+) -> dict[str, Any]:
+    """Contexto seguro para revisar legendas sem transformar nomes em erros."""
+    profile = profile or {}
+    info = info or {}
+    return {
+        "title": info.get("title") or profile.get("source_title", ""),
+        "channel": info.get("channel") or profile.get("source_channel", ""),
+        "niche": profile.get("niche", ""),
+        "protected_tokens": profile.get("dominant_signals", []) or [],
+    }
+
+
+def story_anchor_for_candidate(
+    candidate: Candidate,
+    profile: dict[str, Any] | None = None,
+) -> int | None:
+    """Localiza o centro narrativo do candidato no mapa da fonte inteira."""
+    story_map = (profile or {}).get("story_map", [])
+    midpoint = (candidate.start + candidate.end) / 2.0
+    for block in story_map:
+        if float(block.get("start", 0.0)) <= midpoint <= float(block.get("end", 0.0)):
+            return int(block.get("index", 0))
+    return None
+
+
 def overlaps(left: Candidate, right: Candidate) -> bool:
     intersection = max(0.0, min(left.end, right.end) - max(left.start, right.start))
     return intersection > 0.30 * min(left.duration, right.duration)
@@ -1199,6 +1335,7 @@ def select_candidates(
     segments: list[Segment],
     profile: dict[str, Any] | None = None,
 ) -> tuple[list[Candidate], list[Candidate]]:
+    caption_context = build_caption_context(profile)
     all_candidates = build_candidates(segments, profile)
     built_candidate_count = len(all_candidates)
     eligible_candidates: list[Candidate] = []
@@ -1256,7 +1393,12 @@ def select_candidates(
     caption_ready = []
     caption_failure_counts: dict[str, int] = {}
     for candidate in pool:
-        caption_qa = validate_captions(segments, candidate, CAPTION_MARGIN_V)
+        caption_qa = validate_captions(
+            segments,
+            candidate,
+            CAPTION_MARGIN_V,
+            context=caption_context,
+        )
         if caption_qa["passed"]:
             caption_ready.append(candidate)
         else:
@@ -1271,6 +1413,7 @@ def select_candidates(
     selected: list[Candidate] = []
     deferred: list[Candidate] = []
     trigger_counts: dict[str, int] = {}
+    story_anchor_counts: dict[int, int] = {}
 
     def conflicts(candidate: Candidate) -> bool:
         return any(
@@ -1286,6 +1429,10 @@ def select_candidates(
         if trigger_counts.get(candidate.trigger, 0) >= 2:
             deferred.append(candidate)
             continue
+        story_anchor = story_anchor_for_candidate(candidate, profile)
+        if story_anchor is not None and story_anchor_counts.get(story_anchor, 0) >= 2:
+            deferred.append(candidate)
+            continue
         selected.append(candidate)
         candidate.accepted = True
         candidate.rejection = (
@@ -1294,6 +1441,8 @@ def select_candidates(
             else ""
         )
         trigger_counts[candidate.trigger] = trigger_counts.get(candidate.trigger, 0) + 1
+        if story_anchor is not None:
+            story_anchor_counts[story_anchor] = story_anchor_counts.get(story_anchor, 0) + 1
         if len(selected) >= MAX_CLIPS:
             break
 
@@ -1311,6 +1460,9 @@ def select_candidates(
                 else ""
             )
             trigger_counts[candidate.trigger] = trigger_counts.get(candidate.trigger, 0) + 1
+            story_anchor = story_anchor_for_candidate(candidate, profile)
+            if story_anchor is not None:
+                story_anchor_counts[story_anchor] = story_anchor_counts.get(story_anchor, 0) + 1
             if len(selected) >= MAX_CLIPS:
                 break
 
@@ -1356,6 +1508,7 @@ def select_candidates(
         f"narrativa={narrative_ready_count} "
         f"legenda={caption_ready_count} "
         f"selecionados={len(selected)} "
+        f"âncoras_narrativas={story_anchor_counts} "
         f"falhas_legenda={top_caption_failures} "
         f"amostra_legenda={caption_preview}",
         flush=True,
@@ -1387,6 +1540,143 @@ def word_token(value: str) -> str:
     return re.sub(r"[^\wÀ-ÿ]", "", value.lower())
 
 
+def _fold_caption_text(value: str) -> str:
+    """Remove accents only for conservative fuzzy comparison."""
+    folded = unicodedata.normalize("NFKD", str(value).casefold())
+    return "".join(char for char in folded if not unicodedata.combining(char))
+
+
+def _caption_phonetic_key(value: str) -> str:
+    """Approximate Brazilian Portuguese sound without rewriting the source."""
+    text = _fold_caption_text(word_token(value))
+    if not text:
+        return ""
+    text = text.replace("ph", "f").replace("qu", "k").replace("gu", "g")
+    text = text.replace("ch", "x").replace("lh", "l").replace("nh", "n")
+    text = text.replace("rr", "r").replace("ss", "s")
+    text = re.sub(r"c(?=[ei])", "s", text)
+    text = text.replace("ç", "s").replace("h", "")
+    # Vowel quality is one of the least reliable parts of podcast ASR. Keeping
+    # the consonant skeleton lets “balrracharia” find “borracharia” while
+    # still requiring a close edit distance and a frequent Portuguese word.
+    text = re.sub(r"[aeiouy]", "a", text)
+    return re.sub(r"(.)\1+", r"\1", text)
+
+
+def _caption_edit_distance(left: str, right: str, cutoff: int | None = None) -> int:
+    """Small bounded Levenshtein implementation for rare ASR tokens."""
+    if left == right:
+        return 0
+    if cutoff is not None and abs(len(left) - len(right)) > cutoff:
+        return cutoff + 1
+    previous = list(range(len(right) + 1))
+    for row, left_char in enumerate(left, 1):
+        current = [row]
+        row_min = row
+        for column, right_char in enumerate(right, 1):
+            value = min(
+                current[-1] + 1,
+                previous[column] + 1,
+                previous[column - 1] + (left_char != right_char),
+            )
+            current.append(value)
+            row_min = min(row_min, value)
+        if cutoff is not None and row_min > cutoff:
+            return cutoff + 1
+        previous = current
+    return previous[-1]
+
+
+@lru_cache(maxsize=1)
+def _caption_portuguese_lexicon() -> tuple[str, ...]:
+    """Load a finite Portuguese lexicon only when contextual repair is needed."""
+    try:
+        from wordfreq import top_n_list
+    except ImportError:
+        return ()
+    try:
+        values = top_n_list("pt", max(1000, CAPTION_PT_LEXICON_SIZE))
+    except Exception:
+        return ()
+    return tuple(
+        sorted({
+            value.casefold()
+            for value in values
+            if re.fullmatch(r"[a-zà-ÿ]{4,}", value.casefold())
+        })
+    )
+
+
+@lru_cache(maxsize=4096)
+def _best_contextual_caption_word(
+    source_token: str,
+    left_context: str = "",
+    right_context: str = "",
+) -> str | None:
+    """Find a likely Portuguese spelling for a rare ASR token.
+
+    This is intentionally conservative: it never changes a common word,
+    acronym or known token, and it requires phonetic similarity, a close edit
+    distance and a plausible neighboring phrase when that signal is available.
+    """
+    token = word_token(source_token)
+    if len(token) < 5 or token.isdigit():
+        return None
+    try:
+        from wordfreq import zipf_frequency
+        source_frequency = zipf_frequency(token, "pt")
+    except ImportError:
+        return None
+    if source_frequency >= CAPTION_AUTO_CORRECTION_MIN_ZIPF:
+        return None
+
+    source_folded = _fold_caption_text(token)
+    source_phonetic = _caption_phonetic_key(token)
+    if not source_folded or not source_phonetic:
+        return None
+
+    lexicon = _caption_portuguese_lexicon()
+    if not lexicon:
+        return None
+    best: tuple[float, str] | None = None
+    max_distance = max(1, CAPTION_AUTO_CORRECTION_MAX_DISTANCE)
+    for candidate in lexicon:
+        if candidate == token or abs(len(candidate) - len(token)) > max_distance:
+            continue
+        if candidate[0] != token[0]:
+            continue
+        if _caption_phonetic_key(candidate) != source_phonetic:
+            continue
+        distance = _caption_edit_distance(
+            source_folded,
+            _fold_caption_text(candidate),
+            cutoff=max_distance,
+        )
+        if distance > max_distance:
+            continue
+        try:
+            candidate_frequency = zipf_frequency(candidate, "pt")
+        except Exception:
+            candidate_frequency = 0.0
+        if candidate_frequency < CAPTION_AUTO_CORRECTION_MIN_ZIPF:
+            continue
+        context_bonus = 0.0
+        if left_context or right_context:
+            source_phrase = " ".join(item for item in (left_context, token, right_context) if item)
+            candidate_phrase = " ".join(item for item in (left_context, candidate, right_context) if item)
+            source_phrase_frequency = zipf_frequency(source_phrase, "pt")
+            candidate_phrase_frequency = zipf_frequency(candidate_phrase, "pt")
+            # A rare ASR token may be unknown to the phrase model, so context
+            # is a tie-breaker and a safety check, never the sole proof.
+            if candidate_phrase_frequency + 0.75 < source_phrase_frequency:
+                continue
+            context_bonus = max(0.0, candidate_phrase_frequency - source_phrase_frequency)
+        score = distance * 2.0 - candidate_frequency * 0.55 - context_bonus * 0.80
+        if best is None or score < best[0]:
+            best = (score, candidate)
+    return best[1] if best else None
+
+
 def _caption_token_parts(value: str) -> tuple[str, str, str]:
     """Separa pontuação externa do núcleo de uma palavra."""
     match = re.fullmatch(r"([^\wÀ-ÿ]*)([\wÀ-ÿ]+(?:['’\-][\wÀ-ÿ]+)*)([^\wÀ-ÿ]*)", value.strip())
@@ -1406,6 +1696,10 @@ def _preserve_caption_case(value: str, reference: str) -> str:
     return value.lower()
 
 
+def _caption_preserved_form(value: str) -> str | None:
+    return CAPTION_PRESERVED_CASE.get(str(value).upper())
+
+
 def correct_caption_word(value: str) -> str:
     """Corrige somente tokens ASR previamente validados, preservando pontuação."""
     prefix, token, suffix = _caption_token_parts(value)
@@ -1419,18 +1713,54 @@ def correct_caption_word(value: str) -> str:
     return f"{prefix}{replacement}{suffix}"
 
 
-def normalize_caption_word(value: str) -> str:
-    """Higieniza um token sem inventar conteúdo nem alterar sua duração."""
+def contextual_correct_caption_word(
+    value: str,
+    context: dict[str, Any] | None = None,
+    left_context: str = "",
+    right_context: str = "",
+) -> str:
+    """Corrige ruído ortográfico do ASR usando contexto e vocabulário português."""
+    deterministic = correct_caption_word(value)
+    prefix, token, suffix = _caption_token_parts(deterministic)
+    if not token:
+        return deterministic
+    token_key = word_token(token)
+    preserved = _caption_preserved_form(token)
+    if preserved:
+        return f"{prefix}{preserved}{suffix}"
+    if token_key in _caption_context_tokens(context):
+        return deterministic
+    replacement = _best_contextual_caption_word(token_key, left_context, right_context)
+    if not replacement or replacement == token_key:
+        return deterministic
+    replacement = _preserve_caption_case(replacement, token)
+    return f"{prefix}{replacement}{suffix}"
+
+
+def _clean_caption_suffix(suffix: str) -> str:
+    suffix = re.sub(r"([,;:!?])\1+", r"\1", suffix)
+    suffix = re.sub(r"\.{4,}", "...", suffix)
+    # A comma may be an intentional intra-sentence boundary. Final commas are
+    # removed only when the caller knows there is no following word.
+    return suffix.rstrip(";:")
+
+
+def normalize_caption_word(
+    value: str,
+    context: dict[str, Any] | None = None,
+    left_context: str = "",
+    right_context: str = "",
+) -> str:
+    """Higieniza e revisa um token sem alterar sua duração."""
     value = re.sub(r"\s+", " ", str(value).strip())
     value = re.sub(r"\s+([,.;:!?…])", r"\1", value)
     if not value:
         return value
-    value = correct_caption_word(value)
+    value = contextual_correct_caption_word(value, context, left_context, right_context)
     prefix, token, suffix = _caption_token_parts(value)
     if not token:
         return value
-    suffix = re.sub(r"([,;:!?])\1+", r"\1", suffix)
-    suffix = re.sub(r"\.{4,}", "...", suffix)
+    suffix = _clean_caption_suffix(suffix)
     return f"{prefix}{token}{suffix}"
 
 
@@ -1438,10 +1768,19 @@ def _caption_word_is_common(value: str) -> bool:
     return word_token(value) in CAPTION_COMMON_WORDS
 
 
-def _capitalize_caption_start(value: str) -> str:
+def _capitalize_caption_start(
+    value: str,
+    context: dict[str, Any] | None = None,
+) -> str:
     prefix, token, suffix = _caption_token_parts(value)
-    if not token or token.isupper():
+    preserved = _caption_preserved_form(token)
+    if not token:
         return value
+    if preserved:
+        return f"{prefix}{preserved}{suffix}"
+    if token.isupper():
+        lowered = token.lower()
+        return f"{prefix}{lowered[:1].upper() + lowered[1:]}{suffix}"
     first_alpha = next((index for index, char in enumerate(token) if char.isalpha()), None)
     if first_alpha is None:
         return value
@@ -1449,35 +1788,97 @@ def _capitalize_caption_start(value: str) -> str:
     return f"{prefix}{token}{suffix}"
 
 
-def _lowercase_caption_continuation(value: str) -> str:
+def _lowercase_caption_continuation(
+    value: str,
+    context: dict[str, Any] | None = None,
+) -> str:
     prefix, token, suffix = _caption_token_parts(value)
-    if not token or not _caption_word_is_common(token):
+    if not token:
         return value
-    if token.isupper() and len(token) <= 4:
-        return value
-    return f"{prefix}{token.lower()}{suffix}"
+    preserved = _caption_preserved_form(token)
+    if preserved:
+        return f"{prefix}{preserved}{suffix}"
+    if word_token(token) in _caption_context_tokens(context) and token.isupper():
+        lowered = token.lower()
+        return f"{prefix}{lowered[:1].upper() + lowered[1:]}{suffix}"
+    if token.isupper() or (token[:1].isupper() and len(token) > 1):
+        return f"{prefix}{token.lower()}{suffix}"
+    return value
 
 
-def capitalize_caption_sentence_starts(words: list[dict[str, Any]]) -> None:
-    """Normaliza caixa, acentos e pontuação sem reescrever a fala."""
+def normalize_caption_punctuation(words: list[dict[str, Any]]) -> None:
+    """Remove ruído do ASR e adiciona pontuação apenas com evidência temporal."""
+    for index, item in enumerate(words):
+        text = str(item.get("word", "")).strip()
+        if not text:
+            continue
+        prefix, token, suffix = _caption_token_parts(text)
+        suffix = _clean_caption_suffix(suffix)
+        source_terminal = str(item.get("source_terminal_punctuation", ""))
+        if (
+            source_terminal in CAPTION_TERMINAL_PUNCTUATION
+            and not re.search(rf"[{re.escape(CAPTION_TERMINAL_PUNCTUATION)}]$", suffix)
+        ):
+            suffix += source_terminal
+        next_item = words[index + 1] if index + 1 < len(words) else None
+        if next_item is not None:
+            gap = float(next_item["start"]) - float(item["end"])
+            next_token = word_token(str(next_item.get("word", "")))
+            has_terminal = bool(re.search(rf"[{re.escape(CAPTION_TERMINAL_PUNCTUATION)}]$", suffix))
+            if (
+                gap >= CAPTION_PERIOD_PAUSE
+                and not has_terminal
+                and token.casefold() not in CAPTION_PUNCTUATION_WEAK_WORDS
+                and next_token not in {"e", "ou", "que", "se"}
+            ):
+                suffix += "."
+            elif (
+                gap >= CAPTION_PUNCTUATION_PAUSE
+                and not has_terminal
+                and not suffix
+                and token.casefold() not in CAPTION_PUNCTUATION_WEAK_WORDS
+                and next_token in {"mas", "porém", "porem", "então", "entao"}
+            ):
+                suffix += ","
+        else:
+            suffix = suffix.rstrip(",")
+        item["word"] = f"{prefix}{token}{suffix}"
+
+
+def capitalize_caption_sentence_starts(
+    words: list[dict[str, Any]],
+    context: dict[str, Any] | None = None,
+) -> None:
+    """Normaliza caixa, ortografia e pontuação sem reescrever a fala."""
     sentence_start = True
     previous_end: float | None = None
-    for item in words:
+    neighborhood = [word_token(str(item.get("word", ""))) for item in words]
+    for index, item in enumerate(words):
         original = str(item.get("word", ""))
-        text = normalize_caption_word(original)
+        left_context = " ".join(neighborhood[max(0, index - 2):index])
+        right_context = " ".join(neighborhood[index + 1:index + 3])
+        text = normalize_caption_word(
+            original,
+            context,
+            left_context=left_context,
+            right_context=right_context,
+        )
         if not text:
             continue
         gap = float(item["start"]) - previous_end if previous_end is not None else 0.0
-        if previous_end is not None and gap >= CAPTION_SENTENCE_GAP:
+        if previous_end is not None and gap >= max(CAPTION_SENTENCE_GAP, CAPTION_PERIOD_PAUSE):
             sentence_start = True
         if sentence_start:
-            text = _capitalize_caption_start(text)
+            text = _capitalize_caption_start(text, context)
             sentence_start = False
         else:
-            text = _lowercase_caption_continuation(text)
+            text = _lowercase_caption_continuation(text, context)
         if text != original:
             item["word"] = text
-            item["orthography_adjustment"] = True
+            if word_token(text) == word_token(original) and _fold_caption_text(text) == _fold_caption_text(original):
+                item["case_only_adjustment"] = True
+            else:
+                item["orthography_adjustment"] = True
         if re.search(rf"[{re.escape(CAPTION_TERMINAL_PUNCTUATION)}]$", text):
             sentence_start = True
         previous_end = float(item["end"])
@@ -1507,25 +1908,36 @@ def caption_orthography_issues(words: list[dict[str, Any]]) -> list[str]:
     return sorted(set(issues))
 
 
-def _caption_context_tokens() -> set[str]:
+def _caption_context_tokens(context_data: dict[str, Any] | None = None) -> set[str]:
     """Retorna palavras conhecidas pelo contexto da fonte, sem reescrever a fala."""
     allowed = set(CAPTION_ALLOWED_TOKENS)
-    context = " ".join(
+    environment_context = " ".join(
         os.environ.get(name, "")
         for name in ("SOURCE_TITLE", "SOURCE_CHANNEL", "SOURCE_NICHE")
     )
-    allowed.update(word_token(item) for item in context.split() if word_token(item))
+    allowed.update(word_token(item) for item in environment_context.split() if word_token(item))
+    context_data = context_data or {}
+    for value in (
+        context_data.get("title", ""),
+        context_data.get("channel", ""),
+        context_data.get("niche", ""),
+        *(context_data.get("protected_tokens", []) or []),
+    ):
+        allowed.update(word_token(item) for item in str(value).split() if word_token(item))
     return allowed
 
 
-def caption_spelling_issues(labels: list[str]) -> list[str]:
+def caption_spelling_issues(
+    labels: list[str],
+    context: dict[str, Any] | None = None,
+) -> list[str]:
     """Retorna apenas erros explícitos já conhecidos do ASR.
 
     Palavras raras, nomes, apelidos, marcas, gírias e termos de internet não
     são reprovação automática: sem áudio/contexto humano, tratá-los como erro
     poderia alterar a fala original.
     """
-    allowed = _caption_context_tokens()
+    allowed = _caption_context_tokens(context)
     return sorted({
         word_token(label)
         for label in labels
@@ -1534,10 +1946,13 @@ def caption_spelling_issues(labels: list[str]) -> list[str]:
     })
 
 
-def caption_spelling_warnings(labels: list[str]) -> list[str]:
+def caption_spelling_warnings(
+    labels: list[str],
+    context: dict[str, Any] | None = None,
+) -> list[str]:
     """Sinaliza palavras raras para revisão humana sem bloquear o corte."""
-    allowed = _caption_context_tokens()
-    explicit_issues = set(caption_spelling_issues(labels))
+    allowed = _caption_context_tokens(context)
+    explicit_issues = set(caption_spelling_issues(labels, context))
     warnings: set[str] = set()
     try:
         from wordfreq import zipf_frequency
@@ -1567,6 +1982,9 @@ CAPTION_FUNCTION_WORDS = {
     "pelo", "pelos", "por", "que", "se", "um", "uma", "uns", "umas",
 }
 CAPTION_WEAK_CONNECTORS = {"e", "ou", "mas", "nem", "porque", "porém", "porem", "como"}
+CAPTION_PUNCTUATION_WEAK_WORDS = CAPTION_FUNCTION_WORDS | {
+    "e", "ou", "que", "se", "é", "está", "esta", "estão", "estao", "são", "sao",
+}
 
 
 def caption_break_penalty(labels: list[str], index: int) -> float:
@@ -1825,7 +2243,11 @@ def pad_caption_timings(
     return padded
 
 
-def caption_chunks(segments: list[Segment], candidate: Candidate) -> list[list[dict[str, Any]]]:
+def caption_chunks(
+    segments: list[Segment],
+    candidate: Candidate,
+    context: dict[str, Any] | None = None,
+) -> list[list[dict[str, Any]]]:
     words: list[dict[str, Any]] = []
     for segment in segments:
         if segment.end <= candidate.start or segment.start >= candidate.end:
@@ -1842,23 +2264,32 @@ def caption_chunks(segments: list[Segment], candidate: Candidate) -> list[list[d
                 }
                 for index, token in enumerate(tokens)
             ]
-        for word in source_words:
+        source_terminal_match = re.search(r"([.!?…])\s*$", segment.text)
+        source_terminal = source_terminal_match.group(1) if source_terminal_match else ""
+        for word_index, word in enumerate(source_words):
             text = str(word.get("word", "")).strip()
             if not text:
                 continue
             start = max(candidate.start, float(word["start"]))
             end = min(candidate.end, float(word["end"]))
             if end > start:
-                corrected_text = correct_caption_word(text)
                 words.append({
                     "start": start,
                     "end": end,
-                    "word": corrected_text,
+                    "word": text,
                     "source_word": text,
                     "probability": word.get("probability"),
+                    "source_terminal_punctuation": (
+                        source_terminal if word_index == len(source_words) - 1 else ""
+                    ),
                 })
 
-    capitalize_caption_sentence_starts(words)
+    capitalize_caption_sentence_starts(words, context)
+    normalize_caption_punctuation(words)
+    # A punctuation pass can create a sentence boundary after capitalization;
+    # run only the casing pass again so the first word after an inserted period
+    # is natural without touching timing or content.
+    capitalize_caption_sentence_starts(words, context)
 
     chunks: list[list[dict[str, Any]]] = []
     current: list[dict[str, Any]] = []
@@ -1939,9 +2370,14 @@ def caption_chunks(segments: list[Segment], candidate: Candidate) -> list[list[d
     repaired = repair_short_caption_chunks(normalized)
     return pad_caption_timings(repaired, candidate)
 
-def validate_captions(segments: list[Segment], candidate: Candidate, margin_v: int) -> dict[str, Any]:
+def validate_captions(
+    segments: list[Segment],
+    candidate: Candidate,
+    margin_v: int,
+    context: dict[str, Any] | None = None,
+) -> dict[str, Any]:
     """Audita tempo, continuidade, largura e posição das legendas antes da renderização."""
-    chunks = caption_chunks(segments, candidate)
+    chunks = caption_chunks(segments, candidate, context)
     issues: list[str] = []
     warnings: list[str] = []
     intervals: list[dict[str, Any]] = []
@@ -1965,12 +2401,12 @@ def validate_captions(segments: list[Segment], candidate: Candidate, margin_v: i
                     corrections.append(correction)
         labels = [str(item.get("word", "")).strip() for item in chunk if str(item.get("word", "")).strip()]
         text = " ".join(labels)
-        suspect_tokens = caption_spelling_issues(labels)
+        suspect_tokens = caption_spelling_issues(labels, context)
         if suspect_tokens:
             issues.append(
                 f"bloco {index} contém erro conhecido de transcrição/ortografia: {', '.join(suspect_tokens)}"
             )
-        spelling_warnings = caption_spelling_warnings(labels)
+        spelling_warnings = caption_spelling_warnings(labels, context)
         if spelling_warnings:
             warnings.append(
                 f"bloco {index} contém palavra rara/nome/gíria para revisão humana: {', '.join(spelling_warnings)}"
@@ -2085,7 +2521,13 @@ def render_caption(words: list[dict[str, Any]]) -> str:
     return "".join(rendered)
 
 
-def write_ass(segments: list[Segment], candidate: Candidate, path: Path, margin_v: int) -> None:
+def write_ass(
+    segments: list[Segment],
+    candidate: Candidate,
+    path: Path,
+    margin_v: int,
+    context: dict[str, Any] | None = None,
+) -> None:
     lines = [
         "[Script Info]", "ScriptType: v4.00+", "PlayResX: 1080", "PlayResY: 1920", "ScaledBorderAndShadow: yes", "",
         "[V4+ Styles]",
@@ -2094,7 +2536,7 @@ def write_ass(segments: list[Segment], candidate: Candidate, path: Path, margin_
         f"Style: Default,{CAPTION_FONT_NAME},{CAPTION_FONT_SIZE},&H00F4F5F5,&H00F4F5F5,&H00050505,&H99050505,-1,0,0,0,100,100,0,0,1,3,1,2,70,70,{margin_v},1", "",
         "[Events]", "Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text",
     ]
-    for chunk in caption_chunks(segments, candidate):
+    for chunk in caption_chunks(segments, candidate, context):
         start = max(0.0, float(chunk[0]["start"]) - candidate.start)
         end = max(start + 0.08, float(chunk[-1]["end"]) - candidate.start)
         lines.append(f"Dialogue: 0,{ass_time(start)},{ass_time(end)},Default,,0,0,0,,{render_caption(chunk)}")
@@ -2124,7 +2566,9 @@ def render_clip(source: Path, captions: Path, candidate: Candidate, output: Path
         raise FileNotFoundError(f"Logo oficial não encontrada: {LOGO_PATH}")
     filter_complex = build_filter_complex(caption_path, str(LOGO_PATH))
     run([
-        "ffmpeg", "-y", "-ss", f"{candidate.start:.3f}", "-i", str(source), "-t", f"{candidate.duration:.3f}",
+        # O seek depois da entrada prioriza precisão temporal para que áudio,
+        # vídeo e ASS com timestamps relativos comecem no mesmo ponto.
+        "ffmpeg", "-y", "-i", str(source), "-ss", f"{candidate.start:.3f}", "-t", f"{candidate.duration:.3f}",
         "-filter_complex", filter_complex, "-map", "[v]", "-map", "0:a:0?", "-c:v", "libx264", "-preset", VIDEO_PRESET,
         "-b:v", VIDEO_BITRATE, "-minrate", VIDEO_MINRATE, "-maxrate", VIDEO_MAXRATE, "-bufsize", VIDEO_BUFSIZE,
         "-profile:v", "high", "-level:v", "4.2", "-pix_fmt", "yuv420p", "-r", "30",
@@ -2133,7 +2577,7 @@ def render_clip(source: Path, captions: Path, candidate: Candidate, output: Path
         "-af", "volume=-1dB",
         "-c:a", "aac", "-b:a", VIDEO_AUDIO_BITRATE, "-ac", "2", "-ar", "48000",
         "-movflags", "+faststart", "-shortest", "-avoid_negative_ts", "make_zero", str(output),
-    ])
+    ], timeout=900)
 
 
 def render_and_validate(
@@ -2421,9 +2865,9 @@ def write_reports(
             },
             "audio": "áudio original preservado em AAC",
             "narrative": "mapa editorial da fonte, começo autônomo, contexto, desenvolvimento, coesão temática e conclusão real sem depender de silêncio ou fim da transcrição",
-            "captions": "ASS dinâmico, no máximo duas linhas de até 32 caracteres, sincronização auditada por palavra, alvo de 18 cps e limite duro de 24 cps, revisão ortográfica estrita de caixa/acentos/pontuação e margem segura",
+            "captions": "ASS dinâmico, no máximo duas linhas de até 32 caracteres, sincronização auditada por palavra, alvo de 18 cps e limite duro configurado, revisão ortográfica contextual de caixa/acentos/pontuação e margem segura",
             "caption_gate": {
-                "spelling_checker": "wordfreq pt quando disponível + lista de risco",
+                "spelling_checker": "revisão contextual conservadora com wordfreq pt, contexto da fonte e lista de risco",
                 "minimum_word_probability": CAPTION_MIN_WORD_PROBABILITY,
                 "recommended_characters_per_second": CAPTION_MAX_CPS,
                 "hard_max_characters_per_second": CAPTION_HARD_MAX_CPS,
@@ -2533,6 +2977,7 @@ def main() -> int:
             )
         candidate_pool = selected[:MAX_CLIPS]
         accepted_candidates: list[Candidate] = []
+        caption_context = build_caption_context(profile, info)
 
         for candidate in candidate_pool:
             if len(clips) >= MAX_CLIPS:
@@ -2567,8 +3012,19 @@ def main() -> int:
                     f"Top 5 fechado reprovou no gate editorial no corte {clip_number}; "
                     "nenhum candidato reserva será usado."
                 )
-            write_ass(segments, candidate, captions, CAPTION_MARGIN_V)
-            caption_qa = validate_captions(segments, candidate, CAPTION_MARGIN_V)
+            write_ass(
+                segments,
+                candidate,
+                captions,
+                CAPTION_MARGIN_V,
+                context=caption_context,
+            )
+            caption_qa = validate_captions(
+                segments,
+                candidate,
+                CAPTION_MARGIN_V,
+                context=caption_context,
+            )
             if not caption_qa["passed"]:
                 candidate.accepted = False
                 candidate.rejection = "reprovado no gate automático de legenda"
