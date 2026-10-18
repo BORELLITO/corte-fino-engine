@@ -90,6 +90,15 @@ LONGFORM_MARKERS = {
 }
 
 NON_EDITORIAL_CATEGORY_IDS = {"10", "17", "20"}
+NON_CONVERSATIONAL_TERMS = {
+    "novela", "novelas", "noveleiro", "capítulo de novela", "capitulo de novela",
+    "resumo da novela", "trama da novela", "fofoca de novela",
+}
+SPANISH_SIGNAL_WORDS = {
+    "el", "la", "los", "las", "y", "ya", "mujer", "mujeres",
+    "matrimonio", "infidelidad", "relaciones", "moderna", "modernas",
+    "funciona", "casan", "casarse", "conveniencia", "sin", "rodeo",
+}
 FOREIGN_SIGNAL_WORDS = {
     "las", "los", "una", "uno", "del", "the", "and", "with",
     "from", "this", "that", "muerte", "fuera", "dice", "ilusión",
@@ -671,11 +680,17 @@ def likely_portuguese(text: str) -> bool:
     sample = tokens[:120]
     hits = sum(token in PORTUGUESE_SIGNAL_WORDS for token in sample)
     foreign_hits = sum(token in FOREIGN_SIGNAL_WORDS for token in sample)
+    spanish_hits = sum(token in SPANISH_SIGNAL_WORDS for token in sample)
     accented = sum(
         any(char in token for char in "áàâãéêíóôõúç")
         for token in sample
     )
+    # Dois sinais estrangeiros já bastam quando não há acentuação portuguesa.
+    # Para espanhol, exigimos múltiplos marcadores próprios e pouca evidência
+    # de português; isso bloqueia títulos como "El matrimonio ya no funciona".
     if foreign_hits >= 2 and accented < 2:
+        return False
+    if spanish_hits >= 3 and hits <= 1:
         return False
     return hits >= 2 or accented >= 2
 
@@ -688,9 +703,11 @@ def editorial_format_fit(
 ) -> bool:
     if category_id in NON_EDITORIAL_CATEGORY_IDS:
         return False
+    surface = normalize(f"{title} {channel_title}")
+    if any(term in surface for term in NON_CONVERSATIONAL_TERMS):
+        return False
     if preferred_source(channel_title):
         return True
-    surface = normalize(f"{title} {channel_title}")
     if "ao vivo" in surface and not any(
         marker in surface
         for marker in {
@@ -1537,6 +1554,7 @@ def write_outputs(
             or candidate.made_for_kids
             or candidate.recently_seen
             or candidate.video_id in qualified_ids
+            or candidate.rank_status == "DROP"
         ):
             continue
         if candidate.radar_score is None:
@@ -1557,6 +1575,7 @@ def write_outputs(
             or candidate.made_for_kids
             or not candidate.recently_seen
             or candidate.video_id in qualified_ids
+            or candidate.rank_status == "DROP"
         ):
             continue
         if candidate.radar_score is None:
@@ -1569,17 +1588,50 @@ def write_outputs(
         key=lambda c: c.radar_score or 0,
         reverse=True,
     )
-    ranked = (qualified + fallback_pool + repeat_pool)[:top_n]
+
+    # Se ainda faltarem vagas, entregamos cinco links, mas marcamos claramente
+    # os candidatos que falharam no gate semântico como baixa confiança.
+    low_signal_pool = []
+    for candidate in candidates:
+        if (
+            candidate.political_or_electoral
+            or candidate.made_for_kids
+            or candidate.video_id in qualified_ids
+            or candidate.rank_status != "DROP"
+        ):
+            continue
+        if candidate.radar_score is None:
+            candidate.radar_score = fallback_score(candidate)
+            candidate.confidence_score = round(compute_confidence(candidate), 2)
+        candidate.rank_status = "REVIEW"
+        if "low_signal_backfill" not in candidate.risk_flags:
+            candidate.risk_flags.append("low_signal_backfill")
+        low_signal_pool.append(candidate)
+
+    low_signal_pool.sort(
+        key=lambda c: c.radar_score or 0,
+        reverse=True,
+    )
+    ranked = (
+        qualified
+        + fallback_pool
+        + repeat_pool
+        + low_signal_pool
+    )[:top_n]
     fallback_ids = {
         c.video_id
         for c in ranked
-        if c.video_id not in qualified_ids
-        and not c.recently_seen
+        if c.video_id in {item.video_id for item in fallback_pool}
     }
     repeat_ids = {
         c.video_id
         for c in ranked
-        if c.recently_seen
+        if c.video_id in {item.video_id for item in repeat_pool}
+    }
+    low_signal_ids = {
+        c.video_id
+        for c in ranked
+        if c.video_id in {item.video_id for item in low_signal_pool}
     }
 
     political = sorted(
@@ -1668,7 +1720,11 @@ def write_outputs(
                     else (
                         "REPEAT_BACKFILL"
                         if c.video_id in repeat_ids
-                        else "REVIEW_FALLBACK"
+                        else (
+                            "LOW_SIGNAL_BACKFILL"
+                            if c.video_id in low_signal_ids
+                            else "REVIEW_FALLBACK"
+                        )
                     )
                 ),
             }
@@ -1765,7 +1821,11 @@ def write_outputs(
                     else (
                         "REPEAT_BACKFILL"
                         if c.video_id in repeat_ids
-                        else "REVIEW_FALLBACK"
+                        else (
+                            "LOW_SIGNAL_BACKFILL"
+                            if c.video_id in low_signal_ids
+                            else "REVIEW_FALLBACK"
+                        )
                     )
                 ),
                 c.transcript_status,
@@ -1819,10 +1879,13 @@ def write_outputs(
     for index, c in enumerate(ranked, 1):
         is_repeat = c.video_id in repeat_ids
         is_fallback = c.video_id in fallback_ids
+        is_low_signal = c.video_id in low_signal_ids
         reasons = explain(c)
         reason = reasons[0] if reasons else "sinais combinados de desempenho"
         if is_repeat:
             reason = f"repetição recente; {reason.lower()}"
+        elif is_low_signal:
+            reason = "não passou no gate semântico; revisão manual obrigatória"
         elif is_fallback:
             reason = f"alternativa restante; {reason.lower()}"
         delta = ""
@@ -1847,6 +1910,7 @@ def write_outputs(
             (
                 f"   {c.rank_status}"
                 f"{' / REPEAT BACKFILL' if is_repeat else ''}"
+                f"{' / LOW_SIGNAL_BACKFILL' if is_low_signal else ''}"
                 f"{' / FALLBACK' if is_fallback else ''} | "
                 f"{c.radar_score:.1f}/100{delta} | "
                 f"{fmt_int(c.view_count)} views | "
@@ -1897,7 +1961,9 @@ def write_outputs(
             "Fila principal encerrada no Top 5. "
             "Itens REVIEW/FALLBACK completam a lista quando não há cinco aprovados "
             "pelo gate editorial; itens REPEAT BACKFILL só entram quando faltam "
-            "alternativas novas. A análise de legenda é enriquecimento: "
+            "alternativas novas. LOW_SIGNAL_BACKFILL não é recomendação: é apenas "
+            "uma vaga transparente para manter cinco links e exige revisão manual. "
+            "A análise de legenda é enriquecimento: "
             "indisponibilidade não elimina o vídeo, mas reduz a confiança. "
             "Direitos, riscos, política e métricas completas permanecem no JSON/CSV "
             "para auditoria."
