@@ -166,6 +166,9 @@ def test_language_filter_rejects_english_and_accepts_portuguese():
     assert not likely_portuguese(
         "A video about a man who was followed by ventriloquists."
     )
+    assert not likely_portuguese(
+        "El matrimonio ya no funciona: infidelidad, dinero y relaciones modernas."
+    )
 
 
 def test_editorial_format_requires_conversational_longform_shape():
@@ -183,6 +186,11 @@ def test_editorial_format_requires_conversational_longform_shape():
         "ORAÇÃO DA NOITE",
         "Ore conosco e deixe seu pedido nos comentários.",
         "Canal de Orações",
+    )
+    assert not editorial_format_fit(
+        "QUEM AMA CUIDA — capítulo de novela",
+        "",
+        "Noveleiro das 9",
     )
 
 
@@ -661,7 +669,7 @@ def test_output_fills_top_five_with_review_fallbacks(tmp_path, monkeypatch):
     assert len(ranked) == 5
     assert ranked[0]["selection_tier"] == "QUALIFIED"
     assert all(
-        item["selection_tier"] == "REVIEW_FALLBACK"
+        item["selection_tier"] == "LOW_SIGNAL_BACKFILL"
         for item in ranked[1:]
     )
     assert all(
@@ -670,7 +678,7 @@ def test_output_fills_top_five_with_review_fallbacks(tmp_path, monkeypatch):
     )
     report = (tmp_path / "radar_latest.md").read_text(encoding="utf-8")
     assert "## 🔥 Prioridades (5/5)" in report
-    assert report.count("REVIEW / FALLBACK") == 4
+    assert report.count("REVIEW / LOW_SIGNAL_BACKFILL") == 4
 
 
 def test_main_rejects_non_five_top_n(monkeypatch):
