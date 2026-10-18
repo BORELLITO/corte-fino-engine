@@ -1,4 +1,6 @@
 import json
+import sys
+from pathlib import Path
 
 import radar.corte_fino_radar as radar_module
 from datetime import datetime, timedelta, timezone
@@ -24,6 +26,7 @@ from radar.corte_fino_radar import (
     safe_url_label,
     term_hits,
     write_outputs,
+    main,
 )
 
 
@@ -566,3 +569,90 @@ def test_stale_tiny_score_delta_is_hidden(tmp_path, monkeypatch):
     report = (tmp_path / "radar_latest.md").read_text(encoding="utf-8")
     assert "↑0.0" not in report
     assert "↓0.0" not in report
+
+def test_output_fills_top_five_with_review_fallbacks(tmp_path, monkeypatch):
+    monkeypatch.setattr(radar_module, "OUTPUT_DIR", tmp_path)
+    candidates = [
+        VideoCandidate(
+            video_id="qualified",
+            title="Debate forte",
+            channel_title="Flow Podcast",
+            channel_id="UC_FLOW",
+            category_id="22",
+            made_for_kids=False,
+            published_at="2026-10-17T12:00:00+00:00",
+            description="",
+            duration_seconds=3600,
+            view_count=250000,
+            like_count=10000,
+            comment_count=2500,
+            youtube_license="youtube",
+            radar_score=80.0,
+            rank_status="HOT",
+        )
+    ]
+    for idx in range(4):
+        candidates.append(
+            VideoCandidate(
+                video_id=f"fallback-{idx}",
+                title=f"Podcast alternativo {idx}",
+                channel_title="Canal de Podcast",
+                channel_id=f"UC_FALLBACK_{idx}",
+                category_id="22",
+                made_for_kids=False,
+                published_at="2026-10-17T12:00:00+00:00",
+                description="",
+                duration_seconds=3600,
+                view_count=100000 - idx,
+                like_count=1000,
+                comment_count=500,
+                youtube_license="youtube",
+                rank_status="DROP",
+            )
+        )
+
+    write_outputs(
+        candidates,
+        [],
+        [],
+        top_n=5,
+        generated_at=datetime(2026, 10, 17, 15, 0, tzinfo=timezone.utc),
+    )
+
+    payload = json.loads(
+        (tmp_path / "radar_latest.json").read_text(encoding="utf-8")
+    )
+    ranked = payload["ranked_nonpolitical"]
+    assert len(ranked) == 5
+    assert ranked[0]["selection_tier"] == "QUALIFIED"
+    assert all(
+        item["selection_tier"] == "REVIEW_FALLBACK"
+        for item in ranked[1:]
+    )
+    assert all(
+        item["url"].startswith("https://www.youtube.com/watch?v=")
+        for item in ranked
+    )
+    report = (tmp_path / "radar_latest.md").read_text(encoding="utf-8")
+    assert "## 🔥 Prioridades (5/5)" in report
+    assert report.count("REVIEW / FALLBACK") == 4
+
+
+def test_main_rejects_non_five_top_n(monkeypatch):
+    monkeypatch.setenv("YOUTUBE_API_KEY", "test-key")
+    monkeypatch.setattr(sys, "argv", ["corte_fino_radar.py", "--top-n", "4"])
+    assert main() == 2
+
+
+def test_radar_workflow_contract_is_explicit():
+    workflow = Path(".github/workflows/corte-fino-radar.yml").read_text(
+        encoding="utf-8"
+    )
+    assert 'cron: "30 11,23 * * *"' in workflow
+    assert 'RADAR_TOP_N: "5"' in workflow
+    assert "RADAR_DRIVE_FOLDER_ID ||" in workflow
+    assert "python -m radar.drive_state pull" in workflow
+    assert "python -m radar.upload_reports_drive" in workflow
+    assert "python -m radar.drive_state push" in workflow
+    assert "if: success()" in workflow
+    assert "Nenhum ranking editorial completo é publicado no GitHub." in workflow
