@@ -47,6 +47,7 @@ jobs:
       PYTHONUNBUFFERED: "1"
       TRANSCRIBE_BEAM_SIZE: "3"
       TRANSCRIBE_CPU_THREADS: "4"
+      TRANSCRIBE_INITIAL_PROMPT: "Português brasileiro. Entrevista ou podcast com fala natural, nomes próprios e termos coloquiais. Preserve a pontuação e o sentido da fala."
       VIDEO_CRF: "18" # mantido para compatibilidade; a saída usa VBR controlado
       VIDEO_BITRATE: 8M
       VIDEO_MINRATE: 6M
@@ -61,6 +62,11 @@ jobs:
       CAPTION_LOW_CONFIDENCE_FATAL: "0"
       CAPTION_SPELLING_MIN_ZIPF: "2.30"
       CAPTION_HARD_MAX_CPS: "30.0"
+      CAPTION_PUNCTUATION_PAUSE_SECONDS: "0.85"
+      CAPTION_PERIOD_PAUSE_SECONDS: "1.30"
+      CAPTION_AUTO_CORRECTION_MIN_ZIPF: "3.80"
+      CAPTION_AUTO_CORRECTION_MAX_DISTANCE: "3"
+      CAPTION_PT_LEXICON_SIZE: "50000"
       FORCE_TOP_FIVE: ${{ inputs.force_top_five == 'true' && '1' || '0' }}
 
     steps:
@@ -123,7 +129,7 @@ jobs:
           GOOGLE_CLIENT_ID: ${{ secrets.GOOGLE_CLIENT_ID }}
           GOOGLE_CLIENT_SECRET: ${{ secrets.GOOGLE_CLIENT_SECRET }}
           DRIVE_SOURCE_FOLDER_ID: ${{ secrets.DRIVE_SOURCE_FOLDER_ID }}
-          DRIVE_FOLDER_ID: ${{ secrets.DRIVE_FOLDER_ID || secrets.DRIVER_FOLDER_ID || secrets.PUBLISHER_DRIVE_FOLDER_ID || '15UJh2z5hBRKB8q_JpNpH1rcZZUANO6Da' }}
+          DRIVE_FOLDER_ID: ${{ secrets.DRIVE_FOLDER_ID }}
           MANUAL_SOURCE_URL: ${{ inputs.source_url }}
         run: |
           python - <<'PY'
@@ -273,7 +279,7 @@ jobs:
       - name: Gerar cortes
         id: generate_cuts
         run: |
-          if [ "${NO_SOURCE:-0}" = "1" ]; then echo "Nenhum vídeo novo; nada a processar nesta rodada."; elif [ -n "$SOURCE_FILE" ]; then
+          if [ "${NO_SOURCE:-0}" = "1" ]; then echo "Nenhum vídeo novo; nada a processar nesta rodada."; else
             python - <<'PY'
           import json
           import os
@@ -291,10 +297,14 @@ jobs:
               }
               return source, info
           
-          main.download_source = local_download
+          if os.environ.get("SOURCE_FILE", "").strip():
+              main.download_source = local_download
           code = main.main()
           report = Path("output/relatorio.json")
-          if report.exists():
+          if not report.exists():
+              print("Gate de prontidão reprovado: relatorio.json não foi gerado.")
+              code = 1
+          else:
               data = json.loads(report.read_text(encoding="utf-8"))
               status = data.get("status", "")
               if status == "EDITORIAL_EMPTY":
@@ -334,8 +344,6 @@ jobs:
                           env_file.write("PROCESSING_READY=1\n")
           raise SystemExit(code)
           PY
-          else
-            python main.py
           fi
 
       - name: Enviar 5 vídeos para o Google Drive
@@ -345,7 +353,7 @@ jobs:
           GOOGLE_REFRESH_TOKEN: ${{ secrets.GOOGLE_REFRESH_TOKEN }}
           GOOGLE_CLIENT_ID: ${{ secrets.GOOGLE_CLIENT_ID }}
           GOOGLE_CLIENT_SECRET: ${{ secrets.GOOGLE_CLIENT_SECRET }}
-          DRIVE_FOLDER_ID: ${{ secrets.DRIVE_FOLDER_ID || secrets.DRIVER_FOLDER_ID || secrets.PUBLISHER_DRIVE_FOLDER_ID || '15UJh2z5hBRKB8q_JpNpH1rcZZUANO6Da' }}
+          DRIVE_FOLDER_ID: ${{ secrets.DRIVE_FOLDER_ID }}
         run: |
           python - <<'PY'
           import json
@@ -616,11 +624,17 @@ jobs:
               f"'{folder_id}' in parents and trashed = false and "
               "mimeType = 'application/vnd.google-apps.folder' and name = 'Processados'"
           )
-          folders = drive.files().list(q=query, pageSize=1, fields="files(id,name)").execute().get("files", [])
+          folders = drive.files().list(
+              q=query,
+              pageSize=100,
+              fields="files(id,name)",
+          ).execute(num_retries=4).get("files", [])
+          if len(folders) > 1:
+              raise RuntimeError("Duplicidade detectada no Drive para a pasta Processados.")
           processed_folder = folders[0] if folders else drive.files().create(
               body={"name": "Processados", "mimeType": "application/vnd.google-apps.folder", "parents": [folder_id]},
               fields="id,name",
-          ).execute()
+          ).execute(num_retries=4)
           stamp = datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%SZ")
           old_name = os.environ.get("DRIVE_SOURCE_FILE_NAME", "fonte.mp4")
           new_name = f"processado_{stamp}_{old_name}"
@@ -630,6 +644,6 @@ jobs:
               removeParents=folder_id,
               body={"name": new_name},
               fields="id,name,parents",
-          ).execute()
+          ).execute(num_retries=4)
           print(f"Entrada marcada como processada: {new_name}")
           PY
