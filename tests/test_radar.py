@@ -169,6 +169,9 @@ def test_language_filter_rejects_english_and_accepts_portuguese():
     assert not likely_portuguese(
         "El matrimonio ya no funciona: infidelidad, dinero y relaciones modernas."
     )
+    assert not likely_portuguese(
+        "LIVE ICONS DEBATE: is Nicaea II's teaching apostolic? WATCH PARTY"
+    )
 
 
 def test_editorial_format_requires_conversational_longform_shape():
@@ -200,6 +203,42 @@ def test_generic_body_context_does_not_force_political_without_domain():
         "O ministro comentou com o presidente da empresa sobre inovação.",
         "Canal Tech",
     )
+
+
+def test_breakout_with_editorial_tension_can_pass_gate():
+    candidate = VideoCandidate(
+        video_id="breakout-tension",
+        title="DEBATE MUITO SÉRIO SOBRE TERRA PLANA",
+        channel_title="Canal",
+        channel_id="UC_TENSION",
+        category_id="22",
+        made_for_kids=False,
+        published_at=datetime.now(timezone.utc).isoformat(),
+        description="",
+        duration_seconds=3600,
+        view_count=100000,
+        like_count=1000,
+        comment_count=500,
+        youtube_license="youtube",
+        political_or_electoral=False,
+        momentum_score=70,
+        breakout_ratio=3.0,
+        velocity_score=70,
+        engagement_score=45,
+        comment_heat_score=0,
+        controversy_score=0,
+        emotion_score=0,
+        topic_fit_score=14,
+        chapter_heat_score=0,
+        transcript_heat_score=0,
+        transcript_segment_score=0,
+        search_gap_score=50,
+        freshness_score=90,
+        source_score=25,
+        cutability_score=70,
+    )
+    finalize_score(candidate)
+    assert candidate.radar_score is not None
 
 
 def test_nonpolitical_candidate_without_tension_is_not_ranked():
