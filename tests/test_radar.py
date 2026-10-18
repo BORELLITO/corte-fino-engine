@@ -737,6 +737,7 @@ def test_radar_workflow_contract_is_explicit():
         encoding="utf-8"
     )
     assert 'cron: "30 11,23 * * *"' in workflow
+    assert "cancel-in-progress: false" in workflow
     assert 'RADAR_TOP_N: "5"' in workflow
     assert "RADAR_DRIVE_FOLDER_ID ||" in workflow
     assert "python -m radar.drive_state pull" in workflow
