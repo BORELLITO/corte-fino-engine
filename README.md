@@ -37,7 +37,9 @@ Operação manual:
 
 ## Motor 1
 
-O Creator mantém seus gates próprios: fonte autorizada, transcrição em português, mapa temporal, seleção fechada de cinco unidades de raciocínio, renderização vertical, validação técnica e upload idempotente na pasta do lote. Ele nunca publica automaticamente.
+O Creator mantém seus gates próprios: fonte autorizada, transcrição em português, mapa temporal, análise do arco entre abertura/desenvolvimento/fechamento, seleção fechada de cinco unidades de raciocínio com diversidade temporal, renderização vertical, validação técnica e upload idempotente na pasta do lote. A camada de legendas usa revisão contextual conservadora: corrige ruído ortográfico do ASR com vocabulário português, palavras vizinhas e metadados da fonte, preserva nomes/gírias/siglas, normaliza capitalização e pontuação com base em pausas reais e mantém cada bloco preso aos timestamps das palavras. Ele nunca publica automaticamente.
+
+O destino de saída do Creator é configurado exclusivamente pelo secret `DRIVE_FOLDER_ID`; ele não reutiliza o destino do Publisher nem um ID de fallback. O motor registra a execução e a qualidade do lote, mas ainda não ajusta automaticamente a seleção com métricas posteriores de retenção ou alcance.
 
 ## Uso
 
