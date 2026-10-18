@@ -26,7 +26,7 @@ YOUTUBE_API = "https://www.googleapis.com/youtube/v3"
 GOOGLE_TRENDS_RSS = "https://trends.google.com/trending/rss?geo=BR"
 STATE_SCHEMA_VERSION = 3
 REPORT_TOP_N = 5
-RADAR_VERSION = "V2.3"
+RADAR_VERSION = "V2.4"
 TRANSCRIPT_PROBE_LIMIT = 12
 REPEAT_COOLDOWN_HOURS = 48
 DEFAULT_STATE_FILE = ROOT / "state" / "history.json"
@@ -98,6 +98,16 @@ SPANISH_SIGNAL_WORDS = {
     "el", "la", "los", "las", "y", "ya", "mujer", "mujeres",
     "matrimonio", "infidelidad", "relaciones", "moderna", "modernas",
     "funciona", "casan", "casarse", "conveniencia", "sin", "rodeo",
+}
+ENGLISH_SIGNAL_WORDS = {
+    "the", "and", "with", "from", "this", "that", "live", "watch",
+    "party", "teaching", "apostolic", "followed", "man", "video",
+}
+EDITORIAL_TENSION_TERMS = {
+    "debate", "briga", "treta", "muito sério", "muito seria", "sem reação",
+    "intervenção", "exorcista", "terra plana", "demitido", "demitida",
+    "escândalo", "escandalo", "traição", "traicao", "denúncia", "denuncia",
+    "humilhação", "humilhacao", "revoltante", "catastrófico", "catastrofico",
 }
 FOREIGN_SIGNAL_WORDS = {
     "las", "los", "una", "uno", "del", "the", "and", "with",
@@ -681,16 +691,20 @@ def likely_portuguese(text: str) -> bool:
     hits = sum(token in PORTUGUESE_SIGNAL_WORDS for token in sample)
     foreign_hits = sum(token in FOREIGN_SIGNAL_WORDS for token in sample)
     spanish_hits = sum(token in SPANISH_SIGNAL_WORDS for token in sample)
+    english_hits = sum(token in ENGLISH_SIGNAL_WORDS for token in sample)
     accented = sum(
         any(char in token for char in "áàâãéêíóôõúç")
         for token in sample
     )
     # Dois sinais estrangeiros já bastam quando não há acentuação portuguesa.
-    # Para espanhol, exigimos múltiplos marcadores próprios e pouca evidência
-    # de português; isso bloqueia títulos como "El matrimonio ya no funciona".
+    # Para espanhol/inglês, múltiplos marcadores próprios e pouca evidência
+    # de português bloqueiam ruído de idioma sem penalizar um debate brasileiro
+    # cujo título cita um termo estrangeiro.
     if foreign_hits >= 2 and accented < 2:
         return False
     if spanish_hits >= 3 and hits <= 1:
+        return False
+    if english_hits >= 3 and hits <= 1 and accented == 0:
         return False
     return hits >= 2 or accented >= 2
 
@@ -1155,10 +1169,18 @@ def finalize_score(candidate: VideoCandidate) -> None:
         candidate.comment_heat_score >= 35
         and candidate.comment_divergence
     )
+    tension_hits = term_hits(candidate.title, EDITORIAL_TENSION_TERMS)
+    performance_signal = (
+        candidate.breakout_ratio >= 2.0
+        or candidate.momentum_score >= 65
+        or candidate.comment_rate_per_1k >= 10
+    )
+    editorial_breakout = tension_hits >= 1 and performance_signal
     if (
         semantic_signal < 16
         and candidate.topic_fit_score < 28
         and not organic_conflict
+        and not editorial_breakout
     ):
         candidate.radar_score = None
         candidate.rank_status = "DROP"
