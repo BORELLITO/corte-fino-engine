@@ -18,14 +18,14 @@ permissions:
 
 jobs:
   tests:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-22.04
     timeout-minutes: 10
     steps:
       - uses: actions/checkout@v7
       - uses: actions/setup-python@v7
         with:
           python-version: "3.12"
-      - run: python -m pip install "pytest>=8,<9" "google-api-python-client>=2,<3" "google-auth>=2,<3"
+      - run: python -m pip install "pytest>=8,<9" "google-api-python-client>=2,<3" "google-auth>=2,<3" "youtube-transcript-api>=1,<2"
       - name: Testar Radar sem consumir API
         run: |
           python -m py_compile radar/corte_fino_radar.py radar/upload_reports_drive.py radar/drive_state.py
