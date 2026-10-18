@@ -1327,7 +1327,13 @@ def collect_candidates(
     max_queries: int,
     extra_topics: list[str],
     state_file: Path,
-) -> tuple[list[VideoCandidate], list[Trend], list[QuerySignal]]:
+) -> tuple[
+    list[VideoCandidate],
+    list[Trend],
+    list[QuerySignal],
+    dict[str, Any],
+    dict[str, Any],
+]:
     now = datetime.now(timezone.utc)
     published_after = (
         now - timedelta(days=days)
@@ -2058,8 +2064,7 @@ def write_outputs(
                     f"{index}. 🗳️ **{c.title}** — {c.channel_title}"
                 ),
                 (
-                    f"   POLITICAL_REVIEW | "
-                    f"{c.radar_score:.1f}/100 | "
+                    f"   POLITICAL_REVIEW | revisão {c.review_priority_score:.1f}/100 | "
                     f"{fmt_int(c.view_count)} views"
                 ),
                 f"   {c.url}",
