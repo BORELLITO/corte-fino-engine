@@ -26,7 +26,7 @@ YOUTUBE_API = "https://www.googleapis.com/youtube/v3"
 GOOGLE_TRENDS_RSS = "https://trends.google.com/trending/rss?geo=BR"
 STATE_SCHEMA_VERSION = 3
 REPORT_TOP_N = 5
-RADAR_VERSION = "V2.2"
+RADAR_VERSION = "V2.3"
 TRANSCRIPT_PROBE_LIMIT = 12
 REPEAT_COOLDOWN_HOURS = 48
 DEFAULT_STATE_FILE = ROOT / "state" / "history.json"
