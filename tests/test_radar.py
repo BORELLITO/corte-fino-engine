@@ -93,7 +93,8 @@ def test_political_candidate_has_no_editorial_score():
         source_score=100,
     )
     finalize_score(candidate)
-    assert candidate.radar_score is None
+    assert candidate.radar_score is not None
+    assert candidate.rank_status == "POLITICAL_REVIEW"
 
 
 def test_query_priority_keeps_sources_before_generic_themes():
@@ -122,6 +123,40 @@ def test_political_named_actor_is_flagged():
         "Conversa sobre economia.",
         "Canal de Entrevistas",
     )
+
+
+def test_context_word_without_political_domain_is_not_flagged():
+    assert not is_political(
+        "O presidente da empresa fala sobre tecnologia",
+        "Conversa sobre inovação e produto.",
+        "Canal Tech",
+    )
+
+
+def test_transcript_window_finds_emotional_cut():
+    candidate = VideoCandidate(
+        video_id="transcript",
+        title="Podcast",
+        channel_title="Canal",
+        channel_id="UC_TRANSCRIPT",
+        category_id="22",
+        made_for_kids=False,
+        published_at=datetime.now(timezone.utc).isoformat(),
+        description="",
+        duration_seconds=3600,
+        view_count=1000,
+        like_count=100,
+        comment_count=20,
+        youtube_license="youtube",
+    )
+    rows = [
+        {"text": "Eu perdi meu pai e isso destruiu minha família.", "start": i * 10, "duration": 10}
+        for i in range(8)
+    ]
+    radar_module.analyze_transcript(candidate, rows)
+    assert candidate.transcript_segment_score > 0
+    assert candidate.best_segment_start == 0
+    assert candidate.best_segment_end >= 60
 
 
 def test_language_filter_rejects_english_and_accepts_portuguese():
