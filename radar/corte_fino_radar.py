@@ -24,8 +24,11 @@ ROOT = Path(__file__).resolve().parent
 OUTPUT_DIR = ROOT / "output"
 YOUTUBE_API = "https://www.googleapis.com/youtube/v3"
 GOOGLE_TRENDS_RSS = "https://trends.google.com/trending/rss?geo=BR"
-STATE_SCHEMA_VERSION = 2
+STATE_SCHEMA_VERSION = 3
 REPORT_TOP_N = 5
+RADAR_VERSION = "V2.2"
+TRANSCRIPT_PROBE_LIMIT = 12
+REPEAT_COOLDOWN_HOURS = 48
 DEFAULT_STATE_FILE = ROOT / "state" / "history.json"
 CHAPTER_RE = re.compile(
     r"(?m)^\s*(?:(?P<h>\d{1,2}):)?(?P<m>\d{1,2}):(?P<s>\d{2})"
@@ -208,6 +211,16 @@ class VideoCandidate:
     chapters: list[Chapter] = field(default_factory=list)
     chapter_heat_score: float = 0.0
     best_chapter: str = ""
+    transcript_status: str = "not_checked"
+    transcript_language: str = ""
+    transcript_chars: int = 0
+    transcript_word_count: int = 0
+    transcript_heat_score: float = 0.0
+    transcript_segment_score: float = 0.0
+    best_segment_start: int | None = None
+    best_segment_end: int | None = None
+    best_segment_excerpt: str = ""
+    recently_seen: bool = False
     cutability_score: float = 0.0
     views_per_hour: float = 0.0
     recent_views_per_hour: float = 0.0
@@ -443,6 +456,134 @@ def youtube_comments(
     return comments, replies
 
 
+def fetch_transcript_rows(
+    video_id: str,
+) -> tuple[str, str, list[dict[str, Any]]]:
+    """Busca legendas públicas em português sem tornar a legenda obrigatória."""
+    try:
+        from youtube_transcript_api import YouTubeTranscriptApi
+    except Exception:
+        return "dependency_missing", "", []
+
+    try:
+        fetched = YouTubeTranscriptApi().fetch(
+            video_id,
+            languages=["pt-BR", "pt", "pt-PT"],
+        )
+        language = str(getattr(fetched, "language_code", "") or "")
+        raw_rows = getattr(fetched, "snippets", None)
+        if raw_rows is None:
+            raw_rows = fetched
+
+        rows: list[dict[str, Any]] = []
+        for item in raw_rows:
+            if isinstance(item, dict):
+                text = str(item.get("text") or "")
+                start = float(item.get("start") or 0)
+                duration = float(item.get("duration") or 0)
+            else:
+                text = str(getattr(item, "text", "") or "")
+                start = float(getattr(item, "start", 0) or 0)
+                duration = float(getattr(item, "duration", 0) or 0)
+            if text.strip():
+                rows.append({
+                    "text": text.strip(),
+                    "start": max(0.0, start),
+                    "duration": max(0.0, duration),
+                })
+
+        if not rows:
+            return "empty", language, []
+        return "available", language, rows
+    except Exception:
+        return "unavailable", "", []
+
+
+def analyze_transcript(
+    candidate: VideoCandidate,
+    rows: list[dict[str, Any]],
+) -> None:
+    if not rows:
+        return
+
+    full_text = " ".join(str(row["text"]) for row in rows)
+    candidate.transcript_chars = len(full_text)
+    candidate.transcript_word_count = len(
+        re.findall(r"\b[\wÀ-ÿ']+\b", full_text)
+    )
+    candidate.transcript_heat_score = clamp(
+        term_hits(full_text, CONTROVERSY_TERMS) * 8
+        + term_hits(full_text, EMOTION_TERMS) * 9
+        + term_hits(full_text, COMMENT_HEAT_TERMS) * 2
+    )
+
+    best: tuple[float, int, int, str] | None = None
+    for start_index in range(len(rows)):
+        start = float(rows[start_index]["start"])
+        parts: list[str] = []
+        end = start
+        for end_index in range(start_index, min(len(rows), start_index + 90)):
+            row = rows[end_index]
+            parts.append(str(row["text"]))
+            end = max(
+                end,
+                float(row["start"]) + float(row["duration"]),
+            )
+            window_seconds = end - start
+            if window_seconds > 105:
+                break
+            if window_seconds < 60:
+                continue
+
+            text = " ".join(parts)
+            sentence_count = len(re.findall(r"[.!?](?:\s|$)", text))
+            connective_count = term_hits(
+                text,
+                {
+                    "mas", "porém", "porque", "então", "aí",
+                    "só que", "por isso", "no final", "a verdade",
+                },
+            )
+            score = clamp(
+                term_hits(text, CONTROVERSY_TERMS) * 14
+                + term_hits(text, EMOTION_TERMS) * 13
+                + min(18, sentence_count * 3)
+                + min(14, connective_count * 3)
+            )
+            if sentence_count >= 3:
+                score = clamp(score + 8)
+            if any(
+                marker in normalize(text[-260:])
+                for marker in {"por isso", "no final", "a verdade", "é isso"}
+            ):
+                score = clamp(score + 8)
+
+            candidate_window = (
+                score,
+                int(start),
+                int(end),
+                normalize(text)[:280],
+            )
+            if best is None or candidate_window[0] > best[0]:
+                best = candidate_window
+
+    if best is not None:
+        score, start, end, excerpt = best
+        candidate.transcript_segment_score = round(score, 2)
+        candidate.best_segment_start = start
+        candidate.best_segment_end = end
+        candidate.best_segment_excerpt = excerpt
+
+
+def probe_transcripts(candidates: list[VideoCandidate]) -> None:
+    for candidate in candidates[:TRANSCRIPT_PROBE_LIMIT]:
+        status, language, rows = fetch_transcript_rows(candidate.video_id)
+        candidate.transcript_status = status
+        candidate.transcript_language = language
+        if rows:
+            analyze_transcript(candidate, rows)
+
+
 def preferred_source(channel_title: str) -> bool:
     return normalize(channel_title) in PREFERRED_SOURCE_PATTERNS
 
@@ -482,8 +623,17 @@ def is_political(
         term_present(body, term)
         for term in POLITICAL_DOMAIN_TERMS
     )
-    return headline_context >= 1 or (
-        body_context >= 2 and body_domain
+    headline_domain = any(
+        term_present(headline, term)
+        for term in POLITICAL_DOMAIN_TERMS
+    )
+    return (
+        headline_context >= 2
+        or (
+            headline_context >= 1
+            and (body_domain or headline_domain)
+        )
+        or (body_context >= 2 and body_domain)
     )
 
 
@@ -573,6 +723,24 @@ def load_state(path: Path) -> dict[str, Any]:
     except Exception as exc:
         print(f"[WARN] Histórico ignorado: {type(exc).__name__}", file=sys.stderr)
         return {"schema_version": STATE_SCHEMA_VERSION, "videos": {}}
+
+
+def mark_recent_repeats(
+    candidates: list[VideoCandidate],
+    state: dict[str, Any],
+    now: datetime,
+) -> None:
+    videos = state.get("videos", {})
+    for candidate in candidates:
+        points = list(videos.get(candidate.video_id, []))
+        if not points:
+            continue
+        last_ts = parse_datetime(str(points[-1].get("ts") or ""))
+        age_hours = (now - last_ts).total_seconds() / 3600
+        if 0 <= age_hours <= REPEAT_COOLDOWN_HOURS:
+            candidate.recently_seen = True
+            if "repeat_cooldown" not in candidate.risk_flags:
+                candidate.risk_flags.append("repeat_cooldown")
 
 
 def apply_momentum(
@@ -868,6 +1036,7 @@ def score_contributions(candidate: VideoCandidate) -> dict[str, float]:
         "polêmica": candidate.controversy_score * 0.09,
         "emoção": candidate.emotion_score * 0.08,
         "cutability": candidate.cutability_score * 0.10,
+        "segmento": candidate.transcript_segment_score * 0.10,
         "search gap": candidate.search_gap_score * 0.03,
         "freshness": candidate.freshness_score * 0.02,
         "fonte": candidate.source_score * 0.02,
@@ -895,6 +1064,10 @@ def compute_confidence(candidate: VideoCandidate) -> float:
         score += 15
     if candidate.preferred_source:
         score += 10
+    if candidate.transcript_status == "available":
+        score += 10
+    if candidate.transcript_segment_score >= 35:
+        score += 10
     age_hours = (
         datetime.now(timezone.utc) - parse_datetime(candidate.published_at)
     ).total_seconds() / 3600
@@ -904,10 +1077,6 @@ def compute_confidence(candidate: VideoCandidate) -> float:
 
 
 def finalize_score(candidate: VideoCandidate) -> None:
-    if candidate.political_or_electoral:
-        candidate.radar_score = None
-        candidate.rank_status = "POLITICAL_WATCHLIST"
-        return
     if candidate.made_for_kids:
         candidate.radar_score = None
         candidate.rank_status = "DROP"
@@ -917,6 +1086,8 @@ def finalize_score(candidate: VideoCandidate) -> None:
         candidate.controversy_score,
         candidate.emotion_score,
         candidate.chapter_heat_score,
+        candidate.transcript_heat_score,
+        candidate.transcript_segment_score,
     )
     organic_conflict = (
         candidate.comment_heat_score >= 35
@@ -942,7 +1113,9 @@ def finalize_score(candidate: VideoCandidate) -> None:
             2,
         )
 
-    if candidate.radar_score >= 68:
+    if candidate.political_or_electoral:
+        candidate.rank_status = "POLITICAL_REVIEW"
+    elif candidate.radar_score >= 68:
         candidate.rank_status = "HOT"
     elif candidate.radar_score >= 57:
         candidate.rank_status = "PROMISING"
@@ -1143,12 +1316,14 @@ def collect_candidates(
 
     apply_channel_baselines(candidates)
     apply_momentum(candidates, state, now)
+    mark_recent_repeats(candidates, state, now)
 
     pre_ranked = sorted(
         [
             c
             for c in candidates
             if not c.political_or_electoral
+            and not c.recently_seen
         ],
         key=lambda c: (
             c.momentum_score * 0.24
@@ -1161,6 +1336,27 @@ def collect_candidates(
         ),
         reverse=True,
     )
+
+    if not pre_ranked:
+        pre_ranked = sorted(
+            [
+                c
+                for c in candidates
+                if not c.political_or_electoral
+            ],
+            key=lambda c: (
+                c.momentum_score * 0.24
+                + c.breakout_score * 0.18
+                + c.velocity_score * 0.18
+                + c.engagement_score * 0.12
+                + c.controversy_score * 0.10
+                + c.emotion_score * 0.08
+                + c.cutability_score * 0.10
+            ),
+            reverse=True,
+        )
+
+    probe_transcripts(pre_ranked)
 
     for candidate in pre_ranked[:min(24, len(pre_ranked))]:
         relevant, relevant_replies = youtube_comments(
@@ -1229,6 +1425,7 @@ def explain(candidate: VideoCandidate) -> list[str]:
         "polêmica": "conflito/polêmica",
         "emoção": "carga emocional",
         "cutability": "boa estrutura para cortes",
+        "segmento": "segmento com começo-meio-fim e carga emocional",
         "search gap": "demanda/saturação favorável",
         "freshness": "publicação recente",
         "fonte": "fonte editorial reconhecida",
@@ -1267,6 +1464,7 @@ def write_outputs(
             if (
                 not c.political_or_electoral
                 and not c.made_for_kids
+                and not c.recently_seen
                 and c.radar_score is not None
                 and c.rank_status != "DROP"
             )
@@ -1283,6 +1481,7 @@ def write_outputs(
         if (
             candidate.political_or_electoral
             or candidate.made_for_kids
+            or candidate.recently_seen
             or candidate.video_id in qualified_ids
         ):
             continue
@@ -1296,18 +1495,58 @@ def write_outputs(
         key=lambda c: c.radar_score or 0,
         reverse=True,
     )
-    ranked = (qualified + fallback_pool)[:top_n]
-    fallback_ids = {c.video_id for c in ranked if c.video_id not in qualified_ids}
+
+    repeat_pool = []
+    for candidate in candidates:
+        if (
+            candidate.political_or_electoral
+            or candidate.made_for_kids
+            or not candidate.recently_seen
+            or candidate.video_id in qualified_ids
+        ):
+            continue
+        if candidate.radar_score is None:
+            candidate.radar_score = fallback_score(candidate)
+            candidate.confidence_score = round(compute_confidence(candidate), 2)
+        candidate.rank_status = "REVIEW"
+        repeat_pool.append(candidate)
+
+    repeat_pool.sort(
+        key=lambda c: c.radar_score or 0,
+        reverse=True,
+    )
+    ranked = (qualified + fallback_pool + repeat_pool)[:top_n]
+    fallback_ids = {
+        c.video_id
+        for c in ranked
+        if c.video_id not in qualified_ids
+        and not c.recently_seen
+    }
+    repeat_ids = {
+        c.video_id
+        for c in ranked
+        if c.recently_seen
+    }
 
     political = sorted(
         [
             c
             for c in candidates
             if c.political_or_electoral
+            and not c.made_for_kids
         ],
-        key=lambda c: parse_datetime(c.published_at),
+        key=lambda c: (
+            c.radar_score
+            if c.radar_score is not None
+            else fallback_score(c)
+        ),
         reverse=True,
     )[:top_n]
+    for candidate in political:
+        if candidate.radar_score is None:
+            candidate.radar_score = fallback_score(candidate)
+            candidate.confidence_score = round(compute_confidence(candidate), 2)
+        candidate.rank_status = "POLITICAL_REVIEW"
 
     qualified_queries = {
         query
@@ -1328,8 +1567,23 @@ def write_outputs(
     )[:top_n]
 
     payload = {
-        "schema_version": 2,
+        "schema_version": STATE_SCHEMA_VERSION,
+        "radar_version": RADAR_VERSION,
         "generated_at_utc": generated_at.isoformat(),
+        "transcript_probe": {
+            "requested": min(
+                TRANSCRIPT_PROBE_LIMIT,
+                len(candidates),
+            ),
+            "available": sum(
+                c.transcript_status == "available"
+                for c in candidates
+            ),
+            "segments_found": sum(
+                c.transcript_segment_score > 0
+                for c in candidates
+            ),
+        },
         "method": {
             "ranking_scope": "non-political content only",
             "political_content": (
@@ -1357,7 +1611,11 @@ def write_outputs(
                 "selection_tier": (
                     "QUALIFIED"
                     if c.video_id in qualified_ids
-                    else "REVIEW_FALLBACK"
+                    else (
+                        "REPEAT_BACKFILL"
+                        if c.video_id in repeat_ids
+                        else "REVIEW_FALLBACK"
+                    )
                 ),
             }
             for c in ranked
@@ -1366,6 +1624,8 @@ def write_outputs(
             asdict(c)
             | {
                 "url": c.url,
+                "selection_tier": "POLITICAL_REVIEW",
+                "reasons": explain(c),
             }
             for c in political
         ],
@@ -1410,6 +1670,10 @@ def write_outputs(
             "score_delta",
             "rank_status",
             "selection_tier",
+            "transcript_status",
+            "transcript_segment_score",
+            "best_segment_start",
+            "best_segment_end",
             "comments",
             "comment_rate_per_1k",
             "comment_heat",
@@ -1441,7 +1705,19 @@ def write_outputs(
                 c.previous_score,
                 c.score_delta,
                 c.rank_status,
-                "QUALIFIED" if c.video_id in qualified_ids else "REVIEW_FALLBACK",
+                (
+                    "QUALIFIED"
+                    if c.video_id in qualified_ids
+                    else (
+                        "REPEAT_BACKFILL"
+                        if c.video_id in repeat_ids
+                        else "REVIEW_FALLBACK"
+                    )
+                ),
+                c.transcript_status,
+                round(c.transcript_segment_score, 2),
+                c.best_segment_start,
+                c.best_segment_end,
                 c.comment_count,
                 round(c.comment_rate_per_1k, 3),
                 round(c.comment_heat_score, 2),
@@ -1456,7 +1732,7 @@ def write_outputs(
 
     local_time = generated_at.astimezone(ZoneInfo("America/Sao_Paulo"))
     lines = [
-        "# 🎯 Corte Fino — Radar Viral V2.1",
+        f"# 🎯 Corte Fino — Radar Viral {RADAR_VERSION}",
         "",
         (
             "Atualizado em "
@@ -1464,8 +1740,8 @@ def write_outputs(
         ),
         "",
         (
-            "Ranking técnico/editorial apenas para "
-            "**conteúdo não político**."
+            "Ranking técnico/editorial para descoberta de cortes; "
+            "pauta política permanece separada como **POLITICAL_REVIEW**."
         ),
         "",
         f"## 🔥 Prioridades ({len(ranked)}/5)",
@@ -1487,10 +1763,13 @@ def write_outputs(
     }
 
     for index, c in enumerate(ranked, 1):
+        is_repeat = c.video_id in repeat_ids
         is_fallback = c.video_id in fallback_ids
         reasons = explain(c)
         reason = reasons[0] if reasons else "sinais combinados de desempenho"
-        if is_fallback:
+        if is_repeat:
+            reason = f"repetição recente; {reason.lower()}"
+        elif is_fallback:
             reason = f"alternativa restante; {reason.lower()}"
         delta = ""
         if (
@@ -1512,15 +1791,50 @@ def write_outputs(
                 f"**{c.title}** — {c.channel_title}"
             ),
             (
-                f"   {c.rank_status}{' / FALLBACK' if is_fallback else ''} | "
+                f"   {c.rank_status}"
+                f"{' / REPEAT BACKFILL' if is_repeat else ''}"
+                f"{' / FALLBACK' if is_fallback else ''} | "
                 f"{c.radar_score:.1f}/100{delta} | "
                 f"{fmt_int(c.view_count)} views | "
                 f"{c.momentum_state} | {rights}"
             ),
             f"   **Por que agora:** {reason}{chapter}",
+            (
+                f"   **Janela sugerida:** "
+                f"{fmt_duration(c.best_segment_start or 0)}–"
+                f"{fmt_duration(c.best_segment_end or 0)}"
+                if c.best_segment_start is not None
+                and c.best_segment_end is not None
+                else "   **Janela sugerida:** investigar no Creator"
+            ),
             f"   {c.url}",
             "",
         ])
+
+    if political:
+        lines.extend([
+            "## 🗳️ Pauta política em revisão",
+            "",
+            (
+                "Itens políticos não entram silenciosamente na fila não política. "
+                "Eles ficam separados para checagem de contexto, afirmações e direitos "
+                "antes de qualquer corte."
+            ),
+            "",
+        ])
+        for index, c in enumerate(political, 1):
+            lines.extend([
+                (
+                    f"{index}. 🗳️ **{c.title}** — {c.channel_title}"
+                ),
+                (
+                    f"   POLITICAL_REVIEW | "
+                    f"{c.radar_score:.1f}/100 | "
+                    f"{fmt_int(c.view_count)} views"
+                ),
+                f"   {c.url}",
+                "",
+            ])
 
     lines.extend([
         "## Resumo",
@@ -1528,9 +1842,11 @@ def write_outputs(
         (
             "Fila principal encerrada no Top 5. "
             "Itens REVIEW/FALLBACK completam a lista quando não há cinco aprovados "
-            "pelo gate editorial; eles exigem revisão antes do Creator. "
-            "Search Gap, watchlist política, direitos, riscos e métricas completas "
-            "permanecem no JSON/CSV para auditoria."
+            "pelo gate editorial; itens REPEAT BACKFILL só entram quando faltam "
+            "alternativas novas. A análise de legenda é enriquecimento: "
+            "indisponibilidade não elimina o vídeo, mas reduz a confiança. "
+            "Direitos, riscos, política e métricas completas permanecem no JSON/CSV "
+            "para auditoria."
         ),
         "",
     ])
