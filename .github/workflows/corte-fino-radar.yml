@@ -109,7 +109,7 @@ jobs:
       - name: Resumo seguro
         if: success()
         run: |
-          echo "## 🎯 Corte Fino — Radar Viral V2.1" >> "$GITHUB_STEP_SUMMARY"
+          echo "## 🎯 Corte Fino — Radar Viral V2.2" >> "$GITHUB_STEP_SUMMARY"
           echo "" >> "$GITHUB_STEP_SUMMARY"
           echo "Varredura concluída e relatório enviado para a pasta privada RADAR_CORTE_FINO no Google Drive." >> "$GITHUB_STEP_SUMMARY"
           echo "Nenhum ranking editorial completo é publicado no GitHub." >> "$GITHUB_STEP_SUMMARY"
