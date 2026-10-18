@@ -92,7 +92,8 @@ LONGFORM_MARKERS = {
 NON_EDITORIAL_CATEGORY_IDS = {"10", "17", "20"}
 FOREIGN_SIGNAL_WORDS = {
     "las", "los", "una", "uno", "del", "the", "and", "with",
-    "from", "this", "that",
+    "from", "this", "that", "muerte", "fuera", "dice", "ilusión",
+    "ilusion", "calles", "salvador", "lo",
 }
 SPORTS_TERMS = {
     "futebol", "futebol", "brasileirão", "brasileirao", "flamengo",
@@ -123,6 +124,18 @@ EMOTION_TERMS = {
     "trauma", "dor", "sofrimento", "depressão", "depressao", "ansiedade", "vício",
     "vicio", "perdi", "perda", "superação", "superacao", "fé", "fe", "amor",
     "ódio", "odio", "humilhação", "humilhacao", "desespero", "destruiu",
+}
+
+RELEVANCE_TERMS = {
+    "bets", "aposta", "vício", "vicio", "relacionamento", "traição",
+    "traicao", "casamento", "divórcio", "divorcio", "família", "familia",
+    "filho", "filha", "pai", "mãe", "mae", "medo", "morte", "luto",
+    "trauma", "dor", "sofrimento", "fé", "fe", "religião", "religiao",
+    "igreja", "crime", "segurança", "seguranca", "dinheiro", "golpe",
+    "fraude", "polêmica", "polemica", "debate", "feminismo", "masculinidade",
+    "red pill", "saúde mental", "saude mental", "inteligência artificial",
+    "inteligencia artificial", "emprego", "futuro", "aborto", "sexo",
+    "humilhação", "humilhacao", "superação", "superacao", "revolta",
 }
 
 COMMENT_HEAT_TERMS = {
@@ -233,6 +246,7 @@ class VideoCandidate:
     best_segment_end: int | None = None
     best_segment_excerpt: str = ""
     recently_seen: bool = False
+    topic_fit_score: float = 0.0
     cutability_score: float = 0.0
     views_per_hour: float = 0.0
     recent_views_per_hour: float = 0.0
@@ -1024,6 +1038,9 @@ def compute_base_metrics(
     candidate.emotion_score = clamp(
         term_hits(text, EMOTION_TERMS) * 16
     )
+    candidate.topic_fit_score = clamp(
+        term_hits(text, RELEVANCE_TERMS) * 14
+    )
     candidate.search_gap_score = max(
         [
             signal.gap_score
@@ -1076,6 +1093,7 @@ def fallback_score(candidate: VideoCandidate) -> float:
     score = sum(contributions.values())
     if len(candidate.source_queries) >= 2:
         score += min(4.0, 1.25 * (len(candidate.source_queries) - 1))
+    score += min(8.0, candidate.topic_fit_score * 0.08)
     return round(clamp(score), 2)
 
 
@@ -1120,7 +1138,11 @@ def finalize_score(candidate: VideoCandidate) -> None:
         candidate.comment_heat_score >= 35
         and candidate.comment_divergence
     )
-    if semantic_signal < 16 and not organic_conflict:
+    if (
+        semantic_signal < 16
+        and candidate.topic_fit_score < 28
+        and not organic_conflict
+    ):
         candidate.radar_score = None
         candidate.rank_status = "DROP"
         return
