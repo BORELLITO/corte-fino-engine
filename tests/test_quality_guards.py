@@ -29,6 +29,8 @@ from main import (
     TARGET_CLIP_SECONDS,
     clip_duration_is_valid,
     caption_orthography_issues,
+    contextual_correct_caption_word,
+    build_candidates,
     narrative_quality,
     build_story_map,
     validate_narrative,
@@ -44,6 +46,52 @@ def test_caption_safe_corrections_are_explicit_and_punctuation_safe():
     assert correct_caption_word("violins") == "Aviões"
     assert correct_caption_word("violins,") == "Aviões,"
     assert correct_caption_word("panoís") == "panoís"
+
+
+def test_caption_context_repairs_asr_word_and_restores_natural_case():
+    assert correct_caption_word("BALRRACHARIA") == "borracharia"
+    assert contextual_correct_caption_word("balrracharia") == "borracharia"
+    assert contextual_correct_caption_word("acontesimento", {}, "o", "foi") == "acontecimento"
+    assert contextual_correct_caption_word("stf") == "STF"
+    assert contextual_correct_caption_word(
+        "BALRRACHARIA",
+        {"title": "Lito", "channel": "Flow", "niche": "ciência e conhecimento"},
+    ) == "borracharia"
+
+
+def test_caption_revision_uses_contextual_spelling_and_source_terminal_punctuation():
+    from main import caption_chunks
+
+    words = [
+        {"start": 0.0, "end": 0.35, "word": "BALRRACHARIA"},
+        {"start": 0.35, "end": 0.70, "word": "NO"},
+        {"start": 0.70, "end": 1.10, "word": "CEU"},
+    ]
+    chunks = caption_chunks(
+        [Segment(0.0, 1.2, "BALRRACHARIA NO CEU.", words)],
+        Candidate(0.0, 2.0, "BALRRACHARIA NO CEU.", 90),
+        {"title": "Lito", "channel": "Flow", "niche": "ciência e conhecimento"},
+    )
+    rendered = " ".join(item["word"] for chunk in chunks for item in chunk)
+    assert rendered == "Borracharia no céu."
+
+
+def test_caption_punctuation_uses_pauses_without_punctuation_spam():
+    from main import caption_chunks
+
+    words = [
+        {"start": 0.0, "end": 0.30, "word": "isso"},
+        {"start": 0.30, "end": 0.60, "word": "é"},
+        {"start": 0.60, "end": 0.90, "word": "importante"},
+        {"start": 2.30, "end": 2.60, "word": "mesmo"},
+    ]
+    chunks = caption_chunks(
+        [Segment(0.0, 2.8, "isso é importante mesmo.", words)],
+        Candidate(0.0, 3.0, "isso é importante mesmo.", 90),
+    )
+    rendered = " ".join(item["word"] for chunk in chunks for item in chunk)
+    assert rendered == "Isso é importante. Mesmo."
+    assert ",," not in rendered
 
 
 def test_short_caption_tail_is_joined_without_breaking_safe_layout():
@@ -178,6 +226,7 @@ def test_narrative_gate_requires_autonomous_start_context_and_closure():
     assert quality["natural_start"] is True
     assert quality["natural_end"] is True
     assert quality["terminal_ending"] is True
+    assert quality["arc_analysis"]["structure_score"] > 0
 
     dependent = [
         complete[0],
@@ -203,6 +252,16 @@ def test_narrative_gate_requires_autonomous_start_context_and_closure():
     incomplete_quality = narrative_quality(incomplete, 0, 2)
     assert incomplete_quality["passed"] is False
     assert any("palavra dependente" in issue for issue in incomplete_quality["issues"])
+
+
+def test_candidate_builder_can_close_on_the_last_transcript_segment():
+    segments = [
+        Segment(0, 22, "A história começa quando o convidado explica o problema que ninguém queria discutir.", []),
+        Segment(22, 44, "Depois ele mostra os fatos, apresenta o conflito principal e explica por que aquela decisão mudou o resultado para muita gente.", []),
+        Segment(44, 66, "No fim, ele revela a consequência mais importante e fecha a ideia dizendo que a responsabilidade continua sendo de quem escolhe.", []),
+    ]
+    candidates = build_candidates(segments, {})
+    assert any(candidate.end == 66 for candidate in candidates)
 
 
 def test_narrative_does_not_treat_silence_or_transcript_end_as_conclusion():
