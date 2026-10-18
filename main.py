@@ -2566,9 +2566,10 @@ def render_clip(source: Path, captions: Path, candidate: Candidate, output: Path
         raise FileNotFoundError(f"Logo oficial não encontrada: {LOGO_PATH}")
     filter_complex = build_filter_complex(caption_path, str(LOGO_PATH))
     run([
-        # O seek depois da entrada prioriza precisão temporal para que áudio,
-        # vídeo e ASS com timestamps relativos comecem no mesmo ponto.
-        "ffmpeg", "-y", "-i", str(source), "-ss", f"{candidate.start:.3f}", "-t", f"{candidate.duration:.3f}",
+        # O seek antes da entrada evita decodificar a fonte desde o início em
+        # cortes distantes. Como o vídeo é reencodado, o FFmpeg ainda descarta
+        # os frames até o ponto exato e mantém áudio, vídeo e ASS alinhados.
+        "ffmpeg", "-y", "-ss", f"{candidate.start:.3f}", "-i", str(source), "-t", f"{candidate.duration:.3f}",
         "-filter_complex", filter_complex, "-map", "[v]", "-map", "0:a:0?", "-c:v", "libx264", "-preset", VIDEO_PRESET,
         "-b:v", VIDEO_BITRATE, "-minrate", VIDEO_MINRATE, "-maxrate", VIDEO_MAXRATE, "-bufsize", VIDEO_BUFSIZE,
         "-profile:v", "high", "-level:v", "4.2", "-pix_fmt", "yuv420p", "-r", "30",
