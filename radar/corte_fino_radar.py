@@ -873,6 +873,15 @@ def score_contributions(candidate: VideoCandidate) -> dict[str, float]:
     }
 
 
+def fallback_score(candidate: VideoCandidate) -> float:
+    """Score observacional usado apenas para preencher o Top 5."""
+    contributions = score_contributions(candidate)
+    score = sum(contributions.values())
+    if len(candidate.source_queries) >= 2:
+        score += min(4.0, 1.25 * (len(candidate.source_queries) - 1))
+    return round(clamp(score), 2)
+
+
 def compute_confidence(candidate: VideoCandidate) -> float:
     score = 15.0
     if candidate.history_points >= 1:
@@ -1247,15 +1256,44 @@ def write_outputs(
         exist_ok=True,
     )
 
-    ranked = sorted(
+    qualified = sorted(
         [
             c
             for c in candidates
-            if c.radar_score is not None and c.rank_status != "DROP"
+            if (
+                not c.political_or_electoral
+                and not c.made_for_kids
+                and c.radar_score is not None
+                and c.rank_status != "DROP"
+            )
         ],
         key=lambda c: c.radar_score or 0,
         reverse=True,
-    )[:top_n]
+    )
+    qualified_ids = {c.video_id for c in qualified}
+
+    # O usuário exige sempre uma entrega Top 5. Os aprovados permanecem
+    # primeiro; as vagas restantes são preenchidas com observações transparentes.
+    fallback_pool: list[VideoCandidate] = []
+    for candidate in candidates:
+        if (
+            candidate.political_or_electoral
+            or candidate.made_for_kids
+            or candidate.video_id in qualified_ids
+        ):
+            continue
+        if candidate.radar_score is None:
+            candidate.radar_score = fallback_score(candidate)
+            candidate.confidence_score = round(compute_confidence(candidate), 2)
+        candidate.rank_status = "REVIEW"
+        fallback_pool.append(candidate)
+
+    fallback_pool.sort(
+        key=lambda c: c.radar_score or 0,
+        reverse=True,
+    )
+    ranked = (qualified + fallback_pool)[:top_n]
+    fallback_ids = {c.video_id for c in ranked if c.video_id not in qualified_ids}
 
     political = sorted(
         [
@@ -1269,8 +1307,7 @@ def write_outputs(
 
     qualified_queries = {
         query
-        for candidate in candidates
-        if candidate.radar_score is not None and candidate.rank_status != "DROP"
+        for candidate in qualified
         for query in candidate.source_queries
     }
     gap_signals = sorted(
@@ -1313,6 +1350,11 @@ def write_outputs(
             | {
                 "url": c.url,
                 "reasons": explain(c),
+                "selection_tier": (
+                    "QUALIFIED"
+                    if c.video_id in qualified_ids
+                    else "REVIEW_FALLBACK"
+                ),
             }
             for c in ranked
         ],
@@ -1363,6 +1405,7 @@ def write_outputs(
             "previous_score",
             "score_delta",
             "rank_status",
+            "selection_tier",
             "comments",
             "comment_rate_per_1k",
             "comment_heat",
@@ -1394,6 +1437,7 @@ def write_outputs(
                 c.previous_score,
                 c.score_delta,
                 c.rank_status,
+                "QUALIFIED" if c.video_id in qualified_ids else "REVIEW_FALLBACK",
                 c.comment_count,
                 round(c.comment_rate_per_1k, 3),
                 round(c.comment_heat_score, 2),
@@ -1435,11 +1479,15 @@ def write_outputs(
         "HOT": "🔥",
         "PROMISING": "🟡",
         "WATCH": "🔵",
+        "REVIEW": "⚪",
     }
 
     for index, c in enumerate(ranked, 1):
+        is_fallback = c.video_id in fallback_ids
         reasons = explain(c)
         reason = reasons[0] if reasons else "sinais combinados de desempenho"
+        if is_fallback:
+            reason = f"alternativa restante; {reason.lower()}"
         delta = ""
         if (
             c.score_delta is not None
@@ -1460,7 +1508,8 @@ def write_outputs(
                 f"**{c.title}** — {c.channel_title}"
             ),
             (
-                f"   {c.rank_status} | {c.radar_score:.1f}/100{delta} | "
+                f"   {c.rank_status}{' / FALLBACK' if is_fallback else ''} | "
+                f"{c.radar_score:.1f}/100{delta} | "
                 f"{fmt_int(c.view_count)} views | "
                 f"{c.momentum_state} | {rights}"
             ),
@@ -1474,6 +1523,8 @@ def write_outputs(
         "",
         (
             "Fila principal encerrada no Top 5. "
+            "Itens REVIEW/FALLBACK completam a lista quando não há cinco aprovados "
+            "pelo gate editorial; eles exigem revisão antes do Creator. "
             "Search Gap, watchlist política, direitos, riscos e métricas completas "
             "permanecem no JSON/CSV para auditoria."
         ),
