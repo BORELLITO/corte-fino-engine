@@ -53,3 +53,16 @@ def test_generator_does_not_trigger_or_register_the_publisher():
     assert "latest_batch.json" not in text
     assert "Registrar lote exato do Publisher" not in text
 
+
+def test_creator_upload_destination_has_no_publisher_or_hardcoded_fallback():
+    text = GENERATOR_WORKFLOW.read_text(encoding="utf-8")
+    assert "PUBLISHER_DRIVE_FOLDER_ID" not in text
+    assert "15UJh2z5hBRKB8q_JpNpH1rcZZUANO6Da" not in text
+
+
+def test_creator_manual_and_drive_sources_share_the_same_readiness_gate():
+    text = GENERATOR_WORKFLOW.read_text(encoding="utf-8")
+    assert 'if os.environ.get("SOURCE_FILE", "").strip()' in text
+    assert 'status != "READY_FOR_HUMAN_REVIEW"' in text
+    assert 'env.PROCESSING_READY == \'1\'' in text
+
