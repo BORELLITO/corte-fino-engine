@@ -1028,18 +1028,18 @@ def compute_base_metrics(
 
 def score_contributions(candidate: VideoCandidate) -> dict[str, float]:
     return {
-        "momentum": candidate.momentum_score * 0.18,
-        "velocidade": candidate.velocity_score * 0.12,
-        "breakout": candidate.breakout_score * 0.12,
-        "engajamento": candidate.engagement_score * 0.10,
-        "comentários": candidate.comment_heat_score * 0.14,
-        "polêmica": candidate.controversy_score * 0.09,
+        "momentum": candidate.momentum_score * 0.16,
+        "velocidade": candidate.velocity_score * 0.10,
+        "breakout": candidate.breakout_score * 0.10,
+        "engajamento": candidate.engagement_score * 0.08,
+        "comentários": candidate.comment_heat_score * 0.12,
+        "polêmica": candidate.controversy_score * 0.08,
         "emoção": candidate.emotion_score * 0.08,
         "cutability": candidate.cutability_score * 0.10,
         "segmento": candidate.transcript_segment_score * 0.10,
         "search gap": candidate.search_gap_score * 0.03,
         "freshness": candidate.freshness_score * 0.02,
-        "fonte": candidate.source_score * 0.02,
+        "fonte": candidate.source_score * 0.03,
     }
 
 
