@@ -1293,7 +1293,7 @@ def collect_candidates(
                 api_key,
                 query,
                 published_after,
-                order="date" if source == "preferred_source" else "relevance",
+                order="date",
             )
         except Exception as exc:
             print(
