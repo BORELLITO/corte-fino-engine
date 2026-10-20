@@ -493,7 +493,11 @@ def prepare(
     if not folder_2_id:
         raise RuntimeError("O novo Publisher exige duas pastas por rodada; informe folder_2_id.")
     day_1 = publication_day(target_date=target_date).isoformat() if target_date else publication_day().isoformat()
-    day_2 = date_2.isoformat() if isinstance(date_2, date) else (str(date_2) if date_2 else day_1)
+    day_2 = (
+        date_2.isoformat()
+        if isinstance(date_2, date)
+        else (str(date_2) if date_2 else (date.fromisoformat(day_1) + timedelta(days=1)).isoformat())
+    )
     authorized = env_bool("PUBLISHER_RIGHTS_AUTHORIZED") if rights_authorized is None else as_bool(rights_authorized)
     return prepare_batches(
         [
