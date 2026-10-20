@@ -3,7 +3,7 @@ from __future__ import annotations
 import argparse
 import json
 import os
-from datetime import date, datetime, time
+from datetime import date, datetime, time, timedelta
 from pathlib import Path
 from zoneinfo import ZoneInfo
 
@@ -264,7 +264,7 @@ def main() -> int:
     parser.add_argument("--dry-run", action="store_true")
     parser.add_argument("--due-only", action="store_true", help="publica no máximo um TikTok já vencido")
     parser.add_argument("--allow-immediate", action="store_true", help="confirma publicação imediata dos dez TikToks")
-    parser.add_argument("--target-date", default="", help="compatibilidade: data do primeiro lote")
+    parser.add_argument("--target-date", default="", help="compatibilidade: data do lote A; lote B assume o dia seguinte")
     parser.add_argument("--date-1", default="", help="data local do lote A (AAAA-MM-DD)")
     parser.add_argument("--date-2", default="", help="data local do lote B (AAAA-MM-DD)")
     parser.add_argument("--period-1", default="daily", help="grade diária de 5 posts; day/night aceitos só por compatibilidade")
@@ -286,11 +286,11 @@ def main() -> int:
         return 0
     if args.command == "prepare":
         date_1 = args.date_1 or args.target_date
-        date_2 = args.date_2 or date_1
+        date_2 = args.date_2 or ((date.fromisoformat(date_1) + timedelta(days=1)).isoformat() if date_1 else "")
         if not args.folder_id or not args.folder_2_id:
             raise SystemExit("O preparo exige --folder-id e --folder-2-id.")
         if not date_1 or not date_2:
-            raise SystemExit("O preparo exige --date-1 e --date-2, ou --target-date para ambos.")
+            raise SystemExit("O preparo exige --date-1; informe --date-2 ou deixe o lote B assumir o dia seguinte.")
         if not args.source_name.strip() or not args.source_name_2.strip():
             raise SystemExit("O preparo exige a fonte original de cada pasta; não reutilize a fonte do lote A por omissão.")
         rights = args.confirm_rights or os.environ.get("PUBLISHER_RIGHTS_AUTHORIZED", "").casefold() in {"1", "true", "yes", "sim", "on"}
