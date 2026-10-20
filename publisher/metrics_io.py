@@ -309,6 +309,10 @@ def build_metrics_package(control_ledger: dict, performance_ledger: dict, *, hor
         "generated_at": _now(),
         "horizon": normalized_horizon,
         "items": items,
+        "handoff": {
+            "result_filename": metrics_result_filename(performance_ledger["run_id"], normalized_horizon),
+            "rule": "Work must save exactly one result file beside this package in the private Publisher state folder.",
+        },
         "result_contract": {
             "version": METRICS_RESULT_VERSION,
             "kind": "studio_metrics_result",
@@ -349,6 +353,29 @@ def save_metrics_package_to_drive(manifest: dict, package: dict) -> dict:
         "state_folder_id": folder["id"],
         "expected_result_file": metrics_result_filename(package["run_id"], package["horizon"]),
     }
+
+
+def load_metrics_package_from_drive(manifest: dict, run_id: str, horizon: str) -> dict:
+    drive = drive_service()
+    parent_id = _shared_batch_parent(drive, manifest)
+    folder = _state_folder(drive, parent_id, create=False)
+    if not folder:
+        raise RuntimeError("Pasta de estado persistente não existe.")
+    name = _metrics_package_filename(run_id, horizon)
+    escaped = name.replace("'", "\\'")
+    matches = drive.files().list(
+        q=f"'{folder['id']}' in parents and trashed = false and name = '{escaped}'",
+        pageSize=10,
+        fields="files(id,name,mimeType,parents,modifiedTime)",
+    ).execute(num_retries=4).get("files", [])
+    if len(matches) != 1:
+        raise RuntimeError(f"Pacote de métricas não encontrado de forma única: {name}.")
+    package = _read_drive_json(drive, matches[0]["id"])
+    if package.get("version") != METRICS_PACKAGE_VERSION or package.get("kind") != "studio_metrics_collection":
+        raise RuntimeError("Pacote de métricas persistido é incompatível.")
+    if str(package.get("run_id")) != str(run_id) or str(package.get("horizon")).casefold() != str(horizon).casefold():
+        raise RuntimeError("Pacote de métricas persistido não corresponde à execução/horizonte.")
+    return package
 
 
 def load_metrics_result_from_drive(manifest: dict, run_id: str, horizon: str) -> dict:
