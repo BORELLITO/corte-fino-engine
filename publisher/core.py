@@ -376,10 +376,11 @@ def choose_hook(text: str) -> str:
     if not sentences:
         return ""
     candidate = max(sentences[:18], key=sentence_score).strip('"“”')
-    if len(candidate) <= 92:
+    hook_limit = YOUTUBE_TITLE_LIMIT - 3
+    if len(candidate) <= hook_limit:
         return candidate
-    clauses = [part.strip(" ,;:-") for part in re.split(r"[,;:!?]", candidate)]
-    valid = [part for part in clauses if 18 <= len(part) <= 92]
+    clauses = [part.strip(" ,;:-") for part in re.split(r"[.,;:!?]", candidate)]
+    valid = [part for part in clauses if 18 <= len(part) <= hook_limit]
     return max(valid, key=len, default="")
 
 
