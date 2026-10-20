@@ -42,7 +42,7 @@ def test_numbering_and_periods():
     assert normalize_period("evening") == "daily"
 
 
-def test_slots_are_ten_and_each_batch_isolated():
+def test_slots_are_five_per_day_and_ranked():
     clips = [
         {"index": index, "copy": {"viral_score": float(index)}, "schedule": {}}
         for index in range(1, 6)
@@ -142,7 +142,7 @@ def _valid_manifest():
     }
 
 
-def test_manifest_v6_validates_ten_clips_and_two_batches():
+def test_manifest_v7_validates_ten_clips_across_two_days():
     validate_manifest(_valid_manifest())
 
 
@@ -178,9 +178,6 @@ def test_manifest_rejects_invalid_period():
 def test_manifest_rejects_two_batches_on_same_date():
     manifest = _valid_manifest()
     manifest["batches"][1]["date"] = manifest["batches"][0]["date"]
-    for clip in manifest["clips"][5:]:
-        clip["schedule"]["youtube_publish_at"] = clip["schedule"]["youtube_publish_at"].replace("2026-10-20", "2026-10-19")
-        clip["schedule"]["tiktok_publish_at"] = clip["schedule"]["tiktok_publish_at"].replace("2026-10-20", "2026-10-19")
     with pytest.raises(RuntimeError, match="5 por dia exige datas diferentes"):
         validate_manifest(manifest)
 
