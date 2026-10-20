@@ -7,7 +7,15 @@ from datetime import date, datetime, time, timedelta
 from pathlib import Path
 from zoneinfo import ZoneInfo
 
-from publisher.core import validate_manifest
+from publisher.core import normalize_account_identity, validate_manifest
+from publisher.control import (
+    load_ledger,
+    new_ledger,
+    publication_key,
+    reconciliation_summary,
+    record_receipt,
+    save_ledger,
+)
 from publisher.google_io import (
     FOLDER_ID,
     prepare_batches,
@@ -77,6 +85,10 @@ def browser_package(manifest: dict) -> dict:
         posts.append(
             {
                 "index": clip["index"],
+                "publication_keys": {
+                    "youtube": publication_key(manifest["run_id"], clip["index"], "youtube"),
+                    "tiktok": publication_key(manifest["run_id"], clip["index"], "tiktok"),
+                },
                 "batch_id": clip["batch_id"],
                 "batch_index": clip["batch_index"],
                 "drive_folder_id": clip["drive_folder_id"],
@@ -87,6 +99,10 @@ def browser_package(manifest: dict) -> dict:
                     "publish_at": youtube_at,
                     "publish_at_local": youtube_local.strftime("%Y-%m-%d %H:%M"),
                     "publication_mode": "schedule",
+                    "account_guard": {
+                        "required": True,
+                        "expected": manifest["target_accounts"]["youtube"],
+                    },
                     "language": "pt-BR",
                     "category_id": "24",
                     "made_for_kids": False,
@@ -99,6 +115,10 @@ def browser_package(manifest: dict) -> dict:
                     "publish_at": tiktok_at,
                     "publish_at_local": tiktok_local.strftime("%Y-%m-%d %H:%M"),
                     "publication_mode": "schedule",
+                    "account_guard": {
+                        "required": True,
+                        "expected": manifest["target_accounts"]["tiktok"],
+                    },
                     "visibility": validate_browser_visibility(PUBLIC_TIKTOK_VISIBILITY),
                     "visibility_label": "Todos (público)",
                     "privacy_check": "required_before_schedule",
@@ -108,8 +128,10 @@ def browser_package(manifest: dict) -> dict:
             }
         )
     package = {
-        "version": 3,
+        "version": 4,
         "source_manifest_version": manifest["version"],
+        "run_id": manifest["run_id"],
+        "target_accounts": dict(manifest["target_accounts"]),
         "timezone": manifest["timezone"],
         "rights_authorized": True,
         "tiktok_global_rule": "Nunca agendar sem confirmar Todos (público).",
@@ -157,6 +179,10 @@ def diagnostic_package(manifest: dict) -> dict:
         utc_at = local_at.astimezone(ZoneInfo("UTC")).isoformat().replace("+00:00", "Z")
         posts.append({
             "index": clip["index"],
+            "publication_keys": {
+                "youtube": publication_key(manifest["run_id"], clip["index"], "youtube"),
+                "tiktok": publication_key(manifest["run_id"], clip["index"], "tiktok"),
+            },
             "batch_id": clip["batch_id"],
             "batch_index": clip["batch_index"],
             "drive_folder_id": clip["drive_folder_id"],
@@ -168,6 +194,10 @@ def diagnostic_package(manifest: dict) -> dict:
                 "publish_at": utc_at,
                 "publish_at_local": local_at.strftime("%Y-%m-%d %H:%M"),
                 "publication_mode": "manual_controlled_test",
+                "account_guard": {
+                    "required": True,
+                    "expected": manifest["target_accounts"]["youtube"],
+                },
                 "language": "pt-BR",
                 "category_id": "24",
                 "made_for_kids": False,
@@ -189,6 +219,10 @@ def diagnostic_package(manifest: dict) -> dict:
                 "publish_at": utc_at,
                 "publish_at_local": local_at.strftime("%Y-%m-%d %H:%M"),
                 "publication_mode": "manual_controlled_test",
+                "account_guard": {
+                    "required": True,
+                    "expected": manifest["target_accounts"]["tiktok"],
+                },
                 "visibility": validate_browser_visibility(PUBLIC_TIKTOK_VISIBILITY),
                 "visibility_label": "Todos (público)",
                 "privacy_check": "required_before_publish",
@@ -205,8 +239,10 @@ def diagnostic_package(manifest: dict) -> dict:
             },
         })
     package = {
-        "version": 4,
+        "version": 5,
         "mode": "distribution_diagnostic",
+        "run_id": manifest["run_id"],
+        "target_accounts": dict(manifest["target_accounts"]),
         "expected_posts": 3,
         "source_manifest_version": manifest["version"],
         "timezone": manifest["timezone"],
@@ -225,6 +261,9 @@ def diagnostic_package(manifest: dict) -> dict:
 def validate_browser_package(package: dict) -> None:
     """Fail closed if any TikTok item is not explicitly public."""
     posts = package.get("posts") if isinstance(package, dict) else None
+    targets = package.get("target_accounts") if isinstance(package, dict) else None
+    if not isinstance(targets, dict) or not normalize_account_identity(targets.get("youtube")) or not normalize_account_identity(targets.get("tiktok")):
+        raise RuntimeError("Pacote browser sem contas-alvo válidas.")
     expected_posts = 3 if package.get("mode") == "distribution_diagnostic" else 10
     if not isinstance(posts, list) or len(posts) != expected_posts:
         raise RuntimeError(f"Pacote browser inválido: esperado exatamente {expected_posts} publicações.")
@@ -235,6 +274,12 @@ def validate_browser_package(package: dict) -> None:
             raise RuntimeError("Pacote browser inválido: bloco YouTube ausente.")
         if not isinstance(tiktok, dict):
             raise RuntimeError("Pacote browser inválido: bloco TikTok ausente.")
+        for platform_name, block in (("youtube", youtube), ("tiktok", tiktok)):
+            guard = block.get("account_guard")
+            if not isinstance(guard, dict) or guard.get("required") is not True:
+                raise RuntimeError(f"Pacote {platform_name} sem Account Identity Guard.")
+            if normalize_account_identity(guard.get("expected")) != normalize_account_identity(targets.get(platform_name)):
+                raise RuntimeError(f"Pacote {platform_name} com conta-alvo divergente.")
         tags = youtube.get("tags")
         if not isinstance(tags, list) or len(tags) != 20:
             raise RuntimeError("Pacote YouTube precisa carregar exatamente 20 tags nativas.")
@@ -257,7 +302,7 @@ def validate_browser_package(package: dict) -> None:
 
 def main() -> int:
     parser = argparse.ArgumentParser(description="Corte Fino Publisher")
-    parser.add_argument("command", choices=["prepare", "browser-package", "diagnostic-package", "report", "youtube", "tiktok", "verify-tiktok", "preflight", "validate-browser-package"])
+    parser.add_argument("command", choices=["prepare", "browser-package", "diagnostic-package", "report", "youtube", "tiktok", "verify-tiktok", "preflight", "validate-browser-package", "init-ledger", "record-receipt", "reconcile"])
     parser.add_argument("--folder-id", default=os.environ.get("PUBLISHER_DRIVE_FOLDER_ID", FOLDER_ID))
     parser.add_argument("--folder-2-id", default=os.environ.get("PUBLISHER_DRIVE_FOLDER_2_ID", ""))
     parser.add_argument("--manifest", default="publisher/state/current.json")
@@ -274,6 +319,15 @@ def main() -> int:
     parser.add_argument("--source-name-2", default=os.environ.get("PUBLISHER_SOURCE_NAME_2", ""), help="fonte do lote B")
     parser.add_argument("--source-episode-2", default=os.environ.get("PUBLISHER_SOURCE_EPISODE_2", ""), help="episódio do lote B")
     parser.add_argument("--confirm-rights", action="store_true", help="confirma autorização das duas fontes")
+    parser.add_argument("--youtube-account", default=os.environ.get("PUBLISHER_YOUTUBE_ACCOUNT", "@cortefinoshorts"), help="canal/handle esperado no YouTube Studio")
+    parser.add_argument("--tiktok-account", default=os.environ.get("PUBLISHER_TIKTOK_ACCOUNT", "cortefinoshorts"), help="usuário esperado no TikTok Studio")
+    parser.add_argument("--ledger", default="publisher/state/control_ledger.json")
+    parser.add_argument("--publication-key", default="")
+    parser.add_argument("--observed-account", default="")
+    parser.add_argument("--receipt-state", default="")
+    parser.add_argument("--remote-id", default="")
+    parser.add_argument("--remote-url", default="")
+    parser.add_argument("--note", default="")
     args = parser.parse_args()
     path = Path(args.manifest)
 
@@ -301,11 +355,39 @@ def main() -> int:
             ],
             path,
             rights_status=os.environ.get("PUBLISHER_RIGHTS_STATUS", "revisão manual necessária"),
+            target_youtube=args.youtube_account,
+            target_tiktok=args.tiktok_account,
         )
         print(json.dumps({"status": "prepared", "batches": 2, "clips": len(data["clips"])}, ensure_ascii=False))
         return 0
 
     data = load(path)
+    if args.command == "init-ledger":
+        ledger = new_ledger(data)
+        save_ledger(Path(args.ledger), ledger)
+        print(json.dumps({"status": "ledger_initialized", "entries": len(ledger["entries"]), "path": args.ledger}, ensure_ascii=False))
+        return 0
+    if args.command == "record-receipt":
+        if not args.publication_key or not args.observed_account or not args.receipt_state:
+            raise SystemExit("record-receipt exige --publication-key, --observed-account e --receipt-state.")
+        ledger_path = Path(args.ledger)
+        ledger = load_ledger(ledger_path)
+        record_receipt(
+            ledger,
+            args.publication_key,
+            observed_account=args.observed_account,
+            state=args.receipt_state,
+            remote_id=args.remote_id,
+            remote_url=args.remote_url,
+            note=args.note,
+        )
+        save_ledger(ledger_path, ledger)
+        print(json.dumps({"status": "receipt_recorded", "publication_key": args.publication_key, "state": ledger["entries"][args.publication_key]["state"]}, ensure_ascii=False))
+        return 0
+    if args.command == "reconcile":
+        ledger = load_ledger(Path(args.ledger))
+        print(json.dumps(reconciliation_summary(ledger), ensure_ascii=False, indent=2))
+        return 0
     if args.command == "browser-package":
         package = browser_package(data)
         print(json.dumps(package, ensure_ascii=False, indent=2))
