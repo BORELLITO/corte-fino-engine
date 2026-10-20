@@ -37,8 +37,10 @@ from publisher.performance import (
 from publisher.metrics_io import (
     apply_metrics_result,
     build_metrics_package,
+    load_metrics_result_from_drive,
     load_run_state_from_drive,
     restore_run_state_files,
+    save_metrics_package_to_drive,
     save_run_state_to_drive,
 )
 from publisher.tiktok_io import PUBLIC_TIKTOK_VISIBILITY, publish_tiktok, validate_browser_visibility
@@ -471,24 +473,29 @@ def main() -> int:
         target = Path(args.metrics_package)
         target.parent.mkdir(parents=True, exist_ok=True)
         target.write_text(json.dumps(package, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+        remote = save_metrics_package_to_drive(data, package)
         print(json.dumps({
             "status": "metrics_package_ready",
             "run_id": package["run_id"],
             "horizon": package["horizon"],
             "items": len(package["items"]),
             "path": str(target),
+            "drive": remote,
         }, ensure_ascii=False))
         return 0
 
     if args.command == "apply-metrics-batch":
-        if not args.metrics_result:
-            raise SystemExit("apply-metrics-batch exige --metrics-result.")
         package_path = Path(args.metrics_package)
-        result_path = Path(args.metrics_result)
-        if not package_path.exists() or not result_path.exists():
-            raise SystemExit("Pacote ou resultado de métricas não encontrado.")
+        if not package_path.exists():
+            raise SystemExit("Pacote de métricas não encontrado.")
         package = json.loads(package_path.read_text(encoding="utf-8"))
-        result = json.loads(result_path.read_text(encoding="utf-8"))
+        if args.metrics_result:
+            result_path = Path(args.metrics_result)
+            if not result_path.exists():
+                raise SystemExit("Resultado de métricas não encontrado.")
+            result = json.loads(result_path.read_text(encoding="utf-8"))
+        else:
+            result = load_metrics_result_from_drive(data, package["run_id"], package["horizon"])
         control = load_ledger(control_path)
         performance = load_performance_ledger(performance_path)
         apply_metrics_result(control, performance, package, result)
