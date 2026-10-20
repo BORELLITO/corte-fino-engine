@@ -9,7 +9,7 @@ from typing import Any
 
 from publisher.control import validate_ledger
 from publisher.core import normalize_account_identity, validate_manifest
-from publisher.google_io import drive_service
+from publisher.google_io import drive_service, normalize_folder_id
 from publisher.performance import (
     PERFORMANCE_HORIZONS,
     record_performance_snapshot,
@@ -35,7 +35,7 @@ def _parse_utc(value: str) -> datetime:
 
 def _batch_parent_from_folder(drive, folder_id: str) -> str:
     item = drive.files().get(
-        fileId=str(folder_id).strip(),
+        fileId=normalize_folder_id(str(folder_id).strip()),
         fields="id,parents,trashed,mimeType",
     ).execute(num_retries=4)
     if item.get("trashed"):
@@ -235,6 +235,21 @@ def restore_run_state_files(state: dict, *, manifest_path: Path, control_path: P
     performance_path.write_text(json.dumps(state["performance_ledger"], ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
 
 
+def _publication_reference_time(receipt: dict, planned_publish_at: str) -> tuple[datetime, str]:
+    mature_states = {"PUBLIC", "VERIFIED", "METRICS_PENDING", "MEASURED", "LEARNED"}
+    observed = []
+    for event in receipt.get("history") or []:
+        if not isinstance(event, dict) or str(event.get("state") or "") not in mature_states:
+            continue
+        try:
+            observed.append(_parse_utc(str(event.get("at") or "")))
+        except (TypeError, ValueError):
+            continue
+    if observed:
+        return min(observed), "publication_receipt"
+    return _parse_utc(planned_publish_at), "planned_fallback"
+
+
 def _horizon_delta(horizon: str) -> timedelta:
     normalized = str(horizon or "").strip().casefold()
     if normalized not in PERFORMANCE_HORIZONS:
@@ -262,11 +277,14 @@ def build_metrics_package(control_ledger: dict, performance_ledger: dict, *, hor
             continue
         if normalized_horizon in (entry.get("snapshots") or {}):
             continue
-        planned = _parse_utc(entry["planned_publish_at"])
-        due_at = planned + delta
+        receipt = control_ledger["entries"][key]
+        reference_at, reference_source = _publication_reference_time(
+            receipt,
+            entry["planned_publish_at"],
+        )
+        due_at = reference_at + delta
         if due_at > current:
             continue
-        receipt = control_ledger["entries"][key]
         platform = entry["platform"]
         fields = (
             [
@@ -286,6 +304,8 @@ def build_metrics_package(control_ledger: dict, performance_ledger: dict, *, hor
             "platform": platform,
             "horizon": normalized_horizon,
             "due_at": due_at.isoformat().replace("+00:00", "Z"),
+            "measurement_reference_at": reference_at.isoformat().replace("+00:00", "Z"),
+            "measurement_reference_source": reference_source,
             "planned_publish_at": entry["planned_publish_at"],
             "expected_account": receipt.get("expected_account"),
             "remote_id": receipt.get("remote_id"),
@@ -430,6 +450,11 @@ def validate_metrics_result(result: dict, package: dict, control_ledger: dict) -
             raise RuntimeError(f"Conta observada divergente para {key}")
         if not isinstance(row.get("metrics"), dict) or not row["metrics"]:
             raise RuntimeError(f"Métricas ausentes para {key}")
+        metric_keys = set(row["metrics"])
+        allowed_keys = set(expected[key].get("required_fields") or [])
+        unknown = sorted(metric_keys - allowed_keys)
+        if unknown:
+            raise RuntimeError(f"Métricas desconhecidas para {key}: {unknown}")
 
 
 def apply_metrics_result(
@@ -443,6 +468,12 @@ def apply_metrics_result(
     validate_metrics_result(result, package, control_ledger)
     sync_publication_receipts(performance_ledger, control_ledger)
     for row in result["items"]:
+        entry = performance_ledger["entries"][row["publication_key"]]
+        if result["horizon"] in (entry.get("snapshots") or {}):
+            raise RuntimeError(
+                f"Snapshot {result['horizon']} já existe para {row['publication_key']}; "
+                "não sobrescreva evidência coletada."
+            )
         record_performance_snapshot(
             performance_ledger,
             row["publication_key"],
