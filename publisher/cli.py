@@ -37,6 +37,7 @@ from publisher.performance import (
 from publisher.metrics_io import (
     apply_metrics_result,
     build_metrics_package,
+    load_metrics_package_from_drive,
     load_metrics_result_from_drive,
     load_run_state_from_drive,
     restore_run_state_files,
@@ -486,9 +487,14 @@ def main() -> int:
 
     if args.command == "apply-metrics-batch":
         package_path = Path(args.metrics_package)
-        if not package_path.exists():
-            raise SystemExit("Pacote de métricas não encontrado.")
-        package = json.loads(package_path.read_text(encoding="utf-8"))
+        if package_path.exists():
+            package = json.loads(package_path.read_text(encoding="utf-8"))
+        else:
+            if not args.horizon:
+                raise SystemExit("apply-metrics-batch sem arquivo local exige --horizon.")
+            package = load_metrics_package_from_drive(data, data["run_id"], args.horizon)
+            package_path.parent.mkdir(parents=True, exist_ok=True)
+            package_path.write_text(json.dumps(package, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
         if args.metrics_result:
             result_path = Path(args.metrics_result)
             if not result_path.exists():
