@@ -46,6 +46,10 @@ O destino de saída do Creator é configurado exclusivamente pelo secret `DRIVE_
 
 O Publisher pode consolidar resultados verificados do YouTube em um histórico privado no mesmo diretório raiz do Creator. Posts com distribuição insuficiente, restrição ou publicação não verificada são excluídos do aprendizado. O feedback fica inativo até acumular pelo menos 20 Shorts elegíveis; cada trigger precisa de 5 amostras e o ajuste automático é limitado a ±2 pontos, funcionando apenas como desempate conservador. A coleta das métricas do Studio ainda precisa ser realizada pelo operador/Work e registrada no performance ledger; o código não inventa nem presume métricas ausentes.
 
+## Performance fechando o loop
+
+O Publisher mantém estado persistente privado no Google Drive para sobreviver aos horizontes de 24h/72h. O fluxo de métricas é separado da publicação: uma execução gera um pacote de coleta para o Work, o Work lê somente dados visíveis nos Studios e devolve um resultado com a mesma `publication_key`. O motor valida conta/plataforma, rejeita campos desconhecidos, impede overwrite de snapshots e só classifica um post como elegível para aprendizado quando há distribuição suficiente **e** pelo menos um sinal real de comportamento/retenção.
+
 ## Uso
 
 1. Execute o workflow manual do Creator e copie o link exato da pasta com os cinco cortes.

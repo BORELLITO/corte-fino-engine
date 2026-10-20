@@ -1,0 +1,106 @@
+name: Corte Fino Motor 2 — Performance
+
+on:
+  workflow_dispatch:
+    inputs:
+      mode:
+        description: "collect-package, apply-result ou publish-feedback"
+        required: true
+        default: "collect-package"
+        type: choice
+        options: [collect-package, apply-result, publish-feedback]
+      run_id:
+        description: "run_id original do Publisher"
+        required: true
+        type: string
+      batch_folder_id:
+        description: "ID de uma das duas pastas do lote para localizar o cofre privado"
+        required: true
+        type: string
+      horizon:
+        description: "Horizonte da coleta"
+        required: true
+        default: "24h"
+        type: choice
+        options: [1h, 6h, 24h, 72h]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: corte-fino-performance-${{ inputs.run_id }}-${{ inputs.horizon }}
+  cancel-in-progress: false
+
+jobs:
+  performance:
+    runs-on: ubuntu-22.04
+    timeout-minutes: 30
+    env:
+      PYTHONUNBUFFERED: "1"
+      PUBLISHER_GOOGLE_CLIENT_ID: ${{ secrets.PUBLISHER_GOOGLE_CLIENT_ID }}
+      PUBLISHER_GOOGLE_CLIENT_SECRET: ${{ secrets.PUBLISHER_GOOGLE_CLIENT_SECRET }}
+      PUBLISHER_GOOGLE_REFRESH_TOKEN: ${{ secrets.PUBLISHER_GOOGLE_REFRESH_TOKEN }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+
+      - name: Python
+        uses: actions/setup-python@v7
+        with:
+          python-version: "3.11"
+
+      - name: Dependências mínimas
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install "google-api-python-client>=2,<3" "google-auth>=2,<3" "wordfreq>=3.1,<4"
+
+      - name: Restaurar estado persistente
+        run: |
+          python -m publisher.cli restore-state             --run-id "${{ inputs.run_id }}"             --state-batch-folder "${{ inputs.batch_folder_id }}"
+
+      - name: Gerar pacote para coleta no Studio
+        if: inputs.mode == 'collect-package'
+        run: |
+          python -m publisher.cli metrics-package --horizon "${{ inputs.horizon }}"
+
+      - name: Aplicar resultado salvo pelo Work
+        if: inputs.mode == 'apply-result'
+        run: |
+          rm -f publisher/state/metrics_package.json
+          python -m publisher.cli apply-metrics-batch --horizon "${{ inputs.horizon }}"
+
+      - name: Atualizar aprendizado do Creator
+        if: inputs.mode == 'publish-feedback' || (inputs.mode == 'apply-result' && (inputs.horizon == '24h' || inputs.horizon == '72h'))
+        run: |
+          python -m publisher.cli publish-feedback
+
+      - name: Resumo de performance
+        if: always()
+        run: |
+          if [ -f publisher/state/performance_ledger.json ]; then
+            python - <<'PY'
+          import json
+          from pathlib import Path
+          data = json.loads(Path("publisher/state/performance_ledger.json").read_text(encoding="utf-8"))
+          entries = list(data.get("entries", {}).values())
+          print(json.dumps({
+              "run_id": data.get("run_id"),
+              "entries": len(entries),
+              "learning_eligible": sum(bool(item.get("learning_eligible")) for item in entries),
+              "classifications": {
+                  name: sum(item.get("latest_classification") == name for item in entries)
+                  for name in sorted({str(item.get("latest_classification")) for item in entries})
+              },
+          }, ensure_ascii=False, indent=2))
+          PY
+          fi
+
+      - name: Guardar pacote/estado temporariamente
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: corte-fino-performance-${{ inputs.run_id }}-${{ inputs.horizon }}
+          path: publisher/state/*.json
+          if-no-files-found: warn
+          retention-days: 7

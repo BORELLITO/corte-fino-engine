@@ -239,6 +239,19 @@ def _classification(platform: str, horizon: str, metrics: dict) -> tuple[str, bo
         return "MISSING_DISTRIBUTION_SIGNAL", False
     if exposure < MIN_DISTRIBUTION_SAMPLE:
         return "INSUFFICIENT_DISTRIBUTION", False
+
+    if platform == "youtube":
+        engagement_present = any(
+            metrics.get(name) is not None
+            for name in ("viewed_rate", "avg_percentage_viewed", "avg_view_duration_seconds")
+        )
+    else:
+        engagement_present = any(
+            metrics.get(name) is not None
+            for name in ("for_you_pct", "avg_watch_time_seconds", "full_watch_rate")
+        )
+    if not engagement_present:
+        return "MISSING_ENGAGEMENT_SIGNAL", False
     return "LEARNING_ELIGIBLE", True
 
 

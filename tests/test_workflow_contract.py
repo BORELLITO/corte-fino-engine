@@ -2,6 +2,7 @@ from pathlib import Path
 
 PUBLISHER_WORKFLOW = Path(".github/workflows/corte-fino-publisher.yml")
 PUBLISHER_CI = Path(".github/workflows/corte-fino-publisher-ci.yml")
+PERFORMANCE_WORKFLOW = Path(".github/workflows/corte-fino-performance.yml")
 GENERATOR_WORKFLOW = Path(".github/workflows/corte-fino.yml")
 TIKTOK_API_WORKFLOW = Path(".github/workflows/tiktok-sandbox-token.yml")
 ROOT_README = Path("README.md")
@@ -108,3 +109,28 @@ def test_performance_feedback_loop_is_wired_without_breaking_batch_boundary():
     # inside the rigid five-MP4 publication folder.
     assert 'expected.append(video_name)' in generator
     assert 'len(final_children) != 5' in generator
+
+
+def test_performance_workflow_restores_durable_state_and_uses_work_result():
+    text = PERFORMANCE_WORKFLOW.read_text(encoding="utf-8")
+    assert "collect-package" in text
+    assert "apply-result" in text
+    assert "publish-feedback" in text
+    assert "python -m publisher.cli restore-state" in text
+    assert "python -m publisher.cli metrics-package" in text
+    assert "python -m publisher.cli apply-metrics-batch" in text
+    assert "python -m publisher.cli publish-feedback" in text
+    assert "--run-id" in text
+    assert "--state-batch-folder" in text
+    assert "retention-days: 7" in text
+
+
+def test_publisher_cli_persists_state_beyond_one_day_artifact():
+    text = Path("publisher/cli.py").read_text(encoding="utf-8")
+    metrics_io = Path("publisher/metrics_io.py").read_text(encoding="utf-8")
+    assert "save_run_state_to_drive" in text
+    assert "load_run_state_from_drive" in text
+    assert "STATE_FOLDER_NAME = \"_corte_fino_publisher_state\"" in metrics_io
+    assert "studio_metrics_collection" in metrics_io
+    assert "studio_metrics_result" in metrics_io
+    assert "metrics_result_filename" in metrics_io

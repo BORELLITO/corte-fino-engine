@@ -1,4 +1,4 @@
-# Corte Fino Publisher 2.5 — Control + Learning Plane
+# Corte Fino Publisher 2.6 — Control + Learning + Studio Metrics
 
 O Publisher é o Motor 2 do Corte Fino. Ele recebe duas pastas exatas do Google Drive, cada uma com cinco MP4s prontos pelo Creator, e distribui os dez cortes em dois dias: cinco publicações por dia. A versão 2.5 mantém o Distribution Guard, Account Identity Guard, Publication Receipt e reconciliação, e acrescenta Performance Receipt + feedback conservador para o Creator.
 
@@ -85,6 +85,25 @@ Comandos principais:
   python -m publisher.cli record-performance --publication-key "RUN:01:youtube" --horizon 24h --metrics-json '{"shown_in_feed":1200,"views":700,"viewed_rate":64,"avg_percentage_viewed":82}'
   python -m publisher.cli creator-feedback
   python -m publisher.cli publish-feedback
+
+## Studio Metrics Handoff
+
+O estado necessário para medir 24h/72h não depende mais do artefato temporário do GitHub Actions. O Publisher mantém um cofre privado no diretório raiz dos lotes:
+
+`_corte_fino_publisher_state/`
+
+Cada execução persiste um `run-<run_id>.json` sanitizado, sem transcrições, contendo manifesto operacional, Publication Receipt e Performance Ledger.
+
+O workflow `Corte Fino Motor 2 — Performance` possui três modos:
+
+1. `collect-package`: restaura a execução pelo `run_id`, seleciona somente posts realmente PUBLIC/VERIFIED cujo horizonte já venceu e salva o pacote de coleta no Drive;
+2. Work/Cloud Browser abre o YouTube Studio/TikTok Studio, confirma a conta visível, lê apenas os valores mostrados e salva um `metrics-result-<run_id>-<horizon>.json` ao lado do pacote;
+3. `apply-result`: restaura o pacote original, valida conta, plataforma, chaves e nomes de métricas, grava os snapshots e persiste novamente o estado;
+4. em 24h/72h, o workflow atualiza automaticamente o histórico de aprendizado do Creator.
+
+O relógio de 1h/6h/24h/72h parte do primeiro receipt real `PUBLIC/VERIFIED`, não apenas do horário planejado. Campo indisponível no Studio deve ser omitido; nunca preencher com zero por conveniência. Um snapshot já gravado para o mesmo horizonte é imutável e não pode ser sobrescrito.
+
+O YouTube Studio é a fonte para sinais específicos de Shorts como `Mostrado no feed` e `Visualizaram x deslizaram`. A coleta continua dependente de sessão autenticada no Studio; o código não simula essas métricas.
 
 ## Publicação oficial
 

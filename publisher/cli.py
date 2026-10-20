@@ -34,6 +34,16 @@ from publisher.performance import (
     save_performance_ledger,
     sync_publication_receipts,
 )
+from publisher.metrics_io import (
+    apply_metrics_result,
+    build_metrics_package,
+    load_metrics_package_from_drive,
+    load_metrics_result_from_drive,
+    load_run_state_from_drive,
+    restore_run_state_files,
+    save_metrics_package_to_drive,
+    save_run_state_to_drive,
+)
 from publisher.tiktok_io import PUBLIC_TIKTOK_VISIBILITY, publish_tiktok, validate_browser_visibility
 
 
@@ -330,7 +340,13 @@ def validate_browser_package(package: dict) -> None:
 
 def main() -> int:
     parser = argparse.ArgumentParser(description="Corte Fino Publisher")
-    parser.add_argument("command", choices=["prepare", "browser-package", "diagnostic-package", "report", "youtube", "tiktok", "verify-tiktok", "preflight", "validate-browser-package", "init-ledger", "record-receipt", "reconcile", "init-performance", "record-performance", "creator-feedback", "publish-feedback"])
+    parser.add_argument("command", choices=[
+        "prepare", "browser-package", "diagnostic-package", "report", "youtube", "tiktok",
+        "verify-tiktok", "preflight", "validate-browser-package", "init-ledger",
+        "record-receipt", "reconcile", "init-performance", "record-performance",
+        "creator-feedback", "publish-feedback", "persist-state", "restore-state",
+        "metrics-package", "apply-metrics-batch",
+    ])
     parser.add_argument("--folder-id", default=os.environ.get("PUBLISHER_DRIVE_FOLDER_ID", FOLDER_ID))
     parser.add_argument("--folder-2-id", default=os.environ.get("PUBLISHER_DRIVE_FOLDER_2_ID", ""))
     parser.add_argument("--manifest", default="publisher/state/current.json")
@@ -347,8 +363,8 @@ def main() -> int:
     parser.add_argument("--source-name-2", default=os.environ.get("PUBLISHER_SOURCE_NAME_2", ""), help="fonte do lote B")
     parser.add_argument("--source-episode-2", default=os.environ.get("PUBLISHER_SOURCE_EPISODE_2", ""), help="episódio do lote B")
     parser.add_argument("--confirm-rights", action="store_true", help="confirma autorização das duas fontes")
-    parser.add_argument("--youtube-account", default=os.environ.get("PUBLISHER_YOUTUBE_ACCOUNT", "@cortefinoshorts"), help="canal/handle esperado no YouTube Studio")
-    parser.add_argument("--tiktok-account", default=os.environ.get("PUBLISHER_TIKTOK_ACCOUNT", "cortefinoshorts"), help="usuário esperado no TikTok Studio")
+    parser.add_argument("--youtube-account", default=os.environ.get("PUBLISHER_YOUTUBE_ACCOUNT", "@cortefinoshorts"))
+    parser.add_argument("--tiktok-account", default=os.environ.get("PUBLISHER_TIKTOK_ACCOUNT", "cortefinoshorts"))
     parser.add_argument("--ledger", default="publisher/state/control_ledger.json")
     parser.add_argument("--package", default="", help="browser/diagnostic package usado para limitar o ledger")
     parser.add_argument("--publication-key", default="")
@@ -362,16 +378,47 @@ def main() -> int:
     parser.add_argument("--horizon", default="", help="snapshot de performance: 1h, 6h, 24h ou 72h")
     parser.add_argument("--metrics-json", default="", help="objeto JSON com métricas observadas no Studio/Analytics")
     parser.add_argument("--feedback-output", default="publisher/state/creator_feedback.json")
+    parser.add_argument("--run-id", default="", help="run_id persistido do Publisher")
+    parser.add_argument("--state-batch-folder", default="", help="ID de uma pasta de lote para localizar o estado privado no Drive")
+    parser.add_argument("--metrics-package", default="publisher/state/metrics_package.json")
+    parser.add_argument("--metrics-result", default="", help="JSON preenchido pelo Work/Studio")
     args = parser.parse_args()
+
     path = Path(args.manifest)
+    control_path = Path(args.ledger)
+    performance_path = Path(args.performance_ledger)
 
     if args.command == "verify-tiktok":
-        print(json.dumps({"status": "browser_only", "message": "A conta será validada visualmente no TikTok Studio pelo Cloud Web Browser."}, ensure_ascii=False, indent=2))
+        print(json.dumps({
+            "status": "browser_only",
+            "message": "A conta será validada visualmente no TikTok Studio pelo Cloud Web Browser.",
+        }, ensure_ascii=False, indent=2))
         return 0
+
+    if args.command == "restore-state":
+        if not args.run_id or not args.state_batch_folder:
+            raise SystemExit("restore-state exige --run-id e --state-batch-folder.")
+        state = load_run_state_from_drive(args.state_batch_folder, args.run_id)
+        restore_run_state_files(
+            state,
+            manifest_path=path,
+            control_path=control_path,
+            performance_path=performance_path,
+        )
+        print(json.dumps({
+            "status": "state_restored",
+            "run_id": state["run_id"],
+            "manifest": str(path),
+            "control_ledger": str(control_path),
+            "performance_ledger": str(performance_path),
+        }, ensure_ascii=False))
+        return 0
+
     if args.command == "preflight":
         data = load(path)
         print(json.dumps({"status": "ok", "manifest": browser_package(data)}, ensure_ascii=False, indent=2))
         return 0
+
     if args.command == "prepare":
         date_1 = args.date_1 or args.target_date
         date_2 = args.date_2 or ((date.fromisoformat(date_1) + timedelta(days=1)).isoformat() if date_1 else "")
@@ -384,18 +431,93 @@ def main() -> int:
         rights = args.confirm_rights or os.environ.get("PUBLISHER_RIGHTS_AUTHORIZED", "").casefold() in {"1", "true", "yes", "sim", "on"}
         data = prepare_batches(
             [
-                {"folder_id": args.folder_id, "date": date_1, "period": args.period_1, "source_name": args.source_name, "source_episode": args.source_episode, "rights_authorized": rights},
-                {"folder_id": args.folder_2_id, "date": date_2, "period": args.period_2, "source_name": args.source_name_2, "source_episode": args.source_episode_2 or args.source_episode, "rights_authorized": rights},
+                {
+                    "folder_id": args.folder_id,
+                    "date": date_1,
+                    "period": args.period_1,
+                    "source_name": args.source_name,
+                    "source_episode": args.source_episode,
+                    "rights_authorized": rights,
+                },
+                {
+                    "folder_id": args.folder_2_id,
+                    "date": date_2,
+                    "period": args.period_2,
+                    "source_name": args.source_name_2,
+                    "source_episode": args.source_episode_2 or args.source_episode,
+                    "rights_authorized": rights,
+                },
             ],
             path,
             rights_status=os.environ.get("PUBLISHER_RIGHTS_STATUS", "revisão manual necessária"),
             target_youtube=args.youtube_account,
             target_tiktok=args.tiktok_account,
         )
-        print(json.dumps({"status": "prepared", "batches": 2, "clips": len(data["clips"])}, ensure_ascii=False))
+        print(json.dumps({"status": "prepared", "batches": 2, "clips": len(data["clips"]), "run_id": data["run_id"]}, ensure_ascii=False))
         return 0
 
     data = load(path)
+
+    if args.command == "persist-state":
+        control = load_ledger(control_path)
+        performance = load_performance_ledger(performance_path)
+        remote = save_run_state_to_drive(data, control, performance)
+        print(json.dumps({"status": "state_persisted", **remote}, ensure_ascii=False, indent=2))
+        return 0
+
+    if args.command == "metrics-package":
+        if not args.horizon:
+            raise SystemExit("metrics-package exige --horizon 1h|6h|24h|72h.")
+        control = load_ledger(control_path)
+        performance = load_performance_ledger(performance_path)
+        package = build_metrics_package(control, performance, horizon=args.horizon)
+        target = Path(args.metrics_package)
+        target.parent.mkdir(parents=True, exist_ok=True)
+        target.write_text(json.dumps(package, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+        remote = save_metrics_package_to_drive(data, package)
+        print(json.dumps({
+            "status": "metrics_package_ready",
+            "run_id": package["run_id"],
+            "horizon": package["horizon"],
+            "items": len(package["items"]),
+            "path": str(target),
+            "drive": remote,
+        }, ensure_ascii=False))
+        return 0
+
+    if args.command == "apply-metrics-batch":
+        package_path = Path(args.metrics_package)
+        if package_path.exists():
+            package = json.loads(package_path.read_text(encoding="utf-8"))
+        else:
+            if not args.horizon:
+                raise SystemExit("apply-metrics-batch sem arquivo local exige --horizon.")
+            package = load_metrics_package_from_drive(data, data["run_id"], args.horizon)
+            package_path.parent.mkdir(parents=True, exist_ok=True)
+            package_path.write_text(json.dumps(package, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+        if args.metrics_result:
+            result_path = Path(args.metrics_result)
+            if not result_path.exists():
+                raise SystemExit("Resultado de métricas não encontrado.")
+            result = json.loads(result_path.read_text(encoding="utf-8"))
+        else:
+            result = load_metrics_result_from_drive(data, package["run_id"], package["horizon"])
+        control = load_ledger(control_path)
+        performance = load_performance_ledger(performance_path)
+        apply_metrics_result(control, performance, package, result)
+        save_performance_ledger(performance_path, performance)
+        remote = save_run_state_to_drive(data, control, performance)
+        learned = sum(1 for entry in performance["entries"].values() if entry.get("learning_eligible"))
+        print(json.dumps({
+            "status": "metrics_batch_applied",
+            "run_id": performance["run_id"],
+            "horizon": result["horizon"],
+            "items": len(result.get("items", [])),
+            "learning_eligible_total": learned,
+            "state_drive": remote,
+        }, ensure_ascii=False, indent=2))
+        return 0
+
     if args.command == "init-ledger":
         selected_keys = None
         if args.package:
@@ -410,14 +532,14 @@ def main() -> int:
             if not selected_keys:
                 raise SystemExit("O pacote informado não contém publication_keys.")
         ledger = new_ledger(data, selected_keys)
-        save_ledger(Path(args.ledger), ledger)
-        print(json.dumps({"status": "ledger_initialized", "entries": len(ledger["entries"]), "path": args.ledger}, ensure_ascii=False))
+        save_ledger(control_path, ledger)
+        print(json.dumps({"status": "ledger_initialized", "entries": len(ledger["entries"]), "path": str(control_path)}, ensure_ascii=False))
         return 0
+
     if args.command == "record-receipt":
         if not args.publication_key or not args.observed_account or not args.receipt_state:
             raise SystemExit("record-receipt exige --publication-key, --observed-account e --receipt-state.")
-        ledger_path = Path(args.ledger)
-        ledger = load_ledger(ledger_path)
+        ledger = load_ledger(control_path)
         record_receipt(
             ledger,
             args.publication_key,
@@ -428,25 +550,41 @@ def main() -> int:
             remote_reference=args.remote_reference,
             note=args.note,
         )
-        save_ledger(ledger_path, ledger)
-        print(json.dumps({"status": "receipt_recorded", "publication_key": args.publication_key, "state": ledger["entries"][args.publication_key]["state"]}, ensure_ascii=False))
+        save_ledger(control_path, ledger)
+        state_drive = None
+        if performance_path.exists():
+            performance = load_performance_ledger(performance_path)
+            sync_publication_receipts(performance, ledger)
+            save_performance_ledger(performance_path, performance)
+            state_drive = save_run_state_to_drive(data, ledger, performance)
+        print(json.dumps({
+            "status": "receipt_recorded",
+            "publication_key": args.publication_key,
+            "state": ledger["entries"][args.publication_key]["state"],
+            "state_drive": state_drive,
+        }, ensure_ascii=False))
         return 0
+
     if args.command == "reconcile":
-        ledger = load_ledger(Path(args.ledger))
+        ledger = load_ledger(control_path)
         print(json.dumps(reconciliation_summary(ledger), ensure_ascii=False, indent=2))
         return 0
+
     if args.command == "init-performance":
-        control_path = Path(args.ledger)
         if not control_path.exists():
             raise SystemExit("init-performance exige um control ledger existente.")
-        performance = new_performance_ledger(data, load_ledger(control_path))
-        save_performance_ledger(Path(args.performance_ledger), performance)
+        control = load_ledger(control_path)
+        performance = new_performance_ledger(data, control)
+        save_performance_ledger(performance_path, performance)
+        state_drive = save_run_state_to_drive(data, control, performance)
         print(json.dumps({
             "status": "performance_ledger_initialized",
             "entries": len(performance["entries"]),
-            "path": args.performance_ledger,
+            "path": str(performance_path),
+            "state_drive": state_drive,
         }, ensure_ascii=False))
         return 0
+
     if args.command == "record-performance":
         if not args.publication_key or not args.horizon or not args.metrics_json:
             raise SystemExit("record-performance exige --publication-key, --horizon e --metrics-json.")
@@ -456,19 +594,14 @@ def main() -> int:
             raise SystemExit("--metrics-json precisa ser um objeto JSON válido.") from exc
         if not isinstance(metrics, dict):
             raise SystemExit("--metrics-json precisa conter um objeto JSON.")
-        performance_path = Path(args.performance_ledger)
         performance = load_performance_ledger(performance_path)
-        control_path = Path(args.ledger)
         if not control_path.exists():
             raise SystemExit("record-performance exige o control ledger para confirmar PUBLIC/VERIFIED.")
         sync_publication_receipts(performance, load_ledger(control_path))
-        record_performance_snapshot(
-            performance,
-            args.publication_key,
-            horizon=args.horizon,
-            metrics=metrics,
-        )
+        record_performance_snapshot(performance, args.publication_key, horizon=args.horizon, metrics=metrics)
         save_performance_ledger(performance_path, performance)
+        control = load_ledger(control_path)
+        state_drive = save_run_state_to_drive(data, control, performance)
         entry = performance["entries"][args.publication_key]
         print(json.dumps({
             "status": "performance_recorded",
@@ -476,10 +609,12 @@ def main() -> int:
             "horizon": args.horizon,
             "classification": entry["latest_classification"],
             "learning_eligible": entry["learning_eligible"],
+            "state_drive": state_drive,
         }, ensure_ascii=False))
         return 0
+
     if args.command == "publish-feedback":
-        performance = load_performance_ledger(Path(args.performance_ledger))
+        performance = load_performance_ledger(performance_path)
         history = load_creator_learning_history_from_drive(data) or new_learning_history()
         merge_performance_into_history(history, performance)
         feedback = creator_feedback(history)
@@ -497,38 +632,52 @@ def main() -> int:
             "feedback_drive": feedback_remote,
         }, ensure_ascii=False, indent=2))
         return 0
+
     if args.command == "creator-feedback":
-        performance = load_performance_ledger(Path(args.performance_ledger))
+        performance = load_performance_ledger(performance_path)
         feedback = creator_feedback(performance)
         output = Path(args.feedback_output)
         output.parent.mkdir(parents=True, exist_ok=True)
         output.write_text(json.dumps(feedback, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
         print(json.dumps(feedback, ensure_ascii=False, indent=2))
         return 0
+
     if args.command == "browser-package":
         package = browser_package(data)
         print(json.dumps(package, ensure_ascii=False, indent=2))
         return 0
+
     if args.command == "diagnostic-package":
         package = diagnostic_package(data)
         print(json.dumps(package, ensure_ascii=False, indent=2))
         return 0
+
     if args.command == "validate-browser-package":
         package = json.loads(Path("publisher/state/browser_package.json").read_text(encoding="utf-8"))
         validate_browser_package(package)
-        print(json.dumps({"status": "ok", "public_posts": len(package["posts"]), "visibility": PUBLIC_TIKTOK_VISIBILITY}, ensure_ascii=False))
+        print(json.dumps({
+            "status": "ok",
+            "public_posts": len(package["posts"]),
+            "visibility": PUBLIC_TIKTOK_VISIBILITY,
+        }, ensure_ascii=False))
         return 0
+
     if args.command == "youtube":
         from publisher.google_io import publish_youtube
         print(json.dumps(publish_youtube(data, dry_run=args.dry_run), ensure_ascii=False, indent=2))
-    elif args.command == "tiktok":
-        print(json.dumps(publish_tiktok(data, dry_run=args.dry_run, due_only=args.due_only, allow_immediate=args.allow_immediate), ensure_ascii=False, indent=2))
-    else:
-        ledger_path = Path(args.ledger)
-        ledger = load_ledger(ledger_path) if ledger_path.exists() else None
-        print(json.dumps(report(data, ledger), ensure_ascii=False, indent=2))
-    return 0
+        return 0
 
+    if args.command == "tiktok":
+        print(json.dumps(
+            publish_tiktok(data, dry_run=args.dry_run, due_only=args.due_only, allow_immediate=args.allow_immediate),
+            ensure_ascii=False,
+            indent=2,
+        ))
+        return 0
+
+    ledger = load_ledger(control_path) if control_path.exists() else None
+    print(json.dumps(report(data, ledger), ensure_ascii=False, indent=2))
+    return 0
 
 if __name__ == "__main__":
     raise SystemExit(main())
