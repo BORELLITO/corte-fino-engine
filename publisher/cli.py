@@ -229,9 +229,15 @@ def validate_browser_package(package: dict) -> None:
     if not isinstance(posts, list) or len(posts) != expected_posts:
         raise RuntimeError(f"Pacote browser inválido: esperado exatamente {expected_posts} publicações.")
     for post in posts:
+        youtube = post.get("youtube") if isinstance(post, dict) else None
         tiktok = post.get("tiktok") if isinstance(post, dict) else None
+        if not isinstance(youtube, dict):
+            raise RuntimeError("Pacote browser inválido: bloco YouTube ausente.")
         if not isinstance(tiktok, dict):
             raise RuntimeError("Pacote browser inválido: bloco TikTok ausente.")
+        tags = youtube.get("tags")
+        if not isinstance(tags, list) or len(tags) != 20:
+            raise RuntimeError("Pacote YouTube precisa carregar exatamente 20 tags nativas.")
         validate_browser_visibility(tiktok.get("visibility", ""))
         if tiktok.get("visibility_label") != "Todos (público)":
             raise RuntimeError("Pacote TikTok sem confirmação visual de audiência pública.")
@@ -240,6 +246,13 @@ def validate_browser_package(package: dict) -> None:
             raise RuntimeError("Pacote TikTok sem trava de privacidade antes da publicação.")
         if tiktok.get("verify_after_publish") is not True:
             raise RuntimeError("Pacote TikTok sem verificação pós-publicação.")
+        if package.get("mode") == "distribution_diagnostic":
+            youtube_checks = set(youtube.get("post_publish_checks") or [])
+            tiktok_checks = set(tiktok.get("post_publish_checks") or [])
+            if not {"shown_in_feed_after_24h", "viewed_vs_swiped_after_24h"} <= youtube_checks:
+                raise RuntimeError("Diagnóstico YouTube sem métricas de distribuição obrigatórias.")
+            if not {"for_you_eligibility", "originality_or_reuse_notice"} <= tiktok_checks:
+                raise RuntimeError("Diagnóstico TikTok sem checagem de elegibilidade/originalidade.")
 
 
 def main() -> int:
