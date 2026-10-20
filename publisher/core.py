@@ -49,7 +49,7 @@ def as_bool(value: object) -> bool:
         return value != 0
     return str(value or "").strip().casefold() in {"1", "true", "yes", "sim", "on"}
 
-# Limites oficiais usados pelo Publisher para evitar rejeições na API.
+# Limites de metadados mantidos pelo Publisher para compatibilidade com as plataformas.
 TIKTOK_CAPTION_LIMIT = 2200
 YOUTUBE_TITLE_LIMIT = 100
 YOUTUBE_DESCRIPTION_LIMIT = 5000
