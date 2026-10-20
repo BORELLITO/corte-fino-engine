@@ -340,13 +340,14 @@ def _bounded_delta(group: dict, baseline: dict) -> float:
 def new_learning_history() -> dict:
     return {
         "version": LEARNING_HISTORY_VERSION,
+        "kind": "creator_learning_history",
         "updated_at": _now(),
         "entries": {},
     }
 
 
 def validate_learning_history(history: dict) -> None:
-    if not isinstance(history, dict) or history.get("version") != LEARNING_HISTORY_VERSION:
+    if not isinstance(history, dict) or history.get("version") != LEARNING_HISTORY_VERSION or history.get("kind") != "creator_learning_history":
         raise RuntimeError("Histórico de aprendizado inválido ou incompatível.")
     entries = history.get("entries")
     if not isinstance(entries, dict):
@@ -415,10 +416,7 @@ def creator_feedback(source: dict) -> dict:
     learning history. The profile is advisory until enough learning-eligible
     YouTube publications exist across runs.
     """
-    if source.get("version") == LEARNING_HISTORY_VERSION and all(
-        isinstance(item, dict) and "snapshots" not in item
-        for item in (source.get("entries") or {}).values()
-    ):
+    if source.get("kind") == "creator_learning_history":
         rows = _feedback_rows_from_history(source)
     else:
         validate_performance_ledger(source)
