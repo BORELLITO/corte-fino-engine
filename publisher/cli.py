@@ -34,6 +34,13 @@ from publisher.performance import (
     save_performance_ledger,
     sync_publication_receipts,
 )
+from publisher.metrics_io import (
+    apply_metrics_result,
+    build_metrics_package,
+    load_run_state_from_drive,
+    restore_run_state_files,
+    save_run_state_to_drive,
+)
 from publisher.tiktok_io import PUBLIC_TIKTOK_VISIBILITY, publish_tiktok, validate_browser_visibility
 
 
@@ -330,7 +337,7 @@ def validate_browser_package(package: dict) -> None:
 
 def main() -> int:
     parser = argparse.ArgumentParser(description="Corte Fino Publisher")
-    parser.add_argument("command", choices=["prepare", "browser-package", "diagnostic-package", "report", "youtube", "tiktok", "verify-tiktok", "preflight", "validate-browser-package", "init-ledger", "record-receipt", "reconcile", "init-performance", "record-performance", "creator-feedback", "publish-feedback"])
+    parser.add_argument("command", choices=["prepare", "browser-package", "diagnostic-package", "report", "youtube", "tiktok", "verify-tiktok", "preflight", "validate-browser-package", "init-ledger", "record-receipt", "reconcile", "init-performance", "record-performance", "creator-feedback", "publish-feedback", "persist-state", "restore-state", "metrics-package", "apply-metrics-batch"])
     parser.add_argument("--folder-id", default=os.environ.get("PUBLISHER_DRIVE_FOLDER_ID", FOLDER_ID))
     parser.add_argument("--folder-2-id", default=os.environ.get("PUBLISHER_DRIVE_FOLDER_2_ID", ""))
     parser.add_argument("--manifest", default="publisher/state/current.json")
@@ -362,6 +369,10 @@ def main() -> int:
     parser.add_argument("--horizon", default="", help="snapshot de performance: 1h, 6h, 24h ou 72h")
     parser.add_argument("--metrics-json", default="", help="objeto JSON com métricas observadas no Studio/Analytics")
     parser.add_argument("--feedback-output", default="publisher/state/creator_feedback.json")
+    parser.add_argument("--run-id", default="", help="run_id persistido do Publisher")
+    parser.add_argument("--state-batch-folder", default="", help="ID de uma pasta de lote para localizar o estado privado no Drive")
+    parser.add_argument("--metrics-package", default="publisher/state/metrics_package.json")
+    parser.add_argument("--metrics-result", default="", help="JSON preenchido pelo Work/Studio")
     args = parser.parse_args()
     path = Path(args.manifest)
 
@@ -369,7 +380,26 @@ def main() -> int:
         print(json.dumps({"status": "browser_only", "message": "A conta será validada visualmente no TikTok Studio pelo Cloud Web Browser."}, ensure_ascii=False, indent=2))
         return 0
     if args.command == "preflight":
-        data = load(path)
+        if args.command == "restore-state":
+        if not args.run_id or not args.state_batch_folder:
+            raise SystemExit("restore-state exige --run-id e --state-batch-folder.")
+        state = load_run_state_from_drive(args.state_batch_folder, args.run_id)
+        restore_run_state_files(
+            state,
+            manifest_path=path,
+            control_path=Path(args.ledger),
+            performance_path=Path(args.performance_ledger),
+        )
+        print(json.dumps({
+            "status": "state_restored",
+            "run_id": state["run_id"],
+            "manifest": str(path),
+            "control_ledger": args.ledger,
+            "performance_ledger": args.performance_ledger,
+        }, ensure_ascii=False))
+        return 0
+
+    data = load(path)
         print(json.dumps({"status": "ok", "manifest": browser_package(data)}, ensure_ascii=False, indent=2))
         return 0
     if args.command == "prepare":
@@ -396,6 +426,56 @@ def main() -> int:
         return 0
 
     data = load(path)
+    if args.command == "persist-state":
+        control = load_ledger(Path(args.ledger))
+        performance = load_performance_ledger(Path(args.performance_ledger))
+        remote = save_run_state_to_drive(data, control, performance)
+        print(json.dumps({"status": "state_persisted", **remote}, ensure_ascii=False, indent=2))
+        return 0
+    if args.command == "metrics-package":
+        if not args.horizon:
+            raise SystemExit("metrics-package exige --horizon 1h|6h|24h|72h.")
+        control = load_ledger(Path(args.ledger))
+        performance = load_performance_ledger(Path(args.performance_ledger))
+        package = build_metrics_package(control, performance, horizon=args.horizon)
+        target = Path(args.metrics_package)
+        target.parent.mkdir(parents=True, exist_ok=True)
+        target.write_text(json.dumps(package, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+        print(json.dumps({
+            "status": "metrics_package_ready",
+            "run_id": package["run_id"],
+            "horizon": package["horizon"],
+            "items": len(package["items"]),
+            "path": str(target),
+        }, ensure_ascii=False))
+        return 0
+    if args.command == "apply-metrics-batch":
+        if not args.metrics_result:
+            raise SystemExit("apply-metrics-batch exige --metrics-result.")
+        package_path = Path(args.metrics_package)
+        result_path = Path(args.metrics_result)
+        if not package_path.exists() or not result_path.exists():
+            raise SystemExit("Pacote ou resultado de métricas não encontrado.")
+        package = json.loads(package_path.read_text(encoding="utf-8"))
+        result = json.loads(result_path.read_text(encoding="utf-8"))
+        control = load_ledger(Path(args.ledger))
+        performance = load_performance_ledger(Path(args.performance_ledger))
+        apply_metrics_result(control, performance, package, result)
+        save_performance_ledger(Path(args.performance_ledger), performance)
+        remote = save_run_state_to_drive(data, control, performance)
+        learned = sum(
+            1 for entry in performance["entries"].values()
+            if entry.get("learning_eligible")
+        )
+        print(json.dumps({
+            "status": "metrics_batch_applied",
+            "run_id": performance["run_id"],
+            "horizon": result["horizon"],
+            "items": len(result.get("items", [])),
+            "learning_eligible_total": learned,
+            "state_drive": remote,
+        }, ensure_ascii=False, indent=2))
+        return 0
     if args.command == "init-ledger":
         selected_keys = None
         if args.package:
