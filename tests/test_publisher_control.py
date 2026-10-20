@@ -2,6 +2,7 @@ from datetime import date
 
 import pytest
 
+from publisher.cli import report
 from publisher.control import new_ledger, publication_key, reconciliation_summary, record_receipt
 from publisher.core import (
     BRANDING_CAPTION_MARGIN_V,
@@ -186,3 +187,26 @@ def test_scheduled_receipt_accepts_studio_reference_when_url_is_unavailable():
     entry = ledger["entries"][key]
     assert entry["account_verified"] is True
     assert entry["remote_reference"] == "studio-row-2026-10-21-10:00"
+
+
+def test_report_uses_receipts_and_marks_non_package_items():
+    data = manifest()
+    selected = {
+        publication_key("run-control", 1, "youtube"),
+        publication_key("run-control", 1, "tiktok"),
+    }
+    ledger = new_ledger(data, selected)
+    yt_key = publication_key("run-control", 1, "youtube")
+    record_receipt(
+        ledger,
+        yt_key,
+        observed_account="@cortefinoshorts",
+        state="SCHEDULED",
+        remote_id="yt-report-1",
+    )
+    result = report(data, ledger)
+    yt = next(item for item in result["youtube"] if item["index"] == 1)
+    assert yt["status"] == "SCHEDULED"
+    assert yt["video_id"] == "yt-report-1"
+    assert result["summary"]["planned_in_package"] == 2
+    assert result["summary"]["not_in_package"] == 18
