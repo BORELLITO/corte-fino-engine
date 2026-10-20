@@ -7,7 +7,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
-from publisher.control import SUCCESS_STATES, validate_ledger
+from publisher.control import validate_ledger
 from publisher.core import validate_manifest
 
 
@@ -271,17 +271,21 @@ def record_performance_snapshot(
         "learning_eligible": learning_eligible,
     }
     entry["latest_classification"] = classification
-    if learning_eligible:
-        entry["learning_eligible"] = True
+    if horizon in LEARNING_HORIZONS:
+        entry["learning_eligible"] = learning_eligible
     entry["updated_at"] = _now()
     return ledger
 
 
 def _best_learning_snapshot(entry: dict) -> dict | None:
+    snapshots = entry.get("snapshots") or {}
+    # The newest mature snapshot is authoritative. A later restriction,
+    # originality notice or distribution failure must invalidate an earlier
+    # eligible 24h snapshot instead of silently falling back to it.
     for horizon in ("72h", "24h"):
-        snapshot = (entry.get("snapshots") or {}).get(horizon)
-        if isinstance(snapshot, dict) and snapshot.get("learning_eligible"):
-            return snapshot
+        snapshot = snapshots.get(horizon)
+        if isinstance(snapshot, dict):
+            return snapshot if snapshot.get("learning_eligible") else None
     return None
 
 
