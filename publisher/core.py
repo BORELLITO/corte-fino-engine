@@ -11,8 +11,8 @@ from zoneinfo import ZoneInfo
 TIMEZONE = ZoneInfo("America/Sao_Paulo")
 # Grade diária oficial: cinco posts por dia. Os dois lotes de uma rodada
 # devem usar datas diferentes, preservando uma única fonte/lote por dia.
-DAILY_HOURS = (12, 15, 18, 20, 22)
-DAILY_SLOT_PRIORITY = (20, 18, 22, 15, 12)
+DAILY_HOURS = (10, 12, 14, 16, 18)
+DAILY_SLOT_PRIORITY = (10, 16, 18, 12, 14)
 YOUTUBE_HOURS = DAILY_HOURS
 TIKTOK_HOURS = DAILY_HOURS
 
@@ -741,8 +741,8 @@ def period_hours(period: str) -> tuple[int, ...]:
 def assign_slots(clips: list[dict], slots: list[int] | tuple[int, ...] | None = None) -> None:
     """Assign one five-slot daily grid to a batch.
 
-    The strongest clip receives the 20h peak slot, followed by 18h, 22h,
-    15h and 12h. The priority order is editorial; publication still occurs
+    The strongest clip receives the 10h slot, followed by 16h, 18h,
+    12h and 14h, based on the current combined YouTube/TikTok audience windows. The priority order is editorial; publication still occurs
     chronologically at the stored timestamps.
     """
     if slots is None:
