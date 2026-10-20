@@ -251,3 +251,83 @@ def test_result_cannot_inject_key_that_was_not_in_collection_package():
     }
     with pytest.raises(RuntimeError, match="publication_key inesperada"):
         apply_metrics_result(control, performance, package, result)
+
+
+def test_metrics_horizon_is_anchored_to_public_receipt_not_planned_slot():
+    data, control, performance = ledgers()
+    key = publication_key(data["run_id"], 1, "youtube")
+    public_event = next(
+        event for event in control["entries"][key]["history"]
+        if event.get("state") == "PUBLIC"
+    )
+    public_event["at"] = "2026-10-23T10:00:00Z"
+
+    before = build_metrics_package(
+        control,
+        performance,
+        horizon="24h",
+        now=datetime(2026, 10, 24, 9, 59, tzinfo=timezone.utc),
+    )
+    assert key not in {item["publication_key"] for item in before["items"]}
+
+    after = build_metrics_package(
+        control,
+        performance,
+        horizon="24h",
+        now=datetime(2026, 10, 24, 10, 1, tzinfo=timezone.utc),
+    )
+    item = next(row for row in after["items"] if row["publication_key"] == key)
+    assert item["measurement_reference_source"] == "publication_receipt"
+    assert item["measurement_reference_at"] == "2026-10-23T10:00:00Z"
+    assert item["due_at"] == "2026-10-24T10:00:00Z"
+
+
+def test_metrics_snapshot_cannot_be_replayed_or_overwritten():
+    data, control, performance = ledgers()
+    package = build_metrics_package(
+        control,
+        performance,
+        horizon="24h",
+        now=datetime(2026, 10, 25, 12, 0, tzinfo=timezone.utc),
+    )
+    item = next(row for row in package["items"] if row["platform"] == "youtube")
+    result = {
+        "version": 1,
+        "kind": "studio_metrics_result",
+        "run_id": data["run_id"],
+        "horizon": "24h",
+        "items": [{
+            "publication_key": item["publication_key"],
+            "platform": "youtube",
+            "observed_account": "@cortefinoshorts",
+            "metrics": {"shown_in_feed": 1500, "views": 800, "viewed_rate": 61},
+        }],
+    }
+    apply_metrics_result(control, performance, package, result)
+    with pytest.raises(RuntimeError, match="já existe"):
+        apply_metrics_result(control, performance, package, result)
+
+
+def test_metrics_result_rejects_unknown_metric_names():
+    data, control, performance = ledgers()
+    package = build_metrics_package(
+        control,
+        performance,
+        horizon="24h",
+        now=datetime(2026, 10, 25, 12, 0, tzinfo=timezone.utc),
+    )
+    item = next(row for row in package["items"] if row["platform"] == "youtube")
+    result = {
+        "version": 1,
+        "kind": "studio_metrics_result",
+        "run_id": data["run_id"],
+        "horizon": "24h",
+        "items": [{
+            "publication_key": item["publication_key"],
+            "platform": "youtube",
+            "observed_account": "@cortefinoshorts",
+            "metrics": {"shown_feed": 1500},
+        }],
+    }
+    with pytest.raises(RuntimeError, match="Métricas desconhecidas"):
+        apply_metrics_result(control, performance, package, result)
