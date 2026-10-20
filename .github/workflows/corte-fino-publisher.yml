@@ -174,11 +174,15 @@ jobs:
 
       - name: Inicializar ledger do pacote normal
         if: inputs.mode == 'browser-package'
-        run: python -m publisher.cli init-ledger --package publisher/state/browser_package.json
+        run: |
+          python -m publisher.cli init-ledger --package publisher/state/browser_package.json
+          python -m publisher.cli init-performance
 
       - name: Inicializar ledger do diagnóstico
         if: inputs.mode == 'diagnostic-package'
-        run: python -m publisher.cli init-ledger --package publisher/state/diagnostic_package.json
+        run: |
+          python -m publisher.cli init-ledger --package publisher/state/diagnostic_package.json
+          python -m publisher.cli init-performance
 
       - name: Validar diagnóstico controlado
         if: inputs.mode == 'diagnostic-package'
