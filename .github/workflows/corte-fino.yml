@@ -433,7 +433,7 @@ jobs:
                   fields="id,name,webViewLink",
               ))
 
-          def upload_idempotent(drive, path, parent_id, name):
+          def upload_idempotent(drive, path, parent_id, name, app_properties=None):
               matches = find_child(drive, parent_id, name)
               if len(matches) > 1:
                   raise RuntimeError(f"Duplicidade detectada no Drive para {name}")
@@ -445,18 +445,19 @@ jobs:
               if matches:
                   item = execute(drive.files().update(
                       fileId=matches[0]["id"],
+                      body={"appProperties": app_properties or {}},
                       media_body=media,
-                      fields="id,name,mimeType,size,md5Checksum,webViewLink,parents",
+                      fields="id,name,mimeType,size,md5Checksum,webViewLink,parents,appProperties",
                   ))
               else:
                   item = execute(drive.files().create(
-                      body={"name": name, "parents": [parent_id]},
+                      body={"name": name, "parents": [parent_id], "appProperties": app_properties or {}},
                       media_body=media,
-                      fields="id,name,mimeType,size,md5Checksum,webViewLink,parents",
+                      fields="id,name,mimeType,size,md5Checksum,webViewLink,parents,appProperties",
                   ))
               verified = execute(drive.files().get(
                   fileId=item["id"],
-                  fields="id,name,mimeType,size,md5Checksum,webViewLink,parents,trashed",
+                  fields="id,name,mimeType,size,md5Checksum,webViewLink,parents,trashed,appProperties",
               ))
               expected_mime = mimetypes.guess_type(name)[0] or "application/octet-stream"
               if verified.get("trashed") or int(verified.get("size") or 0) <= 0:
@@ -524,7 +525,7 @@ jobs:
                   raise RuntimeError(f"Vídeo ausente no corte {index:02d}.")
               video_name = f"{source_title} - {index:02d}.mp4"
               expected.append(video_name)
-              local_videos.append((video_path, video_name))
+              local_videos.append((video_path, video_name, index, clip))
 
           children = list_all(
               drive,
@@ -542,8 +543,25 @@ jobs:
                   "nenhum arquivo foi removido: " + ", ".join(unexpected)
               )
 
-          for video_path, video_name in local_videos:
-              upload_idempotent(drive, video_path, batch["id"], video_name)
+          source_niche = str((report.get("analysis_profile") or {}).get("niche") or "geral")
+          for video_path, video_name, clip_index, clip in local_videos:
+              app_properties = {
+                  "cf_meta_version": "1",
+                  "cf_clip_index": str(clip_index),
+                  "cf_trigger": str(clip.get("trigger") or ""),
+                  "cf_score": str(clip.get("score") or ""),
+                  "cf_start": str(clip.get("start") or ""),
+                  "cf_end": str(clip.get("end") or ""),
+                  "cf_source_hash": source_hash[:24],
+                  "cf_niche": source_niche[:80],
+              }
+              upload_idempotent(
+                  drive,
+                  video_path,
+                  batch["id"],
+                  video_name,
+                  app_properties=app_properties,
+              )
 
           final_children = list_all(
               drive,
@@ -564,7 +582,7 @@ jobs:
           ):
               raise RuntimeError("Verificação final falhou: tipo MIME incompatível com o nome do arquivo.")
           manifest = {
-              "manifest_version": 2,
+              "manifest_version": 3,
               "batch_folder_id": batch["id"],
               "batch_folder": batch.get("webViewLink") or f"https://drive.google.com/drive/folders/{batch['id']}",
               "source_fingerprint_sha256": source_hash,
@@ -575,7 +593,7 @@ jobs:
               "branding_version": "hud-corte-fino-v1",
               "file_count": 5,
               "files": [
-                  {"name": name, "id": by_name[name]["id"], "webViewLink": by_name[name].get("webViewLink")}
+                  {"name": name, "id": by_name[name]["id"], "webViewLink": by_name[name].get("webViewLink"), "creator_receipt": by_name[name].get("appProperties") or {}}
                   for name in expected
               ],
           }
