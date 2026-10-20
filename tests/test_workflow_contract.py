@@ -19,7 +19,9 @@ def test_publisher_requires_two_exact_drive_folders_and_periods():
     assert "REQUESTED_EPISODE_2" in text
     assert "python -m publisher.cli prepare" in text
     assert "python -m publisher.cli browser-package" in text
+    assert "python -m publisher.cli diagnostic-package" in text
     assert "publisher/state/browser_package.json" in text
+    assert "publisher/state/diagnostic_package.json" in text
 
 
 def test_publication_api_scheduler_is_removed():
