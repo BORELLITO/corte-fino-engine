@@ -395,3 +395,19 @@ def test_score_text_uses_feedback_only_as_bounded_tiebreaker():
     assert learned_components["performance_feedback"] == 1.75
     assert round(learned_score - base_score, 2) == 1.75
     assert learned_components["performance_feedback"] <= 2.0
+
+
+def test_learning_requires_behavioral_signal_not_only_distribution():
+    data = manifest()
+    control = public_control(data)
+    ledger = new_performance_ledger(data, control)
+    key = publication_key(data["run_id"], 1, "youtube")
+    record_performance_snapshot(
+        ledger,
+        key,
+        horizon="24h",
+        metrics={"shown_in_feed": 2500, "views": 1200},
+    )
+    entry = ledger["entries"][key]
+    assert entry["latest_classification"] == "MISSING_ENGAGEMENT_SIGNAL"
+    assert entry["learning_eligible"] is False
