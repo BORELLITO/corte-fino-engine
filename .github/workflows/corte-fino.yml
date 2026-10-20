@@ -276,6 +276,72 @@ jobs:
           print(f"Arquivo baixado para: {target}")
           PY
 
+      - name: Carregar feedback de performance do Publisher
+        if: ${{ env.NO_SOURCE != '1' }}
+        env:
+          GOOGLE_REFRESH_TOKEN: ${{ secrets.GOOGLE_REFRESH_TOKEN }}
+          GOOGLE_CLIENT_ID: ${{ secrets.GOOGLE_CLIENT_ID }}
+          GOOGLE_CLIENT_SECRET: ${{ secrets.GOOGLE_CLIENT_SECRET }}
+          DRIVE_FOLDER_ID: ${{ secrets.DRIVE_FOLDER_ID }}
+        run: |
+          python - <<'PY'
+          import json
+          import os
+          from pathlib import Path
+
+          from google.auth.transport.requests import Request
+          from google.oauth2.credentials import Credentials
+          from googleapiclient.discovery import build
+          from googleapiclient.http import MediaIoBaseDownload
+
+          FEEDBACK_NAME = "_corte_fino_creator_feedback.json"
+
+          def folder_id(value):
+              value = (value or "").strip()
+              if "/folders/" in value:
+                  value = value.split("/folders/", 1)[1].split("?", 1)[0].split("/", 1)[0].strip()
+              return value
+
+          root_id = folder_id(os.environ.get("DRIVE_FOLDER_ID"))
+          credentials = Credentials(
+              token=None,
+              refresh_token=os.environ["GOOGLE_REFRESH_TOKEN"],
+              token_uri="https://oauth2.googleapis.com/token",
+              client_id=os.environ["GOOGLE_CLIENT_ID"],
+              client_secret=os.environ["GOOGLE_CLIENT_SECRET"],
+              scopes=["https://www.googleapis.com/auth/drive"],
+          )
+          credentials.refresh(Request())
+          drive = build("drive", "v3", credentials=credentials, cache_discovery=False)
+          escaped = FEEDBACK_NAME.replace("'", "\\'")
+          result = drive.files().list(
+              q=f"'{root_id}' in parents and trashed = false and name = '{escaped}'",
+              pageSize=10,
+              fields="files(id,name,mimeType,modifiedTime)",
+          ).execute(num_retries=4)
+          files = result.get("files", [])
+          if len(files) > 1:
+              raise RuntimeError("Mais de um feedback do Creator foi encontrado; execução ambígua.")
+          if not files:
+              print("Feedback de performance ainda não existe; Creator seguirá apenas com heurísticas editoriais.")
+              raise SystemExit(0)
+
+          target = Path(os.environ["RUNNER_TEMP"]) / "creator_feedback.json"
+          request = drive.files().get_media(fileId=files[0]["id"])
+          with target.open("wb") as handle:
+              downloader = MediaIoBaseDownload(handle, request)
+              done = False
+              while not done:
+                  _, done = downloader.next_chunk(num_retries=4)
+
+          # Validação mínima antes de expor ao motor; o Creator faz a validação
+          # semântica completa e ignora perfis incompatíveis.
+          json.loads(target.read_text(encoding="utf-8"))
+          with open(os.environ["GITHUB_ENV"], "a", encoding="utf-8") as env_file:
+              env_file.write(f"CREATOR_FEEDBACK_FILE={target}\n")
+          print(f"Feedback de performance carregado: {files[0].get('modifiedTime', 'sem data')}")
+          PY
+
       - name: Gerar cortes
         id: generate_cuts
         run: |
