@@ -91,3 +91,20 @@ def test_creator_manual_and_drive_sources_share_the_same_readiness_gate():
     assert 'status != "READY_FOR_HUMAN_REVIEW"' in text
     assert 'env.PROCESSING_READY == \'1\'' in text
 
+
+
+def test_performance_feedback_loop_is_wired_without_breaking_batch_boundary():
+    publisher = PUBLISHER_WORKFLOW.read_text(encoding="utf-8")
+    generator = GENERATOR_WORKFLOW.read_text(encoding="utf-8")
+    ci = PUBLISHER_CI.read_text(encoding="utf-8")
+    assert "python -m publisher.cli init-performance" in publisher
+    assert "tests/test_publisher_performance.py" in ci
+    assert "publisher/performance.py" in ci
+    assert "Carregar feedback de performance do Publisher" in generator
+    assert "CREATOR_FEEDBACK_FILE" in generator
+    assert "appProperties" in generator
+    assert "_corte_fino_creator_feedback.json" in generator
+    # The learning profile lives beside batch folders, never as a sixth file
+    # inside the rigid five-MP4 publication folder.
+    assert 'expected.append(video_name)' in generator
+    assert 'len(final_children) != 5' in generator
