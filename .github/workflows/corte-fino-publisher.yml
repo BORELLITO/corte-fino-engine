@@ -4,7 +4,7 @@ on:
   workflow_dispatch:
     inputs:
       mode:
-        description: "prepare, dry-run, browser-package ou preflight"
+        description: "prepare, dry-run, browser-package ou preflight; TikTok sempre público"
         required: true
         default: "dry-run"
         type: choice
@@ -215,6 +215,10 @@ jobs:
       - name: Preflight sem publicação
         if: inputs.mode == 'preflight'
         run: python -m publisher.cli browser-package > /dev/null
+
+      - name: Verificar audiência pública TikTok
+        if: inputs.mode == 'browser-package'
+        run: python -m publisher.cli validate-browser-package
 
       - name: Relatório final
         if: always() && (steps.prepare.outcome == 'success' || steps.state.outputs.needs_prepare == '0') && inputs.mode != 'preflight'
