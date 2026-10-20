@@ -47,6 +47,7 @@ PUBLISHER_MIN_AUDIO_BITRATE = 128_000
 PUBLISHER_MIN_VIDEO_BITRATE = 6_000_000
 _WHISPER_MODEL = None
 CREATOR_FEEDBACK_FILENAME = "_corte_fino_creator_feedback.json"
+CREATOR_LEARNING_HISTORY_FILENAME = "_corte_fino_learning_history.json"
 
 PUBLISHER_TRANSCRIBE_INITIAL_PROMPT = (
     "Português brasileiro. Entrevista ou podcast com fala natural, nomes próprios e termos "
@@ -256,6 +257,71 @@ def common_batch_parent(drive, manifest: dict) -> str:
     if len(set(parents)) != 1:
         raise RuntimeError("Os dois lotes não compartilham o mesmo diretório raiz do Creator.")
     return parents[0]
+
+
+def _load_named_json_from_parent(drive, parent_id: str, name: str) -> dict | None:
+    escaped = str(name).replace("'", "\\'")
+    matches = drive.files().list(
+        q=f"'{parent_id}' in parents and trashed = false and name = '{escaped}'",
+        pageSize=10,
+        fields="files(id,name,mimeType,parents,modifiedTime)",
+    ).execute(num_retries=4).get("files", [])
+    if len(matches) > 1:
+        raise RuntimeError(f"Mais de um arquivo operacional {name} foi encontrado no Drive.")
+    if not matches:
+        return None
+    request = drive.files().get_media(fileId=matches[0]["id"])
+    payload = request.execute(num_retries=4)
+    try:
+        return json.loads(payload.decode("utf-8"))
+    except (AttributeError, UnicodeDecodeError, json.JSONDecodeError) as exc:
+        raise RuntimeError(f"Arquivo operacional {name} contém JSON inválido.") from exc
+
+
+def load_creator_learning_history_from_drive(manifest: dict) -> dict | None:
+    drive = drive_service()
+    parent_id = common_batch_parent(drive, manifest)
+    return _load_named_json_from_parent(drive, parent_id, CREATOR_LEARNING_HISTORY_FILENAME)
+
+
+def save_creator_learning_history_to_drive(manifest: dict, history: dict) -> dict:
+    drive = drive_service()
+    parent_id = common_batch_parent(drive, manifest)
+    escaped = CREATOR_LEARNING_HISTORY_FILENAME.replace("'", "\\'")
+    matches = drive.files().list(
+        q=f"'{parent_id}' in parents and trashed = false and name = '{escaped}'",
+        pageSize=10,
+        fields="files(id,name,mimeType,parents)",
+    ).execute(num_retries=4).get("files", [])
+    if len(matches) > 1:
+        raise RuntimeError("Mais de um histórico de aprendizado foi encontrado no Drive.")
+    payload = (json.dumps(history, ensure_ascii=False, indent=2) + "\n").encode("utf-8")
+    from googleapiclient.http import MediaIoBaseUpload
+    media = MediaIoBaseUpload(io.BytesIO(payload), mimetype="application/json", resumable=False)
+    if matches:
+        item = drive.files().update(
+            fileId=matches[0]["id"],
+            body={"name": CREATOR_LEARNING_HISTORY_FILENAME},
+            media_body=media,
+            fields="id,name,mimeType,webViewLink,modifiedTime",
+        ).execute(num_retries=4)
+    else:
+        item = drive.files().create(
+            body={
+                "name": CREATOR_LEARNING_HISTORY_FILENAME,
+                "parents": [parent_id],
+                "mimeType": "application/json",
+            },
+            media_body=media,
+            fields="id,name,mimeType,webViewLink,modifiedTime",
+        ).execute(num_retries=4)
+    return {
+        "id": item.get("id"),
+        "name": item.get("name"),
+        "webViewLink": item.get("webViewLink"),
+        "modifiedTime": item.get("modifiedTime"),
+        "parent_id": parent_id,
+    }
 
 
 def save_creator_feedback_to_drive(manifest: dict, feedback: dict) -> dict:
