@@ -30,29 +30,40 @@ def load(path: Path) -> dict:
     return data
 
 
-def report(manifest: dict) -> dict:
-    """Return the ten planned browser-only slots."""
+def report(manifest: dict, ledger: dict | None = None) -> dict:
+    """Return planned slots enriched with receipts when a control ledger exists."""
+    ledger_entries = (ledger or {}).get("entries", {}) if isinstance(ledger, dict) else {}
     youtube = []
     tiktok = []
     for clip in sorted(manifest["clips"], key=lambda c: c["schedule"]["youtube_publish_at"]):
+        key = publication_key(manifest["run_id"], clip["index"], "youtube")
+        receipt = ledger_entries.get(key, {})
         youtube.append({
             "index": clip["index"],
+            "publication_key": key,
             "batch_id": clip["batch_id"],
             "batch_index": clip["batch_index"],
             "publish_at": clip["schedule"]["youtube_publish_at"],
             "title": clip["copy"]["youtube_title"],
-            "status": "pending_browser",
-            "video_id": None,
+            "status": receipt.get("state", "pending_browser"),
+            "video_id": receipt.get("remote_id"),
+            "remote_url": receipt.get("remote_url"),
+            "account_verified": receipt.get("account_verified", False),
         })
     for clip in sorted(manifest["clips"], key=lambda c: c["schedule"]["tiktok_publish_at"]):
+        key = publication_key(manifest["run_id"], clip["index"], "tiktok")
+        receipt = ledger_entries.get(key, {})
         tiktok.append({
             "index": clip["index"],
+            "publication_key": key,
             "batch_id": clip["batch_id"],
             "batch_index": clip["batch_index"],
             "publish_at": clip["schedule"]["tiktok_publish_at"],
             "caption": clip["copy"]["tiktok_caption"],
-            "status": "pending_browser",
-            "publish_id": None,
+            "status": receipt.get("state", "pending_browser"),
+            "publish_id": receipt.get("remote_id"),
+            "remote_url": receipt.get("remote_url"),
+            "account_verified": receipt.get("account_verified", False),
             "visibility": PUBLIC_TIKTOK_VISIBILITY,
             "privacy_check": "required_before_schedule",
         })
@@ -65,9 +76,9 @@ def report(manifest: dict) -> dict:
         "tiktok": tiktok,
         "summary": {
             "total": len(statuses),
-            "scheduled_or_complete": sum(status in {"scheduled", "SCHEDULED", "PUBLISH_COMPLETE", "published"} for status in statuses),
-            "pending_or_processing": sum(status in {"pending", "pending_browser", "PENDING", "PROCESSING"} for status in statuses),
-            "attention": sum(status in {"FAILED", "CANCELED", "recovery_required"} for status in statuses),
+            "scheduled_or_complete": sum(status in {"SCHEDULED", "PUBLIC", "VERIFIED", "METRICS_PENDING", "MEASURED", "LEARNED"} for status in statuses),
+            "pending_or_processing": sum(status in {"pending_browser", "BROWSER_READY", "ACCOUNT_VERIFIED", "UPLOAD_STARTED", "UPLOADED"} for status in statuses),
+            "attention": sum(status in {"BLOCKED_WRONG_ACCOUNT", "STALE_MEDIA", "UPLOAD_FAILED", "SCHEDULE_FAILED", "WRONG_VISIBILITY", "MISSED_SLOT", "POST_NOT_FOUND", "PLATFORM_RESTRICTED", "FYP_INELIGIBLE", "RECONCILIATION_REQUIRED"} for status in statuses),
         },
     }
 
@@ -134,6 +145,7 @@ def browser_package(manifest: dict) -> dict:
         "target_accounts": dict(manifest["target_accounts"]),
         "timezone": manifest["timezone"],
         "rights_authorized": True,
+        "receipt_required": True,
         "tiktok_global_rule": "Nunca agendar sem confirmar Todos (público).",
         "posts": posts,
     }
@@ -247,6 +259,7 @@ def diagnostic_package(manifest: dict) -> dict:
         "source_manifest_version": manifest["version"],
         "timezone": manifest["timezone"],
         "rights_authorized": True,
+        "receipt_required": True,
         "selected_batch_id": batch_id,
         "strategy": "3 posts, one source cluster, 11:30 / 16:30 / 20:30, manual controlled test",
         "do_not_repost_identical_files": True,
@@ -422,7 +435,9 @@ def main() -> int:
     elif args.command == "tiktok":
         print(json.dumps(publish_tiktok(data, dry_run=args.dry_run, due_only=args.due_only, allow_immediate=args.allow_immediate), ensure_ascii=False, indent=2))
     else:
-        print(json.dumps(report(data), ensure_ascii=False, indent=2))
+        ledger_path = Path(args.ledger)
+        ledger = load_ledger(ledger_path) if ledger_path.exists() else None
+        print(json.dumps(report(data, ledger), ensure_ascii=False, indent=2))
     return 0
 
 
