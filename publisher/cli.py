@@ -27,6 +27,7 @@ from publisher.performance import (
     new_performance_ledger,
     record_performance_snapshot,
     save_performance_ledger,
+    sync_publication_receipts,
 )
 from publisher.tiktok_io import PUBLIC_TIKTOK_VISIBILITY, publish_tiktok, validate_browser_visibility
 
@@ -452,6 +453,10 @@ def main() -> int:
             raise SystemExit("--metrics-json precisa conter um objeto JSON.")
         performance_path = Path(args.performance_ledger)
         performance = load_performance_ledger(performance_path)
+        control_path = Path(args.ledger)
+        if not control_path.exists():
+            raise SystemExit("record-performance exige o control ledger para confirmar PUBLIC/VERIFIED.")
+        sync_publication_receipts(performance, load_ledger(control_path))
         record_performance_snapshot(
             performance,
             args.publication_key,
