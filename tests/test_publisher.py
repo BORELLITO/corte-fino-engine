@@ -232,7 +232,7 @@ def test_youtube_dry_run_is_fully_local(monkeypatch):
 
 def test_browser_package_has_timezone_safe_studio_settings():
     package = browser_package(_valid_manifest())
-    assert package["version"] == 2
+    assert package["version"] == 3
     assert package["rights_authorized"] is True
     assert len(package["posts"]) == 10
     first = package["posts"][0]
@@ -241,6 +241,9 @@ def test_browser_package_has_timezone_safe_studio_settings():
     assert first["youtube"]["made_for_kids"] is False
     assert first["youtube"]["contains_synthetic_media"] is False
     assert first["tiktok"]["visibility"] == "PUBLIC_TO_EVERYONE"
+    assert first["tiktok"]["visibility_label"] == "Todos (público)"
+    assert first["tiktok"]["privacy_check"] == "required_before_schedule"
+    assert first["tiktok"]["verify_after_publish"] is True
     assert first["youtube"]["publish_at_local"].endswith(":00")
 
 
