@@ -5,7 +5,7 @@ Motor de produção e preparação de publicações curtas do Corte Fino, separa
 ## Fluxo operacional
 
 - **Motor 1 — Creator:** lê uma fonte autorizada, seleciona e renderiza exatamente cinco MP4 verticais e entrega uma pasta de lote no Google Drive.
-- **Motor 2 — Publisher:** recebe duas pastas exatas, cada uma com cinco cortes, e prepara dez publicações para o mesmo dia ou para datas/períodos informados.
+- **Motor 2 — Publisher:** recebe duas pastas exatas, cada uma com cinco cortes, e prepara cinco publicações por dia em duas datas diferentes.
 - Não existe handoff automático entre os motores: o Creator termina depois da entrega e nunca inicia o Publisher.
 - A postagem final ocorre exclusivamente no YouTube Studio e no TikTok Studio, por Cloud Web Browser. Não há serviço externo de agendamento nem API de publicação.
 
@@ -13,10 +13,10 @@ Motor de produção e preparação de publicações curtas do Corte Fino, separa
 
 Fuso oficial: `America/Sao_Paulo`.
 
-- **Bloco diurno:** 08h, 10h, 12h, 14h e 16h.
-- **Bloco noturno:** 18h, 19h, 20h, 21h e 22h.
+- **Grade diária oficial:** 12h, 15h, 18h, 20h e 22h.
+- O corte mais forte recebe prioridade de 20h; depois 18h, 22h, 15h e 12h.
 
-Cada pasta recebe um período próprio. Os pares data/horário não podem se sobrepor. O workflow é manual e exige duas pastas, duas datas/períodos, as fontes originais e confirmação explícita dos direitos.
+Cada pasta representa um dia de publicação. As duas pastas precisam usar datas diferentes; o padrão operacional é lote A em um dia e lote B no dia seguinte. O workflow é manual e exige duas pastas, duas datas, as fontes originais e confirmação explícita dos direitos.
 
 ## Contrato de qualidade
 
@@ -26,7 +26,7 @@ O Publisher cria copy individual a partir da fala real: título do YouTube em ca
 
 ## Pacote browser-only
 
-O manifesto v6 guarda os dez cortes, lote, pasta, checksum, copy e timestamps absolutos. O `browser-package` acrescenta o horário local, o link da pasta, a configuração esperada de audiência e os dados exatos para preencher cada Studio. A audiência do TikTok é hard-locked em `PUBLIC_TO_EVERYONE`; o preflight falha se o pacote não contiver a confirmação `Todos (público)` e a verificação pós-publicação. O estado persistido não inclui transcrições integrais.
+O manifesto v7 guarda os dez cortes distribuídos em cinco por dia, lote, pasta, checksum, copy e timestamps absolutos. O `browser-package` acrescenta o horário local, o link da pasta, a configuração esperada de audiência e os dados exatos para preencher cada Studio. A audiência do TikTok é hard-locked em `PUBLIC_TO_EVERYONE`; o preflight falha se o pacote não contiver a confirmação `Todos (público)` e a verificação pós-publicação. O estado persistido não inclui transcrições integrais.
 
 Operação manual:
 
@@ -46,7 +46,7 @@ O destino de saída do Creator é configurado exclusivamente pelo secret `DRIVE_
 ## Uso
 
 1. Execute o workflow manual do Creator e copie o link exato da pasta com os cinco cortes.
-2. Execute o workflow manual `Corte Fino Motor 2 — Publicar 10 Cortes` com as duas pastas, datas, períodos, fontes e confirmação de direitos.
+2. Execute o workflow manual `Corte Fino Motor 2 — Publicar 5 por Dia` com as duas pastas, duas datas diferentes, fontes e confirmação de direitos.
 3. Rode `dry-run`, `preflight` ou `browser-package` e faça a revisão humana antes de preencher os Studios.
 
 A ferramenta não promete alcance ou viralização. A responsabilidade por autorização, direitos e confirmação final das publicações permanece com o usuário.
