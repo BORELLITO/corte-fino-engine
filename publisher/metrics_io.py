@@ -329,9 +329,18 @@ def build_metrics_package(control_ledger: dict, performance_ledger: dict, *, hor
         "generated_at": _now(),
         "horizon": normalized_horizon,
         "items": items,
+        "operator_instructions": [
+            "Before reading metrics, confirm the visible Studio account matches expected_account.",
+            "Open the exact post using remote_url/remote_id when available; never substitute a similar post.",
+            "Read only values visibly shown by YouTube Studio or TikTok Studio.",
+            "If a field is unavailable, omit it. Never infer, estimate, or convert unavailable into zero.",
+            "Keep platform units unchanged: percentages stay 0-100 and durations stay in seconds.",
+            "Save one result row per publication_key actually inspected.",
+        ],
         "handoff": {
             "result_filename": metrics_result_filename(performance_ledger["run_id"], normalized_horizon),
             "rule": "Work must save exactly one result file beside this package in the private Publisher state folder.",
+            "missing_value_policy": "omit_unavailable_never_zero_fill",
         },
         "result_contract": {
             "version": METRICS_RESULT_VERSION,
