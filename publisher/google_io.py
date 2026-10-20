@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import io
 import json
 import os
 import subprocess
@@ -45,6 +46,8 @@ PUBLISHER_MIN_FILE_BYTES = 50_000
 PUBLISHER_MIN_AUDIO_BITRATE = 128_000
 PUBLISHER_MIN_VIDEO_BITRATE = 6_000_000
 _WHISPER_MODEL = None
+CREATOR_FEEDBACK_FILENAME = "_corte_fino_creator_feedback.json"
+
 PUBLISHER_TRANSCRIBE_INITIAL_PROMPT = (
     "Português brasileiro. Entrevista ou podcast com fala natural, nomes próprios e termos "
     "coloquiais. Preserve a pontuação e o sentido da fala."
@@ -231,6 +234,73 @@ def download(drive, file_id: str, target: Path) -> None:
         done = False
         while not done:
             _, done = dl.next_chunk(num_retries=4)
+
+
+def common_batch_parent(drive, manifest: dict) -> str:
+    """Return the shared Creator output root for the two exact batch folders."""
+    folder_ids = [str(item).strip() for item in manifest.get("drive_folder_ids", []) if str(item).strip()]
+    if not folder_ids:
+        raise RuntimeError("Manifesto sem pastas para localizar o feedback do Creator.")
+    parents: list[str] = []
+    for folder_id in folder_ids:
+        item = drive.files().get(
+            fileId=normalize_folder_id(folder_id),
+            fields="id,parents,trashed",
+        ).execute(num_retries=4)
+        if item.get("trashed"):
+            raise RuntimeError("Pasta de lote está na lixeira; feedback não pode ser persistido.")
+        item_parents = item.get("parents") or []
+        if len(item_parents) != 1:
+            raise RuntimeError("Pasta de lote precisa ter exatamente um parent para persistir feedback.")
+        parents.append(str(item_parents[0]))
+    if len(set(parents)) != 1:
+        raise RuntimeError("Os dois lotes não compartilham o mesmo diretório raiz do Creator.")
+    return parents[0]
+
+
+def save_creator_feedback_to_drive(manifest: dict, feedback: dict) -> dict:
+    """Persist the learning profile beside Creator batch folders, never inside them."""
+    drive = drive_service()
+    parent_id = common_batch_parent(drive, manifest)
+    escaped = CREATOR_FEEDBACK_FILENAME.replace("'", "\\'")
+    query = (
+        f"'{parent_id}' in parents and trashed = false and "
+        f"name = '{escaped}'"
+    )
+    matches = drive.files().list(
+        q=query,
+        pageSize=10,
+        fields="files(id,name,mimeType,parents)",
+    ).execute(num_retries=4).get("files", [])
+    if len(matches) > 1:
+        raise RuntimeError("Mais de um arquivo de feedback do Creator foi encontrado no Drive.")
+    payload = (json.dumps(feedback, ensure_ascii=False, indent=2) + "\n").encode("utf-8")
+    from googleapiclient.http import MediaIoBaseUpload
+    media = MediaIoBaseUpload(io.BytesIO(payload), mimetype="application/json", resumable=False)
+    if matches:
+        item = drive.files().update(
+            fileId=matches[0]["id"],
+            body={"name": CREATOR_FEEDBACK_FILENAME},
+            media_body=media,
+            fields="id,name,mimeType,webViewLink,modifiedTime",
+        ).execute(num_retries=4)
+    else:
+        item = drive.files().create(
+            body={
+                "name": CREATOR_FEEDBACK_FILENAME,
+                "parents": [parent_id],
+                "mimeType": "application/json",
+            },
+            media_body=media,
+            fields="id,name,mimeType,webViewLink,modifiedTime",
+        ).execute(num_retries=4)
+    return {
+        "id": item.get("id"),
+        "name": item.get("name"),
+        "webViewLink": item.get("webViewLink"),
+        "modifiedTime": item.get("modifiedTime"),
+        "parent_id": parent_id,
+    }
 
 
 def transcribe(path: Path) -> str:
