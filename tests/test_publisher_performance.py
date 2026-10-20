@@ -3,7 +3,7 @@ from datetime import date
 import pytest
 
 import publisher.performance as performance
-from main import creator_feedback_adjustment
+from main import creator_feedback_adjustment, score_text
 from publisher.control import new_ledger, publication_key, record_receipt
 from publisher.core import (
     BRANDING_CAPTION_MARGIN_V,
@@ -22,13 +22,15 @@ from publisher.core import (
 from publisher.google_io import _creator_receipt_from_item
 from publisher.performance import (
     creator_feedback,
+    merge_performance_into_history,
+    new_learning_history,
     new_performance_ledger,
     record_performance_snapshot,
     sync_publication_receipts,
 )
 
 
-def manifest():
+def manifest(run_id="run-performance"):
     pack = copy_dict(make_copy(
         "A inteligência artificial está mudando o trabalho. O ser humano pode virar o gargalo quando a ferramenta substitui decisões.",
         "Flow Podcast",
@@ -83,7 +85,7 @@ def manifest():
         })
     return {
         "version": MANIFEST_VERSION,
-        "run_id": "run-performance",
+        "run_id": run_id,
         "date": "2026-10-21",
         "timezone": "America/Sao_Paulo",
         "engine_commit": "test-sha",
@@ -119,7 +121,7 @@ def public_control(data):
                 key,
                 observed_account=account,
                 state="PUBLIC",
-                remote_id=f"{platform}-{index}",
+                remote_id=f"{data['run_id']}-{platform}-{index}",
             )
     return control
 
@@ -294,3 +296,102 @@ def test_ready_feedback_is_bounded_and_creator_uses_only_active_priors(monkeypat
         "trigger_priors": {"treta": {"active": False, "score_adjustment": 99}},
     }
     assert creator_feedback_adjustment({"performance_feedback": inactive}, "treta") == 0.0
+
+
+def test_latest_mature_snapshot_can_veto_earlier_learning():
+    data = manifest()
+    control = public_control(data)
+    ledger = new_performance_ledger(data, control)
+    key = publication_key(data["run_id"], 1, "youtube")
+    record_performance_snapshot(
+        ledger,
+        key,
+        horizon="24h",
+        metrics={
+            "shown_in_feed": 1400,
+            "views": 900,
+            "viewed_rate": 68,
+            "avg_percentage_viewed": 88,
+        },
+    )
+    assert ledger["entries"][key]["learning_eligible"] is True
+    record_performance_snapshot(
+        ledger,
+        key,
+        horizon="72h",
+        metrics={
+            "shown_in_feed": 1800,
+            "views": 1000,
+            "restrictions": "copyright",
+        },
+    )
+    assert ledger["entries"][key]["learning_eligible"] is False
+    assert creator_feedback(ledger)["eligible_youtube_samples"] == 0
+
+
+def test_learning_history_accumulates_across_runs_and_deduplicates(monkeypatch):
+    monkeypatch.setattr(performance, "MIN_CREATOR_FEEDBACK_SAMPLES", 20)
+    history = new_learning_history()
+
+    for run_id in ("run-a", "run-b"):
+        data = manifest(run_id)
+        control = public_control(data)
+        ledger = new_performance_ledger(data, control)
+        for index in range(1, 11):
+            key = publication_key(run_id, index, "youtube")
+            record_performance_snapshot(
+                ledger,
+                key,
+                horizon="24h",
+                metrics={
+                    "shown_in_feed": 2000 + index,
+                    "views": 1200,
+                    "viewed_rate": 62 + (index % 2) * 8,
+                    "avg_percentage_viewed": 78 + (index % 2) * 10,
+                    "shares": 15,
+                    "comments": 8,
+                },
+            )
+        merge_performance_into_history(history, ledger)
+
+    assert len(history["entries"]) == 20
+    feedback = creator_feedback(history)
+    assert feedback["status"] == "READY"
+    assert feedback["eligible_youtube_samples"] == 20
+
+    # Replaying the same run must update the same keys, never double-train.
+    data = manifest("run-b")
+    control = public_control(data)
+    ledger = new_performance_ledger(data, control)
+    for index in range(1, 11):
+        key = publication_key("run-b", index, "youtube")
+        record_performance_snapshot(
+            ledger,
+            key,
+            horizon="24h",
+            metrics={"shown_in_feed": 1500, "views": 900, "viewed_rate": 55, "avg_percentage_viewed": 70},
+        )
+    merge_performance_into_history(history, ledger)
+    assert len(history["entries"]) == 20
+
+
+def test_score_text_uses_feedback_only_as_bounded_tiebreaker():
+    text = "Isso virou uma treta enorme porque ninguém concorda com a decisão. No fim, a consequência foi clara."
+    base_score, base_components, trigger, *_ = score_text(text, {"priority_signals": []})
+    feedback = {
+        "status": "READY",
+        "trigger_priors": {
+            trigger: {
+                "active": True,
+                "sample_count": 20,
+                "score_adjustment": 1.75,
+            }
+        },
+    }
+    learned_score, learned_components, *_ = score_text(
+        text,
+        {"priority_signals": [], "performance_feedback": feedback},
+    )
+    assert learned_components["performance_feedback"] == 1.75
+    assert round(learned_score - base_score, 2) == 1.75
+    assert learned_components["performance_feedback"] <= 2.0
