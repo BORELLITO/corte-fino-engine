@@ -83,8 +83,8 @@ O Publisher não publica por API ou qualquer agendador externo. Ele somente prep
 
   python -m publisher.cli browser-package
   python -m publisher.cli diagnostic-package
-  python -m publisher.cli init-ledger
-  python -m publisher.cli record-receipt --publication-key "RUN:01:youtube" --observed-account "@cortefinoshorts" --receipt-state SCHEDULED --remote-url "URL"
+  python -m publisher.cli init-ledger --package publisher/state/browser_package.json
+  python -m publisher.cli record-receipt --publication-key "RUN:01:youtube" --observed-account "@cortefinoshorts" --receipt-state SCHEDULED --remote-reference "REFERÊNCIA_DO_STUDIO"
   python -m publisher.cli reconcile
   python -m publisher.cli report
   python -m publisher.cli youtube --dry-run
