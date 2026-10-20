@@ -9,25 +9,32 @@ from zoneinfo import ZoneInfo
 
 
 TIMEZONE = ZoneInfo("America/Sao_Paulo")
-YOUTUBE_HOURS = (8, 10, 12, 14, 16, 18, 19, 20, 21, 22)
-TIKTOK_HOURS = YOUTUBE_HOURS
-DAY_PERIOD_HOURS = (8, 10, 12, 14, 16)
-NIGHT_PERIOD_HOURS = (18, 19, 20, 21, 22)
+# Grade diária oficial: cinco posts por dia. Os dois lotes de uma rodada
+# devem usar datas diferentes, preservando uma única fonte/lote por dia.
+DAILY_HOURS = (12, 15, 18, 20, 22)
+DAILY_SLOT_PRIORITY = (20, 18, 22, 15, 12)
+YOUTUBE_HOURS = DAILY_HOURS
+TIKTOK_HOURS = DAILY_HOURS
+
+# Aliases mantidos somente para compatibilidade com manifestos/inputs antigos.
+DAY_PERIOD_HOURS = DAILY_HOURS
+NIGHT_PERIOD_HOURS = DAILY_HOURS
 PERIOD_BLOCKS = {
-    "day": DAY_PERIOD_HOURS,
-    "morning": DAY_PERIOD_HOURS,
-    "first": DAY_PERIOD_HOURS,
-    "first_block": DAY_PERIOD_HOURS,
-    "bloco_a": DAY_PERIOD_HOURS,
-    "a": DAY_PERIOD_HOURS,
-    "night": NIGHT_PERIOD_HOURS,
-    "evening": NIGHT_PERIOD_HOURS,
-    "second": NIGHT_PERIOD_HOURS,
-    "second_block": NIGHT_PERIOD_HOURS,
-    "bloco_b": NIGHT_PERIOD_HOURS,
-    "b": NIGHT_PERIOD_HOURS,
+    "daily": DAILY_HOURS,
+    "day": DAILY_HOURS,
+    "morning": DAILY_HOURS,
+    "first": DAILY_HOURS,
+    "first_block": DAILY_HOURS,
+    "bloco_a": DAILY_HOURS,
+    "a": DAILY_HOURS,
+    "night": DAILY_HOURS,
+    "evening": DAILY_HOURS,
+    "second": DAILY_HOURS,
+    "second_block": DAILY_HOURS,
+    "bloco_b": DAILY_HOURS,
+    "b": DAILY_HOURS,
 }
-MANIFEST_VERSION = 6
+MANIFEST_VERSION = 7
 BRANDING_VERSION = "hud-corte-fino-v1"
 BRANDING_FORMAT = "vertical_9x16_shared"
 BRANDING_LOGO_POSITION = "top-right"
@@ -723,9 +730,8 @@ def make_copy(transcript: str, source_name: str = "", source_episode: str = "") 
 def normalize_period(period: str) -> str:
     key = fold(str(period or "")).replace("-", "_").replace(" ", "_")
     if key not in PERIOD_BLOCKS:
-        allowed = "day/morning/first ou night/evening/second"
-        raise ValueError(f"Período inválido: {period!r}. Use {allowed}.")
-    return "day" if PERIOD_BLOCKS[key] == DAY_PERIOD_HOURS else "night"
+        raise ValueError(f"Período inválido: {period!r}. Use daily.")
+    return "daily"
 
 
 def period_hours(period: str) -> tuple[int, ...]:
@@ -733,24 +739,24 @@ def period_hours(period: str) -> tuple[int, ...]:
 
 
 def assign_slots(clips: list[dict], slots: list[int] | tuple[int, ...] | None = None) -> None:
-    """Assign one isolated five-slot period to a batch.
+    """Assign one five-slot daily grid to a batch.
 
-    The strongest clip receives the latest slot in the supplied period. This
-    keeps the two folders independent while still preserving the editorial
-    priority rule used by the original Publisher.
+    The strongest clip receives the 20h peak slot, followed by 18h, 22h,
+    15h and 12h. The priority order is editorial; publication still occurs
+    chronologically at the stored timestamps.
     """
     if slots is None:
-        if len(clips) == 10:
-            slots = YOUTUBE_HOURS
-        elif len(clips) == 5:
-            slots = DAY_PERIOD_HOURS
-        else:
-            raise ValueError("A atribuição de slots exige 5 cortes por período ou 10 cortes no manifesto.")
+        if len(clips) != 5:
+            raise ValueError("A atribuição de slots exige exatamente 5 cortes por dia.")
+        slots = DAILY_HOURS
     slots = tuple(int(hour) for hour in slots)
     if len(clips) != len(slots) or len(set(slots)) != len(slots):
-        raise ValueError("A quantidade de cortes precisa coincidir com os slots únicos do período.")
+        raise ValueError("A quantidade de cortes precisa coincidir com os 5 slots únicos do dia.")
     ranked = sorted(clips, key=lambda clip: (-float(clip.get("copy", {}).get("viral_score", 0)), int(clip.get("index", 0))))
-    for clip, hour in zip(ranked, sorted(slots, reverse=True)):
+    priority = [hour for hour in DAILY_SLOT_PRIORITY if hour in slots]
+    if len(priority) != len(slots):
+        priority = sorted(slots, reverse=True)
+    for clip, hour in zip(ranked, priority):
         clip.setdefault("schedule", {})["youtube_hour"] = hour
         clip.setdefault("schedule", {})["tiktok_hour"] = hour
 
@@ -788,7 +794,7 @@ def validate_manifest(
     require_rights: bool = False,
     require_transcripts: bool = False,
 ) -> None:
-    """Validate the immutable two-folder/ten-clip contract."""
+    """Validate the immutable two-folder/ten-clip, five-per-day contract."""
     if not isinstance(manifest, dict):
         raise RuntimeError("Manifesto inválido: a raiz precisa ser um objeto JSON.")
     issues: list[str] = []
@@ -860,6 +866,9 @@ def validate_manifest(
                 batch_sources[batch_id] = (source_name, source_episode)
             except ValueError as exc:
                 issues.append(f"lote {batch_id or position}: {exc}")
+
+    if len(batch_dates) == 2 and len(set(batch_dates.values())) != 2:
+        issues.append("modo 5 por dia exige datas diferentes para os lotes A e B")
 
     folders = [str(batch.get("drive_folder_id", "")).strip() for batch in batches if isinstance(batch, dict)]
     if len(folders) != len(set(folders)):
