@@ -163,10 +163,10 @@ def test_local_input_folder_uses_the_most_recent_mp4(monkeypatch, tmp_path):
     assert info["channel"] == "Entrada local"
 
 
-def test_top_five_is_closed():
-    from main import MAX_CLIPS, REQUIRE_EXACT_TOP_FIVE
-    assert REQUIRE_EXACT_TOP_FIVE is True
-    assert MAX_CLIPS == 5
+def test_top_three_is_closed():
+    from main import MAX_CLIPS, REQUIRE_EXACT_TOP_CLIPS
+    assert REQUIRE_EXACT_TOP_CLIPS is True
+    assert MAX_CLIPS == 3
 
 
 def test_clip_duration_contract_is_strictly_over_sixty_seconds():
