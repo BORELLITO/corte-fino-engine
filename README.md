@@ -13,8 +13,8 @@ Motor de produção e preparação de publicações curtas do Corte Fino, separa
 
 Fuso oficial: `America/Sao_Paulo`.
 
-- **Grade diária oficial:** 12h, 15h, 18h, 20h e 22h.
-- O corte mais forte recebe prioridade de 20h; depois 18h, 22h, 15h e 12h.
+- **Grade diária oficial:** 10h, 12h, 14h, 16h e 18h.
+- O corte mais forte recebe prioridade de 10h; depois 16h, 18h, 12h e 14h.
 
 Cada pasta representa um dia de publicação. As duas pastas precisam usar datas diferentes; o padrão operacional é lote A em um dia e lote B no dia seguinte. O workflow é manual e exige duas pastas, duas datas, as fontes originais e confirmação explícita dos direitos.
 
