@@ -5,7 +5,7 @@ Motor de produção e preparação de publicações curtas do Corte Fino, separa
 ## Fluxo operacional
 
 - **Motor 1 — Creator:** lê uma fonte autorizada, seleciona e renderiza exatamente cinco MP4 verticais e entrega uma pasta de lote no Google Drive.
-- **Motor 2 — Publisher:** recebe duas pastas exatas, cada uma com cinco cortes, e prepara cinco publicações por dia em duas datas diferentes.
+- **Motor 2 — Publisher:** recebe duas pastas exatas, cada uma com cinco cortes, prepara cinco publicações por dia e registra receipts de publicação/performance que podem alimentar o Creator.
 - Não existe handoff automático entre os motores: o Creator termina depois da entrega e nunca inicia o Publisher.
 - A postagem final ocorre exclusivamente no YouTube Studio e no TikTok Studio, por Cloud Web Browser. Não há serviço externo de agendamento nem API de publicação.
 
@@ -27,7 +27,7 @@ O Publisher cria copy individual a partir da fala real: título do YouTube em ca
 
 ## Pacote browser-only
 
-O manifesto v8 guarda os dez cortes distribuídos em cinco por dia, lote, pasta, checksum, copy, commit do motor, contas-alvo e timestamps absolutos. O `browser-package` acrescenta horário local, link da pasta, configuração de audiência, chaves de publicação e Account Identity Guard. O `control_ledger` registra receipts e exige reconciliação antes de retry quando o estado remoto é ambíguo. A audiência do TikTok é hard-locked em `PUBLIC_TO_EVERYONE`; o preflight falha se o pacote não contiver a confirmação `Todos (público)` e a verificação pós-publicação. O estado operacional não é commitado no repositório público; o workflow usa artefato temporário de 1 dia.
+O manifesto v8 guarda os dez cortes distribuídos em cinco por dia, lote, pasta, checksum, copy, commit do motor, contas-alvo e timestamps absolutos. O `browser-package` acrescenta horário local, link da pasta, configuração de audiência, chaves de publicação e Account Identity Guard. O `control_ledger` registra receipts e exige reconciliação antes de retry quando o estado remoto é ambíguo. O `performance_ledger` aceita snapshots de 1h, 6h, 24h e 72h somente depois de a publicação estar PUBLIC/VERIFIED. A audiência do TikTok é hard-locked em `PUBLIC_TO_EVERYONE`; o preflight falha se o pacote não contiver a confirmação `Todos (público)` e a verificação pós-publicação. O estado operacional não é commitado no repositório público; o workflow usa artefato temporário de 1 dia.
 
 Operação manual:
 
@@ -42,7 +42,9 @@ Operação manual:
 
 O Creator mantém seus gates próprios: fonte autorizada, transcrição em português, mapa temporal, análise do arco entre abertura/desenvolvimento/fechamento, seleção fechada de cinco unidades de raciocínio com diversidade temporal, renderização vertical, validação técnica e upload idempotente na pasta do lote. A camada de legendas usa revisão contextual conservadora: corrige ruído ortográfico do ASR com vocabulário português, palavras vizinhas e metadados da fonte, preserva nomes/gírias/siglas, normaliza capitalização e pontuação com base em pausas reais e mantém cada bloco preso aos timestamps das palavras. Ele nunca publica automaticamente.
 
-O destino de saída do Creator é configurado exclusivamente pelo secret `DRIVE_FOLDER_ID`; ele não reutiliza o destino do Publisher nem um ID de fallback. O motor registra a execução e a qualidade do lote, mas ainda não ajusta automaticamente a seleção com métricas posteriores de retenção ou alcance.
+O destino de saída do Creator é configurado exclusivamente pelo secret `DRIVE_FOLDER_ID`; ele não reutiliza o destino do Publisher nem um ID de fallback. Cada MP4 recebe um recibo compacto em `appProperties` com índice, trigger, score, limites temporais, fingerprint e nicho, sem adicionar um sexto arquivo à pasta do lote.
+
+O Publisher pode consolidar resultados verificados do YouTube em um histórico privado no mesmo diretório raiz do Creator. Posts com distribuição insuficiente, restrição ou publicação não verificada são excluídos do aprendizado. O feedback fica inativo até acumular pelo menos 20 Shorts elegíveis; cada trigger precisa de 5 amostras e o ajuste automático é limitado a ±2 pontos, funcionando apenas como desempate conservador. A coleta das métricas do Studio ainda precisa ser realizada pelo operador/Work e registrada no performance ledger; o código não inventa nem presume métricas ausentes.
 
 ## Uso
 
