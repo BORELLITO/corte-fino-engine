@@ -140,7 +140,7 @@ def list_children(drive, folder_id: str) -> list[dict]:
             "q": q,
             "pageSize": 100,
             "orderBy": "name",
-            "fields": "nextPageToken,files(id,name,size,mimeType,md5Checksum,modifiedTime,parents)",
+            "fields": "nextPageToken,files(id,name,size,mimeType,md5Checksum,modifiedTime,parents,appProperties)",
         }
         if page_token:
             kwargs["pageToken"] = page_token
@@ -161,7 +161,7 @@ def list_videos(drive, folder_id: str) -> list[dict]:
             "q": q,
             "pageSize": 100,
             "orderBy": "name",
-            "fields": "nextPageToken,files(id,name,size,mimeType,md5Checksum,modifiedTime,parents)",
+            "fields": "nextPageToken,files(id,name,size,mimeType,md5Checksum,modifiedTime,parents,appProperties)",
         }
         if page_token:
             kwargs["pageToken"] = page_token
@@ -172,6 +172,32 @@ def list_videos(drive, folder_id: str) -> list[dict]:
             break
     files.sort(key=lambda f: (natural_index(f.get("name", "")), f.get("name", "")))
     return files
+
+
+def _creator_receipt_from_item(item: dict) -> dict:
+    """Read compact Creator metadata stored on the MP4 without adding sidecar files."""
+    props = item.get("appProperties") or {}
+    if not isinstance(props, dict) or str(props.get("cf_meta_version") or "") != "1":
+        return {}
+    receipt = {
+        "version": 1,
+        "clip_index": props.get("cf_clip_index"),
+        "trigger": str(props.get("cf_trigger") or "").strip(),
+        "creator_score": props.get("cf_score"),
+        "start_seconds": props.get("cf_start"),
+        "end_seconds": props.get("cf_end"),
+        "source_fingerprint": str(props.get("cf_source_hash") or "").strip(),
+        "niche": str(props.get("cf_niche") or "").strip(),
+    }
+    for key in ("clip_index", "creator_score", "start_seconds", "end_seconds"):
+        value = receipt.get(key)
+        if value in (None, ""):
+            continue
+        try:
+            receipt[key] = int(value) if key == "clip_index" else float(value)
+        except (TypeError, ValueError):
+            receipt[key] = None
+    return {key: value for key, value in receipt.items() if value not in (None, "")}
 
 
 def _is_complete_batch(files: list[dict]) -> bool:
@@ -391,6 +417,7 @@ def _prepare_batch(
                     "md5_checksum": item.get("md5Checksum", ""),
                     "mime_type": item.get("mimeType", "video/mp4"),
                     "modified_time": item.get("modifiedTime", ""),
+                    "creator_receipt": _creator_receipt_from_item(item),
                     "video_profile": profile,
                     "transcript": transcript,
                     "copy": copy_dict(make_copy(transcript, source_name, source_episode)),
