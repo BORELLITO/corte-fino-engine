@@ -10,6 +10,9 @@ class TikTokError(RuntimeError):
     """Erro de validação do pacote TikTok browser-only."""
 
 
+PUBLIC_TIKTOK_VISIBILITY = "PUBLIC_TO_EVERYONE"
+
+
 def _parse_utc(value: str) -> datetime | None:
     try:
         parsed = datetime.fromisoformat(str(value).replace("Z", "+00:00"))
@@ -27,6 +30,16 @@ def choose_privacy_level(creator: dict, desired: str | None = None) -> str:
             f"Privacidade TikTok indisponível: {desired}. Opções retornadas: {', '.join(options) or 'nenhuma'}"
         )
     return desired
+
+
+def validate_browser_visibility(visibility: str) -> str:
+    """Require the public audience before any browser scheduling step."""
+    normalized = str(visibility or "").strip().upper()
+    if normalized != PUBLIC_TIKTOK_VISIBILITY:
+        raise TikTokError(
+            "TikTok precisa estar com audiência pública: selecione Todos antes de agendar."
+        )
+    return PUBLIC_TIKTOK_VISIBILITY
 
 
 def _due_clips(manifest: dict, now: datetime | None = None) -> list[dict]:
@@ -67,6 +80,8 @@ def publish_tiktok(
             "status": "dry_run",
             "publish_at": scheduled_publish_at(manifest, clip, "tiktok"),
             "caption": truncate_utf8(clip["copy"]["tiktok_caption"], TIKTOK_CAPTION_LIMIT),
+            "visibility": PUBLIC_TIKTOK_VISIBILITY,
+            "privacy_check": "required",
         }
         for clip in clips
     ]
