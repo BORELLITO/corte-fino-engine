@@ -51,11 +51,14 @@ def as_bool(value: object) -> bool:
 
 
 def normalize_account_identity(value: object) -> str:
-    """Normalize a Studio account identity for fail-closed comparisons."""
+    """Normalize handles, channel IDs or profile URLs for fail-closed comparisons."""
     raw = str(value or "").strip().casefold()
+    raw = raw.split("?", 1)[0].split("#", 1)[0].rstrip("/")
+    if "/" in raw:
+        raw = raw.rsplit("/", 1)[-1]
     if raw.startswith("@"):
         raw = raw[1:]
-    return raw.rstrip("/")
+    return raw
 
 # Limites de metadados mantidos pelo Publisher para compatibilidade com as plataformas.
 TIKTOK_CAPTION_LIMIT = 2200
