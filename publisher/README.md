@@ -1,6 +1,6 @@
 # Corte Fino Publisher 2.2 — Distribution Guard
 
-O Publisher é o Motor 2 do Corte Fino. Ele recebe duas pastas exatas do Google Drive, cada uma com cinco MP4s prontos pelo Creator, prepara dez publicações e entrega um pacote fechado para postagem no Cloud Web Browser. A versão 2.2 adiciona um modo diagnóstico opcional para investigar baixa distribuição sem alterar o Creator nem substituir o fluxo normal de dez posts.
+O Publisher é o Motor 2 do Corte Fino. Ele recebe duas pastas exatas do Google Drive, cada uma com cinco MP4s prontos pelo Creator, e distribui os dez cortes em dois dias: cinco publicações por dia. A versão 2.3 mantém o Distribution Guard e torna a cadência de cinco por dia o fluxo normal.
 
 ## Contrato de entrada
 
@@ -8,16 +8,16 @@ Cada rodada exige:
 
 - pasta A: cinco MP4 diretos, numerados 01, 02, 03, 04 e 05;
 - pasta B: cinco MP4 diretos, numerados 01, 02, 03, 04 e 05;
-- data local e período de cada pasta;
+- data local de cada pasta;
 - canal/fonte original de cada pasta;
 - confirmação de direitos das duas fontes.
 
-Períodos em America/Sao_Paulo:
+Grade diária em America/Sao_Paulo:
 
-- day: 08h, 10h, 12h, 14h e 16h;
-- night: 18h, 19h, 20h, 21h e 22h.
+- 12h, 15h, 18h, 20h e 22h;
+- prioridade editorial dos melhores cortes: 20h, 18h, 22h, 15h e 12h.
 
-As duas pastas podem ter datas diferentes, mas seus pares data/horário não podem se sobrepor. A pasta é uma fronteira rígida: subpastas, arquivos extras, lotes vizinhos, duplicidade de checksum ou numeração incorreta bloqueiam o preparo.
+As duas pastas obrigatoriamente usam datas diferentes. A pasta A ocupa um dia e a pasta B o outro, impedindo dez publicações no mesmo dia. A pasta é uma fronteira rígida: subpastas, arquivos extras, lotes vizinhos, duplicidade de checksum ou numeração incorreta bloqueiam o preparo.
 
 ## Qualidade e copy
 
@@ -51,9 +51,9 @@ O comando `diagnostic-package`:
 
 Esse modo existe para separar DISTRIBUIÇÃO de PERFORMANCE. Ele não afirma shadowban e não interpreta retenção quando a amostra é insuficiente.
 
-## Manifesto v6
+## Manifesto v7
 
-O manifesto contém dois lotes, dez cortes globais, índice local, pasta, checksum, copy e timestamp absoluto de cada publicação. Manifestos de cinco cortes ou versões anteriores são rejeitados.
+O manifesto contém dois lotes, dez cortes globais distribuídos em duas datas diferentes, índice local, pasta, checksum, copy e timestamp absoluto de cada publicação. Cada data contém exatamente cinco slots.
 
 O estado persistido no Git não contém transcrições integrais. O pacote browser-package contém somente os dados necessários para preencher os Studios.
 
@@ -75,7 +75,7 @@ O Publisher não publica por API ou qualquer agendador externo. Ele somente prep
   python -m publisher.cli prepare \
     --folder-id "LINK_PASTA_A" --folder-2-id "LINK_PASTA_B" \
     --date-1 2026-10-18 --date-2 2026-10-18 \
-    --period-1 day --period-2 night \
+    --period-1 daily --period-2 daily \
     --source-name "CANAL A" --source-name-2 "CANAL B" \
     --confirm-rights
 
@@ -88,7 +88,7 @@ O Publisher não publica por API ou qualquer agendador externo. Ele somente prep
 ## Proteções operacionais
 
 - duas pastas obrigatórias e isoladas;
-- dez slots únicos;
+- cinco slots únicos por data;
 - timestamps locais convertidos e revisados antes da postagem;
 - validação de conta e tela correta no Studio;
 - revisão visual antes de confirmar cada agendamento;
