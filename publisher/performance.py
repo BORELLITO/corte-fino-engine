@@ -132,6 +132,30 @@ def new_performance_ledger(manifest: dict, control_ledger: dict) -> dict:
     }
 
 
+def sync_publication_receipts(performance_ledger: dict, control_ledger: dict) -> dict:
+    """Refresh publication truth before any metrics can influence learning."""
+    validate_performance_ledger(performance_ledger)
+    validate_ledger(control_ledger)
+    if str(performance_ledger.get("run_id")) != str(control_ledger.get("run_id")):
+        raise RuntimeError("Performance ledger e control ledger pertencem a execuções diferentes.")
+    for key, entry in performance_ledger["entries"].items():
+        publication = control_ledger["entries"].get(key)
+        if not publication:
+            raise RuntimeError(f"Control ledger perdeu a publicação {key}.")
+        state = str(publication.get("state") or "")
+        entry.update({
+            "publication_state": state,
+            "publication_verified": state in {
+                "PUBLIC", "VERIFIED", "METRICS_PENDING", "MEASURED", "LEARNED"
+            },
+            "remote_id": publication.get("remote_id"),
+            "remote_url": publication.get("remote_url"),
+            "remote_reference": publication.get("remote_reference"),
+            "updated_at": _now(),
+        })
+    return performance_ledger
+
+
 def validate_performance_ledger(ledger: dict) -> None:
     if not isinstance(ledger, dict) or ledger.get("version") != PERFORMANCE_LEDGER_VERSION:
         raise RuntimeError("Performance ledger inválido ou incompatível.")
