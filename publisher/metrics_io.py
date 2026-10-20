@@ -327,6 +327,51 @@ def build_metrics_package(control_ledger: dict, performance_ledger: dict, *, hor
     }
 
 
+def _metrics_package_filename(run_id: str, horizon: str) -> str:
+    return f"metrics-{_state_filename(run_id)[4:-5]}-{str(horizon).casefold()}.json"
+
+
+def metrics_result_filename(run_id: str, horizon: str) -> str:
+    return f"metrics-result-{_state_filename(run_id)[4:-5]}-{str(horizon).casefold()}.json"
+
+
+def save_metrics_package_to_drive(manifest: dict, package: dict) -> dict:
+    drive = drive_service()
+    parent_id = _shared_batch_parent(drive, manifest)
+    folder = _state_folder(drive, parent_id, create=True)
+    assert folder is not None
+    name = _metrics_package_filename(package["run_id"], package["horizon"])
+    item = _upsert_drive_json(drive, folder["id"], name, package)
+    return {
+        "file_id": item.get("id"),
+        "file_name": item.get("name"),
+        "modified_time": item.get("modifiedTime"),
+        "state_folder_id": folder["id"],
+        "expected_result_file": metrics_result_filename(package["run_id"], package["horizon"]),
+    }
+
+
+def load_metrics_result_from_drive(manifest: dict, run_id: str, horizon: str) -> dict:
+    drive = drive_service()
+    parent_id = _shared_batch_parent(drive, manifest)
+    folder = _state_folder(drive, parent_id, create=False)
+    if not folder:
+        raise RuntimeError("Pasta de estado persistente não existe.")
+    name = metrics_result_filename(run_id, horizon)
+    escaped = name.replace("'", "\\'")
+    matches = drive.files().list(
+        q=f"'{folder['id']}' in parents and trashed = false and name = '{escaped}'",
+        pageSize=10,
+        fields="files(id,name,mimeType,parents,modifiedTime)",
+    ).execute(num_retries=4).get("files", [])
+    if len(matches) != 1:
+        raise RuntimeError(
+            f"Resultado do Work não encontrado de forma única: {name}. "
+            "O Work deve salvar exatamente esse arquivo no cofre do Publisher."
+        )
+    return _read_drive_json(drive, matches[0]["id"])
+
+
 def validate_metrics_result(result: dict, package: dict, control_ledger: dict) -> None:
     if not isinstance(result, dict) or result.get("version") != METRICS_RESULT_VERSION:
         raise RuntimeError("Resultado de métricas inválido.")
