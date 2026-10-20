@@ -34,11 +34,11 @@ PERIOD_BLOCKS = {
     "bloco_b": DAILY_HOURS,
     "b": DAILY_HOURS,
 }
-MANIFEST_VERSION = 7
+MANIFEST_VERSION = 8
 BRANDING_VERSION = "hud-corte-fino-v1"
 BRANDING_FORMAT = "vertical_9x16_shared"
 BRANDING_LOGO_POSITION = "top-right"
-BRANDING_CAPTION_MARGIN_V = 390
+BRANDING_CAPTION_MARGIN_V = 430
 
 
 def as_bool(value: object) -> bool:
@@ -48,6 +48,14 @@ def as_bool(value: object) -> bool:
     if isinstance(value, (int, float)):
         return value != 0
     return str(value or "").strip().casefold() in {"1", "true", "yes", "sim", "on"}
+
+
+def normalize_account_identity(value: object) -> str:
+    """Normalize a Studio account identity for fail-closed comparisons."""
+    raw = str(value or "").strip().casefold()
+    if raw.startswith("@"):
+        raw = raw[1:]
+    return raw.rstrip("/")
 
 # Limites de metadados mantidos pelo Publisher para compatibilidade com as plataformas.
 TIKTOK_CAPTION_LIMIT = 2200
@@ -815,6 +823,19 @@ def validate_manifest(
         issues.append("grade global do YouTube incompatível")
     if manifest.get("tiktok_hours") != list(TIKTOK_HOURS):
         issues.append("grade global do TikTok incompatível")
+    if not str(manifest.get("engine_commit", "")).strip():
+        issues.append("versão/commit do motor ausente")
+
+    target_accounts = manifest.get("target_accounts")
+    if not isinstance(target_accounts, dict):
+        issues.append("contas-alvo ausentes")
+        target_accounts = {}
+    expected_youtube = normalize_account_identity(target_accounts.get("youtube"))
+    expected_tiktok = normalize_account_identity(target_accounts.get("tiktok"))
+    if not expected_youtube:
+        issues.append("conta-alvo do YouTube ausente")
+    if not expected_tiktok:
+        issues.append("conta-alvo do TikTok ausente")
 
     batches = manifest.get("batches")
     if not isinstance(batches, list) or len(batches) != 2:
@@ -867,8 +888,11 @@ def validate_manifest(
             except ValueError as exc:
                 issues.append(f"lote {batch_id or position}: {exc}")
 
-    if len(batch_dates) == 2 and len(set(batch_dates.values())) != 2:
-        issues.append("modo 5 por dia exige datas diferentes para os lotes A e B")
+    if len(batch_dates) == 2:
+        if len(set(batch_dates.values())) != 2:
+            issues.append("modo 5 por dia exige datas diferentes para os lotes A e B")
+        elif batch_order[:2] == ["A", "B"] and batch_dates.get("B") <= batch_dates.get("A"):
+            issues.append("lote B precisa ser posterior ao lote A")
 
     folders = [str(batch.get("drive_folder_id", "")).strip() for batch in batches if isinstance(batch, dict)]
     if len(folders) != len(set(folders)):
@@ -982,7 +1006,12 @@ def validate_manifest(
             youtube_hour = tiktok_hour = -1
         if youtube_hour != tiktok_hour:
             issues.append(f"{label}: YouTube e TikTok precisam compartilhar o mesmo horário")
-        expected_batch_hours = list(period_hours(str(batch_by_id.get(batch_id, {}).get("period", "")))) if batch_id in batch_by_id else []
+        expected_batch_hours: list[int] = []
+        if batch_id in batch_by_id:
+            try:
+                expected_batch_hours = list(period_hours(str(batch_by_id.get(batch_id, {}).get("period", ""))))
+            except ValueError:
+                expected_batch_hours = []
         if expected_batch_hours and youtube_hour not in expected_batch_hours:
             issues.append(f"{label}: horário fora do período do lote")
         publish_at = str(schedule.get("youtube_publish_at", "")).strip()
