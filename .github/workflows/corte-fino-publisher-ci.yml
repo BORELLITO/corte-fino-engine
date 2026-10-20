@@ -12,6 +12,7 @@ on:
       - "tests/test_workflow_contract.py"
       - "tests/test_quality_guards.py"
       - ".github/workflows/corte-fino-publisher*.yml"
+      - ".github/workflows/corte-fino-performance.yml"
       - ".github/workflows/corte-fino.yml"
       - "main.py"
   pull_request:
