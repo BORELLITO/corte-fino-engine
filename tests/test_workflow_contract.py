@@ -106,9 +106,9 @@ def test_performance_feedback_loop_is_wired_without_breaking_batch_boundary():
     assert "appProperties" in generator
     assert "_corte_fino_creator_feedback.json" in generator
     # The learning profile lives beside batch folders, never as a sixth file
-    # inside the rigid five-MP4 publication folder.
+    # inside the Creator three-MP4 delivery folder; Publisher remains a separate five-per-day contract.
     assert 'expected.append(video_name)' in generator
-    assert 'len(final_children) != 5' in generator
+    assert 'len(final_children) != 3' in generator
 
 
 def test_performance_workflow_restores_durable_state_and_uses_work_result():

@@ -16,14 +16,14 @@ from pathlib import Path
 from typing import Any
 
 
-# Regra editorial fixa: toda rodada aprovada precisa terminar com cinco cortes.
-# Não permitir override externo evita uma execução “aprovada” com 4 ou 6 arquivos.
-MAX_CLIPS = 5
+# Regra editorial fixa: toda rodada aprovada precisa terminar com três cortes.
+# Não permitir override externo evita uma execução “aprovada” fora do contrato de três arquivos.
+MAX_CLIPS = 3
 MIN_EDITORIAL_SCORE = float(os.environ.get("MIN_EDITORIAL_SCORE", "78"))
-# A nota ordena candidatos; o bloco padrão é um Top 5 fechado.
+# A nota ordena candidatos; o bloco padrão é um Top 3 fechado.
 USE_EDITORIAL_SCORE_GATE = os.environ.get("USE_EDITORIAL_SCORE_GATE", "0").strip().lower() in {"1", "true", "yes", "sim"}
-REQUIRE_EXACT_TOP_FIVE = os.environ.get("REQUIRE_EXACT_TOP_FIVE", "1").strip().lower() in {"1", "true", "yes", "sim"}
-FORCE_TOP_FIVE = os.environ.get("FORCE_TOP_FIVE", "0").strip().lower() in {"1", "true", "yes", "sim"}
+REQUIRE_EXACT_TOP_CLIPS = os.environ.get("REQUIRE_EXACT_TOP_CLIPS", os.environ.get("REQUIRE_EXACT_TOP_FIVE", "1")).strip().lower() in {"1", "true", "yes", "sim"}
+FORCE_TOP_CLIPS = os.environ.get("FORCE_TOP_CLIPS", os.environ.get("FORCE_TOP_FIVE", "0")).strip().lower() in {"1", "true", "yes", "sim"}
 # A regra pública do Creator é exclusiva: cada corte precisa ter mais de 60 segundos.
 # O limite fica protegido contra overrides menores para evitar arquivos inválidos.
 CLIP_DURATION_FLOOR_SECONDS = 60.0
@@ -1223,7 +1223,7 @@ def build_candidates(
     # Algumas transcrições longas têm poucas frases com pontuação terminal
     # confiável, embora ainda contenham janelas publicáveis com contexto e
     # progressão. Só abrimos este fallback se o modo estrito não conseguir
-    # formar o Top 5; ele continua exigindo início natural, desenvolvimento,
+    # formar o Top 3; ele continua exigindo início natural, desenvolvimento,
     # fechamento não dependente e todos os gates técnicos.
     if len(unique) < MAX_CLIPS:
         for index in range(0, len(segments), step):
@@ -1408,17 +1408,17 @@ def select_candidates(
             )
     eligible_candidates = narrative_ready
     narrative_ready_count = len(narrative_ready)
-    force_top_five = FORCE_TOP_FIVE and MAX_CLIPS >= 5
+    force_top_clips = FORCE_TOP_CLIPS and MAX_CLIPS >= 3
 
-    if force_top_five or not USE_EDITORIAL_SCORE_GATE:
+    if force_top_clips or not USE_EDITORIAL_SCORE_GATE:
         # A nota ranqueia; a aprovação depende dos gates objetivos e da revisão final.
         pool = sorted(eligible_candidates, key=lambda item: (-item.score, item.start))
         for candidate in eligible_candidates:
             candidate.accepted = False
             candidate.rejection = (
                 f"ranqueado abaixo dos selecionados (nota {candidate.score:.2f})"
-                if not force_top_five
-                else f"não selecionado no Top 5 (nota {candidate.score:.2f})"
+                if not force_top_clips
+                else f"não selecionado no Top 3 (nota {candidate.score:.2f})"
             )
     else:
         for candidate in eligible_candidates:
@@ -1433,7 +1433,7 @@ def select_candidates(
             if candidate.accepted and candidate.score >= MIN_EDITORIAL_SCORE
         ]
 
-    # O Top 5 fechado deve ser fechado entre candidatos tecnicamente
+    # O Top 3 fechado deve ser fechado entre candidatos tecnicamente
     # publicáveis. Um trecho rápido/ilegível não pode ocupar uma vaga e só ser
     # descoberto depois, durante a renderização.
     caption_ready = []
@@ -1482,8 +1482,8 @@ def select_candidates(
         selected.append(candidate)
         candidate.accepted = True
         candidate.rejection = (
-            "override Top 5 solicitado"
-            if force_top_five and candidate.score < MIN_EDITORIAL_SCORE
+            "override Top 3 solicitado"
+            if force_top_clips and candidate.score < MIN_EDITORIAL_SCORE
             else ""
         )
         trigger_counts[candidate.trigger] = trigger_counts.get(candidate.trigger, 0) + 1
@@ -1501,8 +1501,8 @@ def select_candidates(
             selected.append(candidate)
             candidate.accepted = True
             candidate.rejection = (
-                "override Top 5 solicitado"
-                if force_top_five and candidate.score < MIN_EDITORIAL_SCORE
+                "override Top 3 solicitado"
+                if force_top_clips and candidate.score < MIN_EDITORIAL_SCORE
                 else ""
             )
             trigger_counts[candidate.trigger] = trigger_counts.get(candidate.trigger, 0) + 1
@@ -1512,11 +1512,11 @@ def select_candidates(
             if len(selected) >= MAX_CLIPS:
                 break
 
-    # O modo FORCE_TOP_FIVE só pode relaxar a diversidade quando os gates
+    # O modo FORCE_TOP_CLIPS só pode relaxar a diversidade quando os gates
     # objetivos já aprovaram o candidato. Isso evita falhas em fontes com
     # poucos blocos editoriais independentes sem liberar legenda ilegível,
     # narrativa incompleta ou cortes fora da duração contratada.
-    if len(selected) < MAX_CLIPS and force_top_five:
+    if len(selected) < MAX_CLIPS and force_top_clips:
         fallback_pool = [
             candidate for candidate in pool
             if candidate not in selected
@@ -1530,7 +1530,7 @@ def select_candidates(
                 continue
             selected.append(candidate)
             candidate.accepted = True
-            candidate.rejection = "override Top 5 solicitado (fallback de diversidade controlado)"
+            candidate.rejection = "override Top 3 solicitado (fallback de diversidade controlado)"
             if len(selected) >= MAX_CLIPS:
                 break
 
@@ -2842,7 +2842,7 @@ def write_reports(
         status = "EDITORIAL_EMPTY"
     elif error and (
         error.startswith("Nenhum corte passou")
-        or error.startswith("Top 5")
+        or error.startswith("Top 3")
         or error.startswith("Não foi possível formar exatamente")
     ):
         status = "TOP_FIVE_INCOMPLETE"
@@ -2882,19 +2882,19 @@ def write_reports(
         "editorial": {
             "minimum_score": MIN_EDITORIAL_SCORE,
             "score_gate_enabled": USE_EDITORIAL_SCORE_GATE,
-            "require_exact_top_five": REQUIRE_EXACT_TOP_FIVE,
+            "require_exact_top_clips": REQUIRE_EXACT_TOP_CLIPS,
             "selection_mode": (
-                "CLOSED_TOP_FIVE" if REQUIRE_EXACT_TOP_FIVE
-                else "FORCE_TOP_FIVE" if FORCE_TOP_FIVE
+                "CLOSED_TOP_THREE" if REQUIRE_EXACT_TOP_CLIPS
+                else "FORCE_TOP_CLIPS" if FORCE_TOP_CLIPS
                 else "RANK_ONLY_WITH_OBJECTIVE_GATES" if not USE_EDITORIAL_SCORE_GATE
                 else "MIN_SCORE_GATE"
             ),
-            "override_minimum_score": FORCE_TOP_FIVE,
+            "override_minimum_score": FORCE_TOP_CLIPS,
             "approved_count": len(enriched),
             "candidate_count": len(candidates),
             "rule": (
-                "Top 5 fechado: selecionar exatamente os cinco melhores candidatos disponíveis; sem substituição após a seleção."
-                if REQUIRE_EXACT_TOP_FIVE
+                "Top 3 fechado: selecionar exatamente os três melhores candidatos disponíveis; sem substituição após a seleção."
+                if REQUIRE_EXACT_TOP_CLIPS
                 else "Só entra o que vale o corte."
             ),
         },
@@ -2940,11 +2940,11 @@ def write_reports(
         f"**Lentes recomendadas:** {', '.join((profile or {}).get('lenses', [])) or 'acontecimento completo'}",
         "",
         (
-            "**Critério editorial:** Top 5 fechado; a nota ordena os cinco candidatos e os gates objetivos preservam continuidade, legenda e QA."
-            if REQUIRE_EXACT_TOP_FIVE
+            "**Critério editorial:** Top 3 fechado; a nota ordena os três candidatos e os gates objetivos preservam continuidade, legenda e QA."
+            if REQUIRE_EXACT_TOP_CLIPS
             else (
-                "**Critério editorial:** Top 5 solicitado; a nota ranqueia e os gates objetivos preservam continuidade, legenda e QA."
-                if FORCE_TOP_FIVE
+                "**Critério editorial:** Top 3 solicitado; a nota ranqueia e os gates objetivos preservam continuidade, legenda e QA."
+                if FORCE_TOP_CLIPS
                 else (
                     "**Critério editorial:** nota usada para ranqueamento; por padrão, não bloqueia nichos ou fontes de menor pontuação. "
                     "Gates objetivos continuam obrigatórios."
@@ -2958,7 +2958,7 @@ def write_reports(
             f"**Duração:** estritamente acima de {CLIP_DURATION_FLOOR_SECONDS:.0f}s | "
             f"alvo {TARGET_CLIP_SECONDS}s | máximo {MAX_CLIP_SECONDS}s"
         ),
-        "**Regra operacional:** Top 5 fechado; nenhuma opção reserva substitui um dos cinco candidatos.",
+        "**Regra operacional:** Top 3 fechado; nenhuma opção reserva substitui um dos três candidatos.",
         "",
         f"**Direitos:** {rights['status']}",
         "**Publicação:** revisão manual obrigatória",
@@ -3016,9 +3016,9 @@ def main() -> int:
                 "Nenhum momento adequado foi encontrado pelas regras editoriais e técnicas."
             )
 
-        # Top 5 fechado: depois da seleção, nenhum candidato reserva pode
+        # Top 3 fechado: depois da seleção, nenhum candidato reserva pode
         # substituir um dos cinco. Isso preserva a decisão editorial da rodada.
-        if REQUIRE_EXACT_TOP_FIVE and len(selected) < MAX_CLIPS:
+        if REQUIRE_EXACT_TOP_CLIPS and len(selected) < MAX_CLIPS:
             raise RuntimeError(
                 f"Não foi possível formar exatamente {MAX_CLIPS} candidatos editoriais "
                 f"(encontrados: {len(selected)})."
@@ -3036,7 +3036,7 @@ def main() -> int:
                 for other in accepted_candidates
             ):
                 raise RuntimeError(
-                    "O Top 5 fechado contém candidatos repetidos ou sobrepostos; "
+                    "O Top 3 fechado contém candidatos repetidos ou sobrepostos; "
                     "nenhuma opção reserva será usada."
                 )
 
@@ -3057,7 +3057,7 @@ def main() -> int:
                     "narrative_qa": narrative_qa,
                 })
                 raise RuntimeError(
-                    f"Top 5 fechado reprovou no gate editorial no corte {clip_number}; "
+                    f"Top 3 fechado reprovou no gate editorial no corte {clip_number}; "
                     "nenhum candidato reserva será usado."
                 )
             write_ass(
@@ -3086,7 +3086,7 @@ def main() -> int:
                     "caption_qa": caption_qa,
                 })
                 raise RuntimeError(
-                    f"Top 5 fechado reprovou no gate de legenda no corte {clip_number}; "
+                    f"Top 3 fechado reprovou no gate de legenda no corte {clip_number}; "
                     "nenhum candidato reserva será usado."
                 )
 
@@ -3100,7 +3100,7 @@ def main() -> int:
                 candidate.accepted = False
                 candidate.rejection = "reprovado no QA técnico do arquivo final"
                 raise RuntimeError(
-                    f"Top 5 fechado reprovou no QA técnico no corte {clip_number}; "
+                    f"Top 3 fechado reprovou no QA técnico no corte {clip_number}; "
                     "nenhum candidato reserva será usado."
                 )
 
@@ -3121,9 +3121,9 @@ def main() -> int:
             candidate.rejection = ""
             accepted_candidates.append(candidate)
 
-        if REQUIRE_EXACT_TOP_FIVE and len(clips) != MAX_CLIPS:
+        if REQUIRE_EXACT_TOP_CLIPS and len(clips) != MAX_CLIPS:
             raise RuntimeError(
-                f"Top 5 incompleto: {len(clips)}/{MAX_CLIPS} cortes aprovados; "
+                f"Top 3 incompleto: {len(clips)}/{MAX_CLIPS} cortes aprovados; "
                 "nenhum candidato reserva será usado."
             )
         if not clips:
@@ -3141,7 +3141,7 @@ def main() -> int:
     finally:
         if OUTPUT.exists():
             # Nunca deixe artefatos de renderização parcial junto dos vídeos
-            # finais; o gate do Drive aceita somente os cinco MP4 publicados.
+            # finais; o gate do Drive aceita somente os três MP4 publicados.
             for temporary in CLIPS_DIR.glob("*.part.mp4"):
                 temporary.unlink(missing_ok=True)
             write_reports(source_url, source_hash, info, clips, candidates, qa, error, profile)
