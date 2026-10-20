@@ -113,7 +113,7 @@ def test_wrong_account_is_fail_closed():
 def test_scheduled_receipt_requires_remote_identity():
     ledger = new_ledger(manifest())
     key = publication_key("run-control", 1, "youtube")
-    with pytest.raises(RuntimeError, match="exige remote_id ou remote_url"):
+    with pytest.raises(RuntimeError, match="exige remote_id, remote_url ou remote_reference"):
         record_receipt(
             ledger,
             key,
@@ -159,3 +159,30 @@ def test_ambiguous_upload_blocks_blind_retry():
     summary = reconciliation_summary(ledger)
     assert key in summary["ambiguous"]
     assert summary["safe_to_retry"] is False
+
+
+def test_ledger_can_be_scoped_to_diagnostic_package():
+    data = manifest()
+    selected = {
+        publication_key("run-control", index, platform)
+        for index in (1, 2, 3)
+        for platform in ("youtube", "tiktok")
+    }
+    ledger = new_ledger(data, selected)
+    assert set(ledger["entries"]) == selected
+    assert len(ledger["entries"]) == 6
+
+
+def test_scheduled_receipt_accepts_studio_reference_when_url_is_unavailable():
+    ledger = new_ledger(manifest())
+    key = publication_key("run-control", 1, "tiktok")
+    record_receipt(
+        ledger,
+        key,
+        observed_account="https://www.tiktok.com/@cortefinoshorts",
+        state="SCHEDULED",
+        remote_reference="studio-row-2026-10-21-10:00",
+    )
+    entry = ledger["entries"][key]
+    assert entry["account_verified"] is True
+    assert entry["remote_reference"] == "studio-row-2026-10-21-10:00"
