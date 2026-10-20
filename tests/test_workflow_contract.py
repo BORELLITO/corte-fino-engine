@@ -6,7 +6,7 @@ TIKTOK_API_WORKFLOW = Path(".github/workflows/tiktok-sandbox-token.yml")
 ROOT_README = Path("README.md")
 
 
-def test_publisher_requires_two_exact_drive_folders_and_periods():
+def test_publisher_requires_two_exact_drive_folders_and_daily_grid():
     text = PUBLISHER_WORKFLOW.read_text(encoding="utf-8")
     assert "folder_1:" in text
     assert "folder_2:" in text
@@ -14,6 +14,7 @@ def test_publisher_requires_two_exact_drive_folders_and_periods():
     assert "date_2:" in text
     assert "period_1:" in text
     assert "period_2:" in text
+    assert "options: [daily]" in text
     assert "PUBLISHER_BROWSER_ONLY: \"1\"" in text
     assert "REQUESTED_EPISODE_1" in text
     assert "REQUESTED_EPISODE_2" in text
@@ -38,7 +39,7 @@ def test_publisher_has_no_metricool_route():
 
 def test_root_docs_match_browser_only_ten_post_contract():
     text = ROOT_README.read_text(encoding="utf-8")
-    assert "Publicar 10 Cortes" in text
+    assert "Publicar 5 por Dia" in text
     assert "Cloud Web Browser" in text
     assert "TikTok Sandbox" not in text
 
