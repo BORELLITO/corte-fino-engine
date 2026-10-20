@@ -43,13 +43,16 @@ def publication_key(run_id: str, index: int, platform: str) -> str:
     return f"{run_id}:{int(index):02d}:{platform}"
 
 
-def new_ledger(manifest: dict) -> dict:
+def new_ledger(manifest: dict, publication_keys: set[str] | None = None) -> dict:
     validate_manifest(manifest, require_rights=True)
     targets = manifest["target_accounts"]
+    requested_keys = set(publication_keys or [])
     entries = {}
     for clip in manifest["clips"]:
         for platform in ("youtube", "tiktok"):
             key = publication_key(manifest["run_id"], clip["index"], platform)
+            if requested_keys and key not in requested_keys:
+                continue
             entries[key] = {
                 "publication_key": key,
                 "run_id": manifest["run_id"],
@@ -67,9 +70,16 @@ def new_ledger(manifest: dict) -> dict:
                 "state": "BROWSER_READY",
                 "remote_id": None,
                 "remote_url": None,
+                "remote_reference": None,
                 "updated_at": _now(),
                 "history": [{"state": "BROWSER_READY", "at": _now()}],
             }
+    if requested_keys and set(entries) != requested_keys:
+        missing = sorted(requested_keys - set(entries))
+        raise RuntimeError(f"Pacote contém publication keys desconhecidas: {missing}")
+    if not entries:
+        raise RuntimeError("Ledger não pode ser inicializado sem publicações.")
+
     return {
         "version": LEDGER_VERSION,
         "run_id": manifest["run_id"],
@@ -109,6 +119,7 @@ def record_receipt(
     state: str,
     remote_id: str = "",
     remote_url: str = "",
+    remote_reference: str = "",
     note: str = "",
 ) -> dict:
     validate_ledger(ledger)
@@ -139,6 +150,7 @@ def record_receipt(
 
     rid = str(remote_id or "").strip()
     rurl = str(remote_url or "").strip()
+    rref = str(remote_reference or "").strip()
     for other_key, other in ledger["entries"].items():
         if other_key == key:
             continue
@@ -146,9 +158,11 @@ def record_receipt(
             raise RuntimeError(f"remote_id já usado por {other_key}")
         if rurl and rurl == str(other.get("remote_url") or "").strip():
             raise RuntimeError(f"remote_url já usada por {other_key}")
+        if rref and rref == str(other.get("remote_reference") or "").strip():
+            raise RuntimeError(f"remote_reference já usada por {other_key}")
 
-    if state in {"SCHEDULED", "PUBLIC", "VERIFIED", "METRICS_PENDING", "MEASURED", "LEARNED"} and not (rid or rurl):
-        raise RuntimeError(f"Estado {state} exige remote_id ou remote_url.")
+    if state in {"SCHEDULED", "PUBLIC", "VERIFIED", "METRICS_PENDING", "MEASURED", "LEARNED"} and not (rid or rurl or rref):
+        raise RuntimeError(f"Estado {state} exige remote_id, remote_url ou remote_reference.")
 
     entry.update({
         "observed_account": observed_account,
@@ -156,6 +170,7 @@ def record_receipt(
         "state": state,
         "remote_id": rid or entry.get("remote_id"),
         "remote_url": rurl or entry.get("remote_url"),
+        "remote_reference": rref or entry.get("remote_reference"),
         "updated_at": _now(),
     })
     event = {"state": state, "at": _now()}
