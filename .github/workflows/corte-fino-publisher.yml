@@ -55,6 +55,16 @@ on:
         required: false
         default: ""
         type: string
+      youtube_account:
+        description: "Canal/handle esperado no YouTube Studio"
+        required: true
+        default: "@cortefinoshorts"
+        type: string
+      tiktok_account:
+        description: "Usuário esperado no TikTok Studio"
+        required: true
+        default: "cortefinoshorts"
+        type: string
       rights_confirmed:
         description: "Confirme somente após revisar os direitos das duas fontes"
         required: true
@@ -62,7 +72,7 @@ on:
         type: boolean
 
 permissions:
-  contents: write
+  contents: read
 
 concurrency:
   group: corte-fino-publisher
@@ -83,6 +93,8 @@ jobs:
       PUBLISHER_BROWSER_ONLY: "1"
       PUBLISHER_RIGHTS_AUTHORIZED: ${{ inputs.rights_confirmed && '1' || '0' }}
       PUBLISHER_RIGHTS_STATUS: "AUTORIZADO — confirmação manual das duas fontes"
+      PUBLISHER_YOUTUBE_ACCOUNT: ${{ inputs.youtube_account }}
+      PUBLISHER_TIKTOK_ACCOUNT: ${{ inputs.tiktok_account }}
 
     steps:
       - name: Guardar acionamento manual
@@ -121,71 +133,13 @@ jobs:
       - name: Testes completos
         run: python -m pytest -q
 
-      - name: Verificar manifesto persistido
+      - name: Estado da execução
         id: state
-        env:
-          REQUESTED_FOLDER_1: ${{ inputs.folder_1 }}
-          REQUESTED_FOLDER_2: ${{ inputs.folder_2 }}
-          REQUESTED_DATE_1: ${{ inputs.date_1 }}
-          REQUESTED_DATE_2: ${{ inputs.date_2 }}
-          REQUESTED_PERIOD_1: ${{ inputs.period_1 }}
-          REQUESTED_PERIOD_2: ${{ inputs.period_2 }}
-          REQUESTED_SOURCE_1: ${{ inputs.source_name_1 }}
-          REQUESTED_SOURCE_2: ${{ inputs.source_name_2 }}
-          REQUESTED_EPISODE_1: ${{ inputs.source_episode_1 }}
-          REQUESTED_EPISODE_2: ${{ inputs.source_episode_2 }}
-          REQUESTED_RIGHTS: ${{ inputs.rights_confirmed && '1' || '0' }}
-          REQUESTED_MODE: ${{ inputs.mode }}
-        run: |
-          needs_prepare=1
-          if [ -f publisher/state/current.json ]; then
-            if python - <<'PY'
-          import json
-          import os
-          from pathlib import Path
-          from publisher.core import as_bool, normalize_period, validate_manifest
-          from publisher.google_io import normalize_folder_id
+        run: echo "needs_prepare=1" >> "$GITHUB_OUTPUT"
 
-          try:
-              data = json.loads(Path("publisher/state/current.json").read_text(encoding="utf-8"))
-              validate_manifest(data)
-              requested = [
-                  (normalize_folder_id(os.environ["REQUESTED_FOLDER_1"]), os.environ["REQUESTED_DATE_1"], normalize_period(os.environ["REQUESTED_PERIOD_1"])),
-                  (normalize_folder_id(os.environ["REQUESTED_FOLDER_2"]), os.environ["REQUESTED_DATE_2"], normalize_period(os.environ["REQUESTED_PERIOD_2"])),
-              ]
-              actual = [
-                  (normalize_folder_id(str(item.get("drive_folder_id", ""))), str(item.get("date", "")), normalize_period(str(item.get("period", ""))))
-                  for item in data.get("batches", [])
-              ]
-              requested_sources = [
-                  (os.environ.get("REQUESTED_SOURCE_1", "").strip(), os.environ.get("REQUESTED_EPISODE_1", "").strip()),
-                  (os.environ.get("REQUESTED_SOURCE_2", "").strip(), os.environ.get("REQUESTED_EPISODE_2", "").strip()),
-              ]
-              actual_sources = [
-                  (str(item.get("source", {}).get("name", "")).strip(), str(item.get("source", {}).get("episode", "")).strip())
-                  for item in data.get("batches", [])
-              ]
-              requested_rights = os.environ.get("REQUESTED_RIGHTS", "0") == "1"
-              actual_rights = as_bool((data.get("rights") or {}).get("authorized"))
-              if requested != actual or requested_sources != actual_sources or requested_rights != actual_rights:
-                  raise SystemExit(1)
-          except Exception:
-              raise SystemExit(1)
-          PY
-            then
-              if [ "${REQUESTED_MODE:-}" != "prepare" ]; then
-                needs_prepare=0
-              fi
-            fi
-          fi
-          if [ "${{ inputs.mode }}" = "preflight" ]; then
-            needs_prepare=0
-          fi
-          echo "needs_prepare=$needs_prepare" >> "$GITHUB_OUTPUT"
-
-      - name: Preparar manifesto v7
+      - name: Preparar manifesto v8
         id: prepare
-        if: steps.state.outputs.needs_prepare == '1' && inputs.mode != 'preflight'
+        if: steps.state.outputs.needs_prepare == '1'
         run: |
           python -m publisher.cli prepare \
             --folder-id "${{ inputs.folder_1 }}" \
@@ -198,6 +152,8 @@ jobs:
             --source-episode "${{ inputs.source_episode_1 }}" \
             --source-name-2 "${{ inputs.source_name_2 }}" \
             --source-episode-2 "${{ inputs.source_episode_2 }}" \
+            --youtube-account "${{ inputs.youtube_account }}" \
+            --tiktok-account "${{ inputs.tiktok_account }}" \
             ${{ inputs.rights_confirmed && '--confirm-rights' || '' }}
 
       - name: Dry-run YouTube
@@ -215,6 +171,14 @@ jobs:
       - name: Gerar diagnóstico controlado de distribuição
         if: inputs.mode == 'diagnostic-package'
         run: python -m publisher.cli diagnostic-package | tee publisher/state/diagnostic_package.json
+
+      - name: Inicializar ledger do pacote normal
+        if: inputs.mode == 'browser-package'
+        run: python -m publisher.cli init-ledger --package publisher/state/browser_package.json
+
+      - name: Inicializar ledger do diagnóstico
+        if: inputs.mode == 'diagnostic-package'
+        run: python -m publisher.cli init-ledger --package publisher/state/diagnostic_package.json
 
       - name: Validar diagnóstico controlado
         if: inputs.mode == 'diagnostic-package'
@@ -240,23 +204,8 @@ jobs:
         if: always() && (steps.prepare.outcome == 'success' || steps.state.outputs.needs_prepare == '0') && inputs.mode != 'preflight'
         run: python -m publisher.cli report | tee publisher/state/report.json
 
-      - name: Guard de falhas parciais
-        if: always() && (steps.prepare.outcome == 'success' || steps.state.outputs.needs_prepare == '0') && inputs.mode != 'preflight'
-        run: |
-          python - <<'PY'
-          import json
-          from pathlib import Path
-          path = Path("publisher/state/report.json")
-          if not path.exists():
-              raise SystemExit(0)
-          report = json.loads(path.read_text(encoding="utf-8"))
-          attention = report.get("summary", {}).get("attention", 0)
-          if attention:
-              raise SystemExit(f"Publisher encontrou {attention} item(ns) para reconciliação.")
-          PY
-
-      - name: Persistir manifesto sanitizado
-        if: always() && (steps.prepare.outcome == 'success' || steps.state.outputs.needs_prepare == '0') && inputs.mode != 'preflight'
+      - name: Sanitizar estado operacional
+        if: always() && (steps.prepare.outcome == 'success' || steps.state.outputs.needs_prepare == '0')
         run: |
           python - <<'PY'
           import json
@@ -270,25 +219,12 @@ jobs:
               data["transcripts"] = "redacted"
               path.write_text(json.dumps(data, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
           PY
-          git config user.name "corte-fino-publisher[bot]"
-          git config user.email "corte-fino-publisher[bot]@users.noreply.github.com"
-          git add -f publisher/state/current.json publisher/state/report.json 2>/dev/null || true
-          if [ -f publisher/state/browser_package.json ]; then
-            git add -f publisher/state/browser_package.json
-          fi
-          if [ -f publisher/state/diagnostic_package.json ]; then
-            git add -f publisher/state/diagnostic_package.json
-          fi
-          if ! git diff --cached --quiet; then
-            git commit -m "chore(publisher): atualizar manifesto v7 da rodada"
-            for attempt in 1 2 3; do
-              if git pull --rebase origin main && git push; then
-                exit 0
-              fi
-              git rebase --abort 2>/dev/null || true
-              sleep $((attempt * 3))
-            done
-            echo "Não foi possível sincronizar o estado do Publisher." >&2
-            exit 1
-          fi
 
+      - name: Guardar estado como artefato temporário
+        if: always() && (steps.prepare.outcome == 'success' || steps.state.outputs.needs_prepare == '0')
+        uses: actions/upload-artifact@v4
+        with:
+          name: corte-fino-publisher-${{ github.run_id }}
+          path: publisher/state/*.json
+          if-no-files-found: warn
+          retention-days: 1

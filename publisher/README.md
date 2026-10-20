@@ -1,6 +1,6 @@
-# Corte Fino Publisher 2.2 — Distribution Guard
+# Corte Fino Publisher 2.4 — Control Plane
 
-O Publisher é o Motor 2 do Corte Fino. Ele recebe duas pastas exatas do Google Drive, cada uma com cinco MP4s prontos pelo Creator, e distribui os dez cortes em dois dias: cinco publicações por dia. A versão 2.3 mantém o Distribution Guard e torna a cadência de cinco por dia o fluxo normal.
+O Publisher é o Motor 2 do Corte Fino. Ele recebe duas pastas exatas do Google Drive, cada uma com cinco MP4s prontos pelo Creator, e distribui os dez cortes em dois dias: cinco publicações por dia. A versão 2.4 mantém o Distribution Guard, a cadência de cinco por dia e adiciona Account Identity Guard, Publication Receipt e reconciliação.
 
 ## Contrato de entrada
 
@@ -14,8 +14,9 @@ Cada rodada exige:
 
 Grade diária em America/Sao_Paulo:
 
-- 10h, 12h, 14h, 16h e 18h;
-- prioridade editorial dos melhores cortes: 10h, 16h, 18h, 12h e 14h.
+- perfil experimental atual: 10h, 12h, 14h, 16h e 18h;
+- prioridade editorial temporária: 10h, 16h, 18h, 12h e 14h;
+- estes horários são hipótese operacional em medição, não regra permanente de aprendizado.
 
 As duas pastas obrigatoriamente usam datas diferentes. A pasta A ocupa um dia e a pasta B o outro, impedindo dez publicações no mesmo dia. A pasta é uma fronteira rígida: subpastas, arquivos extras, lotes vizinhos, duplicidade de checksum ou numeração incorreta bloqueiam o preparo.
 
@@ -51,11 +52,11 @@ O comando `diagnostic-package`:
 
 Esse modo existe para separar DISTRIBUIÇÃO de PERFORMANCE. Ele não afirma shadowban e não interpreta retenção quando a amostra é insuficiente.
 
-## Manifesto v7
+## Manifesto v8
 
-O manifesto contém dois lotes, dez cortes globais distribuídos em duas datas diferentes, índice local, pasta, checksum, copy e timestamp absoluto de cada publicação. Cada data contém exatamente cinco slots.
+O manifesto contém dois lotes, dez cortes globais distribuídos em duas datas diferentes, índice local, pasta, checksum, copy, commit do motor, contas-alvo e timestamp absoluto de cada publicação. Cada data contém exatamente cinco slots.
 
-O estado persistido no Git não contém transcrições integrais. O pacote browser-package contém somente os dados necessários para preencher os Studios.
+O estado operacional não é commitado no repositório público. O workflow mantém os JSONs somente como artefato temporário de 1 dia. O pacote browser-package contém os dados necessários para preencher os Studios e a conta esperada em cada plataforma.
 
 ## Publicação oficial
 
@@ -74,13 +75,17 @@ O Publisher não publica por API ou qualquer agendador externo. Ele somente prep
 
   python -m publisher.cli prepare \
     --folder-id "LINK_PASTA_A" --folder-2-id "LINK_PASTA_B" \
-    --date-1 2026-10-18 --date-2 2026-10-18 \
+    --date-1 2026-10-21 --date-2 2026-10-22 \
     --period-1 daily --period-2 daily \
     --source-name "CANAL A" --source-name-2 "CANAL B" \
+    --youtube-account "@cortefinoshorts" --tiktok-account "cortefinoshorts" \
     --confirm-rights
 
   python -m publisher.cli browser-package
   python -m publisher.cli diagnostic-package
+  python -m publisher.cli init-ledger --package publisher/state/browser_package.json
+  python -m publisher.cli record-receipt --publication-key "RUN:01:youtube" --observed-account "@cortefinoshorts" --receipt-state SCHEDULED --remote-reference "REFERÊNCIA_DO_STUDIO"
+  python -m publisher.cli reconcile
   python -m publisher.cli report
   python -m publisher.cli youtube --dry-run
   python -m publisher.cli tiktok --dry-run
@@ -90,9 +95,9 @@ O Publisher não publica por API ou qualquer agendador externo. Ele somente prep
 - duas pastas obrigatórias e isoladas;
 - cinco slots únicos por data;
 - timestamps locais convertidos e revisados antes da postagem;
-- validação de conta e tela correta no Studio;
+- Account Identity Guard: cada pacote carrega a conta esperada e o receipt bloqueia identidade divergente;
 - revisão visual antes de confirmar cada agendamento;
 - manifesto imutável e revisão de cada item no Studio antes da confirmação;
-- falha parcial interrompe a rodada e exige reconciliação;
+- estado remoto ambíguo exige reconciliação antes de qualquer retry;
 - Creator e Publisher continuam separados.
 

@@ -126,6 +126,8 @@ def _valid_manifest():
         "run_id": "run-1",
         "date": "2026-10-18",
         "timezone": "America/Sao_Paulo",
+        "engine_commit": "test-sha",
+        "target_accounts": {"youtube": "@cortefinoshorts", "tiktok": "cortefinoshorts"},
         "drive_folder_id": "folder-a",
         "drive_folder_ids": ["folder-a", "folder-b"],
         "youtube_hours": list(YOUTUBE_HOURS),
@@ -179,6 +181,25 @@ def test_manifest_rejects_two_batches_on_same_date():
     manifest = _valid_manifest()
     manifest["batches"][1]["date"] = manifest["batches"][0]["date"]
     with pytest.raises(RuntimeError, match="5 por dia exige datas diferentes"):
+        validate_manifest(manifest)
+
+
+def test_manifest_rejects_batch_b_before_batch_a():
+    manifest = _valid_manifest()
+    manifest["batches"][1]["date"] = "2026-10-17"
+    for clip in manifest["clips"][5:]:
+        hour = clip["schedule"]["youtube_hour"]
+        at = local_publish_at(date(2026, 10, 17), hour)
+        clip["schedule"]["youtube_publish_at"] = at
+        clip["schedule"]["tiktok_publish_at"] = at
+    with pytest.raises(RuntimeError, match="lote B precisa ser posterior"):
+        validate_manifest(manifest)
+
+
+def test_manifest_requires_target_accounts():
+    manifest = _valid_manifest()
+    manifest["target_accounts"]["youtube"] = ""
+    with pytest.raises(RuntimeError, match="conta-alvo do YouTube ausente"):
         validate_manifest(manifest)
 
 
@@ -241,12 +262,15 @@ def test_youtube_dry_run_is_fully_local(monkeypatch):
 
 def test_browser_package_has_timezone_safe_studio_settings():
     package = browser_package(_valid_manifest())
-    assert package["version"] == 3
+    assert package["version"] == 4
     assert package["rights_authorized"] is True
     assert len(package["posts"]) == 10
     first = package["posts"][0]
     assert first["drive_folder_url"].startswith("https://drive.google.com/drive/folders/")
     assert first["youtube"]["publication_mode"] == "schedule"
+    assert first["youtube"]["account_guard"]["expected"] == "@cortefinoshorts"
+    assert first["tiktok"]["account_guard"]["expected"] == "cortefinoshorts"
+    assert first["publication_keys"]["youtube"].endswith(":youtube")
     assert first["youtube"]["made_for_kids"] is False
     assert first["youtube"]["contains_synthetic_media"] is False
     assert first["tiktok"]["visibility"] == "PUBLIC_TO_EVERYONE"
@@ -258,7 +282,7 @@ def test_browser_package_has_timezone_safe_studio_settings():
 
 def test_distribution_guard_builds_three_post_control():
     package = diagnostic_package(_valid_manifest())
-    assert package["version"] == 4
+    assert package["version"] == 5
     assert package["mode"] == "distribution_diagnostic"
     assert package["expected_posts"] == 3
     assert len(package["posts"]) == 3
@@ -285,6 +309,20 @@ def test_copy_qa_rejects_template_language():
     )
     issues = copy_quality_issues(pack)
     assert any("frase genérica proibida" in issue for issue in issues)
+
+
+def test_browser_package_blocks_missing_account_guard():
+    package = browser_package(_valid_manifest())
+    package["posts"][0]["youtube"].pop("account_guard")
+    from publisher.cli import validate_browser_package
+    with pytest.raises(RuntimeError, match="Account Identity Guard"):
+        validate_browser_package(package)
+
+
+def test_branding_margin_matches_creator_contract():
+    from main import CAPTION_MARGIN_V
+    assert BRANDING_CAPTION_MARGIN_V == 430
+    assert BRANDING_CAPTION_MARGIN_V == CAPTION_MARGIN_V
 
 
 def test_browser_package_blocks_unconfirmed_rights():

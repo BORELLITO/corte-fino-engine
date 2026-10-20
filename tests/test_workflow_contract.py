@@ -1,6 +1,7 @@
 from pathlib import Path
 
 PUBLISHER_WORKFLOW = Path(".github/workflows/corte-fino-publisher.yml")
+PUBLISHER_CI = Path(".github/workflows/corte-fino-publisher-ci.yml")
 GENERATOR_WORKFLOW = Path(".github/workflows/corte-fino.yml")
 TIKTOK_API_WORKFLOW = Path(".github/workflows/tiktok-sandbox-token.yml")
 ROOT_README = Path("README.md")
@@ -16,13 +17,34 @@ def test_publisher_requires_two_exact_drive_folders_and_daily_grid():
     assert "period_2:" in text
     assert "options: [daily]" in text
     assert "PUBLISHER_BROWSER_ONLY: \"1\"" in text
-    assert "REQUESTED_EPISODE_1" in text
-    assert "REQUESTED_EPISODE_2" in text
+    assert "youtube_account:" in text
+    assert "tiktok_account:" in text
+    assert "PUBLISHER_YOUTUBE_ACCOUNT" in text
+    assert "PUBLISHER_TIKTOK_ACCOUNT" in text
+    assert "source_episode_1:" in text
+    assert "source_episode_2:" in text
     assert "python -m publisher.cli prepare" in text
     assert "python -m publisher.cli browser-package" in text
     assert "python -m publisher.cli diagnostic-package" in text
     assert "publisher/state/browser_package.json" in text
     assert "publisher/state/diagnostic_package.json" in text
+
+
+def test_operational_state_is_not_committed_to_public_git():
+    text = PUBLISHER_WORKFLOW.read_text(encoding="utf-8")
+    assert "git add -f publisher/state" not in text
+    assert "git push" not in text
+    assert "actions/upload-artifact@v4" in text
+    assert "retention-days: 1" in text
+    assert "publisher/state/" in Path(".gitignore").read_text(encoding="utf-8")
+
+
+def test_publisher_ci_runs_on_changes():
+    text = PUBLISHER_CI.read_text(encoding="utf-8")
+    assert "pull_request:" in text
+    assert "push:" in text
+    assert "tests/test_publisher_control.py" in text
+    assert "python -m py_compile" in text
 
 
 def test_publication_api_scheduler_is_removed():
@@ -37,7 +59,7 @@ def test_publisher_has_no_metricool_route():
     assert "tiktokapis" not in Path("publisher/tiktok_io.py").read_text(encoding="utf-8")
 
 
-def test_root_docs_match_browser_only_ten_post_contract():
+def test_root_docs_match_browser_only_five_per_day_contract():
     text = ROOT_README.read_text(encoding="utf-8")
     assert "Publicar 5 por Dia" in text
     assert "Cloud Web Browser" in text

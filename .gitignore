@@ -5,3 +5,5 @@ work/
 
 radar/output/
 radar/state/history.json
+
+publisher/state/

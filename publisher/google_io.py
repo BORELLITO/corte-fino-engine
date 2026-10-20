@@ -45,6 +45,10 @@ PUBLISHER_MIN_FILE_BYTES = 50_000
 PUBLISHER_MIN_AUDIO_BITRATE = 128_000
 PUBLISHER_MIN_VIDEO_BITRATE = 6_000_000
 _WHISPER_MODEL = None
+PUBLISHER_TRANSCRIBE_INITIAL_PROMPT = (
+    "Português brasileiro. Entrevista ou podcast com fala natural, nomes próprios e termos "
+    "coloquiais. Preserve a pontuação e o sentido da fala."
+)
 
 
 def env(name: str, default: str = "") -> str:
@@ -219,7 +223,9 @@ def transcribe(path: Path) -> str:
         language="pt",
         beam_size=max(1, int(env("PUBLISHER_WHISPER_BEAM_SIZE", "3"))),
         vad_filter=True,
+        vad_parameters={"min_silence_duration_ms": 500},
         condition_on_previous_text=False,
+        initial_prompt=env("PUBLISHER_TRANSCRIBE_INITIAL_PROMPT", PUBLISHER_TRANSCRIBE_INITIAL_PROMPT) or None,
     )
     return " ".join(s.text.strip() for s in segments if s.text.strip()).strip()
 
@@ -420,6 +426,8 @@ def prepare_batches(
     output: Path,
     *,
     rights_status: str | None = None,
+    target_youtube: str = "",
+    target_tiktok: str = "",
 ) -> dict:
     if len(batch_specs) != 2:
         raise RuntimeError("O Publisher exige exatamente duas pastas por rodada.")
@@ -436,6 +444,8 @@ def prepare_batches(
         raise RuntimeError(
             "O modo 5 por dia exige datas diferentes: lote A em um dia e lote B no dia seguinte."
         )
+    if date.fromisoformat(batches[1]["date"]) <= date.fromisoformat(batches[0]["date"]):
+        raise RuntimeError("O lote B precisa estar em uma data posterior ao lote A.")
     all_slots = [(batch["date"], hour) for batch in batches for hour in batch["hours"]]
     if len(all_slots) != len(set(all_slots)):
         raise RuntimeError("Os períodos das duas pastas possuem horários conflitantes.")
@@ -446,6 +456,11 @@ def prepare_batches(
         "created_at_utc": _utc_now().isoformat().replace("+00:00", "Z"),
         "date": batches[0]["date"],
         "timezone": "America/Sao_Paulo",
+        "engine_commit": env("GITHUB_SHA", "local"),
+        "target_accounts": {
+            "youtube": (target_youtube or env("PUBLISHER_YOUTUBE_ACCOUNT")).strip(),
+            "tiktok": (target_tiktok or env("PUBLISHER_TIKTOK_ACCOUNT")).strip(),
+        },
         "drive_folder_id": batches[0]["drive_folder_id"],
         "drive_folder_ids": [batch["drive_folder_id"] for batch in batches],
         "youtube_hours": list(YOUTUBE_HOURS),
@@ -488,6 +503,8 @@ def prepare(
     source_episode: str = "",
     source_name_2: str = "",
     source_episode_2: str = "",
+    target_youtube: str = "",
+    target_tiktok: str = "",
 ) -> dict:
     """Compatibility wrapper; production always supplies two folders."""
     if not folder_2_id:
@@ -506,6 +523,8 @@ def prepare(
         ],
         output,
         rights_status=rights_status,
+        target_youtube=target_youtube,
+        target_tiktok=target_tiktok,
     )
 
 
@@ -518,7 +537,7 @@ def _parse_utc(value: str) -> datetime | None:
 
 
 def scheduled_publish_at(manifest: dict, clip: dict, platform: str = "youtube") -> str:
-    """Return the immutable per-clip timestamp stored by the v6 manifest."""
+    """Return the immutable per-clip timestamp stored by the v8 manifest."""
     key = f"{platform}_publish_at"
     value = str((clip.get("schedule") or {}).get(key, "")).strip()
     if value:
