@@ -19,6 +19,7 @@ from publisher.control import (
 from publisher.google_io import (
     FOLDER_ID,
     prepare_batches,
+    save_creator_feedback_to_drive,
     scheduled_publish_at,
 )
 from publisher.performance import (
@@ -325,7 +326,7 @@ def validate_browser_package(package: dict) -> None:
 
 def main() -> int:
     parser = argparse.ArgumentParser(description="Corte Fino Publisher")
-    parser.add_argument("command", choices=["prepare", "browser-package", "diagnostic-package", "report", "youtube", "tiktok", "verify-tiktok", "preflight", "validate-browser-package", "init-ledger", "record-receipt", "reconcile", "init-performance", "record-performance", "creator-feedback"])
+    parser.add_argument("command", choices=["prepare", "browser-package", "diagnostic-package", "report", "youtube", "tiktok", "verify-tiktok", "preflight", "validate-browser-package", "init-ledger", "record-receipt", "reconcile", "init-performance", "record-performance", "creator-feedback", "publish-feedback"])
     parser.add_argument("--folder-id", default=os.environ.get("PUBLISHER_DRIVE_FOLDER_ID", FOLDER_ID))
     parser.add_argument("--folder-2-id", default=os.environ.get("PUBLISHER_DRIVE_FOLDER_2_ID", ""))
     parser.add_argument("--manifest", default="publisher/state/current.json")
@@ -472,6 +473,20 @@ def main() -> int:
             "classification": entry["latest_classification"],
             "learning_eligible": entry["learning_eligible"],
         }, ensure_ascii=False))
+        return 0
+    if args.command == "publish-feedback":
+        performance = load_performance_ledger(Path(args.performance_ledger))
+        feedback = creator_feedback(performance)
+        output = Path(args.feedback_output)
+        output.parent.mkdir(parents=True, exist_ok=True)
+        output.write_text(json.dumps(feedback, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+        remote = save_creator_feedback_to_drive(data, feedback)
+        print(json.dumps({
+            "status": "creator_feedback_published",
+            "feedback_status": feedback["status"],
+            "eligible_youtube_samples": feedback["eligible_youtube_samples"],
+            "drive": remote,
+        }, ensure_ascii=False, indent=2))
         return 0
     if args.command == "creator-feedback":
         performance = load_performance_ledger(Path(args.performance_ledger))
