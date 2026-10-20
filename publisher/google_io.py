@@ -432,6 +432,10 @@ def prepare_batches(
         clips.extend(batch_clips)
     if batches[0]["drive_folder_id"] == batches[1]["drive_folder_id"]:
         raise RuntimeError("As duas pastas da rodada precisam ser diferentes.")
+    if batches[0]["date"] == batches[1]["date"]:
+        raise RuntimeError(
+            "O modo 5 por dia exige datas diferentes: lote A em um dia e lote B no dia seguinte."
+        )
     all_slots = [(batch["date"], hour) for batch in batches for hour in batch["hours"]]
     if len(all_slots) != len(set(all_slots)):
         raise RuntimeError("Os períodos das duas pastas possuem horários conflitantes.")
@@ -475,8 +479,8 @@ def prepare(
     target_date: date | str | None = None,
     *,
     folder_2_id: str = "",
-    period_1: str = "day",
-    period_2: str = "night",
+    period_1: str = "daily",
+    period_2: str = "daily",
     date_2: date | str | None = None,
     rights_authorized: bool | None = None,
     rights_status: str | None = None,
