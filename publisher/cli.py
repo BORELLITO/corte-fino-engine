@@ -3,7 +3,7 @@ from __future__ import annotations
 import argparse
 import json
 import os
-from datetime import datetime
+from datetime import date, datetime, time
 from pathlib import Path
 from zoneinfo import ZoneInfo
 
@@ -119,11 +119,115 @@ def browser_package(manifest: dict) -> dict:
     return package
 
 
+def diagnostic_package(manifest: dict) -> dict:
+    """Build a three-post controlled test that isolates distribution variables.
+
+    The diagnostic package never replaces the normal ten-post package. It picks
+    three clips from one batch, keeps the source/topic cluster together and
+    assigns wider local gaps so the operator can measure distribution before
+    increasing volume again.
+    """
+    validate_manifest(manifest, require_rights=True)
+    timezone = ZoneInfo(manifest["timezone"])
+    batches = {
+        str(batch.get("batch_id", "")).strip().upper(): batch
+        for batch in manifest.get("batches", [])
+        if isinstance(batch, dict)
+    }
+    grouped: dict[str, list[dict]] = {}
+    for clip in manifest["clips"]:
+        grouped.setdefault(str(clip.get("batch_id", "")).strip().upper(), []).append(clip)
+    eligible = [
+        (sum(float(item.get("copy", {}).get("viral_score", 0) or 0) for item in clips) / max(len(clips), 1), batch_id, clips)
+        for batch_id, clips in grouped.items()
+        if batch_id in batches and len(clips) == 5
+    ]
+    if not eligible:
+        raise RuntimeError("Diagnóstico de distribuição exige ao menos um lote completo de cinco cortes.")
+    _, batch_id, batch_clips = max(eligible, key=lambda row: (row[0], row[1]))
+    selected = sorted(
+        batch_clips,
+        key=lambda item: (-float(item.get("copy", {}).get("viral_score", 0) or 0), int(item.get("batch_index", 0))),
+    )[:3]
+    batch_day = date.fromisoformat(str(batches[batch_id]["date"]))
+    slots = ((11, 30), (16, 30), (20, 30))
+    posts = []
+    for clip, (hour, minute) in zip(selected, slots):
+        local_at = datetime.combine(batch_day, time(hour=hour, minute=minute), tzinfo=timezone)
+        utc_at = local_at.astimezone(ZoneInfo("UTC")).isoformat().replace("+00:00", "Z")
+        posts.append({
+            "index": clip["index"],
+            "batch_id": clip["batch_id"],
+            "batch_index": clip["batch_index"],
+            "drive_folder_id": clip["drive_folder_id"],
+            "drive_folder_url": f"https://drive.google.com/drive/folders/{clip['drive_folder_id']}",
+            "drive_id": clip["drive_id"],
+            "file_name": clip["name"],
+            "diagnostic_slot": local_at.strftime("%Y-%m-%d %H:%M"),
+            "youtube": {
+                "publish_at": utc_at,
+                "publish_at_local": local_at.strftime("%Y-%m-%d %H:%M"),
+                "publication_mode": "manual_controlled_test",
+                "language": "pt-BR",
+                "category_id": "24",
+                "made_for_kids": False,
+                "contains_synthetic_media": False,
+                "title": clip["copy"]["youtube_title"],
+                "description": clip["copy"]["youtube_description"],
+                "tags": clip["copy"]["youtube_tags"],
+                "tags_count": len(clip["copy"]["youtube_tags"]),
+                "verify_after_publish": True,
+                "post_publish_checks": [
+                    "visibility_public",
+                    "restrictions_none",
+                    "recognized_as_short",
+                    "shown_in_feed_after_24h",
+                    "viewed_vs_swiped_after_24h",
+                ],
+            },
+            "tiktok": {
+                "publish_at": utc_at,
+                "publish_at_local": local_at.strftime("%Y-%m-%d %H:%M"),
+                "publication_mode": "manual_controlled_test",
+                "visibility": validate_browser_visibility(PUBLIC_TIKTOK_VISIBILITY),
+                "visibility_label": "Todos (público)",
+                "privacy_check": "required_before_publish",
+                "verify_after_publish": True,
+                "caption": clip["copy"]["tiktok_caption"],
+                "post_publish_checks": [
+                    "account_check_ok",
+                    "visibility_public",
+                    "for_you_eligibility",
+                    "originality_or_reuse_notice",
+                    "views_after_2h",
+                    "views_after_24h",
+                ],
+            },
+        })
+    package = {
+        "version": 4,
+        "mode": "distribution_diagnostic",
+        "expected_posts": 3,
+        "source_manifest_version": manifest["version"],
+        "timezone": manifest["timezone"],
+        "rights_authorized": True,
+        "selected_batch_id": batch_id,
+        "strategy": "3 posts, one source cluster, 11:30 / 16:30 / 20:30, manual controlled test",
+        "do_not_repost_identical_files": True,
+        "tiktok_global_rule": "Confirmar Todos (público) e elegibilidade do Para Você após publicar.",
+        "youtube_global_rule": "Registrar Mostrado no feed e Visualizaram x deslizaram após 24h.",
+        "posts": posts,
+    }
+    validate_browser_package(package)
+    return package
+
+
 def validate_browser_package(package: dict) -> None:
     """Fail closed if any TikTok item is not explicitly public."""
     posts = package.get("posts") if isinstance(package, dict) else None
-    if not isinstance(posts, list) or len(posts) != 10:
-        raise RuntimeError("Pacote browser inválido: esperado exatamente 10 publicações.")
+    expected_posts = 3 if package.get("mode") == "distribution_diagnostic" else 10
+    if not isinstance(posts, list) or len(posts) != expected_posts:
+        raise RuntimeError(f"Pacote browser inválido: esperado exatamente {expected_posts} publicações.")
     for post in posts:
         tiktok = post.get("tiktok") if isinstance(post, dict) else None
         if not isinstance(tiktok, dict):
@@ -131,15 +235,16 @@ def validate_browser_package(package: dict) -> None:
         validate_browser_visibility(tiktok.get("visibility", ""))
         if tiktok.get("visibility_label") != "Todos (público)":
             raise RuntimeError("Pacote TikTok sem confirmação visual de audiência pública.")
-        if tiktok.get("privacy_check") != "required_before_schedule":
-            raise RuntimeError("Pacote TikTok sem trava de privacidade antes do agendamento.")
+        expected_privacy = "required_before_publish" if package.get("mode") == "distribution_diagnostic" else "required_before_schedule"
+        if tiktok.get("privacy_check") != expected_privacy:
+            raise RuntimeError("Pacote TikTok sem trava de privacidade antes da publicação.")
         if tiktok.get("verify_after_publish") is not True:
             raise RuntimeError("Pacote TikTok sem verificação pós-publicação.")
 
 
 def main() -> int:
     parser = argparse.ArgumentParser(description="Corte Fino Publisher")
-    parser.add_argument("command", choices=["prepare", "browser-package", "report", "youtube", "tiktok", "verify-tiktok", "preflight", "validate-browser-package"])
+    parser.add_argument("command", choices=["prepare", "browser-package", "diagnostic-package", "report", "youtube", "tiktok", "verify-tiktok", "preflight", "validate-browser-package"])
     parser.add_argument("--folder-id", default=os.environ.get("PUBLISHER_DRIVE_FOLDER_ID", FOLDER_ID))
     parser.add_argument("--folder-2-id", default=os.environ.get("PUBLISHER_DRIVE_FOLDER_2_ID", ""))
     parser.add_argument("--manifest", default="publisher/state/current.json")
@@ -190,6 +295,10 @@ def main() -> int:
     data = load(path)
     if args.command == "browser-package":
         package = browser_package(data)
+        print(json.dumps(package, ensure_ascii=False, indent=2))
+        return 0
+    if args.command == "diagnostic-package":
+        package = diagnostic_package(data)
         print(json.dumps(package, ensure_ascii=False, indent=2))
         return 0
     if args.command == "validate-browser-package":
