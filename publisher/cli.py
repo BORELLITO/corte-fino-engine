@@ -13,7 +13,7 @@ from publisher.google_io import (
     prepare_batches,
     scheduled_publish_at,
 )
-from publisher.tiktok_io import publish_tiktok
+from publisher.tiktok_io import PUBLIC_TIKTOK_VISIBILITY, publish_tiktok, validate_browser_visibility
 
 
 def load(path: Path) -> dict:
@@ -45,6 +45,8 @@ def report(manifest: dict) -> dict:
             "caption": clip["copy"]["tiktok_caption"],
             "status": "pending_browser",
             "publish_id": None,
+            "visibility": PUBLIC_TIKTOK_VISIBILITY,
+            "privacy_check": "required_before_schedule",
         })
     statuses = [item["status"] for item in youtube + tiktok]
     return {
@@ -97,23 +99,47 @@ def browser_package(manifest: dict) -> dict:
                     "publish_at": tiktok_at,
                     "publish_at_local": tiktok_local.strftime("%Y-%m-%d %H:%M"),
                     "publication_mode": "schedule",
-                    "visibility": "PUBLIC_TO_EVERYONE",
+                    "visibility": validate_browser_visibility(PUBLIC_TIKTOK_VISIBILITY),
+                    "visibility_label": "Todos (público)",
+                    "privacy_check": "required_before_schedule",
+                    "verify_after_publish": True,
                     "caption": clip["copy"]["tiktok_caption"],
                 },
             }
         )
-    return {
-        "version": 2,
+    package = {
+        "version": 3,
         "source_manifest_version": manifest["version"],
         "timezone": manifest["timezone"],
         "rights_authorized": True,
+        "tiktok_global_rule": "Nunca agendar sem confirmar Todos (público).",
         "posts": posts,
     }
+    validate_browser_package(package)
+    return package
+
+
+def validate_browser_package(package: dict) -> None:
+    """Fail closed if any TikTok item is not explicitly public."""
+    posts = package.get("posts") if isinstance(package, dict) else None
+    if not isinstance(posts, list) or len(posts) != 10:
+        raise RuntimeError("Pacote browser inválido: esperado exatamente 10 publicações.")
+    for post in posts:
+        tiktok = post.get("tiktok") if isinstance(post, dict) else None
+        if not isinstance(tiktok, dict):
+            raise RuntimeError("Pacote browser inválido: bloco TikTok ausente.")
+        validate_browser_visibility(tiktok.get("visibility", ""))
+        if tiktok.get("visibility_label") != "Todos (público)":
+            raise RuntimeError("Pacote TikTok sem confirmação visual de audiência pública.")
+        if tiktok.get("privacy_check") != "required_before_schedule":
+            raise RuntimeError("Pacote TikTok sem trava de privacidade antes do agendamento.")
+        if tiktok.get("verify_after_publish") is not True:
+            raise RuntimeError("Pacote TikTok sem verificação pós-publicação.")
 
 
 def main() -> int:
     parser = argparse.ArgumentParser(description="Corte Fino Publisher")
-    parser.add_argument("command", choices=["prepare", "browser-package", "report", "youtube", "tiktok", "verify-tiktok", "preflight"])
+    parser.add_argument("command", choices=["prepare", "browser-package", "report", "youtube", "tiktok", "verify-tiktok", "preflight", "validate-browser-package"])
     parser.add_argument("--folder-id", default=os.environ.get("PUBLISHER_DRIVE_FOLDER_ID", FOLDER_ID))
     parser.add_argument("--folder-2-id", default=os.environ.get("PUBLISHER_DRIVE_FOLDER_2_ID", ""))
     parser.add_argument("--manifest", default="publisher/state/current.json")
@@ -163,7 +189,13 @@ def main() -> int:
 
     data = load(path)
     if args.command == "browser-package":
-        print(json.dumps(browser_package(data), ensure_ascii=False, indent=2))
+        package = browser_package(data)
+        print(json.dumps(package, ensure_ascii=False, indent=2))
+        return 0
+    if args.command == "validate-browser-package":
+        package = json.loads(Path("publisher/state/browser_package.json").read_text(encoding="utf-8"))
+        validate_browser_package(package)
+        print(json.dumps({"status": "ok", "public_posts": len(package["posts"]), "visibility": PUBLIC_TIKTOK_VISIBILITY}, ensure_ascii=False))
         return 0
     if args.command == "youtube":
         from publisher.google_io import publish_youtube
