@@ -1,4 +1,4 @@
-name: Corte Fino Motor 2 — Publicar 10 Cortes
+name: Corte Fino Motor 2 — Publicar 5 por Dia
 
 on:
   workflow_dispatch:
@@ -26,17 +26,17 @@ on:
         required: true
         type: string
       period_1:
-        description: "Período da primeira pasta"
+        description: "Grade da primeira pasta"
         required: true
-        default: "day"
+        default: "daily"
         type: choice
-        options: [day, night]
+        options: [daily]
       period_2:
-        description: "Período da segunda pasta"
+        description: "Grade da segunda pasta"
         required: true
-        default: "night"
+        default: "daily"
         type: choice
-        options: [day, night]
+        options: [daily]
       source_name_1:
         description: "Canal/fonte original da primeira pasta"
         required: true
@@ -183,7 +183,7 @@ jobs:
           fi
           echo "needs_prepare=$needs_prepare" >> "$GITHUB_OUTPUT"
 
-      - name: Preparar manifesto v6
+      - name: Preparar manifesto v7
         id: prepare
         if: steps.state.outputs.needs_prepare == '1' && inputs.mode != 'preflight'
         run: |
@@ -280,7 +280,7 @@ jobs:
             git add -f publisher/state/diagnostic_package.json
           fi
           if ! git diff --cached --quiet; then
-            git commit -m "chore(publisher): atualizar manifesto v6 da rodada"
+            git commit -m "chore(publisher): atualizar manifesto v7 da rodada"
             for attempt in 1 2 3; do
               if git pull --rebase origin main && git push; then
                 exit 0
