@@ -12,6 +12,7 @@ from publisher.core import validate_manifest
 
 
 PERFORMANCE_LEDGER_VERSION = 1
+LEARNING_HISTORY_VERSION = 1
 PERFORMANCE_HORIZONS = ("1h", "6h", "24h", "72h")
 LEARNING_HORIZONS = {"24h", "72h"}
 MIN_DISTRIBUTION_SAMPLE = 100
@@ -336,34 +337,111 @@ def _bounded_delta(group: dict, baseline: dict) -> float:
     return round(max(-MAX_TRIGGER_ADJUSTMENT, min(MAX_TRIGGER_ADJUSTMENT, adjustment)), 2)
 
 
-def creator_feedback(ledger: dict) -> dict:
-    """Summarize verified YouTube outcomes into conservative Creator priors.
+def new_learning_history() -> dict:
+    return {
+        "version": LEARNING_HISTORY_VERSION,
+        "updated_at": _now(),
+        "entries": {},
+    }
 
-    The profile is advisory until at least MIN_CREATOR_FEEDBACK_SAMPLES
-    learning-eligible YouTube publications exist. Even after activation, trigger
-    adjustments are bounded to +/-2 points and require at least five samples.
-    """
+
+def validate_learning_history(history: dict) -> None:
+    if not isinstance(history, dict) or history.get("version") != LEARNING_HISTORY_VERSION:
+        raise RuntimeError("Histórico de aprendizado inválido ou incompatível.")
+    entries = history.get("entries")
+    if not isinstance(entries, dict):
+        raise RuntimeError("Histórico de aprendizado sem mapa de entradas.")
+
+
+def merge_performance_into_history(history: dict, ledger: dict) -> dict:
+    """Accumulate mature YouTube outcomes across runs without duplicate training."""
+    validate_learning_history(history)
     validate_performance_ledger(ledger)
-    rows: list[dict] = []
     for entry in ledger["entries"].values():
         if entry.get("platform") != "youtube":
             continue
-        snapshot = _best_learning_snapshot(entry)
-        if not snapshot:
+        snapshots = entry.get("snapshots") or {}
+        mature = None
+        for horizon in ("72h", "24h"):
+            candidate = snapshots.get(horizon)
+            if isinstance(candidate, dict):
+                mature = candidate
+                break
+        if mature is None:
             continue
-        outcome = _youtube_outcome(entry, snapshot)
-        if not outcome:
+        outcome = _youtube_outcome(entry, mature) if mature.get("learning_eligible") else None
+        history["entries"][entry["publication_key"]] = {
+            "publication_key": entry["publication_key"],
+            "run_id": entry.get("run_id"),
+            "source": dict(entry.get("source") or {}),
+            "topic": entry.get("topic", "geral"),
+            "duration_seconds": entry.get("duration_seconds"),
+            "creator_receipt": dict(entry.get("creator_receipt") or {}),
+            "snapshot_horizon": mature.get("horizon"),
+            "captured_at": mature.get("captured_at"),
+            "classification": mature.get("classification"),
+            "learning_eligible": bool(mature.get("learning_eligible")),
+            "outcome": outcome,
+        }
+    history["updated_at"] = _now()
+    return history
+
+
+def _feedback_rows_from_history(history: dict) -> list[dict]:
+    validate_learning_history(history)
+    rows: list[dict] = []
+    for entry in history["entries"].values():
+        if not entry.get("learning_eligible"):
+            continue
+        outcome = entry.get("outcome")
+        if not isinstance(outcome, dict):
             continue
         creator = entry.get("creator_receipt") or {}
-        trigger = str(creator.get("trigger") or "").strip()
         rows.append({
             "publication_key": entry["publication_key"],
-            "trigger": trigger,
+            "trigger": str(creator.get("trigger") or "").strip(),
             "source": (entry.get("source") or {}).get("name", ""),
             "topic": entry.get("topic", "geral"),
             "duration_seconds": entry.get("duration_seconds"),
             **outcome,
         })
+    return rows
+
+
+def creator_feedback(source: dict) -> dict:
+    """Summarize verified YouTube outcomes into conservative Creator priors.
+
+    Accepts either a single-run performance ledger or the cumulative private
+    learning history. The profile is advisory until enough learning-eligible
+    YouTube publications exist across runs.
+    """
+    if source.get("version") == LEARNING_HISTORY_VERSION and all(
+        isinstance(item, dict) and "snapshots" not in item
+        for item in (source.get("entries") or {}).values()
+    ):
+        rows = _feedback_rows_from_history(source)
+    else:
+        validate_performance_ledger(source)
+        rows = []
+        for entry in source["entries"].values():
+            if entry.get("platform") != "youtube":
+                continue
+            snapshot = _best_learning_snapshot(entry)
+            if not snapshot:
+                continue
+            outcome = _youtube_outcome(entry, snapshot)
+            if not outcome:
+                continue
+            creator = entry.get("creator_receipt") or {}
+            trigger = str(creator.get("trigger") or "").strip()
+            rows.append({
+                "publication_key": entry["publication_key"],
+                "trigger": trigger,
+                "source": (entry.get("source") or {}).get("name", ""),
+                "topic": entry.get("topic", "geral"),
+                "duration_seconds": entry.get("duration_seconds"),
+                **outcome,
+            })
 
     baseline = {
         "viewed_rate": _median([row["viewed_rate"] for row in rows]),
