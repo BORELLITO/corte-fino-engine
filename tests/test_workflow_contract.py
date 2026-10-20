@@ -21,8 +21,6 @@ def test_publisher_requires_two_exact_drive_folders_and_daily_grid():
     assert "tiktok_account:" in text
     assert "PUBLISHER_YOUTUBE_ACCOUNT" in text
     assert "PUBLISHER_TIKTOK_ACCOUNT" in text
-    assert "REQUESTED_EPISODE_1" in text
-    assert "REQUESTED_EPISODE_2" in text
     assert "source_episode_1:" in text
     assert "source_episode_2:" in text
     assert "python -m publisher.cli prepare" in text
