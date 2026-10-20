@@ -28,7 +28,7 @@ from publisher.performance import new_performance_ledger
 
 def manifest():
     pack = copy_dict(make_copy(
-        "A inteligência artificial mudou o trabalho e criou um conflito que termina com uma consequência clara.",
+        "A inteligência artificial está mudando o trabalho. O ser humano pode virar o gargalo quando a ferramenta substitui decisões.",
         "Flow Podcast",
         "434",
     ))
