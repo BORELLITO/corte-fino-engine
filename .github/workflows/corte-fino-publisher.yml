@@ -172,9 +172,13 @@ jobs:
         if: inputs.mode == 'diagnostic-package'
         run: python -m publisher.cli diagnostic-package | tee publisher/state/diagnostic_package.json
 
-      - name: Inicializar ledger de publicação
-        if: inputs.mode == 'browser-package' || inputs.mode == 'diagnostic-package'
-        run: python -m publisher.cli init-ledger
+      - name: Inicializar ledger do pacote normal
+        if: inputs.mode == 'browser-package'
+        run: python -m publisher.cli init-ledger --package publisher/state/browser_package.json
+
+      - name: Inicializar ledger do diagnóstico
+        if: inputs.mode == 'diagnostic-package'
+        run: python -m publisher.cli init-ledger --package publisher/state/diagnostic_package.json
 
       - name: Validar diagnóstico controlado
         if: inputs.mode == 'diagnostic-package'
@@ -201,7 +205,7 @@ jobs:
         run: python -m publisher.cli report | tee publisher/state/report.json
 
       - name: Sanitizar estado operacional
-        if: always() && (steps.prepare.outcome == 'success' || steps.state.outputs.needs_prepare == '0') && inputs.mode != 'preflight'
+        if: always() && (steps.prepare.outcome == 'success' || steps.state.outputs.needs_prepare == '0')
         run: |
           python - <<'PY'
           import json
