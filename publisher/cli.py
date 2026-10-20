@@ -538,10 +538,17 @@ def main() -> int:
             note=args.note,
         )
         save_ledger(control_path, ledger)
+        state_drive = None
+        if performance_path.exists():
+            performance = load_performance_ledger(performance_path)
+            sync_publication_receipts(performance, ledger)
+            save_performance_ledger(performance_path, performance)
+            state_drive = save_run_state_to_drive(data, ledger, performance)
         print(json.dumps({
             "status": "receipt_recorded",
             "publication_key": args.publication_key,
             "state": ledger["entries"][args.publication_key]["state"],
+            "state_drive": state_drive,
         }, ensure_ascii=False))
         return 0
 
@@ -553,12 +560,15 @@ def main() -> int:
     if args.command == "init-performance":
         if not control_path.exists():
             raise SystemExit("init-performance exige um control ledger existente.")
-        performance = new_performance_ledger(data, load_ledger(control_path))
+        control = load_ledger(control_path)
+        performance = new_performance_ledger(data, control)
         save_performance_ledger(performance_path, performance)
+        state_drive = save_run_state_to_drive(data, control, performance)
         print(json.dumps({
             "status": "performance_ledger_initialized",
             "entries": len(performance["entries"]),
             "path": str(performance_path),
+            "state_drive": state_drive,
         }, ensure_ascii=False))
         return 0
 
@@ -577,6 +587,8 @@ def main() -> int:
         sync_publication_receipts(performance, load_ledger(control_path))
         record_performance_snapshot(performance, args.publication_key, horizon=args.horizon, metrics=metrics)
         save_performance_ledger(performance_path, performance)
+        control = load_ledger(control_path)
+        state_drive = save_run_state_to_drive(data, control, performance)
         entry = performance["entries"][args.publication_key]
         print(json.dumps({
             "status": "performance_recorded",
@@ -584,6 +596,7 @@ def main() -> int:
             "horizon": args.horizon,
             "classification": entry["latest_classification"],
             "learning_eligible": entry["learning_eligible"],
+            "state_drive": state_drive,
         }, ensure_ascii=False))
         return 0
 
