@@ -14,8 +14,8 @@ Cada rodada exige:
 
 Grade diária em America/Sao_Paulo:
 
-- 12h, 15h, 18h, 20h e 22h;
-- prioridade editorial dos melhores cortes: 20h, 18h, 22h, 15h e 12h.
+- 10h, 12h, 14h, 16h e 18h;
+- prioridade editorial dos melhores cortes: 10h, 16h, 18h, 12h e 14h.
 
 As duas pastas obrigatoriamente usam datas diferentes. A pasta A ocupa um dia e a pasta B o outro, impedindo dez publicações no mesmo dia. A pasta é uma fronteira rígida: subpastas, arquivos extras, lotes vizinhos, duplicidade de checksum ou numeração incorreta bloqueiam o preparo.
 
