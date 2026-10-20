@@ -9,12 +9,13 @@ Motor de produção e preparação de publicações curtas do Corte Fino, separa
 - Não existe handoff automático entre os motores: o Creator termina depois da entrega e nunca inicia o Publisher.
 - A postagem final ocorre exclusivamente no YouTube Studio e no TikTok Studio, por Cloud Web Browser. Não há serviço externo de agendamento nem API de publicação.
 
-## Grade fixa do Publisher
+## Grade atual do Publisher
 
 Fuso oficial: `America/Sao_Paulo`.
 
-- **Grade diária oficial:** 10h, 12h, 14h, 16h e 18h.
+- **Perfil experimental atual:** 10h, 12h, 14h, 16h e 18h.
 - O corte mais forte recebe prioridade de 10h; depois 16h, 18h, 12h e 14h.
+- A grade fica congelada enquanto coletamos evidência; ela não é tratada como verdade permanente.
 
 Cada pasta representa um dia de publicação. As duas pastas precisam usar datas diferentes; o padrão operacional é lote A em um dia e lote B no dia seguinte. O workflow é manual e exige duas pastas, duas datas, as fontes originais e confirmação explícita dos direitos.
 
@@ -26,7 +27,7 @@ O Publisher cria copy individual a partir da fala real: título do YouTube em ca
 
 ## Pacote browser-only
 
-O manifesto v7 guarda os dez cortes distribuídos em cinco por dia, lote, pasta, checksum, copy e timestamps absolutos. O `browser-package` acrescenta o horário local, o link da pasta, a configuração esperada de audiência e os dados exatos para preencher cada Studio. A audiência do TikTok é hard-locked em `PUBLIC_TO_EVERYONE`; o preflight falha se o pacote não contiver a confirmação `Todos (público)` e a verificação pós-publicação. O estado persistido não inclui transcrições integrais.
+O manifesto v8 guarda os dez cortes distribuídos em cinco por dia, lote, pasta, checksum, copy, commit do motor, contas-alvo e timestamps absolutos. O `browser-package` acrescenta horário local, link da pasta, configuração de audiência, chaves de publicação e Account Identity Guard. O `control_ledger` registra receipts e exige reconciliação antes de retry quando o estado remoto é ambíguo. A audiência do TikTok é hard-locked em `PUBLIC_TO_EVERYONE`; o preflight falha se o pacote não contiver a confirmação `Todos (público)` e a verificação pós-publicação. O estado operacional não é commitado no repositório público; o workflow usa artefato temporário de 1 dia.
 
 Operação manual:
 
