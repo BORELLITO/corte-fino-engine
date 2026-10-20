@@ -1,0 +1,41 @@
+name: Corte Fino Motor 2 — CI
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "publisher/**"
+      - "tests/test_publisher.py"
+      - "tests/test_publisher_control.py"
+      - "tests/test_workflow_contract.py"
+      - ".github/workflows/corte-fino-publisher*.yml"
+      - "main.py"
+  pull_request:
+    paths:
+      - "publisher/**"
+      - "tests/test_publisher.py"
+      - "tests/test_publisher_control.py"
+      - "tests/test_workflow_contract.py"
+      - ".github/workflows/corte-fino-publisher*.yml"
+      - "main.py"
+
+permissions:
+  contents: read
+
+jobs:
+  tests:
+    runs-on: ubuntu-22.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v7
+        with:
+          python-version: "3.11"
+      - name: Dependências mínimas
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install "pytest>=8,<9" "google-api-python-client>=2,<3" "google-auth>=2,<3"
+      - name: Compilar Publisher
+        run: python -m py_compile publisher/core.py publisher/google_io.py publisher/tiktok_io.py publisher/control.py publisher/cli.py
+      - name: Testar contratos críticos
+        run: python -m pytest -q tests/test_publisher.py tests/test_publisher_control.py tests/test_workflow_contract.py
