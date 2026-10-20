@@ -3,7 +3,7 @@ from zoneinfo import ZoneInfo
 
 import pytest
 
-from publisher.cli import browser_package, report
+from publisher.cli import browser_package, diagnostic_package, report
 from publisher.core import (
     BRANDING_CAPTION_MARGIN_V,
     BRANDING_FORMAT,
@@ -245,6 +245,37 @@ def test_browser_package_has_timezone_safe_studio_settings():
     assert first["tiktok"]["privacy_check"] == "required_before_schedule"
     assert first["tiktok"]["verify_after_publish"] is True
     assert first["youtube"]["publish_at_local"].endswith(":00")
+
+
+def test_distribution_guard_builds_three_post_control():
+    package = diagnostic_package(_valid_manifest())
+    assert package["version"] == 4
+    assert package["mode"] == "distribution_diagnostic"
+    assert package["expected_posts"] == 3
+    assert len(package["posts"]) == 3
+    assert len({post["batch_id"] for post in package["posts"]}) == 1
+    assert [post["diagnostic_slot"][-5:] for post in package["posts"]] == ["11:30", "16:30", "20:30"]
+    for post in package["posts"]:
+        assert post["youtube"]["publication_mode"] == "manual_controlled_test"
+        assert post["youtube"]["tags_count"] == 20
+        assert "shown_in_feed_after_24h" in post["youtube"]["post_publish_checks"]
+        assert post["tiktok"]["privacy_check"] == "required_before_publish"
+        assert "for_you_eligibility" in post["tiktok"]["post_publish_checks"]
+        assert "originality_or_reuse_notice" in post["tiktok"]["post_publish_checks"]
+
+
+def test_copy_qa_rejects_template_language():
+    pack = make_copy(
+        "A inteligência artificial está mudando o trabalho e pode substituir algumas decisões humanas.",
+        "Canal Teste",
+        "1",
+    )
+    pack.youtube_description = (
+        "Uma conversa do convidado que provoca reflexão e merece ser ouvida até o fim.\n\n"
+        + pack.youtube_description
+    )
+    issues = copy_quality_issues(pack)
+    assert any("frase genérica proibida" in issue for issue in issues)
 
 
 def test_browser_package_blocks_unconfirmed_rights():
