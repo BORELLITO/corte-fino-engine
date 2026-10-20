@@ -26,14 +26,16 @@ O Publisher cria copy individual a partir da fala real: título do YouTube em ca
 
 ## Pacote browser-only
 
-O manifesto v6 guarda os dez cortes, lote, pasta, checksum, copy e timestamps absolutos. O `browser-package` acrescenta o horário local, o link da pasta, a configuração esperada de audiência e os dados exatos para preencher cada Studio. O estado persistido não inclui transcrições integrais.
+O manifesto v6 guarda os dez cortes, lote, pasta, checksum, copy e timestamps absolutos. O `browser-package` acrescenta o horário local, o link da pasta, a configuração esperada de audiência e os dados exatos para preencher cada Studio. A audiência do TikTok é hard-locked em `PUBLIC_TO_EVERYONE`; o preflight falha se o pacote não contiver a confirmação `Todos (público)` e a verificação pós-publicação. O estado persistido não inclui transcrições integrais.
 
 Operação manual:
 
 1. Abrir o TikTok Studio, selecionar o MP4 original da pasta indicada e inserir a legenda do pacote.
-2. Programar o horário local do lote e revisar a visibilidade antes de confirmar.
-3. Repetir no YouTube Studio com título, descrição, tags, audiência e configuração de conteúdo sintético indicadas.
-4. Conferir visualmente cada agendamento nas duas plataformas.
+2. Antes de programar, abrir a privacidade de cada TikTok e confirmar **Todos (público)**. Se aparecer qualquer outra opção, interromper a rodada.
+3. Programar o horário local do lote e revisar novamente a visibilidade antes de confirmar.
+4. Após o horário, conferir se o relógio desapareceu e se o vídeo recebeu URL/visualizações; o agendamento sozinho não é considerado publicação pública.
+5. Repetir no YouTube Studio com título, descrição, tags, audiência e configuração de conteúdo sintético indicadas.
+6. Conferir visualmente cada agendamento nas duas plataformas.
 
 ## Motor 1
 
