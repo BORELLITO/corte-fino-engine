@@ -42,6 +42,8 @@ TRANSCRIBE_INITIAL_PROMPT = os.environ.get(
     "Português brasileiro. Entrevista ou podcast com fala natural, nomes próprios e termos coloquiais. Preserve a pontuação e o sentido da fala.",
 ).strip()
 MAX_SOURCE_DURATION_SECONDS = int(os.environ.get("MAX_SOURCE_DURATION_SECONDS", "10800"))
+CREATOR_FEEDBACK_FILE = os.environ.get("CREATOR_FEEDBACK_FILE", "").strip()
+CREATOR_FEEDBACK_MAX_ADJUSTMENT = 2.0
 TRANSCRIBE_BEAM_SIZE = max(1, int(os.environ.get("TRANSCRIBE_BEAM_SIZE", "3")))
 TRANSCRIBE_CPU_THREADS = max(1, int(os.environ.get("TRANSCRIBE_CPU_THREADS", "4")))
 TRANSCRIBE_PROGRESS_SECONDS = max(15, int(os.environ.get("TRANSCRIBE_PROGRESS_SECONDS", "45")))
@@ -694,6 +696,48 @@ def analyze_source_profile(
     }
 
 
+def load_creator_feedback(path: str | None = None) -> dict[str, Any]:
+    """Load conservative priors generated from verified Publisher outcomes."""
+    raw_path = str(path if path is not None else CREATOR_FEEDBACK_FILE).strip()
+    if not raw_path:
+        return {"status": "UNAVAILABLE", "reason": "feedback file not configured"}
+    feedback_path = Path(raw_path)
+    if not feedback_path.is_file():
+        return {"status": "UNAVAILABLE", "reason": "feedback file not found"}
+    try:
+        data = json.loads(feedback_path.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError):
+        return {"status": "INVALID", "reason": "feedback file unreadable"}
+    if not isinstance(data, dict) or data.get("version") != 1:
+        return {"status": "INVALID", "reason": "feedback schema incompatible"}
+    if data.get("source") != "publisher_performance_ledger":
+        return {"status": "INVALID", "reason": "feedback source is not trusted"}
+    priors = data.get("trigger_priors")
+    if not isinstance(priors, dict):
+        data["trigger_priors"] = {}
+    return data
+
+
+def creator_feedback_adjustment(
+    profile: dict[str, Any] | None,
+    trigger: str,
+) -> float:
+    feedback = (profile or {}).get("performance_feedback")
+    if not isinstance(feedback, dict) or feedback.get("status") != "READY":
+        return 0.0
+    prior = (feedback.get("trigger_priors") or {}).get(str(trigger))
+    if not isinstance(prior, dict) or prior.get("active") is not True:
+        return 0.0
+    try:
+        adjustment = float(prior.get("score_adjustment") or 0.0)
+    except (TypeError, ValueError):
+        return 0.0
+    return round(
+        max(-CREATOR_FEEDBACK_MAX_ADJUSTMENT, min(CREATOR_FEEDBACK_MAX_ADJUSTMENT, adjustment)),
+        2,
+    )
+
+
 def candidate_premise(text: str, trigger: str, profile: dict[str, Any] | None = None) -> str:
     cleaned = re.sub(r"\s+", " ", text).strip()
     opening = short_hook(cleaned, 150)
@@ -757,6 +801,7 @@ def score_text(
     context_hits = contains_signal(lower, priority_signals) if priority_signals else 0
     source_fit = max(0.0, min(5.0, 2.0 + min(3.0, context_hits * 0.75)))
 
+    learned_adjustment = creator_feedback_adjustment(profile, trigger)
     components = {
         "hook_0_2s": round(hook, 2),
         "tension_or_conflict": round(tension, 2),
@@ -765,6 +810,7 @@ def score_text(
         "novelty": round(novelty, 2),
         "commentability": round(comments, 2),
         "source_fit": round(source_fit, 2),
+        "performance_feedback": learned_adjustment,
     }
     raw_score = round(sum(components.values()), 2)
     score = round(min(100.0, raw_score), 2)
@@ -2963,6 +3009,7 @@ def main() -> int:
 
         segments = transcribe(source)
         profile = analyze_source_profile(segments, info, duration)
+        profile["performance_feedback"] = load_creator_feedback()
         selected, candidates = select_candidates(segments, profile)
         if not selected:
             raise RuntimeError(

@@ -1,6 +1,6 @@
-# Corte Fino Publisher 2.4 — Control Plane
+# Corte Fino Publisher 2.5 — Control + Learning Plane
 
-O Publisher é o Motor 2 do Corte Fino. Ele recebe duas pastas exatas do Google Drive, cada uma com cinco MP4s prontos pelo Creator, e distribui os dez cortes em dois dias: cinco publicações por dia. A versão 2.4 mantém o Distribution Guard, a cadência de cinco por dia e adiciona Account Identity Guard, Publication Receipt e reconciliação.
+O Publisher é o Motor 2 do Corte Fino. Ele recebe duas pastas exatas do Google Drive, cada uma com cinco MP4s prontos pelo Creator, e distribui os dez cortes em dois dias: cinco publicações por dia. A versão 2.5 mantém o Distribution Guard, Account Identity Guard, Publication Receipt e reconciliação, e acrescenta Performance Receipt + feedback conservador para o Creator.
 
 ## Contrato de entrada
 
@@ -57,6 +57,34 @@ Esse modo existe para separar DISTRIBUIÇÃO de PERFORMANCE. Ele não afirma sha
 O manifesto contém dois lotes, dez cortes globais distribuídos em duas datas diferentes, índice local, pasta, checksum, copy, commit do motor, contas-alvo e timestamp absoluto de cada publicação. Cada data contém exatamente cinco slots.
 
 O estado operacional não é commitado no repositório público. O workflow mantém os JSONs somente como artefato temporário de 1 dia. O pacote browser-package contém os dados necessários para preencher os Studios e a conta esperada em cada plataforma.
+
+
+## Performance Receipt → Creator
+
+O Publisher pode registrar snapshots de performance em `1h`, `6h`, `24h` e `72h`. Métricas só são aceitas depois que o Publication Receipt confirma o post como `PUBLIC`/`VERIFIED`.
+
+Para aprendizado do Creator:
+
+- snapshots de 1h/6h são observacionais e nunca treinam o ranking;
+- 24h/72h podem ser elegíveis;
+- YouTube exige sinal de distribuição (`shown_in_feed`) de pelo menos 100;
+- restrições, distribuição insuficiente e posts não verificados são excluídos;
+- o snapshot maduro mais recente tem autoridade: uma restrição em 72h cancela uma elegibilidade anterior de 24h;
+- o histórico é cumulativo entre rodadas e deduplicado por `publication_key`;
+- somente após 20 Shorts elegíveis o perfil pode ficar `READY`;
+- cada trigger exige pelo menos 5 amostras;
+- o ajuste no score do Creator fica limitado a ±2 pontos e atua como desempate, sem substituir os gates editoriais/narrativos.
+
+O Creator grava seu recibo compacto diretamente em `appProperties` do MP4. O Publisher lê esse recibo e consegue relacionar performance com trigger, score, duração, origem e nicho. O histórico e o arquivo `_corte_fino_creator_feedback.json` ficam no diretório raiz privado do Creator no Google Drive, nunca dentro da pasta rígida dos cinco MP4.
+
+A captura de métricas privadas do YouTube/TikTok Studio não é simulada pelo código: Work/operador precisa observar os dados reais e registrá-los no ledger.
+
+Comandos principais:
+
+  python -m publisher.cli init-performance
+  python -m publisher.cli record-performance --publication-key "RUN:01:youtube" --horizon 24h --metrics-json '{"shown_in_feed":1200,"views":700,"viewed_rate":64,"avg_percentage_viewed":82}'
+  python -m publisher.cli creator-feedback
+  python -m publisher.cli publish-feedback
 
 ## Publicação oficial
 
