@@ -322,11 +322,13 @@ def main() -> int:
     parser.add_argument("--youtube-account", default=os.environ.get("PUBLISHER_YOUTUBE_ACCOUNT", "@cortefinoshorts"), help="canal/handle esperado no YouTube Studio")
     parser.add_argument("--tiktok-account", default=os.environ.get("PUBLISHER_TIKTOK_ACCOUNT", "cortefinoshorts"), help="usuário esperado no TikTok Studio")
     parser.add_argument("--ledger", default="publisher/state/control_ledger.json")
+    parser.add_argument("--package", default="", help="browser/diagnostic package usado para limitar o ledger")
     parser.add_argument("--publication-key", default="")
     parser.add_argument("--observed-account", default="")
     parser.add_argument("--receipt-state", default="")
     parser.add_argument("--remote-id", default="")
     parser.add_argument("--remote-url", default="")
+    parser.add_argument("--remote-reference", default="", help="referência visual/remota do Studio quando não houver ID/URL")
     parser.add_argument("--note", default="")
     args = parser.parse_args()
     path = Path(args.manifest)
@@ -363,7 +365,19 @@ def main() -> int:
 
     data = load(path)
     if args.command == "init-ledger":
-        ledger = new_ledger(data)
+        selected_keys = None
+        if args.package:
+            package = json.loads(Path(args.package).read_text(encoding="utf-8"))
+            selected_keys = {
+                str(key)
+                for post in package.get("posts", [])
+                if isinstance(post, dict)
+                for key in (post.get("publication_keys") or {}).values()
+                if str(key).strip()
+            }
+            if not selected_keys:
+                raise SystemExit("O pacote informado não contém publication_keys.")
+        ledger = new_ledger(data, selected_keys)
         save_ledger(Path(args.ledger), ledger)
         print(json.dumps({"status": "ledger_initialized", "entries": len(ledger["entries"]), "path": args.ledger}, ensure_ascii=False))
         return 0
@@ -379,6 +393,7 @@ def main() -> int:
             state=args.receipt_state,
             remote_id=args.remote_id,
             remote_url=args.remote_url,
+            remote_reference=args.remote_reference,
             note=args.note,
         )
         save_ledger(ledger_path, ledger)
