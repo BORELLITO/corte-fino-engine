@@ -21,6 +21,13 @@ from publisher.google_io import (
     prepare_batches,
     scheduled_publish_at,
 )
+from publisher.performance import (
+    creator_feedback,
+    load_performance_ledger,
+    new_performance_ledger,
+    record_performance_snapshot,
+    save_performance_ledger,
+)
 from publisher.tiktok_io import PUBLIC_TIKTOK_VISIBILITY, publish_tiktok, validate_browser_visibility
 
 
@@ -317,7 +324,7 @@ def validate_browser_package(package: dict) -> None:
 
 def main() -> int:
     parser = argparse.ArgumentParser(description="Corte Fino Publisher")
-    parser.add_argument("command", choices=["prepare", "browser-package", "diagnostic-package", "report", "youtube", "tiktok", "verify-tiktok", "preflight", "validate-browser-package", "init-ledger", "record-receipt", "reconcile"])
+    parser.add_argument("command", choices=["prepare", "browser-package", "diagnostic-package", "report", "youtube", "tiktok", "verify-tiktok", "preflight", "validate-browser-package", "init-ledger", "record-receipt", "reconcile", "init-performance", "record-performance", "creator-feedback"])
     parser.add_argument("--folder-id", default=os.environ.get("PUBLISHER_DRIVE_FOLDER_ID", FOLDER_ID))
     parser.add_argument("--folder-2-id", default=os.environ.get("PUBLISHER_DRIVE_FOLDER_2_ID", ""))
     parser.add_argument("--manifest", default="publisher/state/current.json")
@@ -345,6 +352,10 @@ def main() -> int:
     parser.add_argument("--remote-url", default="")
     parser.add_argument("--remote-reference", default="", help="referência visual/remota do Studio quando não houver ID/URL")
     parser.add_argument("--note", default="")
+    parser.add_argument("--performance-ledger", default="publisher/state/performance_ledger.json")
+    parser.add_argument("--horizon", default="", help="snapshot de performance: 1h, 6h, 24h ou 72h")
+    parser.add_argument("--metrics-json", default="", help="objeto JSON com métricas observadas no Studio/Analytics")
+    parser.add_argument("--feedback-output", default="publisher/state/creator_feedback.json")
     args = parser.parse_args()
     path = Path(args.manifest)
 
@@ -417,6 +428,53 @@ def main() -> int:
     if args.command == "reconcile":
         ledger = load_ledger(Path(args.ledger))
         print(json.dumps(reconciliation_summary(ledger), ensure_ascii=False, indent=2))
+        return 0
+    if args.command == "init-performance":
+        control_path = Path(args.ledger)
+        if not control_path.exists():
+            raise SystemExit("init-performance exige um control ledger existente.")
+        performance = new_performance_ledger(data, load_ledger(control_path))
+        save_performance_ledger(Path(args.performance_ledger), performance)
+        print(json.dumps({
+            "status": "performance_ledger_initialized",
+            "entries": len(performance["entries"]),
+            "path": args.performance_ledger,
+        }, ensure_ascii=False))
+        return 0
+    if args.command == "record-performance":
+        if not args.publication_key or not args.horizon or not args.metrics_json:
+            raise SystemExit("record-performance exige --publication-key, --horizon e --metrics-json.")
+        try:
+            metrics = json.loads(args.metrics_json)
+        except json.JSONDecodeError as exc:
+            raise SystemExit("--metrics-json precisa ser um objeto JSON válido.") from exc
+        if not isinstance(metrics, dict):
+            raise SystemExit("--metrics-json precisa conter um objeto JSON.")
+        performance_path = Path(args.performance_ledger)
+        performance = load_performance_ledger(performance_path)
+        record_performance_snapshot(
+            performance,
+            args.publication_key,
+            horizon=args.horizon,
+            metrics=metrics,
+        )
+        save_performance_ledger(performance_path, performance)
+        entry = performance["entries"][args.publication_key]
+        print(json.dumps({
+            "status": "performance_recorded",
+            "publication_key": args.publication_key,
+            "horizon": args.horizon,
+            "classification": entry["latest_classification"],
+            "learning_eligible": entry["learning_eligible"],
+        }, ensure_ascii=False))
+        return 0
+    if args.command == "creator-feedback":
+        performance = load_performance_ledger(Path(args.performance_ledger))
+        feedback = creator_feedback(performance)
+        output = Path(args.feedback_output)
+        output.parent.mkdir(parents=True, exist_ok=True)
+        output.write_text(json.dumps(feedback, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+        print(json.dumps(feedback, ensure_ascii=False, indent=2))
         return 0
     if args.command == "browser-package":
         package = browser_package(data)
