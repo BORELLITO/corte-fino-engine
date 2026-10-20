@@ -50,10 +50,10 @@ def test_slots_are_five_per_day_and_ranked():
     assign_slots(clips, DAY_PERIOD_HOURS)
     assert sorted(clip["schedule"]["youtube_hour"] for clip in clips) == list(DAY_PERIOD_HOURS)
     assert sorted(clip["schedule"]["tiktok_hour"] for clip in clips) == list(DAY_PERIOD_HOURS)
-    assert list(YOUTUBE_HOURS) == [12, 15, 18, 20, 22]
+    assert list(YOUTUBE_HOURS) == [10, 12, 14, 16, 18]
     assert TIKTOK_HOURS == YOUTUBE_HOURS
     strongest = max(clips, key=lambda item: item["copy"]["viral_score"])
-    assert strongest["schedule"]["youtube_hour"] == 20
+    assert strongest["schedule"]["youtube_hour"] == 10
 
 
 def test_copy_contract():
@@ -305,7 +305,7 @@ def test_tiktok_dry_run_keeps_ten_scheduled_posts():
     manifest = _valid_manifest()
     results = publish_tiktok(manifest, dry_run=True)
     assert len(results) == 10
-    assert {item["publish_at"][11:13] for item in results} == {"15", "18", "21", "23", "01"}
+    assert {item["publish_at"][11:13] for item in results} == {"13", "15", "17", "19", "21"}
 
 
 def test_report_contains_both_batches():
