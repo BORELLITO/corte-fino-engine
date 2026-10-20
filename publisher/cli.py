@@ -18,13 +18,17 @@ from publisher.control import (
 )
 from publisher.google_io import (
     FOLDER_ID,
+    load_creator_learning_history_from_drive,
     prepare_batches,
     save_creator_feedback_to_drive,
+    save_creator_learning_history_to_drive,
     scheduled_publish_at,
 )
 from publisher.performance import (
     creator_feedback,
     load_performance_ledger,
+    merge_performance_into_history,
+    new_learning_history,
     new_performance_ledger,
     record_performance_snapshot,
     save_performance_ledger,
@@ -476,16 +480,21 @@ def main() -> int:
         return 0
     if args.command == "publish-feedback":
         performance = load_performance_ledger(Path(args.performance_ledger))
-        feedback = creator_feedback(performance)
+        history = load_creator_learning_history_from_drive(data) or new_learning_history()
+        merge_performance_into_history(history, performance)
+        feedback = creator_feedback(history)
         output = Path(args.feedback_output)
         output.parent.mkdir(parents=True, exist_ok=True)
         output.write_text(json.dumps(feedback, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
-        remote = save_creator_feedback_to_drive(data, feedback)
+        history_remote = save_creator_learning_history_to_drive(data, history)
+        feedback_remote = save_creator_feedback_to_drive(data, feedback)
         print(json.dumps({
             "status": "creator_feedback_published",
             "feedback_status": feedback["status"],
             "eligible_youtube_samples": feedback["eligible_youtube_samples"],
-            "drive": remote,
+            "history_entries": len(history["entries"]),
+            "history_drive": history_remote,
+            "feedback_drive": feedback_remote,
         }, ensure_ascii=False, indent=2))
         return 0
     if args.command == "creator-feedback":
