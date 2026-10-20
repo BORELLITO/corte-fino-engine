@@ -38,8 +38,8 @@ from publisher.tiktok_io import TikTokError, choose_privacy_level, publish_tikto
 def test_numbering_and_periods():
     assert natural_index("corte_fino_01_vertical.mp4") == 1
     assert natural_index("VIDEO - 05.mp4") == 5
-    assert normalize_period("Bloco A") == "day"
-    assert normalize_period("evening") == "night"
+    assert normalize_period("Bloco A") == "daily"
+    assert normalize_period("evening") == "daily"
 
 
 def test_slots_are_ten_and_each_batch_isolated():
@@ -50,8 +50,10 @@ def test_slots_are_ten_and_each_batch_isolated():
     assign_slots(clips, DAY_PERIOD_HOURS)
     assert sorted(clip["schedule"]["youtube_hour"] for clip in clips) == list(DAY_PERIOD_HOURS)
     assert sorted(clip["schedule"]["tiktok_hour"] for clip in clips) == list(DAY_PERIOD_HOURS)
-    assert list(YOUTUBE_HOURS) == [8, 10, 12, 14, 16, 18, 19, 20, 21, 22]
+    assert list(YOUTUBE_HOURS) == [12, 15, 18, 20, 22]
     assert TIKTOK_HOURS == YOUTUBE_HOURS
+    strongest = max(clips, key=lambda item: item["copy"]["viral_score"])
+    assert strongest["schedule"]["youtube_hour"] == 20
 
 
 def test_copy_contract():
@@ -102,8 +104,8 @@ def _valid_manifest():
     ))
     clips = []
     batches = [
-        ("A", "folder-a", "2026-10-18", "day", list(DAY_PERIOD_HOURS), pack_a),
-        ("B", "folder-b", "2026-10-18", "night", list(NIGHT_PERIOD_HOURS), pack_b),
+        ("A", "folder-a", "2026-10-18", "daily", list(DAY_PERIOD_HOURS), pack_a),
+        ("B", "folder-b", "2026-10-19", "daily", list(NIGHT_PERIOD_HOURS), pack_b),
     ]
     for batch_no, (batch_id, folder, day, period, hours, pack) in enumerate(batches):
         local = [
@@ -129,8 +131,8 @@ def _valid_manifest():
         "youtube_hours": list(YOUTUBE_HOURS),
         "tiktok_hours": list(TIKTOK_HOURS),
         "batches": [
-            {"batch_id": "A", "drive_folder_id": "folder-a", "date": "2026-10-18", "period": "day", "hours": list(DAY_PERIOD_HOURS), "source": {"name": "Canal A", "episode": "1"}},
-            {"batch_id": "B", "drive_folder_id": "folder-b", "date": "2026-10-18", "period": "night", "hours": list(NIGHT_PERIOD_HOURS), "source": {"name": "Canal B", "episode": "2"}},
+            {"batch_id": "A", "drive_folder_id": "folder-a", "date": "2026-10-18", "period": "daily", "hours": list(DAY_PERIOD_HOURS), "source": {"name": "Canal A", "episode": "1"}},
+            {"batch_id": "B", "drive_folder_id": "folder-b", "date": "2026-10-19", "period": "daily", "hours": list(NIGHT_PERIOD_HOURS), "source": {"name": "Canal B", "episode": "2"}},
         ],
         "rights": {"authorized": True, "status": "AUTORIZADO"},
         "source": {"name": "Canal A", "episode": "1"},
@@ -166,10 +168,20 @@ def test_manifest_rejects_duplicate_drive_file():
         validate_manifest(manifest)
 
 
-def test_manifest_rejects_wrong_period():
+def test_manifest_rejects_invalid_period():
     manifest = _valid_manifest()
-    manifest["batches"][0]["period"] = "night"
-    with pytest.raises(RuntimeError, match="horários"):
+    manifest["batches"][0]["period"] = "invalid"
+    with pytest.raises(RuntimeError, match="Período inválido"):
+        validate_manifest(manifest)
+
+
+def test_manifest_rejects_two_batches_on_same_date():
+    manifest = _valid_manifest()
+    manifest["batches"][1]["date"] = manifest["batches"][0]["date"]
+    for clip in manifest["clips"][5:]:
+        clip["schedule"]["youtube_publish_at"] = clip["schedule"]["youtube_publish_at"].replace("2026-10-20", "2026-10-19")
+        clip["schedule"]["tiktok_publish_at"] = clip["schedule"]["tiktok_publish_at"].replace("2026-10-20", "2026-10-19")
+    with pytest.raises(RuntimeError, match="5 por dia exige datas diferentes"):
         validate_manifest(manifest)
 
 
@@ -296,7 +308,7 @@ def test_tiktok_dry_run_keeps_ten_scheduled_posts():
     manifest = _valid_manifest()
     results = publish_tiktok(manifest, dry_run=True)
     assert len(results) == 10
-    assert {item["publish_at"][11:13] for item in results} == {"11", "13", "15", "17", "19", "21", "22", "23", "00", "01"}
+    assert {item["publish_at"][11:13] for item in results} == {"15", "18", "21", "23", "01"}
 
 
 def test_report_contains_both_batches():
