@@ -124,6 +124,16 @@ GENERIC_COPY_PATTERNS = (
     "a conversa coloca",
     "uma fala aparentemente simples",
     "recortes que transformam falas em debates",
+    "uma conversa do",
+    "provoca reflexao",
+    "provoca reflexão",
+    "merece ser ouvida ate o fim",
+    "merece ser ouvida até o fim",
+    "qual foi a sua leitura",
+    "abre espaco para diferentes leituras",
+    "abre espaço para diferentes leituras",
+    "qual e a sua visao",
+    "qual é a sua visão",
 )
 SUSPICIOUS_ORTHOGRAPHY_PATTERNS = (
     (r"\ba cassino\b", "concordância suspeita em 'a cassino'"),
@@ -615,17 +625,23 @@ def build_credit(source_name: str = "", source_episode: str = "") -> str:
     return "Créditos: fonte não identificada."
 
 
-def build_youtube_tags(topic: str, keywords: list[str]) -> list[str]:
-    allowed = TOPIC_KEYWORDS.get(topic, set())
-    relevant = [word for word in keywords if allowed and word in allowed]
+def build_youtube_tags(
+    topic: str,
+    keywords: list[str],
+    source_name: str = "",
+) -> list[str]:
+    """Build discovery tags around the actual subject, not the Corte Fino brand."""
     candidates = [*TOPIC_TERMS.get(topic, TOPIC_TERMS["geral"])]
-    candidates.extend(KEYWORD_ALIASES.get(word, word) for word in relevant[:5])
+    candidates.extend(KEYWORD_ALIASES.get(word, word) for word in keywords[:8])
+    clean_source = format_copy_text(source_name, final_punctuation=False)
+    if clean_source:
+        candidates.extend((clean_source, f"{clean_source} podcast", f"{clean_source} cortes"))
     candidates.extend((
-        "corte fino", "cortes", "cortes de podcast", "podcast brasileiro",
-        "shorts", "youtube shorts", "viral", "viralizou", "opiniao",
-        "debate", "conversa", "entrevista", "trecho de podcast",
-        "conteudo brasileiro", "corte de entrevista", "reflexao",
-        "atualidades", "fatos e opinioes", "corte comentado", "corte relevante",
+        "podcast", "podcast brasileiro", "entrevista", "conversa",
+        "debate", "trecho de entrevista", "opiniao", "contexto",
+        "discussao", "atualidades", "sociedade", "comportamento",
+        "analise", "shorts brasil", "youtube shorts brasil",
+        "cortes de podcast", "corte de entrevista", "trecho de podcast",
     ))
     tags: list[str] = []
     seen: set[str] = set()
@@ -688,7 +704,7 @@ def make_copy(transcript: str, source_name: str = "", source_episode: str = "") 
         truncate_chars(tiktok, TIKTOK_CAPTION_LIMIT),
         title,
         truncate_chars(youtube_description, YOUTUBE_DESCRIPTION_LIMIT),
-        build_youtube_tags(topic, keys),
+        build_youtube_tags(topic, keys, source_name),
         credit=credit,
         evidence=evidence,
         cta=cta,

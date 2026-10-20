@@ -1,6 +1,6 @@
-# Corte Fino Publisher 2.1
+# Corte Fino Publisher 2.2 — Distribution Guard
 
-O Publisher é o Motor 2 do Corte Fino. Ele recebe duas pastas exatas do Google Drive, cada uma com cinco MP4s prontos pelo Creator, prepara dez publicações e entrega um pacote fechado para postagem no Cloud Web Browser.
+O Publisher é o Motor 2 do Corte Fino. Ele recebe duas pastas exatas do Google Drive, cada uma com cinco MP4s prontos pelo Creator, prepara dez publicações e entrega um pacote fechado para postagem no Cloud Web Browser. A versão 2.2 adiciona um modo diagnóstico opcional para investigar baixa distribuição sem alterar o Creator nem substituir o fluxo normal de dez posts.
 
 ## Contrato de entrada
 
@@ -31,7 +31,25 @@ Cada corte recebe copy individual:
 - hashtags derivadas do assunto, sem branding automático do Corte Fino;
 - crédito somente ao canal/fonte original;
 - tags nativas do YouTube;
-- QA bloqueante para ortografia, ASR suspeito, truncamento, espaçamento e evidência desconectada do corte.
+- QA bloqueante para ortografia, ASR suspeito, truncamento, espaçamento e evidência desconectada do corte;
+- bloqueio de descrições editoriais genéricas como "uma conversa do...", "provoca reflexão", "qual foi a sua leitura" e equivalentes;
+- tags de descoberta priorizam assunto, fonte e contexto; o branding Corte Fino não ocupa vagas de descoberta.
+
+## Distribution Guard
+
+Quando houver padrão de 0–5 views, use o modo diagnóstico em vez de aumentar o volume.
+
+O comando `diagnostic-package`:
+
+- escolhe três cortes do mesmo lote/fonte para manter um cluster de audiência;
+- prioriza os três maiores `viral_score` daquele lote;
+- recomenda 11h30, 16h30 e 20h30 no dia do lote;
+- marca a publicação como teste controlado manual;
+- exige TikTok público e verificação de elegibilidade no Para Você;
+- exige YouTube público, sem restrições e leitura de `Mostrado no feed` / `Visualizaram x deslizaram` após 24h;
+- não apaga, não reposta e não altera os sete cortes restantes.
+
+Esse modo existe para separar DISTRIBUIÇÃO de PERFORMANCE. Ele não afirma shadowban e não interpreta retenção quando a amostra é insuficiente.
 
 ## Manifesto v6
 
@@ -62,6 +80,7 @@ O Publisher não publica por API ou qualquer agendador externo. Ele somente prep
     --confirm-rights
 
   python -m publisher.cli browser-package
+  python -m publisher.cli diagnostic-package
   python -m publisher.cli report
   python -m publisher.cli youtube --dry-run
   python -m publisher.cli tiktok --dry-run

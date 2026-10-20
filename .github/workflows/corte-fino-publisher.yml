@@ -4,11 +4,11 @@ on:
   workflow_dispatch:
     inputs:
       mode:
-        description: "prepare, dry-run, browser-package ou preflight; TikTok sempre público"
+        description: "prepare, dry-run, browser-package, diagnostic-package ou preflight"
         required: true
         default: "dry-run"
         type: choice
-        options: [dry-run, prepare, browser-package, preflight]
+        options: [dry-run, prepare, browser-package, diagnostic-package, preflight]
       folder_1:
         description: "URL/ID da primeira pasta com 5 MP4"
         required: true
@@ -212,6 +212,22 @@ jobs:
         if: inputs.mode == 'browser-package'
         run: python -m publisher.cli browser-package | tee publisher/state/browser_package.json
 
+      - name: Gerar diagnóstico controlado de distribuição
+        if: inputs.mode == 'diagnostic-package'
+        run: python -m publisher.cli diagnostic-package | tee publisher/state/diagnostic_package.json
+
+      - name: Validar diagnóstico controlado
+        if: inputs.mode == 'diagnostic-package'
+        run: python - <<'PY'
+          import json
+          from pathlib import Path
+          from publisher.cli import validate_browser_package
+          package = json.loads(Path("publisher/state/diagnostic_package.json").read_text(encoding="utf-8"))
+          validate_browser_package(package)
+          assert package.get("mode") == "distribution_diagnostic"
+          assert len(package.get("posts", [])) == 3
+          PY
+
       - name: Preflight sem publicação
         if: inputs.mode == 'preflight'
         run: python -m publisher.cli browser-package > /dev/null
@@ -259,6 +275,9 @@ jobs:
           git add -f publisher/state/current.json publisher/state/report.json 2>/dev/null || true
           if [ -f publisher/state/browser_package.json ]; then
             git add -f publisher/state/browser_package.json
+          fi
+          if [ -f publisher/state/diagnostic_package.json ]; then
+            git add -f publisher/state/diagnostic_package.json
           fi
           if ! git diff --cached --quiet; then
             git commit -m "chore(publisher): atualizar manifesto v6 da rodada"
