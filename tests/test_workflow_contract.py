@@ -134,3 +134,21 @@ def test_publisher_cli_persists_state_beyond_one_day_artifact():
     assert "studio_metrics_collection" in metrics_io
     assert "studio_metrics_result" in metrics_io
     assert "metrics_result_filename" in metrics_io
+
+
+def test_finalized_files_are_drive_only_after_successful_persistence():
+    creator = GENERATOR_WORKFLOW.read_text(encoding="utf-8")
+    publisher = PUBLISHER_WORKFLOW.read_text(encoding="utf-8")
+    performance = PERFORMANCE_WORKFLOW.read_text(encoding="utf-8")
+
+    assert "actions: write" in creator
+    assert "steps.upload_drive.outcome == 'success'" in creator
+    assert "github.rest.actions.deleteArtifact" in creator
+
+    assert "actions: write" in publisher
+    assert "steps.prepare.outcome == 'success'" in publisher
+    assert "github.rest.actions.deleteArtifact" in publisher
+
+    assert "actions: write" in performance
+    assert "steps.restore_state.outcome == 'success'" in performance
+    assert "github.rest.actions.deleteArtifact" in performance

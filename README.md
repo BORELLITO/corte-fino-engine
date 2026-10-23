@@ -27,7 +27,7 @@ O Publisher cria copy individual a partir da fala real: título do YouTube em ca
 
 ## Pacote browser-only
 
-O manifesto v8 guarda os dez cortes distribuídos em cinco por dia, lote, pasta, checksum, copy, commit do motor, contas-alvo e timestamps absolutos. O `browser-package` acrescenta horário local, link da pasta, configuração de audiência, chaves de publicação e Account Identity Guard. O `control_ledger` registra receipts e exige reconciliação antes de retry quando o estado remoto é ambíguo. O `performance_ledger` aceita snapshots de 1h, 6h, 24h e 72h somente depois de a publicação estar PUBLIC/VERIFIED. A audiência do TikTok é hard-locked em `PUBLIC_TO_EVERYONE`; o preflight falha se o pacote não contiver a confirmação `Todos (público)` e a verificação pós-publicação. O estado operacional não é commitado no repositório público; o workflow usa artefato temporário de 1 dia.
+O manifesto v8 guarda os dez cortes distribuídos em cinco por dia, lote, pasta, checksum, copy, commit do motor, contas-alvo e timestamps absolutos. O `browser-package` acrescenta horário local, link da pasta, configuração de audiência, chaves de publicação e Account Identity Guard. O `control_ledger` registra receipts e exige reconciliação antes de retry quando o estado remoto é ambíguo. O `performance_ledger` aceita snapshots de 1h, 6h, 24h e 72h somente depois de a publicação estar PUBLIC/VERIFIED. A audiência do TikTok é hard-locked em `PUBLIC_TO_EVERYONE`; o preflight falha se o pacote não contiver a confirmação `Todos (público)` e a verificação pós-publicação. O estado operacional não é commitado no repositório público. O Drive é a fonte permanente dos arquivos finalizados: depois da confirmação do upload/persistência, o workflow remove o artefato temporário da execução. Em caso de falha antes da confirmação, o artefato fica disponível apenas para diagnóstico e segue a retenção curta configurada.
 
 Operação manual:
 
@@ -45,6 +45,10 @@ O Creator mantém seus gates próprios: fonte autorizada, transcrição em portu
 O destino de saída do Creator é configurado exclusivamente pelo secret `DRIVE_FOLDER_ID`; ele não reutiliza o destino do Publisher nem um ID de fallback. Cada MP4 recebe um recibo compacto em `appProperties` com índice, trigger, score, limites temporais, fingerprint e nicho, sem adicionar um sexto arquivo à pasta do lote.
 
 O Creator agora entrega três cortes por fonte. O Publisher permanece separado e mantém seu contrato próprio de cinco publicações por dia; uma pasta de três cortes não é, sozinha, um lote completo do Publisher.
+
+### Regra de retenção de arquivos
+
+Todo arquivo finalizado deve ser confirmado no Google Drive antes de ser considerado entregue. O repositório/execução mantém apenas o necessário durante o processamento; após a confirmação no Drive, artefatos temporários são apagados automaticamente. Código, testes, manifestos e estado de auditoria persistido no Drive não são apagados por essa limpeza.
 
 O Publisher pode consolidar resultados verificados do YouTube em um histórico privado no mesmo diretório raiz do Creator. Posts com distribuição insuficiente, restrição ou publicação não verificada são excluídos do aprendizado. O feedback fica inativo até acumular pelo menos 20 Shorts elegíveis; cada trigger precisa de 5 amostras e o ajuste automático é limitado a ±2 pontos, funcionando apenas como desempate conservador. A coleta das métricas do Studio ainda precisa ser realizada pelo operador/Work e registrada no performance ledger; o código não inventa nem presume métricas ausentes.
 
