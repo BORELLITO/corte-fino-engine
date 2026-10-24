@@ -1,0 +1,191 @@
+name: One-off deep GitHub audit
+
+on:
+  push:
+    paths:
+      - ".github/workflows/one-off-deep-github-audit.yml"
+  workflow_dispatch:
+
+permissions:
+  actions: read
+  contents: write
+
+jobs:
+  audit:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Deep storage audit
+        uses: actions/github-script@v7
+        env:
+          REPORT_PATH: deep_github_audit_report.json
+        with:
+          script: |
+            const fs = require('fs');
+            const { owner, repo } = context.repo;
+            const DAY = 24 * 60 * 60 * 1000;
+            const now = Date.now();
+
+            const repository = (await github.rest.repos.get({ owner, repo })).data;
+            const defaultBranch = repository.default_branch;
+
+            const artifacts = await github.paginate(
+              github.rest.actions.listArtifactsForRepo,
+              { owner, repo, per_page: 100 }
+            );
+
+            const runs = await github.paginate(
+              github.rest.actions.listWorkflowRunsForRepo,
+              { owner, repo, per_page: 100 }
+            );
+
+            let caches = [];
+            try {
+              const r = await github.request('GET /repos/{owner}/{repo}/actions/caches', {
+                owner, repo, per_page: 100
+              });
+              caches = r.data.actions_caches || [];
+            } catch {}
+
+            const branches = await github.paginate(
+              github.rest.repos.listBranches,
+              { owner, repo, per_page: 100 }
+            );
+
+            const branchAudit = [];
+            for (const branch of branches) {
+              if (branch.name === defaultBranch) {
+                branchAudit.push({ name: branch.name, default: true, protected: branch.protected });
+                continue;
+              }
+              try {
+                const commit = (await github.rest.repos.getCommit({
+                  owner, repo, ref: branch.commit.sha
+                })).data;
+                const committedAt = commit.commit?.committer?.date || commit.commit?.author?.date;
+                const ageDays = committedAt ? (now - new Date(committedAt).getTime()) / DAY : null;
+                const cmp = await github.request('GET /repos/{owner}/{repo}/compare/{basehead}', {
+                  owner, repo, basehead: `${defaultBranch}...${branch.name}`
+                });
+                branchAudit.push({
+                  name: branch.name,
+                  default: false,
+                  protected: branch.protected,
+                  last_commit_at: committedAt,
+                  age_days: ageDays == null ? null : Number(ageDays.toFixed(1)),
+                  ahead_by: cmp.data.ahead_by,
+                  behind_by: cmp.data.behind_by,
+                  safe_merged_cleanup_candidate:
+                    !branch.protected && cmp.data.ahead_by === 0 && ageDays != null && ageDays > 30
+                });
+              } catch (e) {
+                branchAudit.push({ name: branch.name, audit_error: e.status || e.message });
+              }
+            }
+
+            let releases = [];
+            try {
+              releases = await github.paginate(
+                github.rest.repos.listReleases,
+                { owner, repo, per_page: 100 }
+              );
+            } catch {}
+
+            let workflows = [];
+            try {
+              workflows = await github.paginate(
+                github.rest.actions.listRepoWorkflows,
+                { owner, repo, per_page: 100 }
+              );
+            } catch {}
+
+            let largeFiles = [];
+            try {
+              const ref = (await github.rest.git.getRef({
+                owner, repo, ref: `heads/${defaultBranch}`
+              })).data;
+              const tree = (await github.rest.git.getTree({
+                owner, repo, tree_sha: ref.object.sha, recursive: 'true'
+              })).data.tree || [];
+              const generatedExt = /\.(mp4|mov|mkv|avi|wav|mp3|zip|7z|tar|gz|bin|onnx|pt|pth)$/i;
+              largeFiles = tree
+                .filter(x => x.type === 'blob' && ((x.size || 0) >= 5 * 1024 * 1024 || generatedExt.test(x.path || '')))
+                .map(x => ({ path: x.path, size_in_bytes: x.size || 0, sha: x.sha }))
+                .sort((a,b) => b.size_in_bytes - a.size_in_bytes);
+            } catch (e) {
+              largeFiles = [{ audit_error: e.status || e.message }];
+            }
+
+            const sum = (items, field) => items.reduce((s, x) => s + (x[field] || 0), 0);
+            const runBuckets = {
+              completed_success_over_14d: 0,
+              completed_failed_over_30d: 0,
+              cancelled_or_skipped_over_7d: 0,
+              recent_or_active: 0
+            };
+            for (const run of runs) {
+              const days = (now - new Date(run.created_at).getTime()) / DAY;
+              if (run.status !== 'completed') runBuckets.recent_or_active++;
+              else if (run.conclusion === 'success' && days > 14) runBuckets.completed_success_over_14d++;
+              else if (['failure','timed_out','action_required','startup_failure'].includes(run.conclusion) && days > 30) runBuckets.completed_failed_over_30d++;
+              else if (['cancelled','skipped','neutral'].includes(run.conclusion) && days > 7) runBuckets.cancelled_or_skipped_over_7d++;
+              else runBuckets.recent_or_active++;
+            }
+
+            const report = {
+              generated_at: new Date().toISOString(),
+              repository: `${owner}/${repo}`,
+              repository_size_kb: repository.size,
+              default_branch: defaultBranch,
+              artifacts: {
+                count: artifacts.length,
+                total_bytes: sum(artifacts, 'size_in_bytes'),
+                items: artifacts.map(a => ({
+                  id: a.id, name: a.name, size_in_bytes: a.size_in_bytes || 0,
+                  created_at: a.created_at, expires_at: a.expires_at, expired: a.expired
+                }))
+              },
+              workflow_runs: {
+                count: runs.length,
+                cleanup_candidates: runBuckets
+              },
+              caches: {
+                count: caches.length,
+                total_bytes: sum(caches, 'size_in_bytes'),
+                stale_over_14d_count: caches.filter(c =>
+                  (now - new Date(c.last_accessed_at || c.created_at).getTime()) / DAY > 14
+                ).length,
+                items: caches.map(c => ({
+                  id: c.id, key: c.key, ref: c.ref,
+                  size_in_bytes: c.size_in_bytes || 0,
+                  created_at: c.created_at,
+                  last_accessed_at: c.last_accessed_at
+                }))
+              },
+              branches: branchAudit,
+              releases: releases.map(r => ({
+                id: r.id, tag_name: r.tag_name, name: r.name,
+                draft: r.draft, prerelease: r.prerelease,
+                created_at: r.created_at, published_at: r.published_at,
+                assets_count: (r.assets || []).length,
+                assets_bytes: (r.assets || []).reduce((s,a)=>s+(a.size||0),0)
+              })),
+              workflows: workflows.map(w => ({
+                id: w.id, name: w.name, path: w.path, state: w.state,
+                created_at: w.created_at, updated_at: w.updated_at
+              })),
+              large_versioned_files: largeFiles
+            };
+
+            fs.writeFileSync(process.env.REPORT_PATH, JSON.stringify(report, null, 2) + '\n');
+
+      - name: Commit audit report
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add deep_github_audit_report.json
+          git commit -m "chore: add deep GitHub audit report" || exit 0
+          git push
