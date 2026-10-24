@@ -1,0 +1,126 @@
+name: GitHub Housekeeping
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: "20 6 * * 0"
+
+permissions:
+  actions: write
+  contents: read
+
+concurrency:
+  group: github-housekeeping
+  cancel-in-progress: false
+
+jobs:
+  housekeeping:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Prune disposable GitHub Actions storage/history
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const { owner, repo } = context.repo;
+            const now = Date.now();
+            const DAY = 24 * 60 * 60 * 1000;
+            const protectedArtifactName = /(release|backup|permanent|keep)/i;
+
+            // Artifacts: keep protected names and anything younger than 3 days.
+            const artifacts = await github.paginate(
+              github.rest.actions.listArtifactsForRepo,
+              { owner, repo, per_page: 100 }
+            );
+            let artifactsDeleted = 0;
+            let artifactBytesDeleted = 0;
+
+            for (const a of artifacts) {
+              if (protectedArtifactName.test(a.name || '')) continue;
+              const ageDays = (now - new Date(a.created_at).getTime()) / DAY;
+              if (!a.expired && ageDays <= 3) continue;
+
+              try {
+                await github.rest.actions.deleteArtifact({
+                  owner, repo, artifact_id: a.id
+                });
+                artifactsDeleted++;
+                artifactBytesDeleted += a.size_in_bytes || 0;
+              } catch (e) {
+                core.warning(`Artifact ${a.id}: ${e.status || e.message}`);
+              }
+            }
+
+            // Workflow history: bounded per workflow and result class.
+            const runs = await github.paginate(
+              github.rest.actions.listWorkflowRunsForRepo,
+              { owner, repo, per_page: 100 }
+            );
+            const classify = (run) => {
+              if (run.conclusion === 'success') return 'success';
+              if (['failure','timed_out','action_required','startup_failure'].includes(run.conclusion)) return 'failure';
+              if (['cancelled','skipped','neutral'].includes(run.conclusion)) return 'cancelled';
+              return 'other';
+            };
+            const keepLimit = { success: 20, failure: 20, cancelled: 5, other: 20 };
+            const buckets = new Map();
+
+            for (const run of runs) {
+              if (run.status !== 'completed') continue;
+              const cls = classify(run);
+              const key = `${run.workflow_id}:${cls}`;
+              if (!buckets.has(key)) buckets.set(key, []);
+              buckets.get(key).push(run);
+            }
+
+            let runsDeleted = 0;
+            for (const [key, group] of buckets.entries()) {
+              group.sort((a,b) => new Date(b.created_at) - new Date(a.created_at));
+              const cls = key.split(':').pop();
+              const limit = keepLimit[cls] ?? 20;
+              for (let i = limit; i < group.length; i++) {
+                const run = group[i];
+                if (run.id === context.runId) continue;
+                try {
+                  await github.rest.actions.deleteWorkflowRun({
+                    owner, repo, run_id: run.id
+                  });
+                  runsDeleted++;
+                } catch (e) {
+                  core.warning(`Run ${run.id}: ${e.status || e.message}`);
+                }
+              }
+            }
+
+            // Caches: only discard entries not accessed for more than 21 days.
+            let cachesDeleted = 0;
+            let cacheBytesDeleted = 0;
+            try {
+              const r = await github.request('GET /repos/{owner}/{repo}/actions/caches', {
+                owner, repo, per_page: 100
+              });
+              for (const c of (r.data.actions_caches || [])) {
+                const last = c.last_accessed_at || c.created_at;
+                const idleDays = (now - new Date(last).getTime()) / DAY;
+                if (idleDays <= 21) continue;
+                try {
+                  await github.request('DELETE /repos/{owner}/{repo}/actions/caches/{cache_id}', {
+                    owner, repo, cache_id: c.id
+                  });
+                  cachesDeleted++;
+                  cacheBytesDeleted += c.size_in_bytes || 0;
+                } catch (e) {
+                  core.warning(`Cache ${c.id}: ${e.status || e.message}`);
+                }
+              }
+            } catch (e) {
+              core.warning(`Cache enumeration failed: ${e.status || e.message}`);
+            }
+
+            await core.summary
+              .addHeading('GitHub Housekeeping')
+              .addRaw(`Artifacts deleted: ${artifactsDeleted} (${artifactBytesDeleted} bytes)\n`)
+              .addRaw(`Workflow runs deleted: ${runsDeleted}\n`)
+              .addRaw(`Stale caches deleted: ${cachesDeleted} (${cacheBytesDeleted} bytes)\n`)
+              .addRaw('Branches and releases are never deleted by this workflow.\n')
+              .write();
