@@ -1,0 +1,134 @@
+{
+  "generated_at": "2026-10-24T10:59:42.866Z",
+  "repository": "BORELLITO/corte-fino-engine",
+  "policy": {
+    "delete": [
+      "expired artifacts",
+      "artifacts older than 2h from successful completed workflow runs",
+      "orphan artifacts older than 7d"
+    ],
+    "preserve": [
+      "names containing release, backup, permanent or keep",
+      "artifacts newer than 2h",
+      "failed/cancelled/in-progress/unproven artifacts"
+    ],
+    "caches": "audited only; not deleted"
+  },
+  "artifacts_before": {
+    "count": 5,
+    "total_bytes": 631232
+  },
+  "artifacts_deleted": {
+    "count": 5,
+    "total_bytes": 631232,
+    "items": [
+      {
+        "id": 12529478861,
+        "name": "github-pages",
+        "size_in_bytes": 270015,
+        "created_at": "2026-10-23T20:33:25Z",
+        "expires_at": "2026-10-24T20:33:22Z",
+        "expired": false,
+        "workflow_run_id": 40020075857,
+        "reason": "successful-completed-run",
+        "run_status": "completed",
+        "run_conclusion": "success"
+      },
+      {
+        "id": 12526198432,
+        "name": "github-pages",
+        "size_in_bytes": 269437,
+        "created_at": "2026-10-23T19:31:30Z",
+        "expires_at": "2026-10-24T19:31:29Z",
+        "expired": false,
+        "workflow_run_id": 40012042237,
+        "reason": "successful-completed-run",
+        "run_status": "completed",
+        "run_conclusion": "success"
+      },
+      {
+        "id": 12081686931,
+        "name": "corte-fino-radar-38982206748",
+        "size_in_bytes": 28359,
+        "created_at": "2026-10-16T23:35:34Z",
+        "expires_at": "2026-10-30T23:35:33Z",
+        "expired": false,
+        "workflow_run_id": 38982206748,
+        "reason": "successful-completed-run",
+        "run_status": "completed",
+        "run_conclusion": "success"
+      },
+      {
+        "id": 12081396735,
+        "name": "corte-fino-radar-38982013430",
+        "size_in_bytes": 34074,
+        "created_at": "2026-10-16T23:33:21Z",
+        "expires_at": "2026-10-30T23:33:20Z",
+        "expired": false,
+        "workflow_run_id": 38982013430,
+        "reason": "successful-completed-run",
+        "run_status": "completed",
+        "run_conclusion": "success"
+      },
+      {
+        "id": 12081318733,
+        "name": "corte-fino-radar-38982346795",
+        "size_in_bytes": 29347,
+        "created_at": "2026-10-16T23:37:08Z",
+        "expires_at": "2026-10-30T23:37:07Z",
+        "expired": false,
+        "workflow_run_id": 38982346795,
+        "reason": "successful-completed-run",
+        "run_status": "completed",
+        "run_conclusion": "success"
+      }
+    ]
+  },
+  "artifacts_kept": {
+    "count": 0,
+    "total_bytes": 0,
+    "items": []
+  },
+  "artifacts_after": {
+    "count": 0,
+    "total_bytes": 0
+  },
+  "caches": {
+    "count": 4,
+    "total_bytes": 825164240,
+    "items": [
+      {
+        "id": 8470928405,
+        "key": "faster-whisper-Linux-small",
+        "ref": "refs/heads/main",
+        "size_in_bytes": 132387351,
+        "created_at": "2026-10-04T03:09:41.590624Z",
+        "last_accessed_at": "2026-10-18T15:55:10.407092Z"
+      },
+      {
+        "id": 8766782885,
+        "key": "setup-python-Linux-x64-22.04-Ubuntu-python-3.11.17-pip-a2239f08a9c531354c2e1a809675b6d4173ddb65374796a49597ae310202b093",
+        "ref": "refs/heads/main",
+        "size_in_bytes": 248431063,
+        "created_at": "2026-10-10T11:13:29.128952Z",
+        "last_accessed_at": "2026-10-18T15:54:30.644033Z"
+      },
+      {
+        "id": 8766781992,
+        "key": "publisher-whisper-Linux-small",
+        "ref": "refs/heads/main",
+        "size_in_bytes": 444342827,
+        "created_at": "2026-10-10T11:13:26.396484Z",
+        "last_accessed_at": "2026-10-17T14:10:09.544635Z"
+      },
+      {
+        "id": 9089017560,
+        "key": "corte-fino-radar-state-39030243176",
+        "ref": "refs/heads/main",
+        "size_in_bytes": 2999,
+        "created_at": "2026-10-17T11:51:17.609613Z",
+        "last_accessed_at": "2026-10-17T11:51:17.609613Z"
+      }
+    ]
+  }
+}
