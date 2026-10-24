@@ -1,0 +1,359 @@
+{
+  "generated_at": "2026-10-24T11:13:37.117Z",
+  "repository": "BORELLITO/corte-fino-engine",
+  "repository_size_kb": 825,
+  "default_branch": "main",
+  "artifacts": {
+    "count": 3,
+    "total_bytes": 812386,
+    "items": [
+      {
+        "id": 12557647298,
+        "name": "github-pages",
+        "size_in_bytes": 270037,
+        "created_at": "2026-10-24T11:00:49Z",
+        "expires_at": "2026-10-25T11:00:48Z",
+        "expired": false
+      },
+      {
+        "id": 12557409285,
+        "name": "github-pages",
+        "size_in_bytes": 271184,
+        "created_at": "2026-10-24T11:00:13Z",
+        "expires_at": "2026-10-25T11:00:12Z",
+        "expired": false
+      },
+      {
+        "id": 12557258460,
+        "name": "github-pages",
+        "size_in_bytes": 271165,
+        "created_at": "2026-10-24T10:59:52Z",
+        "expires_at": "2026-10-25T10:59:51Z",
+        "expired": false
+      }
+    ]
+  },
+  "workflow_runs": {
+    "count": 562,
+    "cleanup_candidates": {
+      "completed_success_over_14d": 40,
+      "completed_failed_over_30d": 0,
+      "cancelled_or_skipped_over_7d": 51,
+      "recent_or_active": 471
+    }
+  },
+  "caches": {
+    "count": 4,
+    "total_bytes": 825164240,
+    "stale_over_14d_count": 0,
+    "items": [
+      {
+        "id": 8470928405,
+        "key": "faster-whisper-Linux-small",
+        "ref": "refs/heads/main",
+        "size_in_bytes": 132387351,
+        "created_at": "2026-10-04T03:09:41.590624Z",
+        "last_accessed_at": "2026-10-18T15:55:10.407092Z"
+      },
+      {
+        "id": 8766782885,
+        "key": "setup-python-Linux-x64-22.04-Ubuntu-python-3.11.17-pip-a2239f08a9c531354c2e1a809675b6d4173ddb65374796a49597ae310202b093",
+        "ref": "refs/heads/main",
+        "size_in_bytes": 248431063,
+        "created_at": "2026-10-10T11:13:29.128952Z",
+        "last_accessed_at": "2026-10-18T15:54:30.644033Z"
+      },
+      {
+        "id": 8766781992,
+        "key": "publisher-whisper-Linux-small",
+        "ref": "refs/heads/main",
+        "size_in_bytes": 444342827,
+        "created_at": "2026-10-10T11:13:26.396484Z",
+        "last_accessed_at": "2026-10-17T14:10:09.544635Z"
+      },
+      {
+        "id": 9089017560,
+        "key": "corte-fino-radar-state-39030243176",
+        "ref": "refs/heads/main",
+        "size_in_bytes": 2999,
+        "created_at": "2026-10-17T11:51:17.609613Z",
+        "last_accessed_at": "2026-10-17T11:51:17.609613Z"
+      }
+    ]
+  },
+  "branches": [
+    {
+      "name": "audit/radar-v2-1-final",
+      "default": false,
+      "protected": false,
+      "last_commit_at": "2026-10-17T16:56:37Z",
+      "age_days": 6.8,
+      "ahead_by": 4,
+      "behind_by": 123,
+      "safe_merged_cleanup_candidate": false
+    },
+    {
+      "name": "creator-three-best-cuts",
+      "default": false,
+      "protected": false,
+      "last_commit_at": "2026-10-20T15:07:07Z",
+      "age_days": 3.8,
+      "ahead_by": 1,
+      "behind_by": 8,
+      "safe_merged_cleanup_candidate": false
+    },
+    {
+      "name": "drive-only-artifact-retention",
+      "default": false,
+      "protected": false,
+      "last_commit_at": "2026-10-23T20:32:12Z",
+      "age_days": 0.6,
+      "ahead_by": 5,
+      "behind_by": 6,
+      "safe_merged_cleanup_candidate": false
+    },
+    {
+      "name": "feature/radar-viral-v1",
+      "default": false,
+      "protected": false,
+      "last_commit_at": "2026-10-16T23:32:42Z",
+      "age_days": 7.5,
+      "ahead_by": 8,
+      "behind_by": 171,
+      "safe_merged_cleanup_candidate": false
+    },
+    {
+      "name": "fix/radar-final-display",
+      "default": false,
+      "protected": false,
+      "last_commit_at": "2026-10-17T17:04:35Z",
+      "age_days": 6.8,
+      "ahead_by": 4,
+      "behind_by": 119,
+      "safe_merged_cleanup_candidate": false
+    },
+    {
+      "name": "fix/radar-first-run-import",
+      "default": false,
+      "protected": false,
+      "last_commit_at": "2026-10-17T16:59:10Z",
+      "age_days": 6.8,
+      "ahead_by": 3,
+      "behind_by": 121,
+      "safe_merged_cleanup_candidate": false
+    },
+    {
+      "name": "fix/radar-quality-v1",
+      "default": false,
+      "protected": false,
+      "last_commit_at": "2026-10-16T23:34:46Z",
+      "age_days": 7.5,
+      "ahead_by": 2,
+      "behind_by": 170,
+      "safe_merged_cleanup_candidate": false
+    },
+    {
+      "name": "fix/radar-semantic-gate",
+      "default": false,
+      "protected": false,
+      "last_commit_at": "2026-10-17T17:02:00Z",
+      "age_days": 6.8,
+      "ahead_by": 3,
+      "behind_by": 120,
+      "safe_merged_cleanup_candidate": false
+    },
+    {
+      "name": "fix/radar-signal-gate-v2",
+      "default": false,
+      "protected": false,
+      "last_commit_at": "2026-10-16T23:36:25Z",
+      "age_days": 7.5,
+      "ahead_by": 2,
+      "behind_by": 169,
+      "safe_merged_cleanup_candidate": false
+    },
+    {
+      "name": "fix/radar-v2-1-hardlock-top5",
+      "default": false,
+      "protected": false,
+      "last_commit_at": "2026-10-17T16:50:44Z",
+      "age_days": 6.8,
+      "ahead_by": 2,
+      "behind_by": 124,
+      "safe_merged_cleanup_candidate": false
+    },
+    {
+      "name": "main",
+      "default": true,
+      "protected": false
+    },
+    {
+      "name": "ops/radar-first-run",
+      "default": false,
+      "protected": false,
+      "last_commit_at": "2026-10-17T16:57:32Z",
+      "age_days": 6.8,
+      "ahead_by": 2,
+      "behind_by": 122,
+      "safe_merged_cleanup_candidate": false
+    },
+    {
+      "name": "publisher-metrics-collection",
+      "default": false,
+      "protected": false,
+      "last_commit_at": "2026-10-20T13:42:57Z",
+      "age_days": 3.9,
+      "ahead_by": 21,
+      "behind_by": 9,
+      "safe_merged_cleanup_candidate": false
+    },
+    {
+      "name": "publisher-to-creator-feedback",
+      "default": false,
+      "protected": false,
+      "last_commit_at": "2026-10-20T13:13:12Z",
+      "age_days": 3.9,
+      "ahead_by": 22,
+      "behind_by": 10,
+      "safe_merged_cleanup_candidate": false
+    },
+    {
+      "name": "publisher-v8-control-plane",
+      "default": false,
+      "protected": false,
+      "last_commit_at": "2026-10-20T08:23:53Z",
+      "age_days": 4.1,
+      "ahead_by": 26,
+      "behind_by": 11,
+      "safe_merged_cleanup_candidate": false
+    },
+    {
+      "name": "radar-hardening-v2.5",
+      "default": false,
+      "protected": false,
+      "last_commit_at": "2026-10-18T20:17:19Z",
+      "age_days": 5.6,
+      "ahead_by": 7,
+      "behind_by": 40,
+      "safe_merged_cleanup_candidate": false
+    },
+    {
+      "name": "upgrade/radar-v2-1-two-daily",
+      "default": false,
+      "protected": false,
+      "last_commit_at": "2026-10-17T16:54:04Z",
+      "age_days": 6.8,
+      "ahead_by": 9,
+      "behind_by": 125,
+      "safe_merged_cleanup_candidate": false
+    },
+    {
+      "name": "upgrade/radar-v2-2-two-daily",
+      "default": false,
+      "protected": false,
+      "last_commit_at": "2026-10-17T17:05:09Z",
+      "age_days": 6.8,
+      "ahead_by": 0,
+      "behind_by": 118,
+      "safe_merged_cleanup_candidate": false
+    },
+    {
+      "name": "upgrade/radar-v2",
+      "default": false,
+      "protected": false,
+      "last_commit_at": "2026-10-16T23:54:45Z",
+      "age_days": 7.5,
+      "ahead_by": 27,
+      "behind_by": 168,
+      "safe_merged_cleanup_candidate": false
+    },
+    {
+      "name": "upgrade-distribution-guard-v7",
+      "default": false,
+      "protected": false,
+      "last_commit_at": "2026-10-20T02:52:28Z",
+      "age_days": 4.3,
+      "ahead_by": 7,
+      "behind_by": 28,
+      "safe_merged_cleanup_candidate": false
+    },
+    {
+      "name": "upgrade-grounded-copies-v5",
+      "default": false,
+      "protected": false,
+      "last_commit_at": "2026-10-16T14:17:11Z",
+      "age_days": 7.9,
+      "ahead_by": 2,
+      "behind_by": 172,
+      "safe_merged_cleanup_candidate": false
+    }
+  ],
+  "releases": [],
+  "workflows": [
+    {
+      "id": 390594827,
+      "name": "Corte Fino Motor 2 — Performance",
+      "path": ".github/workflows/corte-fino-performance.yml",
+      "state": "active",
+      "created_at": "2026-10-20T13:43:49.000Z",
+      "updated_at": "2026-10-20T13:43:49.000Z"
+    },
+    {
+      "id": 390298559,
+      "name": "Corte Fino Motor 2 — CI",
+      "path": ".github/workflows/corte-fino-publisher-ci.yml",
+      "state": "active",
+      "created_at": "2026-10-20T08:16:57.000Z",
+      "updated_at": "2026-10-20T08:24:47.000Z"
+    },
+    {
+      "id": 380218449,
+      "name": "Corte Fino Motor 2 — Publicar 5 por Dia",
+      "path": ".github/workflows/corte-fino-publisher.yml",
+      "state": "active",
+      "created_at": "2026-10-10T03:04:05.000Z",
+      "updated_at": "2026-10-20T03:13:36.000Z"
+    },
+    {
+      "id": 387229757,
+      "name": "Corte Fino Motor 0 — CI",
+      "path": ".github/workflows/corte-fino-radar-ci.yml",
+      "state": "active",
+      "created_at": "2026-10-16T23:48:37.000Z",
+      "updated_at": "2026-10-16T23:55:20.000Z"
+    },
+    {
+      "id": 387221141,
+      "name": "Corte Fino Motor 0 — Radar Viral",
+      "path": ".github/workflows/corte-fino-radar.yml",
+      "state": "active",
+      "created_at": "2026-10-16T23:32:53.000Z",
+      "updated_at": "2026-10-16T23:32:53.000Z"
+    },
+    {
+      "id": 372676336,
+      "name": "Corte Fino Motor 1 — Gerar 3 Cortes",
+      "path": ".github/workflows/corte-fino.yml",
+      "state": "active",
+      "created_at": "2026-10-02T00:30:18.000Z",
+      "updated_at": "2026-10-20T15:08:02.000Z"
+    },
+    {
+      "id": 395040451,
+      "name": "One-off deep GitHub audit",
+      "path": ".github/workflows/one-off-deep-github-audit.yml",
+      "state": "active",
+      "created_at": "2026-10-24T11:13:00.000Z",
+      "updated_at": "2026-10-24T11:13:00.000Z"
+    },
+    {
+      "id": 380552470,
+      "name": "pages-build-deployment",
+      "path": "dynamic/pages/pages-build-deployment",
+      "state": "active",
+      "created_at": "2026-10-10T13:50:50.000Z",
+      "updated_at": "2026-10-10T13:50:50.000Z"
+    }
+  ],
+  "large_versioned_files": []
+}
