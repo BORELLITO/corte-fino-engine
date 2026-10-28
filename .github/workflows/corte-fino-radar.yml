@@ -1,19 +1,8 @@
 name: Corte Fino Motor 0 — Radar Viral
 
+# PAUSED 2026-10-28: Corte Fino on hold, restore via Git history.
 on:
   workflow_dispatch:
-    inputs:
-      days:
-        description: "Janela de busca em dias (1 a 14)"
-        required: false
-        default: "7"
-      extra_topics:
-        description: "Temas extras separados por vírgula"
-        required: false
-        default: ""
-  schedule:
-    # 08:30 e 20:30 no horário de Brasília (UTC-3).
-    - cron: "30 11,23 * * *"
 
 permissions:
   contents: read
@@ -24,6 +13,8 @@ concurrency:
 
 jobs:
   radar:
+    # Pause guard: manual dispatch does not run the engine.
+    if: ${{ false }}
     runs-on: ubuntu-22.04
     timeout-minutes: 20
 

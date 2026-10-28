@@ -1,29 +1,8 @@
 name: Corte Fino Motor 2 — CI
 
+# PAUSED 2026-10-28: Corte Fino on hold, restore via Git history.
 on:
-  push:
-    branches: [main]
-    paths:
-      - "publisher/**"
-      - "tests/test_publisher.py"
-      - "tests/test_publisher_control.py"
-      - "tests/test_publisher_performance.py"
-      - "tests/test_publisher_metrics_io.py"
-      - "tests/test_workflow_contract.py"
-      - "tests/test_quality_guards.py"
-      - ".github/workflows/corte-fino-publisher*.yml"
-      - ".github/workflows/corte-fino-performance.yml"
-      - ".github/workflows/corte-fino.yml"
-      - "main.py"
-  pull_request:
-    paths:
-      - "publisher/**"
-      - "tests/test_publisher.py"
-      - "tests/test_publisher_control.py"
-      - "tests/test_workflow_contract.py"
-      - "tests/test_quality_guards.py"
-      - ".github/workflows/corte-fino-publisher*.yml"
-      - "main.py"
+  workflow_dispatch:
 
 permissions:
   contents: read
@@ -34,6 +13,8 @@ concurrency:
 
 jobs:
   tests:
+    # Pause guard: manual dispatch does not run the engine.
+    if: ${{ false }}
     runs-on: ubuntu-22.04
     timeout-minutes: 15
     steps:

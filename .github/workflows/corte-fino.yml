@@ -1,25 +1,8 @@
 name: Corte Fino Motor 1 — Gerar 3 Cortes
 
+# PAUSED 2026-10-28: Corte Fino on hold, restore via Git history.
 on:
-  # Entradas manuais usam texto para evitar a falha 500 do formulário de dispatch.
-  # O motor continua tratando direitos como revisão manual e mantendo o Top 3 fechado.
   workflow_dispatch:
-    inputs:
-      source_url:
-        description: "Link do vídeo para teste (direitos sob responsabilidade do usuário)"
-        required: false
-        default: ""
-        type: string
-      rights_confirmed:
-        description: "Opcional: digite true somente se a revisão de direitos foi feita"
-        required: false
-        default: "false"
-        type: string
-      force_top_three:
-        description: "Digite true para forçar os 3 melhores cortes disponíveis"
-        required: false
-        default: "true"
-        type: string
 
 permissions:
   contents: read
@@ -33,6 +16,8 @@ concurrency:
 
 jobs:
   gerar-cortes:
+    # Pause guard: manual dispatch does not run the engine.
+    if: ${{ false }}
     runs-on: ubuntu-22.04
     timeout-minutes: 330
     env:

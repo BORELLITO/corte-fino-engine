@@ -1,9 +1,7 @@
 name: One-off prune redundant Actions runs
 
+# PAUSED 2026-10-28: Corte Fino on hold, restore via Git history.
 on:
-  push:
-    paths:
-      - ".github/workflows/one-off-deep-github-audit.yml"
   workflow_dispatch:
 
 permissions:
@@ -12,6 +10,8 @@ permissions:
 
 jobs:
   prune:
+    # Pause guard: manual dispatch does not run the engine.
+    if: ${{ false }}
     runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:

@@ -1,75 +1,8 @@
 name: Corte Fino Motor 2 — Publicar 5 por Dia
 
+# PAUSED 2026-10-28: Corte Fino on hold, restore via Git history.
 on:
   workflow_dispatch:
-    inputs:
-      mode:
-        description: "prepare, dry-run, browser-package, diagnostic-package ou preflight"
-        required: true
-        default: "dry-run"
-        type: choice
-        options: [dry-run, prepare, browser-package, diagnostic-package, preflight]
-      folder_1:
-        description: "URL/ID da primeira pasta com 5 MP4"
-        required: true
-        type: string
-      folder_2:
-        description: "URL/ID da segunda pasta com 5 MP4"
-        required: true
-        type: string
-      date_1:
-        description: "Data local da primeira pasta (AAAA-MM-DD)"
-        required: true
-        type: string
-      date_2:
-        description: "Data local da segunda pasta (AAAA-MM-DD)"
-        required: true
-        type: string
-      period_1:
-        description: "Grade da primeira pasta"
-        required: true
-        default: "daily"
-        type: choice
-        options: [daily]
-      period_2:
-        description: "Grade da segunda pasta"
-        required: true
-        default: "daily"
-        type: choice
-        options: [daily]
-      source_name_1:
-        description: "Canal/fonte original da primeira pasta"
-        required: true
-        type: string
-      source_episode_1:
-        description: "Episódio confirmado da primeira pasta"
-        required: false
-        default: ""
-        type: string
-      source_name_2:
-        description: "Canal/fonte original da segunda pasta"
-        required: true
-        type: string
-      source_episode_2:
-        description: "Episódio confirmado da segunda pasta"
-        required: false
-        default: ""
-        type: string
-      youtube_account:
-        description: "Canal/handle esperado no YouTube Studio"
-        required: true
-        default: "@cortefinoshorts"
-        type: string
-      tiktok_account:
-        description: "Usuário esperado no TikTok Studio"
-        required: true
-        default: "cortefinoshorts"
-        type: string
-      rights_confirmed:
-        description: "Confirme somente após revisar os direitos das duas fontes"
-        required: true
-        default: false
-        type: boolean
 
 permissions:
   contents: read
@@ -81,6 +14,8 @@ concurrency:
 
 jobs:
   publisher:
+    # Pause guard: manual dispatch does not run the engine.
+    if: ${{ false }}
     runs-on: ubuntu-22.04
     timeout-minutes: 120
     env:

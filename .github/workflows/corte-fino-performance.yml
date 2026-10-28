@@ -1,28 +1,8 @@
 name: Corte Fino Motor 2 — Performance
 
+# PAUSED 2026-10-28: Corte Fino on hold, restore via Git history.
 on:
   workflow_dispatch:
-    inputs:
-      mode:
-        description: "collect-package, apply-result ou publish-feedback"
-        required: true
-        default: "collect-package"
-        type: choice
-        options: [collect-package, apply-result, publish-feedback]
-      run_id:
-        description: "run_id original do Publisher"
-        required: true
-        type: string
-      batch_folder_id:
-        description: "ID de uma das duas pastas do lote para localizar o cofre privado"
-        required: true
-        type: string
-      horizon:
-        description: "Horizonte da coleta"
-        required: true
-        default: "24h"
-        type: choice
-        options: [1h, 6h, 24h, 72h]
 
 permissions:
   contents: read
@@ -34,6 +14,8 @@ concurrency:
 
 jobs:
   performance:
+    # Pause guard: manual dispatch does not run the engine.
+    if: ${{ false }}
     runs-on: ubuntu-22.04
     timeout-minutes: 30
     env:

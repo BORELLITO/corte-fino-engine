@@ -1,17 +1,8 @@
 name: Corte Fino Motor 0 — CI
 
+# PAUSED 2026-10-28: Corte Fino on hold, restore via Git history.
 on:
-  push:
-    branches: [main]
-    paths:
-      - "radar/**"
-      - "tests/test_radar.py"
-      - ".github/workflows/corte-fino-radar*.yml"
-  pull_request:
-    paths:
-      - "radar/**"
-      - "tests/test_radar.py"
-      - ".github/workflows/corte-fino-radar*.yml"
+  workflow_dispatch:
 
 permissions:
   contents: read
@@ -22,6 +13,8 @@ concurrency:
 
 jobs:
   tests:
+    # Pause guard: manual dispatch does not run the engine.
+    if: ${{ false }}
     runs-on: ubuntu-22.04
     timeout-minutes: 10
     steps:

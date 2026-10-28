@@ -1,9 +1,8 @@
 name: GitHub Housekeeping
 
+# PAUSED 2026-10-28: Corte Fino on hold, restore via Git history.
 on:
   workflow_dispatch:
-  schedule:
-    - cron: "20 6 * * 0"
 
 permissions:
   actions: write
@@ -15,6 +14,8 @@ concurrency:
 
 jobs:
   housekeeping:
+    # Pause guard: manual dispatch does not run the engine.
+    if: ${{ false }}
     runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:
