@@ -318,7 +318,44 @@ def aggregate(input_dir: Path, audio_preflight_path: Path | None = None) -> dict
             or not preflight["blockers"]
         ):
             raise ValueError("audio_preflight_failed_closed_contract")
+        # Verify actual downloaded artifacts, not just the summary's claims.
+        # GitHub Actions places report.json and all supporting files under
+        # audio-preflight/. A green coordinator must prove byte-level integrity.
+        required_files = {
+            "audio-preflight/preflight.json",
+            "audio-preflight/preflight.md",
+            "audio-preflight/context_crosscheck.json",
+            "audio-preflight/historical_smoke.json",
+            "audio-preflight/rights_review_handoff.json",
+            "audio-preflight/e01_human_review_packet.md",
+        }
+        file_specs = preflight.get("files")
+        if not isinstance(file_specs, list) or len(file_specs) != len(required_files):
+            raise ValueError("audio_preflight_missing_hashed_files")
+        paths = [x.get("path") if isinstance(x, dict) else None for x in file_specs]
+        if set(paths) != required_files or len(set(paths)) != len(paths):
+            raise ValueError("audio_preflight_missing_hashed_files")
+        artifact_root = audio_preflight_path.resolve().parent.parent
+        verified_paths: dict[str, str] = {}
+        for item in file_specs:
+            name = item["path"]
+            expected = item.get("sha256")
+            if (not isinstance(expected, str) or len(expected) != 64 or
+                    any(c not in "0123456789abcdef" for c in expected)):
+                raise ValueError("audio_preflight_bad_file_digest")
+            full_path = (artifact_root / name).resolve()
+            if not full_path.is_relative_to(artifact_root) or not full_path.is_file():
+                raise ValueError("audio_preflight_artifact_missing")
+            if full_path.stat().st_size > 250000:
+                raise ValueError("audio_preflight_artifact_oversize")
+            actual = hashlib.sha256(full_path.read_bytes()).hexdigest()
+            if actual != expected:
+                raise ValueError("audio_preflight_artifact_hash_mismatch")
+            verified_paths[name] = actual
         audio_status = {
+            "supporting_file_hashes_verified": True,
+            "supporting_file_count": len(verified_paths),
+            "human_review_packet_sha256": verified_paths["audio-preflight/e01_human_review_packet.md"],
             "status": "BLOCKED",
             "report_sha256": hashlib.sha256(raw).hexdigest(),
             "blockers": preflight["blockers"],
