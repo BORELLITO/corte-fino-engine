@@ -13,6 +13,7 @@ from pathlib import Path
 from typing import Any
 
 from agents.content_production import ProductionError, check, read
+from agents.e01_context_review import validate_context_crosscheck
 
 TARGET_ID = "VNC-W01-E1"
 TARGET_REFERENCE = "Habacuque 1:2-4"
@@ -23,9 +24,9 @@ EXPECTED_BLOCKS = (
 REQUIRED_BLOCKERS = (
     "script_owner_approval_pending",
     "independent_biblical_review_pending",
-    "exact_voice_pack_sha256_missing",
+    "hosted_voice_pack_byte_identity_unverified",
     "exact_voice_pack_commercial_rights_pending",
-    "runtime_service_terms_unverified",
+    "runtime_dependency_notices_unverified",
     "voice_audio_not_generated",
 )
 
@@ -42,15 +43,33 @@ def validate_voice_evidence(value: Any) -> None:
           and value.get("language") == "pt-BR"
           and value.get("upstream_voice_registry_hash_prefix") == "cf0ba8c5",
           "voice_evidence:voice_identity")
-    check(value.get("upstream_voice_pack_full_sha256") is None
-          and value.get("voice_pack_bytes_verified") is False
-          and value.get("voice_pack_commercial_rights_status") ==
-          "PENDING_EXACT_PACK_LICENSE_AND_ATTRIBUTION_AUDIT",
-          "voice_evidence:unsupported_license_or_hash_claim")
-    check(value.get("runtime_terms_checked") is False
-          and value.get("runtime_license_status") == "PENDING_SERVICE_TERMS_AND_DEPENDENCY_REVIEW"
-          and value.get("commercial_audio_status") == "BLOCKED",
-          "voice_evidence:runtime_license_not_verified")
+    check(
+        value.get("upstream_voice_pack_full_sha256") ==
+        "cf0ba8c573c2480fc54123683a35cf1e2ae130428e441eb91f9149bdb188a526"
+        and value.get("upstream_voice_pack_sha256_provenance") ==
+        "UPSTREAM_HF_FILE_PAGE_METADATA_NOT_INDEPENDENT_BYTE_HASH"
+        and value.get("voice_pack_bytes_verified") is False
+        and value.get("hosted_voice_pack_bytes_verified") is False
+        and value.get("hosted_voice_pack_sha256") is None
+        and value.get("voice_pack_commercial_rights_status") ==
+        "PENDING_EXACT_PACK_LICENSE_AND_ATTRIBUTION_AUDIT",
+        "voice_evidence:unsupported_license_or_hash_claim",
+    )
+    check(
+        value.get("runtime_terms_checked") is True
+        and value.get("runtime_terms_url") == "https://kokoroweb.app/terms"
+        and value.get("runtime_terms_last_updated") == "2026-10-30"
+        and value.get("runtime_terms_reviewed_on") == "2026-11-17"
+        and value.get("runtime_license_status") ==
+        "HOST_COMMERCIAL_NARRATION_CONDITIONALLY_ALLOWED"
+        and value.get("commercial_audio_status") ==
+        "BLOCKED_PENDING_EXACT_HOST_ASSET_IDENTITY_AND_SCRIPT_APPROVAL"
+        and value.get("service_resale_or_commercial_rendering_permission") ==
+        "TERMS_PERMIT_NARRATION_IN_PERSONAL_OR_COMMERCIAL_PROJECTS_CONDITIONAL_ON_RIGHTS"
+        and value.get("runtime_execution_type") ==
+        "IN_BROWSER_CLIENT_SIDE_BROWSER_COMPUTE_NOT_REMOTE_API",
+        "voice_evidence:runtime_license_not_verified",
+    )
     check(value.get("publication_authorized") is False
           and value.get("final_approval") is False,
           "voice_evidence:publication_lock")
@@ -118,6 +137,7 @@ def produce(root: Path, upstream_dir: Path, out_dir: Path) -> dict[str, Any]:
           "audio_preflight:protected_output_directory")
     evidence: dict[str, str] = {}
     voice = read(root, "contracts/kokoro_voice_research_v1.json", evidence)
+    editorial_crosscheck = read(root, "contracts/e01_editorial_crosscheck_v1.json", evidence)
     package = read(upstream_dir, "operations/first_batch_scripts.json", evidence)
     report = read(upstream_dir, "editorial-deliveries/first_batch_report.json", evidence)
     check(isinstance(report, dict) and isinstance(report.get("files"), list),
@@ -130,6 +150,9 @@ def produce(root: Path, upstream_dir: Path, out_dir: Path) -> dict[str, Any]:
     proof = validate_input(package, report, voice)
     script = proof["script"]
     audit = proof["audit"]
+    crosscheck_result = validate_context_crosscheck(
+        editorial_crosscheck, script, proof["narration_sha256"]
+    )
     result = {
         "schema_version": "1.0.0",
         "project": "verbo-no-chao",
@@ -140,6 +163,7 @@ def produce(root: Path, upstream_dir: Path, out_dir: Path) -> dict[str, Any]:
         "stage": "AUDIO_PREFLIGHT_ONLY",
         "script_review_status": "DRAFT_REVIEW_REQUIRED",
         "biblical_context_status": "PENDING_INDEPENDENT_REVIEW",
+        "internal_editorial_source_crosscheck": crosscheck_result,
         "voice_selection_scope": "PREVIEW_BASELINE_NOT_COMMERCIAL_RELEASE",
         "voice": {
             "engine": "Kokoro-82M",
@@ -147,9 +171,14 @@ def produce(root: Path, upstream_dir: Path, out_dir: Path) -> dict[str, Any]:
             "sample_rate_hz_planned": 24000,
             "engine_license_evidence": voice["model_license_evidence"],
             "upstream_voice_catalog": voice["official_voice_registry"],
-            "voice_pack_sha256": None,
+            "upstream_voice_pack_sha256_from_repo_metadata": voice["upstream_voice_pack_full_sha256"],
+            "upstream_pack_bytes_independently_verified": False,
+            "actual_hosted_voice_pack_sha256": None,
             "commercial_rights": "PENDING_EXACT_PACK_LICENSE_AND_ATTRIBUTION_AUDIT",
-            "runtime_license": "PENDING_SERVICE_TERMS_AND_DEPENDENCY_REVIEW",
+            "runtime_terms_url": voice["runtime_terms_url"],
+            "runtime_terms_reviewed": True,
+            "runtime_permission": "COMMERCIAL_USE_CONDITIONAL_ON_ALL_RIGHTS",
+            "runtime_dependency_notices_verified": False,
         },
         "narration": {
             "source": "operations/first_batch_scripts.json",
@@ -176,14 +205,16 @@ def produce(root: Path, upstream_dir: Path, out_dir: Path) -> dict[str, Any]:
         f"Voz candidata preservada: **pm_alex** / Kokoro-82M / pt-BR.",
         f"Estimativa automatizada: **{audit['estimated_seconds']} s**, não medição de áudio.",
         "", "## O que já está demonstrado", "",
+        "- Habacuque 1:2–4 foi cruzado com três referências documentadas; revisão teológica humana continua pendente.",
         "- A voz pm_alex aparece no catálogo oficial da upstream do modelo.",
         "- A upstream do modelo declara licença Apache-2.0.",
         "- Os seis blocos do rascunho foram preservados literalmente em ordem e hasheados.",
         "- O hash do pacote gerado é conferido com o relatório de produção anterior.",
         "", "## O que permanece bloqueado", "",
         "- O roteiro não passou por revisão bíblica independente nem aprovação do proprietário.",
-        "- Falta o hash integral de um pack de voz realmente recebido e sua cadeia de licença/avisos.",
-        "- Faltam os termos do runtime hospedado usado para sintetizar áudio, inclusive uso comercial.",
+        "- O upstream publica o SHA-256 integral de pm_alex.pt, mas o arquivo do serviço NÃO foi baixado nem comparado aos bytes.",
+        "- O Kokoro Web permite narração comercial condicionalmente; ainda falta provar a identidade do pack realmente carregado e conferir licenças/avisos das dependências.",
+        "- O serviço funciona no navegador onde é aberto; não houve sessão de geração ou teste de WAV aqui.",
         "- Não houve geração de WAV, renderização, agendamento ou publicação.",
         "", "## Segmentos prontos para futura revisão", "",
     ]
@@ -191,7 +222,7 @@ def produce(root: Path, upstream_dir: Path, out_dir: Path) -> dict[str, Any]:
         md.extend([f"### {seg['index']} — {seg['block_type']}", seg["text"], ""])
     md.extend(["## Próxima decisão", "",
                "Revisão contextual humana do roteiro e evidências específicas da voz/serviço, antes de iniciar o TTS.",
-               "Um selo 'Apache-2.0' do modelo não substitui auditoria do serviço, de dependências e de reprodução comercial.",
+               "A licença Apache-2.0 da upstream e as permissões condicionais do site não comprovam, sozinhas, os direitos e a identidade dos assets efetivamente utilizados.",
                ""])
     def dump(data: Any) -> str:
         return json.dumps(data, indent=2, ensure_ascii=False) + "\n"
@@ -204,6 +235,7 @@ def produce(root: Path, upstream_dir: Path, out_dir: Path) -> dict[str, Any]:
     files = [
         write("audio-preflight/preflight.json", dump(result)),
         write("audio-preflight/preflight.md", "\n".join(md)),
+        write("audio-preflight/context_crosscheck.json", dump(crosscheck_result)),
     ]
     summary = {
         "schema_version": "1.0.0", "project": "verbo-no-chao",
@@ -211,6 +243,8 @@ def produce(root: Path, upstream_dir: Path, out_dir: Path) -> dict[str, Any]:
         "stage": "AUDIO_PREFLIGHT_ONLY",
         "files": files, "blockers": list(REQUIRED_BLOCKERS),
         "voice_license_approved": False,
+        "internal_context_crosscheck_completed": True,
+        "human_theological_review_pending": True,
         "audio_generated": False,
         "publication_authorized": False,
     }

@@ -6,7 +6,7 @@ Escopo: três pautas originais da semana 01 — **nenhuma publicação ou geraç
 ## Decisão técnica
 
 O fluxo do GitHub executa:
-`editorial_production` → `script_production` → 8 auditorias especializadas → coordenador.
+`editorial_production` → `script_production` → `audio_preflight` (pesquisa e preparação, sem WAV) → 8 auditorias especializadas → coordenador.
 
 O estágio `script_production` não depende de LLM externo, gasto ou contas: transforma três drafts editoriais versionados em **arquivos reais**, verificando a autenticidade do plano de 90 dias pelo hash SHA-256 declarado no relatório anterior. O estágio seguinte roda verificadores independentes de fontes/contexto e estrutura/retensão de roteiro. Os documentos ficam em artefatos do GitHub Actions por 14 dias, não são escritos como decisões aprovadas no repositório.
 
@@ -22,11 +22,11 @@ Nome do artefato: `vnc-first-batch-scripts`. Nenhum arquivo de mídia, voz ou le
 
 | Episódio | Referência | Gancho/título de trabalho | Estimativa por texto | Correção de contexto indispensável |
 |---|---|---|---:|---|
-| VNC-W01-E1 | Habacuque 1:2-4 | Quando você pergunta e nada muda | ~75 s | A denúncia envolve violência e injustiça social, não somente frustração individual |
+| VNC-W01-E1 | Habacuque 1:2-4 | Quando você pergunta e nada muda | ~80 s | O texto revisado menciona violência, lei sem efeito e justiça distorcida; o livro tem respostas e novo lamento adiante |
 | VNC-W01-E2 | Lamentações 3:19-26 | A esperança que não apaga a dor | ~80 s | O luto decorre da destruição de Jerusalém, não de um simples problema de ânimo |
 | VNC-W01-E3 | Lucas 18:1-8 | Persistir sem transformar oração em cobrança | ~81 s | A viúva insiste por justiça; Deus é contrastado com o juiz injusto |
 
-**Os tempos acima são estimativas textuais**, não áudio renderizado ou medido. Os três roteiros atendem ao alvo de 75 s dentro da tolerância do revisor automatizado; a duração final só será comprovada após gerar voz com licença comercial demonstrada.
+**Os tempos acima são estimativas textuais**, não áudio renderizado ou medido. O E01 recebeu revisão de texto e cruzamento interno de fontes em `contracts/e01_editorial_crosscheck_v1.json`; revisão teológica humana e aprovação do proprietário continuam pendentes. Os três roteiros atendem ao alvo de 75 s dentro da tolerância do revisor automatizado; a duração final só será comprovada após gerar voz com licença comercial demonstrada.
 
 ## Fontes de contexto consultadas
 

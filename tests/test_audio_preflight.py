@@ -10,6 +10,7 @@ from agents.content_production import ProductionError, produce as editorial
 from agents.first_batch_production import produce as scripts
 from agents.audio_preflight import produce, validate_voice_evidence, validate_input
 from agents.team import aggregate, CANONICAL_IDS
+from agents.e01_context_review import validate_context_crosscheck
 
 ROOT = Path(__file__).resolve().parents[1]
 
@@ -34,7 +35,9 @@ class AudioPreflightTests(unittest.TestCase):
         self.assertEqual(self.voice["model_license"], "Apache-2.0")
         self.assertEqual(self.voice["upstream_voice_name"], "pm_alex")
         self.assertFalse(self.voice["voice_pack_bytes_verified"])
-        self.assertIsNone(self.voice["upstream_voice_pack_full_sha256"])
+        self.assertEqual(self.voice["upstream_voice_pack_full_sha256"], "cf0ba8c573c2480fc54123683a35cf1e2ae130428e441eb91f9149bdb188a526")
+        self.assertTrue(self.voice["runtime_terms_checked"])
+        self.assertFalse(self.voice["hosted_voice_pack_bytes_verified"])
 
     def test_preflight_generates_real_hashed_report_but_no_audio(self):
         with tempfile.TemporaryDirectory() as folder:
@@ -49,6 +52,9 @@ class AudioPreflightTests(unittest.TestCase):
         self.assertEqual(payload["stage"], "AUDIO_PREFLIGHT_ONLY")
         self.assertIsNone(payload["narration"]["audio_file"])
         self.assertEqual(len(payload["narration"]["segments"]), 6)
+        self.assertEqual(payload["internal_editorial_source_crosscheck"]["status"], "INTERNAL_CONTEXT_CROSSCHECK_PASS_WITH_CAVEATS")
+        self.assertTrue(result["internal_context_crosscheck_completed"])
+        self.assertTrue(result["human_theological_review_pending"])
 
     def test_reproduction_deterministic(self):
         with tempfile.TemporaryDirectory() as a, tempfile.TemporaryDirectory() as b:
@@ -82,7 +88,7 @@ class AudioPreflightTests(unittest.TestCase):
         with self.assertRaisesRegex(ProductionError, "unsupported_license_or_hash_claim"):
             validate_voice_evidence(bad)
         bad = copy.deepcopy(self.voice)
-        bad["runtime_terms_checked"] = True
+        bad["runtime_terms_checked"] = False
         with self.assertRaisesRegex(ProductionError, "runtime_license_not_verified"):
             validate_voice_evidence(bad)
 
@@ -131,7 +137,7 @@ class AudioPreflightTests(unittest.TestCase):
         self.assertEqual(combined["agents_executed"], 8)
         self.assertEqual(combined["audio_preflight"]["status"], "BLOCKED")
         self.assertFalse(combined["audio_preflight"]["voice_license_approved"])
-        self.assertIn("runtime_service_terms_unverified",
+        self.assertIn("hosted_voice_pack_byte_identity_unverified",
                       combined["audio_preflight"]["blockers"])
         self.assertEqual(combined["status"], "BLOCKED")
 
@@ -152,6 +158,66 @@ class AudioPreflightTests(unittest.TestCase):
             audio_path.write_text(json.dumps(forged), encoding="utf-8")
             with self.assertRaisesRegex(ValueError, "audio_preflight_failed_closed_contract"):
                 aggregate(reports, audio_path)
+
+
+    def test_editorial_crosscheck_binds_all_original_blocks(self):
+        review = json.loads((ROOT / "contracts/e01_editorial_crosscheck_v1.json").read_text(encoding="utf-8"))
+        fingerprint = self.package["automated_checks"][0]["original_script_sha256"]
+        result = validate_context_crosscheck(review, self.package["scripts"][0], fingerprint)
+        self.assertEqual(result["status"], "INTERNAL_CONTEXT_CROSSCHECK_PASS_WITH_CAVEATS")
+        self.assertEqual(len(result["claims_checked"]), 3)
+        self.assertEqual(result["independent_human_theological_review"], "PENDING")
+        self.assertFalse(result["approved_for_audio"])
+
+    def test_crosscheck_rejects_changed_script(self):
+        review = json.loads((ROOT / "contracts/e01_editorial_crosscheck_v1.json").read_text(encoding="utf-8"))
+        fingerprint = self.package["automated_checks"][0]["original_script_sha256"]
+        tampered = copy.deepcopy(self.package["scripts"][0])
+        tampered["blocks"][2]["text"] += " Acrescentei algo."
+        with self.assertRaisesRegex(ProductionError, "review_does_not_match_exact_block_bytes"):
+            validate_context_crosscheck(review, tampered, fingerprint)
+
+    def test_crosscheck_rejects_forged_human_approval(self):
+        review = json.loads((ROOT / "contracts/e01_editorial_crosscheck_v1.json").read_text(encoding="utf-8"))
+        fingerprint = self.package["automated_checks"][0]["original_script_sha256"]
+        review["independent_human_theological_review"] = "APPROVED"
+        with self.assertRaisesRegex(ProductionError, "false_approval_or_bad_scope"):
+            validate_context_crosscheck(review, self.package["scripts"][0], fingerprint)
+
+    def test_crosscheck_rejects_fake_sources(self):
+        review = json.loads((ROOT / "contracts/e01_editorial_crosscheck_v1.json").read_text(encoding="utf-8"))
+        fingerprint = self.package["automated_checks"][0]["original_script_sha256"]
+        review["reviewed_sources"][1]["url"] = "https://fake.test/reference"
+        with self.assertRaisesRegex(ProductionError, "source_urls_changed"):
+            validate_context_crosscheck(review, self.package["scripts"][0], fingerprint)
+
+    def test_host_sha_metadata_does_not_count_as_downloaded_bytes(self):
+        bad = copy.deepcopy(self.voice)
+        bad["hosted_voice_pack_bytes_verified"] = True
+        with self.assertRaisesRegex(ProductionError, "unsupported_license_or_hash_claim"):
+            validate_voice_evidence(bad)
+        bad = copy.deepcopy(self.voice)
+        bad["hosted_voice_pack_sha256"] = bad["upstream_voice_pack_full_sha256"]
+        with self.assertRaisesRegex(ProductionError, "unsupported_license_or_hash_claim"):
+            validate_voice_evidence(bad)
+
+    def test_coordinator_rejects_human_review_inflation(self):
+        with tempfile.TemporaryDirectory() as folder:
+            root = Path(folder)
+            reports = root / "reports"
+            reports.mkdir()
+            for name in CANONICAL_IDS:
+                (reports / f"{name}.json").write_text(json.dumps({
+                    "agent": name, "project": "verbo-no-chao", "publication_authorized": False,
+                    "status": "BLOCKED", "blockers": ["test_fixture"],
+                }), encoding="utf-8")
+            produce(ROOT, self.upstream, root)
+            path = root / "audio-preflight/report.json"
+            payload = json.loads(path.read_text(encoding="utf-8"))
+            payload["human_theological_review_pending"] = False
+            path.write_text(json.dumps(payload), encoding="utf-8")
+            with self.assertRaisesRegex(ValueError, "audio_preflight_failed_closed_contract"):
+                aggregate(reports, path)
 
 
 if __name__ == "__main__":
