@@ -1,38 +1,58 @@
 # Candidatos visuais — piloto Salmo 13
 
-Estado: EXPANDED_MULTI_SHOT_BANK_PENDING_ZERO_COST_VISUAL_QA
+Estado: VISUAL_QA_COMPLETE_PENDING_AUDIO_AND_ASSEMBLY
 Data: 2026-11-17 (America/Sao_Paulo)
 
 ## Critério
 
-O banco foi ampliado para sustentar um vídeo de aproximadamente 75 segundos sem repetir planos. A seleção mantém Pexels como fonte dominante e distribui funções visuais entre espera, caminho, neblina, luz, reflexão, água e conclusão.
+O banco visual foi ampliado, baixado da biblioteca cloud e submetido a QA visual gratuito antes de qualquer montagem. A decisão prioriza coerência emocional, variedade suficiente, espaço seguro para legendas e ausência de repetição de clipe.
 
-Nenhum candidato está liberado para publicação. O status só muda após importação persistente, inspeção técnica, QA visual, registro de licença, identificação durável e hash quando disponível.
+A regra de zero repetição é bloqueante: um mesmo asset não pode aparecer duas vezes no vídeo final, mesmo com crop, zoom, velocidade, espelhamento, reversão ou cor diferentes. Transformação não cria um novo clipe.
 
-## Banco expandido
+## Resultado do QA
 
 - 12 assets persistidos na biblioteca cloud.
 - 8 verticais nativos 9:16.
-- 4 horizontais para reenquadramento controlado.
-- Seleção final esperada: 10–12 planos distintos.
-- Regra bloqueante: nenhum clipe pode aparecer duas vezes no mesmo vídeo, inclusive com crop, zoom, velocidade, espelhamento ou cor diferentes.
+- 4 horizontais com reenquadramento controlado.
+- Todos os 12 foram baixados por CDN, inspecionados com quadros de início/meio/fim e receberam SHA-256 local.
+- S13-V09, S13-V10 e S13-V11 tiveram crop central 9:16 testado.
+- Nenhum crédito Creative Claw foi consumido; a inspeção foi concluída por rota gratuita local.
+- O lote permanece candidato de montagem; não é autorização de publicação.
 
-Os 12 registros completos, páginas de origem e identificadores estão no [ledger de direitos](PILOT_SALMO_13_RIGHTS_LEDGER.md).
+## Seleção editorial
 
-## QA técnico já confirmado
+A seleção não força 10–12 planos quando isso criaria redundância. O núcleo aprovado contém 8 assets distintos, suficientes para um Short de aproximadamente 75 segundos com cortes respirados de 5–12 segundos. Reservas só entram se a montagem exigir uma função visual que não possa ser atendida sem repetir um asset.
 
-- Todos os 12 assets são `video/mp4`.
-- Dimensões e durações foram confirmadas pela biblioteca cloud.
-- S13-V04 é vertical 2160×3840 e precisa ser normalizado.
-- S13-V09–V12 são horizontais e exigem teste de crop.
-- Os demais oito assets são verticais nativos.
+| Asset | Função visual | Estado | Decisão |
+|---|---|---|---|
+| S13-V03 | abertura contemplativa; horizonte, neblina e raios de luz | PRIMARY | usar como entrada do arco |
+| S13-V07 | interior de floresta com feixes de luz | PRIMARY | aprofundamento emocional |
+| S13-V05 | água escura com reflexos quentes | PRIMARY | pausa/reflexão; detalhe com contraste |
+| S13-V02 | paisagem rural aérea com luz de manhã | PRIMARY | transição para esperança |
+| S13-V08 | árvore e campo banhados por luz | PRIMARY | expansão e calor |
+| S13-V09 | clareira/caminho em neblina, crop 9:16 validado | PRIMARY | trecho de espera e vulnerabilidade |
+| S13-V10 | caminho dourado sob árvore, crop 9:16 validado | PRIMARY | movimento em direção à conclusão |
+| S13-V11 | estrada rural no campo, crop 9:16 validado | PRIMARY | fechamento visual de caminho |
+| S13-V01 | amanhecer aéreo com estrada; próximo de V02/V03 | RESERVE | alternativa se a montagem precisar de uma variação de abertura |
+| S13-V04 | amanhecer vertical com céu azul e construção ao fundo | RESERVE | usar somente se a transição azul for necessária; normalizar antes |
+| S13-V06 | água cinza em textura próxima de V05 | RESERVE | alternativa técnica de água; não usar junto com V05 |
+| S13-V12 | rua urbana azul no crepúsculo, contraste de paleta e contexto | REJECTED_HARMONY | não usar neste piloto |
 
-## QA visual
+## Regras de montagem
 
-O extrator de quadros cloud foi acionado para inspeção de sequência, área segura de legenda e redundância visual, mas retornou `zero_balance`: a operação exigiria aproximadamente 2 créditos e a conta possui 0. Nenhum crédito foi consumido.
-
-Por isso, o QA visual permanece **NÃO TESTADO**, e nenhum asset foi liberado para montagem final com base apenas em metadados.
+1. Cada plano final registra `asset_id`, página de origem e intervalo temporal usado.
+2. O mesmo `asset_id` só pode aparecer uma vez no vídeo.
+3. V05 e V06 são alternativas, não uma sequência.
+4. V01, V02 e V03 são visualmente próximos; o montador deve evitar empilhar os três sem justificativa narrativa.
+5. V09, V10 e V11 têm função de caminho distinta, mas não devem ser usados como três variações indiferenciadas.
+6. O enquadramento 9:16 deve preservar área segura para legendas e não cortar o ponto focal.
+7. Qualquer repetição, crop inadequado, logo, marca ou pessoa identificável bloqueia a montagem final.
 
 ## Próximo gate
 
-Executar QA visual por uma rota gratuita compatível, mantendo a regra de zero repetição; depois selecionar os 10–12 planos definitivos, gerar/validar a narração e iniciar a montagem.
+- confirmar o roteiro/tempo de cada plano;
+- gerar e validar narração comercialmente autorizada;
+- revisar direitos de terceiros e logos nos quadros selecionados;
+- normalizar V04 somente se ele for necessário;
+- montar sem repetição e executar QA de áudio, legenda, safe area e elegibilidade para publicação.
+
