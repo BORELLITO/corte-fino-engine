@@ -29,3 +29,40 @@
 ## Preservação e rollback
 
 Branch nova sobre PR #35, sem merge em `main` nem `verbo-no-chao/bootstrap`. Piloto Salmo 13 protegido. Se o teste falhar, manter relatórios com causa comprovada e descartar só a branch isolada; nenhuma produção já aprovada é sobrescrita.
+
+
+## Resultado real da execução — 17/11/2026
+
+**Run comprovado:** https://github.com/BORELLITO/corte-fino-engine/actions/runs/44192226678
+
+O job executou **13 testes do componente** e a geração do texto integral. O navegador retornou WAV IEEE_FLOAT32, que passou na normalização segura do motor para WAV PCM16. O arquivo resultante foi baixado do artefato e conferido novamente, fora do GitHub, por um decodificador de áudio:
+
+| Medida | Resultado |
+|---|---|
+| Roteiro | `VNC-W01-E1` (SHA-256 `67052ec614f3beaca25cbac40414eecb7f197be0b73b7c1af4fd6579c0cf6990`) |
+| Voz | `pm_alex` no português brasileiro |
+| Cache de voz na mesma sessão | SHA-256 ONNX upstream correspondente; 522.240 bytes |
+| Fonte recebida | IEEE float32 WAV, 6.727.244 bytes |
+| Hash SHA-256 fonte | `ece58c8f94914f08295b900be992288eb8f6df30f4fefbcc844ca34d651ca14b` |
+| WAV normalizado | PCM16, mono, 24.000 Hz |
+| Duração | **70,075 s** |
+| Frames | 1.681.800 |
+| Tamanho normalizado | **3.363.644 bytes** |
+| SHA-256 normalizado | **`f7c18eac3b8ebc59069665d5e633d8ace1c342efd34546e0591cb7dd713a05d4`** |
+| RMS e pico PCM | 2.258,19 / 26.887 |
+| Pico estimado | −1,72 dBFS |
+| RMS estimado | −23,23 dBFS |
+| Amostras com amplitude acima de 99% do máximo | 0 |
+| Escuta, correspondência de transcrição e pronúncia | **NÃO AVALIADAS** |
+| Licenças finais e publicação | **NÃO LIBERADAS** |
+
+O relatório original `report.json` tem **2.262 bytes** e SHA-256 `a11f144722de64a1cd096deb460a21522104ba09cd4572bf13cc61a64c570686`. O artefato `vnc-e01-quarantined-voice-preview` (ID `14378530045`) expira após sete dias.
+
+O contrato `contracts/e01_real_voice_preview_evidence_v1.json` preserva esses metadados sem versionar nem distribuir os pesos do modelo ou áudio de produção. **Não se deve tratar essa evidência como autorização comercial, conclusão de QA subjetivo ou master publicável.**
+
+### Bloqueios remanescentes
+
+1. Verificação automatizada da fidelidade do áudio à transcrição original e inteligibilidade/pausas, sem exigir que o proprietário ouça.
+2. Avaliação real dos direitos da voz/serviço e dos componentes da versão usada.
+3. Criação de imagens/clipes originais e trilha com licença comprovada, montagem, legendas sincronizadas e exportação de master física.
+4. QA final de todos os pilares e, apenas para publicação, autorização explícita do proprietário.
