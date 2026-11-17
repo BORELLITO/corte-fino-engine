@@ -6,16 +6,17 @@
   "legacy_operational_reuse": false,
   "external_publication": false,
   "secrets_configured": false,
-  "phase": "0.7",
+  "phase": "0.8",
   "validation": {
     "clean_room_gate": "PASS",
-    "unit_tests": {"passed": 28, "failed": 0},
-    "contract_json_files": {"validated": 9, "invalid": 0},
+    "unit_tests": {"passed": 31, "failed": 0},
+    "contract_json_files": {"validated": 10, "invalid": 0},
     "runtime_dependencies": 0,
     "dry_run": "PASS",
     "pilot_fixture": "PASS_FIXTURE_ONLY",
     "release_gate": "IMPLEMENTED_FIXTURE_NO_GO",
-    "source_audit": "PARAPHRASE_ONLY_PENDING_LICENSE"
+    "source_audit": "PARAPHRASE_ONLY_PENDING_LICENSE",
+    "script_draft": "PASS_REVIEW_REQUIRED"
   },
   "gates": [
     "clean-room",
@@ -23,6 +24,7 @@
     "biblical-safety",
     "source-provenance",
     "rights",
+    "original-script",
     "audiovisual",
     "orchestrator",
     "fixture-isolation",
