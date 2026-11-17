@@ -88,9 +88,17 @@ def verify_ai_editorial_review(policy: Any, review: Any, draft: Any) -> dict[str
     digest = canonical_sha(draft)
     episode_num = int(draft["episode_id"].rsplit("E", 1)[1])
     review_date = review.get("review_date") if isinstance(review, dict) else None
-    expected_review_id = (
-        f"VNC-E{episode_num:02d}-INTERNAL-AI-REVIEW-{review_date}"
-    )
+    # Legacy week-one file IDs are preserved. New weeks use full episode IDs,
+    # preventing W02-E1 from ever claiming an older W01-E1 review receipt.
+    if draft["episode_id"].startswith("VNC-W01-"):
+        expected_review_id = f"VNC-E{episode_num:02d}-INTERNAL-AI-REVIEW-{review_date}"
+        review_file_ref = f"contracts/e{episode_num:02d}_ai_editorial_review_v1.json"
+    else:
+        expected_review_id = f"{draft['episode_id']}-INTERNAL-AI-REVIEW-{review_date}"
+        review_file_ref = (
+            "contracts/" + draft["episode_id"].lower().replace("-", "_")
+            + "_ai_editorial_review_v1.json"
+        )
     check(isinstance(review, dict) and review.get("project") == "verbo-no-chao"
           and review.get("episode_id") == draft["episode_id"]
           and review.get("reference") == draft["reference"]
@@ -154,7 +162,7 @@ def verify_ai_editorial_review(policy: Any, review: Any, draft: Any) -> dict[str
     return {
         "episode_id": draft["episode_id"],
         "script_sha256": digest,
-        "review_file_ref": f"contracts/e{episode_num:02d}_ai_editorial_review_v1.json",
+        "review_file_ref": review_file_ref,
         "status": "AUTO_APPROVED_FOR_INTERNAL_PRODUCTION",
         "reviewer_kind": "AI_ASSISTANT_NOT_HUMAN_NOT_REEXECUTED_BY_CI",
         "source_count": len(sources),
