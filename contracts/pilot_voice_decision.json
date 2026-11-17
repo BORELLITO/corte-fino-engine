@@ -13,7 +13,7 @@
   "model_license": "Apache-2.0",
   "voice_license_status": "PENDING_EXACT_VOICE_PACK_AUDIT",
   "runtime_license_status": "PENDING_DEPENDENCY_NOTICE_REVIEW",
-  "runtime_smoke_test_status": "PARTIAL_SIMPLIFIED_TEXT_ONLY",
+  "runtime_smoke_test_status": "SEGMENTED_CANONICAL_PASS_WITH_PRONUNCIATION_LAYER",
   "local_runtime_status": "NOT_REQUIRED_CLOUD_ONLY",
   "commercial_use_intent": true,
   "audio_generated": false,
@@ -33,7 +33,11 @@
     {
       "label": "official_model_license",
       "url": "https://github.com/hexgrad/kokoro/blob/main/LICENSE"
+    },
+    {
+      "label": "segmented_canonical_cloud_smoke",
+      "url": "https://kokoroweb.app/#demoContainer"
     }
   ],
-  "next_gate": "segment_canonical_script_in_cloud_browser_and_generate_wav_chunks"
+  "next_gate": "assemble_cloud_audio_chunks_and_complete_voice_rights_gate"
 }
