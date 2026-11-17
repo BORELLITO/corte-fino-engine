@@ -127,7 +127,38 @@ def _audit_role(agent: str, root: Path, evidence: dict[str, str], blockers: list
             _require(all(isinstance(url, str) and url.startswith("https://") for url in urls),
                      "research_provenance_missing", blockers)
             _require(len(set(urls)) == len(urls), "research_duplicate_source", blockers)
-        limitations.append("Provenance only; no independent proof of visual suitability, third-party rights or Bible translation license")
+        # The research specialist also inspects the actual new-script source briefs.
+        batch = _read(root, "operations/first_batch_scripts.json", evidence)
+        source_policy = _read(root, "contracts/new_script_source_policy.json", evidence)
+        _require(batch.get("status") == "DRAFT_REVIEW_REQUIRED",
+                 "research_script_batch_must_require_review", blockers)
+        _require(source_policy.get("biblical_review_required") is True,
+                 "research_biblical_review_policy_missing", blockers)
+        scripts = batch.get("scripts")
+        _require(isinstance(scripts, list) and len(scripts) == 3,
+                 "research_first_three_scripts_missing", blockers)
+        if isinstance(scripts, list):
+            for i, script in enumerate(scripts, 1):
+                if not isinstance(script, dict):
+                    blockers.append("research_script_not_object")
+                    continue
+                context = script.get("biblical_context")
+                sources = script.get("research_sources")
+                _require(isinstance(context, dict) and
+                         context.get("theological_status") == "CONTEXT_REVIEW_REQUIRED" and
+                         all(bool(context.get(key)) for key in
+                             ("historical_setting", "central_reading", "application_limit", "misreading_to_avoid")),
+                         f"research_weak_or_unreviewed_context:{i}", blockers)
+                _require(isinstance(sources, list) and len(sources) >= 2 and
+                         all(isinstance(item, dict) and
+                             isinstance(item.get("url"), str) and
+                             item["url"].startswith("https://") and
+                             bool(item.get("note")) for item in sources),
+                         f"research_source_notes_missing:{i}", blockers)
+                _require(script.get("biblical_review_status") == "PENDING_INDEPENDENT_REVIEW",
+                         f"research_invalid_biblical_review_state:{i}", blockers)
+        limitations.append("References are documented, not live-fetched or independently endorsed; exegesis and rights need human review")
+        limitations.append("No independent proof of visual suitability, third-party rights or Bible translation license")
 
     elif agent == "retention_script":
         from editorial.review import review_script
@@ -142,7 +173,33 @@ def _audit_role(agent: str, root: Path, evidence: dict[str, str], blockers: list
         review = review_script(script)
         _require(review.status == "PASS_AUTOMATED_REVIEW", "script_automated_review_failed", blockers)
         blockers.extend(review.errors)
-        limitations.append("Automated narrative structure only; actual retention and theological fidelity need independent review")
+        batch = _read(root, "operations/first_batch_scripts.json", evidence)
+        new_policy = _read(root, "contracts/new_script_source_policy.json", evidence)
+        _require(new_policy.get("source_mode") == "reference_and_paraphrase",
+                 "script_new_source_policy_invalid", blockers)
+        scripts = batch.get("scripts")
+        _require(batch.get("status") == "DRAFT_REVIEW_REQUIRED" and
+                 batch.get("publication_authorized") is False and
+                 isinstance(scripts, list) and len(scripts) == 3,
+                 "script_first_batch_not_review_only", blockers)
+        if isinstance(scripts, list):
+            for i, draft in enumerate(scripts, 1):
+                if not isinstance(draft, dict):
+                    blockers.append(f"script_draft_not_object:{i}")
+                    continue
+                blockers.extend(
+                    f"script_new_{i}:{error}" for error in validate_script_package(draft)
+                )
+                verdict = review_script(draft)
+                blockers.extend(f"script_new_{i}:{error}" for error in verdict.errors)
+                _require(verdict.status == "PASS_AUTOMATED_REVIEW" and
+                         draft.get("status") == "DRAFT_REVIEW_REQUIRED" and
+                         draft.get("biblical_review_status") == "PENDING_INDEPENDENT_REVIEW" and
+                         draft.get("owner_approval") is False and
+                         draft.get("publication_authorized") is False,
+                         f"script_new_{i}:approval_or_review_invalid", blockers)
+        limitations.append("Drafts passed deterministic review only; no audio, rights, or theological human approval")
+        limitations.append("Automated narrative structure cannot prove actual audience retention")
 
     elif agent == "titles_covers":
         try:
