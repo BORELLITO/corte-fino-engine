@@ -7,6 +7,7 @@ media, provenance and exact release contracts exist. No paper QA is a master.
 from __future__ import annotations
 
 from typing import Any
+import re
 from agents.content_production import check
 
 SCRIPT_IDS = (
@@ -51,11 +52,16 @@ def video_pillar_readiness(policy: Any, video_policy: Any,
                   and x.get("automatic") is False
                   for x in video_policy["workflow"] if isinstance(x, dict)),
           "video_readiness:publication_boundary_missing")
+    check(isinstance(ai_result.get("review_file_ref"), str)
+          and bool(re.fullmatch(
+              r"contracts/(?:e\d{2}|vnc_w\d{2}_e\d{1,2})_ai_editorial_review_v1\.json",
+              ai_result["review_file_ref"])),
+          "video_readiness:unsafe_ai_review_ref")
     base = [
         {
             "id": pid, "status": "PASS_VERSIONED_AI_SCRIPT_REVIEW_ONLY",
             "script_sha256": ai_result["script_sha256"],
-            "source": "contracts/e01_ai_editorial_review_v1.json",
+            "source": ai_result["review_file_ref"],
             "scope": "SCRIPT_TEXT",
         }
         for pid in SCRIPT_IDS
@@ -92,7 +98,8 @@ def video_pillar_readiness(policy: Any, video_policy: Any,
 
 def validate_video_pillar_report(v: Any) -> None:
     check(isinstance(v, dict) and v.get("project") == "verbo-no-chao"
-          and v.get("episode_id") == "VNC-W01-E1"
+          and isinstance(v.get("episode_id"), str)
+          and bool(re.fullmatch(r"VNC-W\d{2}-E\d{1,2}", v["episode_id"]))
           and v.get("status") == "BLOCKED_PHYSICAL_MEDIA_AND_RIGHTS_NOT_PROVEN"
           and v.get("script_editorial_internal_approval") is True
           and v.get("script_approval_only") is True
@@ -113,8 +120,14 @@ def validate_video_pillar_report(v: Any) -> None:
           and tuple(x.get("id") for x in entries if isinstance(x, dict)) ==
           SCRIPT_IDS + MEDIA_IDS,
           "video_readiness:invalid_pillars")
+    expected_ref = entries[0].get("source")
+    check(isinstance(expected_ref, str)
+          and bool(re.fullmatch(
+              r"contracts/(?:e\d{2}|vnc_w\d{2}_e\d{1,2})_ai_editorial_review_v1\.json",
+              expected_ref)),
+          "video_readiness:invalid_review_source")
     check(all(x.get("status") == "PASS_VERSIONED_AI_SCRIPT_REVIEW_ONLY"
-              and x.get("source") == "contracts/e01_ai_editorial_review_v1.json"
+              and x.get("source") == expected_ref
               and isinstance(x.get("script_sha256"), str)
               and len(x["script_sha256"]) == 64
               for x in entries[:8]),
