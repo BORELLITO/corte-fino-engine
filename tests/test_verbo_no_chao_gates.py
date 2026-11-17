@@ -88,6 +88,22 @@ class VerboNoChaoGateTests(unittest.TestCase):
         self.assertEqual(result.state, "BLOCKED")
         self.assertTrue(any("provider_package:required" in item for item in result.errors))
 
+    def test_runflow_render_blocks_without_media_package(self):
+        with tempfile.TemporaryDirectory() as directory:
+            package_dir = Path(directory) / "package"
+            package_dir.mkdir()
+            (package_dir / "package.json").write_text("{}\n", encoding="utf-8")
+            report_dir = Path(directory) / "reports"
+            result = run_flow(
+                {"topic": "Salmo 13"},
+                package_dir,
+                report_dir,
+                render=True,
+            )
+        self.assertEqual(result.status, "BLOCKED")
+        self.assertEqual(result.state, "BLOCKED")
+        self.assertTrue(any("render:assets_missing" in item for item in result.errors))
+
 
 if __name__ == "__main__":
     unittest.main()

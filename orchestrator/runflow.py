@@ -16,6 +16,7 @@ from pathlib import Path
 from typing import Any
 
 from engine.quality_gates import validate_manifest
+from orchestrator.render import RenderError, render_package
 
 
 @dataclass(frozen=True)
@@ -82,7 +83,24 @@ def _materialize_manifest(package_dir: Path, package: dict[str, Any], run_id: st
     return manifest
 
 
-def run_flow(brief: dict[str, Any], package_dir: Path, report_dir: Path) -> RunResult:
+def _write_blocked(
+    result: RunResult,
+    report_path: Path,
+) -> RunResult:
+    report_path.write_text(
+        json.dumps(result.to_dict(), ensure_ascii=False, indent=2) + "\n",
+        encoding="utf-8",
+    )
+    return result
+
+
+def run_flow(
+    brief: dict[str, Any],
+    package_dir: Path,
+    report_dir: Path,
+    *,
+    render: bool = False,
+) -> RunResult:
     run_id = _run_id(brief)
     report_dir.mkdir(parents=True, exist_ok=True)
     manifest_path = report_dir / f"{run_id}.manifest.json"
@@ -99,13 +117,51 @@ def run_flow(brief: dict[str, Any], package_dir: Path, report_dir: Path) -> RunR
             "provider_package:required:an approved cloud provider must materialize "
             "package.json and media artifacts before validation"
         )
-        result = RunResult(run_id, "BLOCKED", "BLOCKED", str(manifest_path), tuple(sorted(set(errors))), provider_status)
-        report_path.write_text(json.dumps(result.to_dict(), ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
-        return result
+        result = RunResult(
+            run_id,
+            "BLOCKED",
+            "BLOCKED",
+            str(manifest_path),
+            tuple(sorted(set(errors))),
+            provider_status,
+        )
+        return _write_blocked(result, report_path)
 
     provider_status = "MATERIALIZED"
+    if render or (isinstance(package.get("render"), dict) and package["render"].get("enabled") is True):
+        try:
+            rendered = render_package(package_dir, package)
+        except RenderError as exc:
+            errors.append(str(exc))
+            result = RunResult(
+                run_id,
+                "BLOCKED",
+                "BLOCKED",
+                str(manifest_path),
+                tuple(sorted(set(errors))),
+                provider_status,
+            )
+            return _write_blocked(result, report_path)
+        package.setdefault("output", {}).update(
+            {
+                "file": rendered["file"],
+                "duration_sec": rendered["duration_sec"],
+                "width": rendered["width"],
+                "height": rendered["height"],
+                "sha256": rendered["sha256"],
+            }
+        )
+        package.setdefault("artifacts", {})["output"] = {
+            "path": rendered["file"],
+            "sha256": rendered["sha256"],
+            "physical_validation": rendered["physical_validation"],
+        }
+
     manifest = _materialize_manifest(package_dir, package, run_id)
-    manifest_path.write_text(json.dumps(manifest, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+    manifest_path.write_text(
+        json.dumps(manifest, ensure_ascii=False, indent=2) + "\n",
+        encoding="utf-8",
+    )
 
     errors.extend(validate_manifest(manifest, artifact_root=package_dir))
     if errors:
@@ -114,8 +170,18 @@ def run_flow(brief: dict[str, Any], package_dir: Path, report_dir: Path) -> RunR
     else:
         state = manifest.get("state", "PREVIEW_READY")
         status = "PASS"
-    result = RunResult(run_id, status, state, str(manifest_path), tuple(sorted(set(errors))), provider_status)
-    report_path.write_text(json.dumps(result.to_dict(), ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+    result = RunResult(
+        run_id,
+        status,
+        state,
+        str(manifest_path),
+        tuple(sorted(set(errors))),
+        provider_status,
+    )
+    report_path.write_text(
+        json.dumps(result.to_dict(), ensure_ascii=False, indent=2) + "\n",
+        encoding="utf-8",
+    )
     return result
 
 
@@ -124,6 +190,7 @@ def main() -> int:
     parser.add_argument("--brief", required=True, type=Path, help="JSON brief for this run")
     parser.add_argument("--package-dir", required=True, type=Path, help="provider materialization directory")
     parser.add_argument("--report-dir", default=Path("run-reports"), type=Path)
+    parser.add_argument("--render", action="store_true", help="assemble and physically validate the vertical MP4")
     args = parser.parse_args()
 
     brief, errors = _read_json(args.brief, "brief")
@@ -133,7 +200,12 @@ def main() -> int:
             print(f"- {error}")
         return 1
 
-    result = run_flow(brief, args.package_dir, args.report_dir)
+    result = run_flow(
+        brief,
+        args.package_dir,
+        args.report_dir,
+        render=args.render,
+    )
     print(json.dumps(result.to_dict(), ensure_ascii=False, indent=2))
     return 0 if result.status == "PASS" else 1
 
