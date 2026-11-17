@@ -141,8 +141,13 @@ jobs:
           pattern: vnc-specialist-*
           merge-multiple: true
           path: agent-reports/
-      - name: Verify and integrate specialist evidence
-        run: python -m agents.team --aggregate --input-dir agent-reports --output agent-team-report.json
+      - name: Retrieve blocked-by-design audio preflight report
+        uses: actions/download-artifact@v4
+        with:
+          name: vnc-audio-preflight
+          path: audio-preflight/
+      - name: Verify and integrate specialist plus audio evidence
+        run: python -m agents.team --aggregate --input-dir agent-reports --audio-preflight audio-preflight/report.json --output agent-team-report.json
       - name: Preserve team report
         uses: actions/upload-artifact@v4
         with:
