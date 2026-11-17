@@ -30,8 +30,9 @@ Data da execução: 2026-11-17 (America/Sao_Paulo)
 
 ## Direitos e monetização
 
-- A interface pública do LoreMotion declara saída sem marca d'água e uso comercial, mas essa declaração ainda não foi confrontada com os Termos de Serviço em uma etapa jurídica dedicada.
-- Gate atual: `RIGHTS_PENDING_VERIFICATION`.
+- Os Termos de Serviço públicos do LoreMotion foram consultados em 2026-11-17 e declaram propriedade do conteúdo gerado, uso comercial, edição e redistribuição sem royalties/atribuição, sujeitos aos termos do modelo utilizado: https://loremotion.com/terms/
+- Gate atual: `MODEL_PROVIDER_TERMS_PENDING`.
+- A alegação de uso comercial do serviço foi registrada, mas a cadeia completa de licença do modelo e a retenção durável do arquivo ainda não foram comprovadas.
 - O clipe não está autorizado para publicação.
 - Não houve gasto, pagamento ou publicação.
 
@@ -39,7 +40,7 @@ Data da execução: 2026-11-17 (America/Sao_Paulo)
 
 1. obter acesso multi-shot em uma rota gratuita sustentável ou mediante conta/autorização do proprietário;
 2. preservar os clipes em armazenamento cloud durável;
-3. validar direitos/licença e retenção;
+3. fechar a verificação de licença do modelo e retenção;
 4. combinar narração, trilha, legendas e montagem;
 5. executar QA audiovisual;
 6. entregar somente após o estado `READY_FOR_OWNER_APPROVAL`.
