@@ -4,6 +4,10 @@
   "source": "browser_smoke_test",
   "tool": "Kokoro Web",
   "test_url": "https://kokoroweb.app/#demoContainer",
+  "deployment": "cloud_browser",
+  "cloud_execution_surface": "work_managed_browser",
+  "phone_role": "control_only",
+  "local_device_compute_required": false,
   "language": "pt-BR",
   "speed": 1.0,
   "sample_text_simplified": "Tem dias em que o silencio parece uma resposta.",
@@ -18,20 +22,20 @@
     "message": "No readable Brazilian Portuguese · Português text was found.",
     "observed_on": "Kokoro Web browser runtime"
   },
-  "local_runtime_attempt": {
-    "status": "BLOCKED_CONTAINER_RESOURCE",
+  "historical_local_attempt": {
+    "status": "NOT_APPLICABLE_TO_PROJECT",
     "package_attempted": "kokoro>=0.9.4",
     "result": "process killed by environment",
     "exit_status": 137,
     "audio_generated": false,
-    "interpretation": "This is an environment memory limitation, not proof of incompatibility on the user's PC."
+    "interpretation": "A tentativa local foi descartada como requisito arquitetural: o canal será operado em superfície cloud pelo navegador gerenciado, com o POCO X8 Pro Max apenas como controle."
   },
   "interpretation": [
     "As três vozes passaram no smoke test com texto simplificado.",
     "O mesmo runtime rejeitou o trecho canônico com diacríticos e pontuação.",
     "O roteiro canônico não será mutilado para contornar a falha.",
-    "A instalação PyTorch completa foi pesada demais para este ambiente.",
+    "Não há requisito de processamento local no PC ou no telefone.",
     "Amostras geradas são apenas de avaliação; não estão liberadas para publicação."
   ],
-  "next_action": "benchmark_lightweight_onnx_runtime_or_user_pc_with_canonical_text"
+  "next_action": "segment_canonical_script_in_cloud_browser_and_generate_wav_chunks"
 }
