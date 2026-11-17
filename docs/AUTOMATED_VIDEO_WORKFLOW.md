@@ -91,3 +91,8 @@ Continuam exigindo autorização específica:
 - qualquer mudança fora do escopo aprovado.
 
 O estado padrão após a renderização é `READY_FOR_OWNER_APPROVAL`, nunca `PUBLISHED`.
+
+
+## Integração bloqueante do motor
+
+Este fluxo é executável somente quando o manifesto em contracts/pilot_salmo_13_master.json passa por engine/quality_gates.py. A trilha musical agora é obrigatória: pode ser original procedural sem samples externos ou licenciada com URL de licença. A narração precisa estar persistida, hasheada e em pt-BR/Kokoro-82M. Direitos pendentes permitem apenas PREVIEW_READY; não permitem publicação. A CI verbo-no-chao-gates.yml executa os testes de repetição, cloud-only, música, publicação e uso legado.
