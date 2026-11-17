@@ -1,6 +1,6 @@
 # Auditoria do primeiro clipe cloud — Salmo 13
 
-Estado: `CLIP_RENDERED_PENDING_ASSEMBLY`
+Estado: `BLOCKED_PENDING_DURABLE_ASSET_AND_MULTI_SHOT_ACCESS`
 
 Data da execução: 2026-11-17 (America/Sao_Paulo)
 
@@ -8,7 +8,7 @@ Data da execução: 2026-11-17 (America/Sao_Paulo)
 
 - Projeto: Verbo no Chão — piloto Salmo 13.
 - Regra clean-room: nenhum conteúdo, mídia, identidade, prompt ou fluxo operacional do Because Of This Stories foi utilizado.
-- Superfície: LoreMotion, execução cloud via navegador gerenciado.
+- Superfície principal: LoreMotion, execução cloud via navegador gerenciado.
 - Modelo: LTX 2.5, gratuito e ad-supported.
 - Formato observado: vertical 9:16, 720p, 5 segundos.
 - Prompt: paisagem contemplativa ao amanhecer, caminho junto a oliveiras, névoa, movimento lento de câmera, sem pessoas, texto, logotipos ou fala.
@@ -21,6 +21,13 @@ Data da execução: 2026-11-17 (America/Sao_Paulo)
 - Ação de download acionada no navegador.
 - A persistência externa do arquivo baixado não foi confirmada; a URL é tratada como entrega temporária até armazenamento cloud durável ser validado.
 
+## Limite encontrado
+
+- O segundo clipe foi preparado automaticamente com o mesmo padrão visual, mas o LoreMotion bloqueou novas gerações anônimas após o primeiro vídeo e exibiu a exigência de conta gratuita.
+- Não foi criada conta nem utilizado login, pois isso exigiria uma identidade/credencial do proprietário que não está disponível nem autorizada para ser inferida.
+- O Clipaist foi testado como alternativa sem cadastro; três tentativas foram recusadas pela fila congestionada e nenhum segundo MP4 foi entregue.
+- Creative Claw foi auditado como alternativa, mas o saldo disponível é 0 créditos; geração e montagem pagas não foram acionadas.
+
 ## Direitos e monetização
 
 - A interface pública do LoreMotion declara saída sem marca d'água e uso comercial, mas essa declaração ainda não foi confrontada com os Termos de Serviço em uma etapa jurídica dedicada.
@@ -30,9 +37,9 @@ Data da execução: 2026-11-17 (America/Sao_Paulo)
 
 ## Próximo gate automático
 
-1. preservar o clipe em armazenamento cloud durável;
-2. validar direitos/licença e retenção;
-3. gerar/selecionar os demais planos visuais coerentes com o roteiro;
+1. obter acesso multi-shot em uma rota gratuita sustentável ou mediante conta/autorização do proprietário;
+2. preservar os clipes em armazenamento cloud durável;
+3. validar direitos/licença e retenção;
 4. combinar narração, trilha, legendas e montagem;
 5. executar QA audiovisual;
 6. entregar somente após o estado `READY_FOR_OWNER_APPROVAL`.
