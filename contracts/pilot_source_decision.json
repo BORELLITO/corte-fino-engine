@@ -1,0 +1,14 @@
+{
+  "passage": "Salmo 13",
+  "source_mode": "reference_and_paraphrase",
+  "selected_translation": null,
+  "verbatim_quote_status": "BLOCKED_PENDING_LICENSE",
+  "decision": "Usar a referência Salmo 13 e paráfrase original; bloquear citação literal até confirmar a edição e sua autorização comercial.",
+  "evidence": [
+    {"id": "sbb_psa13_naa", "url": "https://www.sbb.org.br/biblia/NAA/PSA.13", "finding": "A página oficial da SBB identifica o texto como NAA e exibe aviso de copyright da Sociedade Bíblica do Brasil."},
+    {"id": "sbb_tb_history", "url": "https://www.sbb.org.br/traducao-brasileira", "finding": "A SBB informa que o relançamento de 2010 recebeu atualizações em relação à edição de 1917."},
+    {"id": "dbl_tb_1917", "url": "https://arc.dbs.org/data/scripture/PORTB1/", "finding": "O registro da Digital Bible Library identifica a Tradução Brasileira de 1917 e a classifica como Public Domain."},
+    {"id": "youversion_tb", "url": "https://www.bible.com/pt/bible/277/PSA.13.TB", "finding": "A página da versão TB exibe copyright de 1917/2010 da SBB e indicação de direitos reservados, criando conflito sobre a edição de 2010."},
+    {"id": "brazil_copyright_law", "url": "https://www.gov.br/propriedade-intelectual/pt-br/legislacao/direitos-autorais/legislacao-nacional/lei-9610.pdf", "finding": "A legislação brasileira protege traduções e exige autorização para reprodução, salvo domínio público comprovado."}
+  ]
+}

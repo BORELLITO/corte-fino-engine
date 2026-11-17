@@ -1,0 +1,13 @@
+{
+  "name": "verbo-no-chao-pilot-source-decision",
+  "version": "0.1.0",
+  "required": ["passage", "source_mode", "selected_translation", "verbatim_quote_status", "decision", "evidence"],
+  "properties": {
+    "passage": {"type": "string", "minLength": 1},
+    "source_mode": {"enum": ["reference_and_paraphrase", "licensed_verbatim", "public_domain_verbatim"]},
+    "selected_translation": {"type": ["string", "null"]},
+    "verbatim_quote_status": {"enum": ["BLOCKED_PENDING_LICENSE", "CLEARED"]},
+    "decision": {"type": "string", "minLength": 1},
+    "evidence": {"type": "array", "minItems": 1}
+  }
+}
