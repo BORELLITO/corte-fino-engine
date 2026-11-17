@@ -51,8 +51,10 @@ def adjudicate(first: dict[str, Any], second: dict[str, Any]) -> dict[str, Any]:
         category = "POSSIBLE_VOICE_ISSUE_CORROBORATED_BY_SECOND_ASR"
     elif second_words or second_boundaries:
         category = "DIFFERENT_ASR_ERRORS_NO_CONFIDENT_RESOLUTION"
-    else:
+    elif first_words or first_boundaries:
         category = "SECOND_ASR_HEARD_CRITICAL_WORDS_SMALL_MODEL_DISAGREES"
+    else:
+        category = "NO_CRITICAL_WORDING_ALERTS_BOTH_MODELS"
     return {
         "status": category,
         "shared_critical_word_alerts": shared,
