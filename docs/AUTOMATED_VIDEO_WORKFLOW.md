@@ -2,13 +2,13 @@
 
 ## Decisão aprovada
 
-O proprietário não deverá conduzir manualmente a produção. Ao solicitar o próximo vídeo, o coordenador operacional executará automaticamente as etapas seguras e autorizadas na infraestrutura cloud e entregará o vídeo renderizado para aprovação final.
+O proprietário não deverá conduzir manualmente a produção. Ao solicitar o próximo vídeo, o coordenador operacional executará automaticamente as etapas seguras e autorizadas na infraestrutura cloud e entregará o vídeo renderizado somente após validação interna de todos os pilares, sem exigir revisão de qualidade do proprietário. A publicação continua sujeita a autorização específica.
 
 Este fluxo é independente e clean-room: não utiliza conteúdo, mídia, identidade, prompts, contratos, vozes, assets ou fluxo operacional do Because Of This Stories.
 
 ## Fluxo oficial
 
-`PEDIDO → SELEÇÃO INTELIGENTE → PRODUÇÃO CLOUD → QA INTERNO → VÍDEO PRONTO → APROVAÇÃO DO PROPRIETÁRIO`
+`PEDIDO → SELEÇÃO INTELIGENTE → REVISÃO SEMÂNTICA IA → PRODUÇÃO CLOUD → QA INTERNO → VÍDEO VALIDADO → AUTORIZAÇÃO DE PUBLICAÇÃO SEPARADA`
 
 ### 1. Pedido
 
@@ -51,7 +51,7 @@ A entrega ao proprietário deve conter o vídeo renderizado, o resumo de qualida
 
 ### 6. Aprovação
 
-O proprietário aprova ou rejeita o resultado final. A aprovação do vídeo não equivale automaticamente à autorização de publicação.
+O proprietário **não precisa revisar nem aprovar o roteiro ou o vídeo final**. O motor só pode declarar o vídeo validado após QA real de mídia, som, direitos e contexto. **Publicação é uma ação separada, expressamente autorizada pelo proprietário**, e nunca é inferida do QA interno.
 
 ## Invariante editorial — zero repetição de clipes
 
@@ -60,7 +60,7 @@ O proprietário aprova ou rejeita o resultado final. A aprovação do vídeo nã
 - Cada plano deve registrar `asset_id`, URL de origem e intervalo temporal utilizado.
 - O mesmo intervalo temporal não pode ser reutilizado em outro plano.
 - Se duas entradas vierem do mesmo arquivo de origem, o QA deve tratá-las como repetição potencial e bloquear até comprovar que são assets e trechos realmente distintos.
-- Qualquer violação bloqueia `READY_FOR_OWNER_APPROVAL`.
+- Qualquer violação bloqueia `READY_FOR_PUBLICATION_AUTHORIZATION`.
 - Reutilização em vídeos diferentes não é automaticamente proibida, mas deverá ser evitada quando criar sensação de reciclagem; o motor deve priorizar assets novos e manter histórico de uso.
 
 ## Estados obrigatórios
@@ -68,7 +68,7 @@ O proprietário aprova ou rejeita o resultado final. A aprovação do vídeo nã
 - `PLANNED`: fluxo definido, sem produção iniciada.
 - `IN_PROGRESS`: produção cloud em andamento.
 - `BLOCKED`: uma dependência real impede uma entrega íntegra; o coordenador registra causa, evidência e única ação indispensável.
-- `READY_FOR_OWNER_APPROVAL`: vídeo renderizado, QA interno concluído e direitos com status compatível.
+- `READY_FOR_PUBLICATION_AUTHORIZATION`: vídeo renderizado e auditado sobre bytes reais, com todos os direitos, som, captions, originalidade, metadados e arte verificados automaticamente.
 - `PUBLISHED`: publicação confirmada somente após autorização específica e evidência da plataforma.
 
 Um clipe isolado, uma prévia ou um arquivo transferido entre serviços não pode ser apresentado como vídeo final. Se qualquer gate essencial falhar, o estado permanece `BLOCKED` e a entrega deve declarar explicitamente o que foi comprovado e o que ainda não foi comprovado.
@@ -90,9 +90,13 @@ Continuam exigindo autorização específica:
 - ações irreversíveis;
 - qualquer mudança fora do escopo aprovado.
 
-O estado padrão após a renderização é `READY_FOR_OWNER_APPROVAL`, nunca `PUBLISHED`.
+O estado após a renderização depende dos gates: `BLOCKED` até haver todos os arquivos reais e licenças; após aprovação interna completa, `READY_FOR_PUBLICATION_AUTHORIZATION`, nunca `PUBLISHED` automaticamente. O escopo desta revisão vale apenas para vídeos novos, não para o piloto congelado.
 
 
 ## Integração bloqueante do motor
 
 Este fluxo é executável somente quando o manifesto em contracts/pilot_salmo_13_master.json passa por engine/quality_gates.py. A trilha musical agora é obrigatória: pode ser original procedural sem samples externos ou licenciada com URL de licença. A narração precisa estar persistida, hasheada e em pt-BR/Kokoro-82M. Direitos pendentes permitem apenas PREVIEW_READY; não permitem publicação. A CI verbo-no-chao-gates.yml executa os testes de repetição, cloud-only, música, publicação e uso legado.
+
+## Revisão de autonomia — episódios novos (17/11/2026)
+
+O motor usa os doze pilares documentados em `contracts/autonomous_editorial_policy_v1.json` e `docs/AUTONOMOUS_EDITORIAL_QA_V1.md`. A análise interna de roteiro depende de revisão semântica genuína e fonte/hash; o CI apenas valida o recibo, não é um modelo de linguagem. A aprovação editorial do roteiro E01 é **somente interna**, não aprova o uso comercial da voz ou um arquivo de vídeo inexistente. O piloto Salmo 13 não é promovido automaticamente. O usuário não precisa inspecionar o vídeo acabado, mas deve autorizar a eventual publicação como ação separada.
