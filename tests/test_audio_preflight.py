@@ -1,0 +1,119 @@
+import copy
+import hashlib
+import json
+import shutil
+import tempfile
+import unittest
+from pathlib import Path
+
+from agents.content_production import ProductionError, produce as editorial
+from agents.first_batch_production import produce as scripts
+from agents.audio_preflight import produce, validate_voice_evidence, validate_input
+
+ROOT = Path(__file__).resolve().parents[1]
+
+
+class AudioPreflightTests(unittest.TestCase):
+    @classmethod
+    def setUpClass(cls):
+        cls.tmp = tempfile.TemporaryDirectory()
+        cls.upstream = Path(cls.tmp.name)
+        editorial(ROOT, cls.upstream)
+        scripts(ROOT, cls.upstream)
+        cls.voice = json.loads((ROOT / "contracts/kokoro_voice_research_v1.json").read_text(encoding="utf-8"))
+        cls.package = json.loads((cls.upstream / "operations/first_batch_scripts.json").read_text(encoding="utf-8"))
+        cls.report = json.loads((cls.upstream / "editorial-deliveries/first_batch_report.json").read_text(encoding="utf-8"))
+
+    @classmethod
+    def tearDownClass(cls):
+        cls.tmp.cleanup()
+
+    def test_canonical_voice_provenance_verifies_without_rights_promotion(self):
+        validate_voice_evidence(self.voice)
+        self.assertEqual(self.voice["model_license"], "Apache-2.0")
+        self.assertEqual(self.voice["upstream_voice_name"], "pm_alex")
+        self.assertFalse(self.voice["voice_pack_bytes_verified"])
+        self.assertIsNone(self.voice["upstream_voice_pack_full_sha256"])
+
+    def test_preflight_generates_real_hashed_report_but_no_audio(self):
+        with tempfile.TemporaryDirectory() as folder:
+            result = produce(ROOT, self.upstream, Path(folder))
+            self.assertEqual(result["status"], "BLOCKED")
+            self.assertFalse(result["audio_generated"])
+            self.assertFalse(result["publication_authorized"])
+            for file in result["files"]:
+                bytes_ = (Path(folder) / file["path"]).read_bytes()
+                self.assertEqual(hashlib.sha256(bytes_).hexdigest(), file["sha256"])
+            payload = json.loads((Path(folder) / "audio-preflight/preflight.json").read_text(encoding="utf-8"))
+        self.assertEqual(payload["stage"], "AUDIO_PREFLIGHT_ONLY")
+        self.assertIsNone(payload["narration"]["audio_file"])
+        self.assertEqual(len(payload["narration"]["segments"]), 6)
+
+    def test_reproduction_deterministic(self):
+        with tempfile.TemporaryDirectory() as a, tempfile.TemporaryDirectory() as b:
+            first = produce(ROOT, self.upstream, Path(a))
+            second = produce(ROOT, self.upstream, Path(b))
+        self.assertEqual(first["files"], second["files"])
+
+    def test_narration_safely_pins_exact_text_hash(self):
+        payload = validate_input(self.package, self.report, self.voice)
+        self.assertEqual(len(payload["narration_sha256"]), 64)
+        bad = copy.deepcopy(self.package)
+        bad["scripts"][0]["blocks"][0]["text"] += " Exemplo adicional."
+        with self.assertRaisesRegex(ProductionError, "canonical_narration_hash_mismatch"):
+            validate_input(bad, self.report, self.voice)
+
+    def test_approval_claim_rejected(self):
+        for claim in ("owner_approval", "publication_authorized"):
+            with self.subTest(claim=claim):
+                bad = copy.deepcopy(self.package)
+                bad["scripts"][0][claim] = True
+                with self.assertRaisesRegex(ProductionError, "approval_or_source_changed"):
+                    validate_input(bad, self.report, self.voice)
+
+    def test_voice_license_claim_cannot_upgrade_itself(self):
+        bad = copy.deepcopy(self.voice)
+        bad["voice_pack_commercial_rights_status"] = "CLEARED"
+        with self.assertRaisesRegex(ProductionError, "unsupported_license_or_hash_claim"):
+            validate_voice_evidence(bad)
+        bad = copy.deepcopy(self.voice)
+        bad["upstream_voice_pack_full_sha256"] = "f" * 64
+        with self.assertRaisesRegex(ProductionError, "unsupported_license_or_hash_claim"):
+            validate_voice_evidence(bad)
+        bad = copy.deepcopy(self.voice)
+        bad["runtime_terms_checked"] = True
+        with self.assertRaisesRegex(ProductionError, "runtime_license_not_verified"):
+            validate_voice_evidence(bad)
+
+    def test_upstream_package_tampering_detected(self):
+        with tempfile.TemporaryDirectory() as folder:
+            up = Path(folder)
+            (up / "operations").mkdir()
+            (up / "editorial-deliveries").mkdir()
+            for rel in ("operations/first_batch_scripts.json",
+                        "editorial-deliveries/first_batch_report.json"):
+                shutil.copy2(self.upstream / rel, up / rel)
+            bad = json.loads((up / "operations/first_batch_scripts.json").read_text(encoding="utf-8"))
+            bad["scripts"][0]["title_proposal"] = "FRAUDE NO ROTEIRO"
+            (up / "operations/first_batch_scripts.json").write_text(json.dumps(bad), encoding="utf-8")
+            with self.assertRaisesRegex(ProductionError, "script_package_sha256_mismatch"):
+                produce(ROOT, up, up)
+
+    def test_missing_upstream_denied(self):
+        with tempfile.TemporaryDirectory() as folder:
+            with self.assertRaisesRegex(ProductionError, "evidence_missing"):
+                produce(ROOT, Path(folder), Path(folder))
+
+    def test_protected_repository_paths_denied(self):
+        with self.assertRaisesRegex(ProductionError, "protected_output_directory"):
+            produce(ROOT, self.upstream, ROOT / "contracts")
+
+    def test_research_url_cannot_silently_switch_to_other_host(self):
+        bad = copy.deepcopy(self.voice)
+        bad["official_voice_registry"] = "https://random-site.invalid/voice-license"
+        with self.assertRaisesRegex(ProductionError, "untrusted_url"):
+            validate_voice_evidence(bad)
+
+
+if __name__ == "__main__":
+    unittest.main()
