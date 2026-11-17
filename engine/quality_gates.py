@@ -70,7 +70,10 @@ def validate_manifest(manifest: dict[str, Any], artifact_root: Path | None = Non
         "owner_approval cannot be true before PUBLISHED",
     )
 
-    execution = manifest.get("execution") or {}
+    execution = manifest.get("execution")
+    if not isinstance(execution, dict):
+        errors.append("execution must be an object")
+        execution = {}
     _add(errors, execution.get("mode") == "cloud_only", "execution.mode must be cloud_only")
     _add(errors, execution.get("device_role") == "control_only", "execution.device_role must be control_only")
     _add(errors, execution.get("legacy_projects_used") is False, "legacy project usage is forbidden")
@@ -177,11 +180,35 @@ def validate_manifest(manifest: dict[str, Any], artifact_root: Path | None = Non
         _add(errors, manifest.get("publication_authorized") is True, "PUBLISHED requires publication authorization")
 
     if artifact_root is not None:
-        artifacts = manifest.get("artifacts") or {}
+        # A provider-backed run cannot pass on a manifest alone: each media
+        # artifact must exist and carry an independently declared SHA-256.
+        artifacts = manifest.get("artifacts")
+        if not isinstance(artifacts, dict):
+            errors.append("artifacts must be an object with audio, music, captions and output")
+            artifacts = {}
+        summary_hashes = {
+            "audio": audio.get("sha256"),
+            "music": music.get("hash"),
+            "output": output.get("sha256"),
+        }
         for key in ("audio", "music", "captions", "output"):
-            item = artifacts.get(key) if isinstance(artifacts, dict) else None
-            if isinstance(item, dict):
-                _verify_artifact(item.get("path"), item.get("sha256"), artifact_root, f"artifact.{key}", errors)
+            item = artifacts.get(key)
+            if not isinstance(item, dict):
+                errors.append(f"artifact.{key} record is missing")
+                continue
+            _verify_artifact(item.get("path"), item.get("sha256"), artifact_root, f"artifact.{key}", errors)
+            if key in summary_hashes:
+                _add(
+                    errors,
+                    item.get("sha256") == summary_hashes[key],
+                    f"artifact.{key} sha256 conflicts with canonical summary",
+                )
+            if key == "output":
+                _add(
+                    errors,
+                    isinstance(output.get("file"), str) and item.get("path") == output.get("file"),
+                    "artifact.output path conflicts with canonical output.file",
+                )
 
     return sorted(set(errors))
 
