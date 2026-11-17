@@ -192,6 +192,7 @@ def produce(root: Path, output: Path) -> dict[str, Any]:
         "", "**PROPOSTA PARA REVISÃO. Não aprova roteiro, mídia nem publicação.**",
         "", "## Identidade e direção aprovadas", "",
         f"- Canal: {strategy['name']}",
+        f"- Assinatura proposta (não aprovada): {strategy['tagline']['text']}",
         f"- Promessa: {strategy['editorial_promise']}",
         f"- Público principal: {strategy['audience']['primary']}",
         f"- Público secundário: {strategy['audience']['secondary']}",
