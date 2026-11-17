@@ -18,15 +18,19 @@ Data da execução: 2026-11-17 (America/Sao_Paulo)
 
 - URL direta do MP4 observada após a geração:
   https://videos.loremotion.com/videos/d005a3cb-6a93-461b-8c76-ed60b6d15a78.mp4
-- Ação de download acionada no navegador.
-- A persistência externa do arquivo baixado não foi confirmada; a URL é tratada como entrega temporária até armazenamento cloud durável ser validado.
+- O MP4 foi baixado pelo navegador gerenciado e transferido automaticamente para o editor cloud Free.ai.
+- O editor confirmou o recebimento mostrando duração de 5,0 s, dimensões 704×1280 e tamanho 9,5 MB, identificador de arquivo `a66c7185-952f-4427-ad31-940b41e47129`.
+- Essa transferência comprova o transporte cloud entre serviços, mas não equivale a armazenamento durável sob controle do projeto nem a um vídeo final exportado.
+- O arquivo baixado continua tratado como entrega temporária até existir armazenamento cloud durável validado.
 
 ## Limite encontrado
 
 - O segundo clipe foi preparado automaticamente com o mesmo padrão visual, mas o LoreMotion bloqueou novas gerações anônimas após o primeiro vídeo e exibiu a exigência de conta gratuita.
 - Não foi criada conta nem utilizado login, pois isso exigiria uma identidade/credencial do proprietário que não está disponível nem autorizada para ser inferida.
 - O Clipaist foi testado como alternativa sem cadastro; três tentativas foram recusadas pela fila congestionada e nenhum segundo MP4 foi entregue.
+- O editor Free.ai confirmou que é um assistente de edição de clipe único, sem montagem multi-clipe completa; portanto não fecha o piloto sozinho.
 - Creative Claw foi auditado como alternativa, mas o saldo disponível é 0 créditos; geração e montagem pagas não foram acionadas.
+- Não houve tentativa de contornar limites, criar contas, inserir credenciais ou pagar serviços.
 
 ## Direitos e monetização
 
