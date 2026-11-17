@@ -1,0 +1,33 @@
+{
+  "name": "verbo-no-chao-biblical-validation",
+  "version": "0.1.0",
+  "required": [
+    "reference",
+    "translation",
+    "context",
+    "textual_basis",
+    "interpretation",
+    "application",
+    "certainty",
+    "safety"
+  ],
+  "properties": {
+    "reference": {"type": "string", "minLength": 1},
+    "translation": {"type": "string", "minLength": 1},
+    "context": {"type": "string", "minLength": 1},
+    "textual_basis": {"type": "string", "minLength": 1},
+    "interpretation": {"type": "string", "minLength": 1},
+    "application": {"type": "string", "minLength": 1},
+    "certainty": {"enum": ["EXPLICIT_TEXT", "GROUNDED_INTERPRETATION", "PASTORAL_APPLICATION"]},
+    "safety": {
+      "type": "object",
+      "forbidden_true": [
+        "invented_revelation",
+        "guaranteed_miracle",
+        "prosperity_guarantee",
+        "fear_manipulation",
+        "medical_substitute"
+      ]
+    }
+  }
+}
