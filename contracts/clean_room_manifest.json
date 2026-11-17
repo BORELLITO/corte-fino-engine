@@ -6,12 +6,13 @@
   "legacy_operational_reuse": false,
   "external_publication": false,
   "secrets_configured": false,
-  "phase": "0.3",
+  "phase": "0.4",
   "validation": {
     "clean_room_gate": "PASS",
-    "unit_tests": {"passed": 15, "failed": 0},
-    "contract_json_files": {"validated": 6, "invalid": 0},
-    "runtime_dependencies": 0
+    "unit_tests": {"passed": 19, "failed": 0},
+    "contract_json_files": {"validated": 7, "invalid": 0},
+    "runtime_dependencies": 0,
+    "dry_run": "PASS"
   },
   "gates": [
     "clean-room",
@@ -19,6 +20,8 @@
     "biblical-safety",
     "rights",
     "audiovisual",
+    "orchestrator",
+    "no-publication",
     "security",
     "rollback"
   ]
