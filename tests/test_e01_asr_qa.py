@@ -2,6 +2,9 @@
 from __future__ import annotations
 
 import copy
+import importlib.util
+import struct
+import wave
 import json
 import tempfile
 import unittest
@@ -13,7 +16,7 @@ from agents.e01_asr_qa import (
     DURATION, SCRIPT_HASH, WAV_SHA, REPORT_SHA,
     tokenize, edit_distance, compare_text, validate_timecodes, check_source,
     audit, MAX_WORD_ERROR_RATE, MAX_CHAR_ERROR_RATE, safe_stage_error,
-    ASR_MODEL_FILE_PATTERNS,
+    ASR_MODEL_FILE_PATTERNS, load_pcm16_as_whisper_16khz,
 )
 from agents.e01_voice_preview import approved_source
 
@@ -122,6 +125,21 @@ class E01ASRTests(unittest.TestCase):
         seg[0]["end"] = seg[0]["start"] - 1
         with self.assertRaisesRegex(ProductionError, "invalid_segment_time"):
             validate_timecodes(seg, DURATION)
+
+    @unittest.skipUnless(importlib.util.find_spec("numpy") is not None,
+                         "numpy installed in ASR inference job; not in stdlib CI")
+    def test_verified_pcm_is_resampled_to_16khz_numpy_without_pyav(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            wav = Path(tmp) / "fixture.wav"
+            with wave.open(str(wav), "wb") as f:
+                f.setnchannels(1)
+                f.setsampwidth(2)
+                f.setframerate(24000)
+                f.writeframes(struct.pack("<h", 1200) * (24000 * 6))
+            samples = load_pcm16_as_whisper_16khz(wav)
+        self.assertEqual(samples.shape, (16000 * 6,))
+        self.assertEqual(str(samples.dtype), "float32")
+        self.assertAlmostEqual(float(samples[500]), 1200 / 32768, places=4)
 
     def test_model_download_includes_vocabulary_required_by_ctranslate2(self):
         self.assertIn("vocabulary.*", ASR_MODEL_FILE_PATTERNS)
