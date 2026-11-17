@@ -1,0 +1,107 @@
+{
+  "schema_version": "1.0.0",
+  "project": "verbo-no-chao",
+  "episode_id": "VNC-W01-E1",
+  "review_id": "VNC-E01-INTERNAL-AI-REVIEW-2026-11-17",
+  "review_date": "2026-11-17",
+  "review_model_context": "CHATGPT_GPT6_IN_CONVERSATION_NOT_CI_MODEL",
+  "review_method": "AI_SEMANTIC_SOURCE_CROSSCHECK_ONE_MODEL_WITH_DETERMINISTIC_VALIDATION",
+  "review_independent_human": false,
+  "review_externally_reexecuted_in_ci": false,
+  "reviewed_canonical_script_sha256": "67052ec614f3beaca25cbac40414eecb7f197be0b73b7c1af4fd6579c0cf6990",
+  "reference": "Habacuque 1:2-4",
+  "result": "PASS_WITH_DOCUMENTED_CAVEATS",
+  "decision_status": "AUTO_APPROVED_FOR_INTERNAL_PRODUCTION",
+  "approval_scope": "SCRIPT_TEXT_ONLY",
+  "owner_script_review_required": false,
+  "owner_script_approval": false,
+  "human_theological_endorsement": false,
+  "critical_findings": [],
+  "fix_required_before_script_approval": [],
+  "script_reviewed_sources": [
+    "https://bible.usccb.org/bible/habakkuk/1",
+    "https://bibleproject.com/guides/book-of-habakkuk/",
+    "https://classic.net.bible.org/passage.php?passage=hab+1%3A2-4"
+  ],
+  "pillars": [
+    {
+      "id": "biblical_primary_context",
+      "status": "PASS_WITH_CAVEATS",
+      "block": "biblical_reference",
+      "script_anchor": "violência, injustiça e uma lei que perdeu a força",
+      "source_url": "https://bible.usccb.org/bible/habakkuk/1",
+      "analysis": "A queixa de 1:2–4 denuncia violência, injustiça e lei enfraquecida; é lamento social e profético"
+    },
+    {
+      "id": "claims_and_interpretation",
+      "status": "PASS_WITH_CAVEATS",
+      "block": "reflection",
+      "script_anchor": "O diálogo continua ao longo do livro, com respostas difíceis",
+      "source_url": "https://bibleproject.com/guides/book-of-habakkuk/",
+      "analysis": "O capítulo posterior apresenta resposta divina e uma segunda queixa; não se afirma silêncio eterno"
+    },
+    {
+      "id": "christian_integrity",
+      "status": "PASS_WITH_CAVEATS",
+      "block": "reflection",
+      "script_anchor": "A fé não precisa fingir que a injustiça é paz",
+      "source_url": "https://bibleproject.com/guides/book-of-habakkuk/",
+      "analysis": "A frase é aplicação cristã de honestidade diante do sofrimento, não uma citação profética literal"
+    },
+    {
+      "id": "emotional_safety",
+      "status": "PASS_WITH_CAVEATS",
+      "block": "application",
+      "script_anchor": "sem inventar respostas",
+      "source_url": "https://bible.usccb.org/bible/habakkuk/1",
+      "analysis": "Não há garantias de cura, riqueza, milagre imediato, substituição médica ou condenação emocional"
+    },
+    {
+      "id": "originality_and_copyright",
+      "status": "PASS_WITH_CAVEATS",
+      "block": "biblical_reference",
+      "script_anchor": "Ele leva essa indignação a Deus",
+      "source_url": "https://bibleproject.com/guides/book-of-habakkuk/",
+      "analysis": "Paráfrase original do enquadramento; não se reivindica certificação universal antiplágio ou licença para reproduzir Bíblia moderna"
+    },
+    {
+      "id": "narrative_and_retention",
+      "status": "PASS_WITH_CAVEATS",
+      "block": "opening",
+      "script_anchor": "Você já repetiu a mesma pergunta",
+      "source_url": "https://bibleproject.com/guides/book-of-habakkuk/",
+      "analysis": "Pergunta inicial prepara tensão; sequência vai de desconforto ao contexto, reflexão, ação e esperança não garantida"
+    },
+    {
+      "id": "language_and_tts",
+      "status": "PASS_WITH_CAVEATS",
+      "block": "connection",
+      "script_anchor": "Dói ainda mais ver injustiças repetidas",
+      "source_url": "https://bible.usccb.org/bible/habakkuk/1",
+      "analysis": "Português falável em frases naturais; duração só estimada, WAV e escuta ainda exigidos depois"
+    },
+    {
+      "id": "research_evidence",
+      "status": "PASS_WITH_CAVEATS",
+      "block": "conclusion",
+      "script_anchor": "Nem toda espera tem explicação pronta",
+      "source_url": "https://bibleproject.com/guides/book-of-habakkuk/",
+      "analysis": "Aplicação pastoral distinta de afirmação textual, com fontes verificáveis e hash do roteiro"
+    }
+  ],
+  "caveats": [
+    "Não dizer que Deus permaneceu silencioso ao longo de todo o livro: o diálogo continua a partir de 1:5.",
+    "A situação de violência e justiça social é contexto primário; a aplicação à espera pessoal deve permanecer analogia secundária.",
+    "A afirmação sobre originalidade é avaliação do trecho, não auditoria universal de plágio ou garantia jurídica.",
+    "Os blocos aprovados ainda não têm WAV, QA de audição, tradução citada, licença definitiva de voz ou vídeo renderizado.",
+    "Este parecer é produzido por IA na conversa, não por um segundo modelo ou teólogo humano independente."
+  ],
+  "production_wav_rights_cleared": false,
+  "visual_assets_cleared": false,
+  "music_license_cleared": false,
+  "captions_synced": false,
+  "physical_master_verified": false,
+  "monetization_cleared": false,
+  "final_video_owner_approval": false,
+  "publication_authorized": false
+}

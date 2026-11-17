@@ -76,8 +76,8 @@
   "onnx_voice_sha256": "0175c753f59c54e7fd5a995bedef0c5ff2fb67e0043dd3dcb2ae74ec2acbeb2a",
   "cache_voice_bytes": 522240,
   "host_commercial_narration_terms": "CONDITIONAL_PERMISSION_DOCUMENTED",
-  "release_review_status": "NEEDS_INDEPENDENT_HUMAN_THEOLOGICAL_EDITORIAL_REVIEW_AND_OWNER_APPROVAL",
-  "independent_human_biblical_review": "PENDING",
+  "release_review_status": "AUTONOMOUS_AI_SCRIPT_APPROVAL_SEPARATE_MEDIA_RIGHTS_PENDING",
+  "independent_human_biblical_review": "NOT_REQUIRED_FOR_AUTONOMOUS_SCRIPT_APPROVAL",
   "owner_script_approval": false,
   "right_to_use_all_actual_runtime_assets": "NOT_FULLY_CONFIRMED",
   "original_licensed_voice_runtime_notice_bundle": "NOT_VERIFIED",
@@ -88,10 +88,13 @@
   "license_cleared": false,
   "approved_for_audio": false,
   "unresolved": [
-    "A qualified independent reader must review the specific E01 draft for contextual theological integrity and tone.",
-    "Owner approval must reference the exact canonical script hash and six blocks.",
+    "Any future change to the exact E01 script must require a fresh AI semantic source-grounded review and a new canonical SHA256; stale evidence must never pass.",
+    "The finished video does not require owner quality signoff, but actual publication always requires an explicit owner authorization separate from internal QA.",
     "Actual runtime notices and voice-pack rights applicable to the chosen service require final pre-production review; do not assume a similar open-source repository is the hosted deployment.",
     "A technical 5.875-second test is not a production WAV and has no human pronunciation/loudness review.",
     "A commercial use permission in website terms is conditional, not a guarantee of exclusivity, copyright or compliance with platform rules."
+  ],
+  "notes": [
+    "From v1 policy override: AI semantic script gate supersedes historical owner/human review requirement; this dossier remains a rights inventory, not an audio-release approval."
   ]
 }

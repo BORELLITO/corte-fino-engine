@@ -16,6 +16,8 @@ from agents.content_production import ProductionError, check, read
 from agents.e01_context_review import validate_context_crosscheck
 from agents.controlled_smoke_evidence import validate_smoke_attestation
 from agents.e01_rights_handoff import verify_dossier, render_human_review_packet
+from agents.autonomous_editorial_gate import verify_ai_editorial_review
+from agents.video_pillar_readiness import video_pillar_readiness, validate_video_pillar_report
 from agents.onnx_byte_audit import validate_report as validate_onnx_report, EXPECTED_SHA256 as ONNX_EXPECTED_SHA256
 
 TARGET_ID = "VNC-W01-E1"
@@ -25,8 +27,6 @@ EXPECTED_BLOCKS = (
     "reflection", "application", "conclusion",
 )
 REQUIRED_BLOCKERS = (
-    "script_owner_approval_pending",
-    "independent_biblical_review_pending",
     "hosted_inference_voice_asset_consumption_unverified",
     "exact_voice_pack_commercial_rights_pending",
     "runtime_dependency_notices_unverified",
@@ -143,6 +143,9 @@ def produce(root: Path, upstream_dir: Path, out_dir: Path, *, onnx_audit: Path |
     editorial_crosscheck = read(root, "contracts/e01_editorial_crosscheck_v1.json", evidence)
     historical_smoke = read(root, "contracts/kokoro_controlled_smoke_evidence_v1.json", evidence)
     rights_dossier = read(root, "contracts/e01_rights_review_dossier_v1.json", evidence)
+    auto_policy = read(root, "contracts/autonomous_editorial_policy_v1.json", evidence)
+    ai_review = read(root, "contracts/e01_ai_editorial_review_v1.json", evidence)
+    video_policy = read(root, "contracts/video_workflow_policy.json", evidence)
     package = read(upstream_dir, "operations/first_batch_scripts.json", evidence)
     report = read(upstream_dir, "editorial-deliveries/first_batch_report.json", evidence)
     check(isinstance(report, dict) and isinstance(report.get("files"), list),
@@ -158,6 +161,11 @@ def produce(root: Path, upstream_dir: Path, out_dir: Path, *, onnx_audit: Path |
     crosscheck_result = validate_context_crosscheck(
         editorial_crosscheck, script, proof["narration_sha256"]
     )
+    autonomous_editorial = verify_ai_editorial_review(auto_policy, ai_review, script)
+    check(autonomous_editorial["script_sha256"] == proof["narration_sha256"],
+          "audio_preflight:ai_review_script_digest_mismatch")
+    pillar_readiness = video_pillar_readiness(auto_policy, video_policy, autonomous_editorial)
+    validate_video_pillar_report(pillar_readiness)
     historical_smoke_verified = validate_smoke_attestation(historical_smoke)
     rights_handoff = verify_dossier(
         rights_dossier, editorial_crosscheck, historical_smoke,
@@ -187,8 +195,10 @@ def produce(root: Path, upstream_dir: Path, out_dir: Path, *, onnx_audit: Path |
         "reference": TARGET_REFERENCE,
         "status": "BLOCKED",
         "stage": "AUDIO_PREFLIGHT_ONLY",
-        "script_review_status": "DRAFT_REVIEW_REQUIRED",
-        "biblical_context_status": "PENDING_INDEPENDENT_REVIEW",
+        "script_review_status": "AUTO_APPROVED_FOR_INTERNAL_PRODUCTION",
+        "biblical_context_status": "AI_SEMANTICALLY_REVIEWED_HUMAN_ENDORSEMENT_NOT_CLAIMED",
+        "autonomous_editorial_qa": autonomous_editorial,
+        "twelve_pillar_video_readiness": pillar_readiness,
         "internal_editorial_source_crosscheck": crosscheck_result,
         "historical_short_technical_smoke": historical_smoke_verified,
         "rights_and_editorial_handoff": rights_handoff,
@@ -241,19 +251,21 @@ def produce(root: Path, upstream_dir: Path, out_dir: Path, *, onnx_audit: Path |
         f"Voz candidata preservada: **pm_alex** / Kokoro-82M / pt-BR.",
         f"Estimativa automatizada: **{audit['estimated_seconds']} s**, não medição de áudio.",
         "", "## O que já está demonstrado", "",
-        "- Habacuque 1:2–4 foi cruzado com três referências documentadas; revisão teológica humana continua pendente.",
+        "- Habacuque 1:2–4 foi cruzado com três referências documentadas; o parecer semântico por IA tem hash e oito pilares. Certificação teológica humana não foi feita nem é exigida para o roteiro.",
         "- A voz pm_alex aparece no catálogo oficial da upstream do modelo.",
         "- A upstream do modelo declara licença Apache-2.0.",
         "- Os seis blocos do rascunho foram preservados literalmente em ordem e hasheados.",
         "- O hash do pacote gerado é conferido com o relatório de produção anterior.",
         "", "## O que permanece bloqueado", "",
-        "- O roteiro não passou por revisão bíblica independente nem aprovação do proprietário.",
+        "- O roteiro foi revisado semanticamente por IA, com oito pilares, âncoras textuais e fontes; está aprovado para a etapa interna do roteiro SEM exigir sua revisão.",
+        "- Não existe atestado de teólogo humano independente: o parecer registra expressamente um único modelo ChatGPT e o CI apenas confere a evidência.",
+        "- A aprovação do roteiro NÃO libera a voz, mídias, master ou publicação.",
         "- O upstream original publica pm_alex.pt e o upstream ONNX publica pm_alex.bin com SHA-256 diferente: um não comprova o outro.",
         "- Status da checagem ONNX: " + result["voice"]["upstream_onnx_audit_status"] + ". O hash do cache foi confirmado no teste histórico, mas não há prova independente de que a inferência consumiu aquele objeto.",
         "- O Kokoro Web permite narração comercial condicionalmente; ainda falta provar a identidade do pack realmente carregado e conferir licenças/avisos das dependências.",
         "- Em uma sessão isolada de Chrome, uma frase técnica não bíblica gerou um áudio temporário de 5,875 s e o cache continha pm_alex.bin com SHA correspondente ao ONNX upstream.",
         "- Esse teste histórico NÃO prova a identidade do arquivo consumido pela inferência, a licença completa nem a inteligibilidade de áudio de produção.",
-        "- Foi preparado um pacote humano com seis blocos do texto exato, fontes, checklist e estado jurídico condicional, mas não existe aprovação humana.",
+        "- Foi preservado um pacote opcional de auditoria humana/histórica, porém a aprovação editorial interna agora depende da crítica por IA já comprovada, não do usuário.",
         "- Nenhuma voz nova nem WAV do roteiro E01 é produzido por este pré-voo.",
         "- Não houve geração de WAV, renderização, agendamento ou publicação.",
         "", "## Segmentos prontos para futura revisão", "",
@@ -261,7 +273,7 @@ def produce(root: Path, upstream_dir: Path, out_dir: Path, *, onnx_audit: Path |
     for seg in result["narration"]["segments"]:
         md.extend([f"### {seg['index']} — {seg['block_type']}", seg["text"], ""])
     md.extend(["## Próxima decisão", "",
-               "Revisão contextual humana do roteiro e evidências específicas da voz/serviço, antes de iniciar o TTS.",
+               "Próxima dependência: completar direitos da voz/serviço e provas de mídia real; roteiro E01 já passou na revisão interna por IA, sem revisão humana obrigatória.",
                "A licença Apache-2.0 da upstream e as permissões condicionais do site não comprovam, sozinhas, os direitos e a identidade dos assets efetivamente utilizados.",
                ""])
     def dump(data: Any) -> str:
@@ -279,12 +291,22 @@ def produce(root: Path, upstream_dir: Path, out_dir: Path, *, onnx_audit: Path |
         write("audio-preflight/historical_smoke.json", dump(historical_smoke_verified)),
         write("audio-preflight/rights_review_handoff.json", dump(rights_handoff)),
         write("audio-preflight/e01_human_review_packet.md", human_review_md),
+        write("audio-preflight/ai_editorial_approval.json", dump(autonomous_editorial)),
+        write("audio-preflight/video_pillar_readiness.json", dump(pillar_readiness)),
     ]
     summary = {
         "schema_version": "1.0.0", "project": "verbo-no-chao",
         "episode_id": TARGET_ID, "status": "BLOCKED",
         "stage": "AUDIO_PREFLIGHT_ONLY",
         "files": files, "blockers": list(REQUIRED_BLOCKERS),
+        "ai_editorial_review_verified": True,
+        "ai_editorial_script_approved": True,
+        "video_readiness_status": "BLOCKED_PHYSICAL_MEDIA_AND_RIGHTS_NOT_PROVEN",
+        "final_video_qa_completed": False,
+        "owner_finished_video_review_required": False,
+        "ai_editorial_review_status": "AUTO_APPROVED_FOR_INTERNAL_PRODUCTION",
+        "owner_script_review_required": False,
+        "human_theological_review_required_for_script": False,
         "voice_license_approved": False,
         "historical_smoke_evidence_verified": True,
         "rights_review_handoff_generated": True,

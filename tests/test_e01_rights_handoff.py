@@ -110,7 +110,8 @@ class E01RightsReviewTests(unittest.TestCase):
         self.assertIn(result["script_canonical_sha256"], md)
         for block in self.script["blocks"]:
             self.assertIn(block["text"], md)
-        self.assertIn("PENDENTE", md)
+        self.assertIn("NÃO AUTORIZADA", md)
+        self.assertIn("OPCIONAIS", md)
         self.assertIn("Apache-2.0", md)
         self.assertIn("Habacuque", md)
         self.assertNotIn("APROVADO PARA PUBLICAÇÃO", md)
@@ -168,7 +169,11 @@ class E01RightsReviewTests(unittest.TestCase):
             reports, preflight_path = self._prepare_coordinator_fixture(Path(tmp))
             result = aggregate(reports, preflight_path)
         self.assertTrue(result["audio_preflight"]["supporting_file_hashes_verified"])
-        self.assertEqual(result["audio_preflight"]["supporting_file_count"], 6)
+        self.assertEqual(result["audio_preflight"]["supporting_file_count"], 8)
+        self.assertEqual(result["audio_preflight"]["twelve_pillar_video_readiness"],
+                         "BLOCKED_PHYSICAL_MEDIA_AND_RIGHTS_NOT_PROVEN")
+        self.assertTrue(result["audio_preflight"]["ai_editorial_script_approved"])
+        self.assertFalse(result["audio_preflight"]["owner_script_review_required"])
         self.assertEqual(len(result["audio_preflight"]["human_review_packet_sha256"]), 64)
         self.assertEqual(result["status"], "BLOCKED")
 

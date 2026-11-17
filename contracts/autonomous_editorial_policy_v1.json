@@ -1,0 +1,101 @@
+{
+  "schema_version": "1.0.0",
+  "project": "verbo-no-chao",
+  "policy_id": "VNC-AUTONOMOUS_EDITORIAL_QA_V1",
+  "effective_for": "NEW_NON_PILOT_EPISODES_ONLY",
+  "supersedes_only": "SCRIPT_REVIEW_AND_SCRIPT_OWNER_APPROVAL_REQUIREMENT",
+  "legacy_source_policy": "contracts/new_script_source_policy.json",
+  "legacy_video_policy": "contracts/video_workflow_policy.json",
+  "execution_mode": "ASSISTANT_SEMANTIC_REVIEW_PLUS_DETERMINISTIC_CI_EVIDENCE",
+  "owner_reviews_intermediate_scripts": false,
+  "owner_approves_internal_script": false,
+  "automated_internal_script_approval_permitted": true,
+  "approver_kind": "AI_ASSISTANT_INTERNAL_EDITORIAL_NOT_INDEPENDENT_HUMAN",
+  "publication_authorized": false,
+  "owner_final_video_approval_required": false,
+  "separate_explicit_publication_authorization_required": true,
+  "protected_pilot_can_be_retroactively_auto_approved": false,
+  "pillars": [
+    {
+      "id": "biblical_primary_context",
+      "required_for_script": true,
+      "review": "crosscheck passage in context, book structure and historical setting; use multiple sources"
+    },
+    {
+      "id": "claims_and_interpretation",
+      "required_for_script": true,
+      "review": "separate cited claims, contextual interpretation and contemporary pastoral application; no quotation misattribution"
+    },
+    {
+      "id": "christian_integrity",
+      "required_for_script": true,
+      "review": "Christ-centered broad positioning without sectarian certainty or invented revelation"
+    },
+    {
+      "id": "emotional_safety",
+      "required_for_script": true,
+      "review": "no divine deadlines, miracle promises, intimidation, false clinical/financial assurances"
+    },
+    {
+      "id": "originality_and_copyright",
+      "required_for_script": true,
+      "review": "new wording, no intentional verbatim copied translation/commentary and a separate anti-duplication gate"
+    },
+    {
+      "id": "narrative_and_retention",
+      "required_for_script": true,
+      "review": "clear compelling opening, escalating argument, logical progression, resolution and honest non-clickbait loop"
+    },
+    {
+      "id": "language_and_tts",
+      "required_for_script": true,
+      "review": "clear pt-BR, natural speech, no unreadable abbreviations and measured duration required after TTS"
+    },
+    {
+      "id": "research_evidence",
+      "required_for_script": true,
+      "review": "dated URLs/source attestations and SHA256 of exact script; URLs are not copyright licenses"
+    },
+    {
+      "id": "visual_storyboard",
+      "required_for_script": false,
+      "review": "each visual depicts appropriate narrative, no unlicensed imagery, no repeats after crops/edits"
+    },
+    {
+      "id": "music_and_voice",
+      "required_for_script": false,
+      "review": "source, rights, intelligibility, loudness, mix and faithful voice profile"
+    },
+    {
+      "id": "captions_and_export",
+      "required_for_script": false,
+      "review": "temporal sync, safe area, format, fps, resolution and actual decoded master"
+    },
+    {
+      "id": "metadata_and_monetization",
+      "required_for_script": false,
+      "review": "accurate titles, covers, descriptions, platform rules, source credits, rights and release status"
+    }
+  ],
+  "script_approval_rules": {
+    "mandatory_script_pillars": 8,
+    "required_outcome": "PASS_WITH_DOCUMENTED_CAVEATS_OR_BETTER",
+    "all_mandatory_pass": true,
+    "critical_findings_allowed": 0,
+    "source_count_at_least": 2,
+    "must_pin_canonical_script_sha256": true,
+    "human_theological_endorsement_must_not_be_claimed": true,
+    "auto_correct_then_re_review_if_failed": true,
+    "fail_closed_if_semantic_review_missing": true
+  },
+  "limits": [
+    "The existing ChatGPT conversation can produce evidence-based semantic review and version it, but GitHub Actions alone has no live LLM service configured.",
+    "GitHub Models inference API was retired 2026-07-30 and is forbidden as a new dependency.",
+    "A static JSON receipt does not mean a CI job ran independent LLM inference; CI checks provenance, schema and alignment.",
+    "Future episodes require their own actual semantic assessment by an available model before internal approval; no silent blanket pass.",
+    "Rights, media render, video QA and publication always require their own independent evidence and gates.",
+    "The owner does not need to review or sign off the finished video after all physical, rights and creative gates pass. Publishing or external distribution remains a separate explicit user action."
+  ],
+  "internal_final_video_qa_required": true,
+  "final_video_owner_review_optional": true
+}

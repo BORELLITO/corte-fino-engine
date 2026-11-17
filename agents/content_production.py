@@ -120,8 +120,17 @@ def produce(root: Path, output: Path) -> dict[str, Any]:
           "policy:clean_room")
     check("publication_authorized" in docs["docs/ENGINE_LOCK.md"],
           "policy:publication_lock")
-    check(docs["contracts/video_workflow_policy.json"].get("publication_authorized_by_default") is False
-          and docs["contracts/video_workflow_policy.json"].get("final_owner_approval_required") is True,
+    video_policy = docs["contracts/video_workflow_policy.json"]
+    check(video_policy.get("publication_authorized_by_default") is False
+          and video_policy.get("effective_scope") == "NEW_NON_PILOT_EPISODES_ONLY"
+          and video_policy.get("final_owner_approval_required") is False
+          and video_policy.get("internal_final_video_qa_required") is True
+          and video_policy.get("final_owner_review_optional") is True
+          and video_policy.get("owner_script_approval_required") is False
+          and video_policy.get("auto_editorial_policy_ref") ==
+              "contracts/autonomous_editorial_policy_v1.json"
+          and any("Never publish without explicit owner approval" in rule
+                  for rule in video_policy.get("blocking_rules", [])),
           "policy:video_approval")
     check(docs["contracts/pilot_source_decision.json"].get("source_mode") == "reference_and_paraphrase"
           and docs["contracts/pilot_source_decision.json"].get("selected_translation") is None,

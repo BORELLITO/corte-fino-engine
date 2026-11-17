@@ -73,3 +73,10 @@ O coordenador impede qualquer falsa conclusão de que `internal_context_crossche
 Sem contratação paga, publicação, WAV do E01, upload de mídia de produção, mudanças no piloto Salmo 13, alteração de `main` ou merge automático. O workflow utiliza minutos da cota GitHub Actions. A voz `pm_alex` é **baseline**, não voz definitivamente liberada. Os demais roteiros E02 e E03 não foram revisados nesta etapa.
 
 Próximo gate: revisão bíblica humana independente do roteiro exato, aprovação do proprietário e revisão de direitos/avisos aplicáveis à voz usada para produzir o WAV final. Uma aprovação de roteiro não significa aprovação de áudio, vídeo ou publicação.
+
+
+## Política posterior: QA autônomo de roteiro (17/11/2026)
+
+Para novos episódios, `contracts/autonomous_editorial_policy_v1.json` substitui a exigência de leitura humana/assinatura do roteiro pelo proprietário. A evidência real de análise contextual do ChatGPT para o E01 está no recibo `contracts/e01_ai_editorial_review_v1.json`, com SHA-256 e oito pilares. O novo arquivo `audio-preflight/ai_editorial_approval.json` registra aprovação **somente do roteiro**; `audio-preflight/video_pillar_readiness.json` apresenta os doze pilares: oito avaliados no texto e quatro bloqueados até haver provas físicas, direitos e QA real. Nenhum modelo adicional de IA é executado dentro do GitHub Actions.
+
+O `e01_human_review_packet.md` conserva apenas valor de auditoria **opcional**. Não deve mais ser solicitado ao proprietário, e a ausência de parecer humano não é bloqueio automático de texto. O áudio do E01 permanece bloqueado por questões reais de direitos do runtime e de produção ausente. O vídeo final não exige revisão de qualidade do usuário, mas publicação segue dependente de autorização explícita.

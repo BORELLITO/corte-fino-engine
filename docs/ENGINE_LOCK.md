@@ -44,3 +44,12 @@ Não existe caminho alternativo que salte a ordem. O coordenador pode executar e
 - Os testes devem cobrir pass, repetição, ausência de música, uso legado e tentativa de publicação.
 - Uma decisão nova substitui a anterior somente quando registrada em contrato e changelog.
 - Documentação não substitui teste executável.
+
+
+## Alteração de autonomia para episódios novos (17/11/2026)
+
+A política anterior de aprovação manual foi substituída **somente para episódios novos** pela decisão `contracts/autonomous_editorial_policy_v1.json` e `contracts/video_workflow_policy.json` v1.1. O motor deve completar sozinho a revisão semântica real dos roteiros, correções, validações e QA do vídeo final. O usuário não precisa revisar peças intermediárias nem assinar o vídeo terminado. O primeiro roteiro E01 possui parecer semântico de IA com hash próprio. O GitHub Actions valida esse parecer, mas não executa um LLM ativo.
+
+**A única intervenção exigida para circulação externa é autorização explícita para publicação**, independente do parecer editorial ou master. Até haver prova de licenciamento, WAV/frames físicos, sincronia e todos os demais gates, o estado de entrega é `BLOCKED`, nunca `PUBLISHED`.
+
+As cláusulas históricas e flags do **piloto Salmo 13** continuam protegidas e não são reinterpretadas retroativamente. Ver `docs/AUTONOMOUS_EDITORIAL_QA_V1.md`.

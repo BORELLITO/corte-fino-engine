@@ -1,12 +1,12 @@
 {
   "policy_id": "VNC-AUTOMATED-VIDEO-WORKFLOW-001",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "state": "APPROVED",
   "project": "verbo-no-chao",
-  "execution_mode": "CLOUD_AUTOMATED_BUILD_FINAL_OWNER_APPROVAL",
+  "execution_mode": "CLOUD_AUTOMATED_BUILD_AND_INTERNAL_QA_SEPARATE_EXPLICIT_PUBLICATION",
   "device_role": "POCO_X8_PRO_MAX_CONTROL_ONLY",
   "automatic_execution": true,
-  "final_owner_approval_required": true,
+  "final_owner_approval_required": false,
   "publication_authorized_by_default": false,
   "cloud_only": true,
   "workflow": [
@@ -24,31 +24,37 @@
     },
     {
       "state": "BUILDING",
-      "entry": "generate_and_assemble_video_in_cloud",
+      "entry": "generate_and_assemble_video_in_cloud_only_after_required_script_rights_and_asset_gates",
       "automatic": true,
       "next": "INTERNAL_QA"
     },
     {
       "state": "INTERNAL_QA",
-      "entry": "run_editorial_biblical_visual_audio_caption_rights_and_monetization_gates",
+      "entry": "run_evidence_based_biblical_editorial_visual_audio_caption_rights_and_monetization_gates",
       "automatic": true,
-      "next": "READY_FOR_OWNER_APPROVAL"
+      "next": "QA_PASS_OR_BLOCKED"
     },
     {
-      "state": "READY_FOR_OWNER_APPROVAL",
-      "entry": "deliver_final_video_and_compact_review",
-      "automatic": false,
-      "next": "OWNER_APPROVED"
+      "state": "QA_PASS_OR_BLOCKED",
+      "entry": "all_gates_pass_on_real_media_bytes_or_fail_closed",
+      "automatic": true,
+      "next": "READY_FOR_PUBLICATION_AUTHORIZATION"
     },
     {
-      "state": "OWNER_APPROVED",
-      "entry": "explicit_owner_approval",
+      "state": "READY_FOR_PUBLICATION_AUTHORIZATION",
+      "entry": "deliver_finished_verified_video_and_recommendation_without_owner_quality_review",
+      "automatic": true,
+      "next": "AWAIT_SEPARATE_PUBLICATION_PERMISSION"
+    },
+    {
+      "state": "AWAIT_SEPARATE_PUBLICATION_PERMISSION",
+      "entry": "no_manual_quality_review_required_but_explicit_permission_required_for_publishing",
       "automatic": false,
       "next": "PUBLISHING_OR_ARCHIVE"
     },
     {
       "state": "PUBLISHING_OR_ARCHIVE",
-      "entry": "separate_explicit_publication_authorization",
+      "entry": "publish_only_after_explicit_user_publication_authorization",
       "automatic": false,
       "next": "PUBLISHED"
     }
@@ -58,7 +64,9 @@
     "Never publish without explicit owner approval for publication.",
     "Never silently replace approved script, source, visual identity, voice, music, or captions.",
     "If a required cloud tool, asset, license, or account is unavailable, stop at the earliest truthful blocked state.",
-    "The owner reviews the finished artifact, not a list of manual production steps."
+    "New episodes never require manual owner review of intermediate script or the final media quality package; internal AI and technical validation must be evidenced.",
+    "No missing, generic, unrun, heuristic-only, or self-certified QA can be treated as a pass; if semantic or physical media evidence is absent remain BLOCKED.",
+    "Publication remains separately authorized and is never inferred from automated script or full-video approval."
   ],
   "required_final_delivery": [
     "rendered_video",
@@ -67,6 +75,12 @@
     "compact_quality_report",
     "rights_and_license_status",
     "known_limitations",
-    "approval_prompt"
-  ]
+    "optional_owner_review_link",
+    "publication_authorization_prompt"
+  ],
+  "effective_scope": "NEW_NON_PILOT_EPISODES_ONLY",
+  "final_owner_review_optional": true,
+  "internal_final_video_qa_required": true,
+  "owner_script_approval_required": false,
+  "auto_editorial_policy_ref": "contracts/autonomous_editorial_policy_v1.json"
 }
