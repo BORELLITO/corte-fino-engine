@@ -1,0 +1,97 @@
+{
+  "schema_version": "1.0.0",
+  "project": "verbo-no-chao",
+  "episode_id": "VNC-W01-E1",
+  "script_id": "vnc-vnc-w01-e1-script-v1",
+  "reference": "Habacuque 1:2-4",
+  "review_date": "2026-11-17",
+  "review_type": "SOURCE_BASED_INTERNAL_EDITORIAL_CROSSCHECK",
+  "result": "INTERNAL_CONTEXT_CROSSCHECK_PASS_WITH_CAVEATS",
+  "independent_human_theological_review": "PENDING",
+  "owner_approval": false,
+  "approved_for_audio": false,
+  "publication_authorized": false,
+  "reviewed_canonical_narration_sha256": "67052ec614f3beaca25cbac40414eecb7f197be0b73b7c1af4fd6579c0cf6990",
+  "script_blocks_sha256": [
+    "6defc5b590cc8154939c91215747d2e46641b3c0a3caa28b2eb3f2efa1e22e88",
+    "67534cfc00d9a5b33599daea88e68177a38e5d1993d199f90dc080aecbaa5d83",
+    "5c82e0cc4469f618ddf9230c7c3f69fef15c06ae15d9b7ffc6ea02d95320065d",
+    "d2146d111b2aee6e41d231db912f144422f55605feb53d6c5fb6c721c1d5b6fe",
+    "1465ba3341bd8233e070ec54ededa26c926d172a8e953df13c81e7dc9255ddd1",
+    "f92ba09bbf5942f90176681e9971b0f14826ecd34edcaba254b6f25992315c11"
+  ],
+  "reviewed_sources": [
+    {
+      "url": "https://classic.net.bible.org/passage.php?passage=hab+1%3A2-4",
+      "type": "PASSAGE_WITH_TRANSLATION_NOTES",
+      "verified": "2026-11-17",
+      "finding": "Passage criticizes violence, wrongdoing, law without effect, distorted justice; notes explicitly connect the lament to social injustice",
+      "publication_license": "NOT_CLEARED_FOR_QUOTING"
+    },
+    {
+      "url": "https://bibleproject.com/guides/book-of-habakkuk/",
+      "type": "BOOK_STRUCTURE",
+      "verified": "2026-11-17",
+      "finding": "First complaint 1:2-4 concerns injustice among the covenant people; later chapters include a reply and a second lament",
+      "publication_license": "NOT_CLEARED_FOR_QUOTING"
+    },
+    {
+      "url": "https://new.bible.org/seriespage/2-habakkuk",
+      "type": "LITERARY_CONTEXT",
+      "verified": "2026-11-17",
+      "finding": "Commentary describes Habakkuk 1:2-4 as a first prophetic lament about social injustice; subsequent reply raises more difficult questions",
+      "publication_license": "NOT_CLEARED_FOR_QUOTING"
+    }
+  ],
+  "claims_checked": [
+    {
+      "claim_id": "C1",
+      "claim": "Violence, injustice, and ineffective law are central to Habakkuk 1:2-4",
+      "status": "SUPPORTED_IN_CONTEXT",
+      "source_urls": [
+        "https://classic.net.bible.org/passage.php?passage=hab+1%3A2-4",
+        "https://bibleproject.com/guides/book-of-habakkuk/"
+      ],
+      "required_in_script_block": "biblical_reference",
+      "anchor_words": [
+        "violência",
+        "injustiça",
+        "lei que perdeu a força"
+      ]
+    },
+    {
+      "claim_id": "C2",
+      "claim": "The first lament precedes a divine response and a further lament later in the book",
+      "status": "SUPPORTED_IN_BOOK_CONTEXT",
+      "source_urls": [
+        "https://bibleproject.com/guides/book-of-habakkuk/",
+        "https://new.bible.org/seriespage/2-habakkuk"
+      ],
+      "required_in_script_block": "reflection",
+      "anchor_words": [
+        "O diálogo continua ao longo do livro",
+        "respostas difíceis"
+      ]
+    },
+    {
+      "claim_id": "C3",
+      "claim": "The script is a contemporary reflection rather than a promise of rapid miraculous intervention",
+      "status": "EDITORIAL_SCOPE_REVIEW_ONLY",
+      "source_urls": [
+        "https://classic.net.bible.org/passage.php?passage=hab+1%3A2-4"
+      ],
+      "required_in_script_block": "conclusion",
+      "anchor_words": [
+        "Nem toda espera tem explicação pronta",
+        "esperança"
+      ]
+    }
+  ],
+  "caveats": [
+    "Contemporary opening is an analogy; the original lament is about collective violence and justice rather than personal delay alone.",
+    "Habakkuk 1:5-11 includes a divine response; do not claim that God never responds throughout the book.",
+    "Do not quote NET Bible, BibleProject, or commentary verbatim in a monetized script without rights assessment.",
+    "Cross-check is not a human theological endorsement, does not prove originality against all published media, and does not grant audio/voice rights."
+  ],
+  "next_gate": "OWNER_SCRIPT_APPROVAL_AND_INDEPENDENT_EDITORIAL_REVIEW_AND_VOICE_ASSET_PROOF"
+}
