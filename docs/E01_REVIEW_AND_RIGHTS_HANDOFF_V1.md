@@ -1,6 +1,6 @@
 # VERBO NO CHÃO — E01 | Handoff de revisão bíblica e licenciamento v1
 
-**Status:** `REVIEW_PACKET_READY_NOT_APPROVED` • **Áudio E01:** `BLOCKED` • **Publicação:** proibida até autorização independente.
+**Status do dossiê de direitos:** `REVIEW_PACKET_READY_NOT_APPROVED` (registro histórico complementar) • **Roteiro E01:** `AUTO_APPROVED_FOR_INTERNAL_PRODUCTION` via política de IA posterior • **Áudio E01:** `BLOCKED` • **Publicação:** autorização específica ainda necessária.
 
 ## O que foi implementado e medido
 
@@ -38,14 +38,19 @@ O uso de áudio gerado por um serviço cujo site permite projetos comerciais **n
 
 O uso dos dados de treinamento de terceiros citados pela upstream exige cuidado; não presumir que a licença de um áudio CC BY usado no treinamento cria automaticamente uma obrigação de atribuição em cada saída sintetizada, nem o contrário. A situação da obra final dependerá de direitos e condições aplicáveis.
 
-## Parecer humano ainda indispensável
+## Parecer humano opcional; revisão editorial por IA obrigatória
 
-O revisor deve examinar o **roteiro exato** vinculado ao hash, especialmente o gênero de lamento de Habacuque, violência social, lei ineficaz, justiça distorcida, continuidade do diálogo e ausência de promessas temporais sobrenaturais. Não é suficiente um teste de estrutura ou uma revisão de IA a partir de comentários; o parecer humano deve ser identificável e **não pode ser criado por uma ferramenta fingindo ser outra pessoa**.
+O parecer semântico por IA deve examinar o **roteiro exato** vinculado ao hash, especialmente o gênero de lamento de Habacuque, violência social, lei ineficaz, justiça distorcida, continuidade do diálogo e ausência de promessas temporais sobrenaturais. A versão E01 foi avaliada pelo ChatGPT e vinculada em `contracts/e01_ai_editorial_review_v1.json`. Isto **não é um parecer teológico humano independente**; se houver dúvida crítica, a IA deve corrigir/bloquear, não fingir assinatura externa.
 
-O proprietário deve aprovar posteriormente a versão textual exata, separadamente da voz, arte, trilha, montagem e publicação. **Nenhuma dessas decisões foi simulada.**
+O proprietário não precisa aprovar versões textuais, ajustes de arte, trilha ou montagem. O motor deve validar as evidências reais e aplicar QA interno completo. A **publicação** depende de uma autorização separada. Ninguém deve fingir que a conclusão de um checklist aprova uma licença ou arquivo de vídeo inexistente.
 
 ## Evidência, custo e rollback
 
 A solução roda no GitHub Actions usando dados versionados e ferramentas já presentes no motor; não instala modelos novos, não executa TTS de novo, não cria custos diretos adicionais de API, mas consome minutos da cota de CI. O novo trabalho está numa branch isolada empilhada na PR #33, sem merge na branch `bootstrap` ou `main`. PR #25 continua independente.
 
-**Próximo gate real:** obter um parecer bíblico humano independente sobre `e01_human_review_packet.md` e a aprovação do titular vinculada ao hash. A validação de licenças e avisos da versão do serviço usada para o WAV de produção ainda demanda revisão específica antes da entrega comercial.
+**Próximo gate real:** a revisão semântica do roteiro E01 já foi versionada e verificada; faltam direitos e avisos de runtime, áudio de produção e a validação física dos demais pilares. O pacote com nome histórico `e01_human_review_packet.md` é somente opcional, não representa tarefa atribuída ao usuário.
+
+
+## Precedência
+
+Este documento nasceu na PR #34. Para episódios novos, a política posterior `contracts/autonomous_editorial_policy_v1.json` e o gate `agents/autonomous_editorial_gate.py` substituem **somente** a exigência de parecer humano e assinatura do usuário em roteiro/vídeo. Seus controles de direitos e impossibilidade de publicação automática continuam obrigatórios. O piloto Salmo 13 conserva suas próprias travas.
