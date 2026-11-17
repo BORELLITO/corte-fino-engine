@@ -9,7 +9,7 @@ FIXTURE = Path(__file__).resolve().parents[1] / "docs" / "PILOT_SALMO_13_VOICE_B
 class VoiceBenchmarkTests(unittest.TestCase):
     def test_all_pt_br_candidates_pass_simplified_smoke_test(self):
         payload = json.loads(FIXTURE.read_text(encoding="utf-8"))
-        self.assertEqual(payload["status"], "PARTIAL_SMOKE_PASS_RUNTIME_BLOCKER")
+        self.assertEqual(payload["status"], "SEGMENTED_CANONICAL_PASS_LICENSE_BLOCKER")
         self.assertEqual(
             {item["voice_id"] for item in payload["voices"]},
             {"pm_alex", "pm_santa", "pf_dora"},
@@ -21,6 +21,16 @@ class VoiceBenchmarkTests(unittest.TestCase):
         self.assertEqual(payload["canonical_text_result"]["status"], "NO_GO_BROWSER_RUNTIME")
         self.assertIn("silêncio", payload["canonical_text_sample"])
         self.assertIn("Você", payload["canonical_text_sample"])
+
+    def test_segmented_canonical_text_passes_with_editorial_text_preserved(self):
+        payload = json.loads(FIXTURE.read_text(encoding="utf-8"))
+        result = payload["segmented_canonical_result"]
+        self.assertEqual(result["status"], "PASS_SEGMENTED")
+        self.assertTrue(result["editorial_text_preserved"])
+        self.assertTrue(result["pronunciation_layer_required"])
+        self.assertEqual(len(result["segments"]), 3)
+        self.assertTrue(all(item["generated"] for item in result["segments"]))
+        self.assertEqual(result["audio_format"], "WAV 24 kHz")
 
     def test_full_local_runtime_attempt_is_explicitly_blocked(self):
         payload = json.loads(FIXTURE.read_text(encoding="utf-8"))
