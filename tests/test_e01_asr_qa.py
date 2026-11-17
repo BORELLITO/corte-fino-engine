@@ -13,6 +13,7 @@ from agents.e01_asr_qa import (
     DURATION, SCRIPT_HASH, WAV_SHA, REPORT_SHA,
     tokenize, edit_distance, compare_text, validate_timecodes, check_source,
     audit, MAX_WORD_ERROR_RATE, MAX_CHAR_ERROR_RATE, safe_stage_error,
+    ASR_MODEL_FILE_PATTERNS,
 )
 from agents.e01_voice_preview import approved_source
 
@@ -121,6 +122,11 @@ class E01ASRTests(unittest.TestCase):
         seg[0]["end"] = seg[0]["start"] - 1
         with self.assertRaisesRegex(ProductionError, "invalid_segment_time"):
             validate_timecodes(seg, DURATION)
+
+    def test_model_download_includes_vocabulary_required_by_ctranslate2(self):
+        self.assertIn("vocabulary.*", ASR_MODEL_FILE_PATTERNS)
+        self.assertIn("*.json", ASR_MODEL_FILE_PATTERNS)
+        self.assertIn("*.bin", ASR_MODEL_FILE_PATTERNS)
 
     def test_backend_failures_disclose_stage_not_private_error_text(self):
         unsafe = RuntimeError("unable to open file /home/runner/token=SECRET")
