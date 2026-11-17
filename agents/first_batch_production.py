@@ -139,8 +139,9 @@ def validate_batch(seed: Any, plan: Any, source_policy: Any) -> list[dict[str, A
     return records
 
 
-def produce(root: Path, output: Path) -> dict[str, Any]:
+def produce(root: Path, output: Path, *, upstream_root: Path | None = None) -> dict[str, Any]:
     root, output = root.resolve(), output.resolve()
+    upstream_root = (upstream_root or root).resolve()
     check(not any(output.is_relative_to(root / p)
                   for p in ("contracts", "docs", "tests", "agents")),
           "script_batch:protected_output_directory")
@@ -148,8 +149,8 @@ def produce(root: Path, output: Path) -> dict[str, Any]:
     seed = read(root, "agents/first_batch_seed.json", ev)
     source_policy = read(root, "contracts/new_script_source_policy.json", ev)
     editorial_seed = read(root, "agents/editorial_seed.json", ev)
-    plan = read(root, "operations/growth_90d.json", ev)
-    report = read(root, "editorial-deliveries/production_report.json", ev)
+    plan = read(upstream_root, "operations/growth_90d.json", ev)
+    report = read(upstream_root, "editorial-deliveries/production_report.json", ev)
     check(isinstance(report, dict) and report.get("project") == "verbo-no-chao"
           and report.get("status") == "DELIVERABLES_GENERATED_REVIEW_REQUIRED"
           and report.get("publication_authorized") is False,
@@ -241,9 +242,10 @@ def main() -> int:
     parser = argparse.ArgumentParser(description="Produce first three Verbo no Chão script drafts")
     parser.add_argument("--root", type=Path, default=Path("."))
     parser.add_argument("--output-dir", type=Path, required=True)
+    parser.add_argument("--upstream-dir", type=Path, default=None)
     args = parser.parse_args()
     try:
-        result = produce(args.root, args.output_dir)
+        result = produce(args.root, args.output_dir, upstream_root=args.upstream_dir)
     except (ProductionError, ValueError, OSError, TypeError, KeyError) as exc:
         parser.exit(1, f"BLOCKED: {type(exc).__name__}:{exc}\n")
     print(json.dumps({k: result[k] for k in ("status", "scripts_count")}))
