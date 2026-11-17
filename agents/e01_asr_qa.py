@@ -228,6 +228,33 @@ def safe_stage_error(stage: str, exc: Exception) -> ProductionError:
     return ProductionError(f"asr:{stage}:{category}:{type(exc).__name__}")
 
 
+def load_pcm16_as_whisper_16khz(wav: Path) -> Any:
+    """Decode our already-pinned RIFF/PCM16 WAV without PyAV dependency.
+
+    The faster-whisper 1.2.1 call into PyAV 19 raised a TypeError on the real
+    runner. A numpy waveform avoids codec API incompatibilities for our known
+    input, and the source hash/RIFF dimensions were already validated.
+    """
+    import numpy as np
+    with wave.open(str(wav), "rb") as f:
+        check(f.getnchannels() == 1 and f.getsampwidth() == 2
+              and f.getframerate() == 24000, "asr:decoded_audio_not_expected_pcm")
+        raw = f.readframes(f.getnframes())
+    check(len(raw) % 2 == 0 and len(raw) > 200000,
+          "asr:empty_or_truncated_pcm")
+    mono = np.frombuffer(raw, dtype="<i2").astype(np.float32) / 32768.0
+    # Reproducible 24 kHz to 16 kHz rate adaptation for speech recognition.
+    # This is a QA-only derivative, never a replacement for the original WAV.
+    count = round(len(mono) * (16000 / 24000))
+    sample_times = np.arange(count, dtype=np.float64) * 1.5
+    dest = np.interp(sample_times, np.arange(len(mono), dtype=np.float64), mono)
+    dest = np.asarray(dest, dtype=np.float32)
+    check(dest.ndim == 1 and len(dest) == count
+          and np.isfinite(dest).all() and np.max(np.abs(dest)) <= 1.001,
+          "asr:resampled_audio_invalid")
+    return dest
+
+
 def run_independent_asr(wav: Path, model_root: Path) -> tuple[
         list[dict[str, Any]], dict[str, Any]]:
     # Download only public licensed ASR weights. Resolve their exact commit first
@@ -269,8 +296,11 @@ def run_independent_asr(wav: Path, model_root: Path) -> tuple[
     except Exception as exc:
         raise safe_stage_error("model_load", exc) from exc
     try:
+        # Avoid PyAV parser of this already-verified PCM16 file: feed the
+        # waveform directly in the 16 kHz format required by Whisper.
+        samples = load_pcm16_as_whisper_16khz(wav)
         segments_iter, info = model.transcribe(
-            str(wav), language="pt", task="transcribe",
+            samples, language="pt", task="transcribe",
             beam_size=5, temperature=0.0, word_timestamps=True,
             vad_filter=False, condition_on_previous_text=False,
         )
