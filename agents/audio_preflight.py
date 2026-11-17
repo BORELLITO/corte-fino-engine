@@ -14,6 +14,7 @@ from typing import Any
 
 from agents.content_production import ProductionError, check, read
 from agents.e01_context_review import validate_context_crosscheck
+from agents.onnx_byte_audit import validate_report as validate_onnx_report, EXPECTED_SHA256 as ONNX_EXPECTED_SHA256
 
 TARGET_ID = "VNC-W01-E1"
 TARGET_REFERENCE = "Habacuque 1:2-4"
@@ -131,7 +132,7 @@ def validate_input(package: Any, report: Any, voice: Any) -> dict[str, Any]:
     return {"script": script, "audit": audit, "narration_sha256": fingerprint}
 
 
-def produce(root: Path, upstream_dir: Path, out_dir: Path) -> dict[str, Any]:
+def produce(root: Path, upstream_dir: Path, out_dir: Path, *, onnx_audit: Path | None = None) -> dict[str, Any]:
     root, upstream_dir, out_dir = root.resolve(), upstream_dir.resolve(), out_dir.resolve()
     check(not any(out_dir.is_relative_to(root / x) for x in ("agents", "contracts", "docs", "tests")),
           "audio_preflight:protected_output_directory")
@@ -153,6 +154,19 @@ def produce(root: Path, upstream_dir: Path, out_dir: Path) -> dict[str, Any]:
     crosscheck_result = validate_context_crosscheck(
         editorial_crosscheck, script, proof["narration_sha256"]
     )
+    onnx_result = None
+    if onnx_audit is not None:
+        report_path = onnx_audit.resolve()
+        check(report_path.is_file(), "audio_preflight:onnx_report_missing")
+        raw_onnx = report_path.read_bytes()
+        check(len(raw_onnx) <= 100000, "audio_preflight:onnx_report_oversize")
+        try:
+            onnx_result = json.loads(raw_onnx)
+        except (UnicodeError, json.JSONDecodeError) as exc:
+            raise ProductionError("audio_preflight:onnx_report_invalid") from exc
+        validate_onnx_report(onnx_result)
+        evidence["voice-asset-audit/report.json"] = hashlib.sha256(raw_onnx).hexdigest()
+    onnx_upstream_verified = onnx_result is not None and onnx_result["upstream_bytes_verified"] is True
     result = {
         "schema_version": "1.0.0",
         "project": "verbo-no-chao",
@@ -173,7 +187,13 @@ def produce(root: Path, upstream_dir: Path, out_dir: Path) -> dict[str, Any]:
             "upstream_voice_catalog": voice["official_voice_registry"],
             "upstream_voice_pack_sha256_from_repo_metadata": voice["upstream_voice_pack_full_sha256"],
             "upstream_pack_bytes_independently_verified": False,
+            "upstream_onnx_voice_format": "pm_alex.bin",
+            "upstream_onnx_sha256_expected": ONNX_EXPECTED_SHA256,
+            "upstream_onnx_bytes_verified": onnx_upstream_verified,
+            "upstream_onnx_bytes_sha256": (onnx_result["actual_sha256"] if onnx_upstream_verified else None),
+            "upstream_onnx_audit_status": (onnx_result["status"] if onnx_result is not None else "NOT_AUDITED_THIS_INVOCATION"),
             "actual_hosted_voice_pack_sha256": None,
+            "hosted_voice_pack_bytes_verified": False,
             "commercial_rights": "PENDING_EXACT_PACK_LICENSE_AND_ATTRIBUTION_AUDIT",
             "runtime_terms_url": voice["runtime_terms_url"],
             "runtime_terms_reviewed": True,
@@ -212,7 +232,8 @@ def produce(root: Path, upstream_dir: Path, out_dir: Path) -> dict[str, Any]:
         "- O hash do pacote gerado é conferido com o relatório de produção anterior.",
         "", "## O que permanece bloqueado", "",
         "- O roteiro não passou por revisão bíblica independente nem aprovação do proprietário.",
-        "- O upstream publica o SHA-256 integral de pm_alex.pt, mas o arquivo do serviço NÃO foi baixado nem comparado aos bytes.",
+        "- O upstream original publica pm_alex.pt e o upstream ONNX publica pm_alex.bin com SHA-256 diferente: um não comprova o outro.",
+        "- Status da checagem ONNX: " + result["voice"]["upstream_onnx_audit_status"] + ". Mesmo se o hash da distribuição pública passar, o cache real do Kokoro Web continua não verificado.",
         "- O Kokoro Web permite narração comercial condicionalmente; ainda falta provar a identidade do pack realmente carregado e conferir licenças/avisos das dependências.",
         "- O serviço funciona no navegador onde é aberto; não houve sessão de geração ou teste de WAV aqui.",
         "- Não houve geração de WAV, renderização, agendamento ou publicação.",
@@ -243,6 +264,8 @@ def produce(root: Path, upstream_dir: Path, out_dir: Path) -> dict[str, Any]:
         "stage": "AUDIO_PREFLIGHT_ONLY",
         "files": files, "blockers": list(REQUIRED_BLOCKERS),
         "voice_license_approved": False,
+        "upstream_onnx_bytes_verified": onnx_upstream_verified,
+        "hosted_voice_pack_bytes_verified": False,
         "internal_context_crosscheck_completed": True,
         "human_theological_review_pending": True,
         "audio_generated": False,
@@ -256,10 +279,11 @@ def main() -> int:
     parser = argparse.ArgumentParser(description="Fail-closed audio preflight for first script")
     parser.add_argument("--root", type=Path, default=Path("."))
     parser.add_argument("--upstream-dir", type=Path, required=True)
+    parser.add_argument("--onnx-voice-audit", type=Path, default=None)
     parser.add_argument("--output-dir", type=Path, required=True)
     args = parser.parse_args()
     try:
-        outcome = produce(args.root, args.upstream_dir, args.output_dir)
+        outcome = produce(args.root, args.upstream_dir, args.output_dir, onnx_audit=args.onnx_voice_audit)
     except (ProductionError, TypeError, KeyError, ValueError, OSError) as exc:
         parser.exit(1, f"BLOCKED: invalid preflight inputs: {exc}\n")
     print(json.dumps({k: outcome[k] for k in ("episode_id", "status", "audio_generated", "blockers")}))

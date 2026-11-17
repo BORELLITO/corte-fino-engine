@@ -36,11 +36,27 @@ A upstream do modelo e o site de TTS **são entidades independentes**. O hash pu
 
 O fato de os termos do site permitirem **uso comercial condicional** elimina a antiga pendência "termos do serviço não encontrados", mas **não** libera automaticamente um áudio ou publicação.
 
+## 2.1. Novo gate: bytes reais do arquivo ONNX (PR dependente)
+
+Uma investigação mais profunda identificou **dois arquivos diferentes** para a voz **pm_alex**:
+
+- Modelo original (PyTorch): `hexgrad/Kokoro-82M/voices/pm_alex.pt`, SHA-256 **`cf0ba8c573c2480fc54123683a35cf1e2ae130428e441eb91f9149bdb188a526`**.
+- Distribuição ONNX para navegadores: `onnx-community/Kokoro-82M-v1.0-ONNX/voices/pm_alex.bin`, SHA-256 **`0175c753f59c54e7fd5a995bedef0c5ff2fb67e0043dd3dcb2ae74ec2acbeb2a`**.
+- Fontes oficiais: https://huggingface.co/hexgrad/Kokoro-82M/blob/main/voices/pm_alex.pt e https://huggingface.co/onnx-community/Kokoro-82M-v1.0-ONNX/blob/main/voices/pm_alex.bin.
+
+**Hashes diferentes não provam fraude; os arquivos pertencem a distribuições e formatos diferentes.** Também não é possível inferir apenas pelo nome qual deles o Kokoro Web carrega.
+
+O contrato `contracts/onnx_voice_asset_v1.json` fixa formato, revisão de origem `4685882`, URL HTTPS, SHA-256 esperado e limite de tamanho. O executor `agents/onnx_byte_audit.py` efetua download **somente para leitura e hash em memória**, sem desserialização, sem TTS, sem salvar nem redistribuir o arquivo, usando limite de 1 MB.
+
+O GitHub Actions gera `vnc-onnx-voice-asset-audit`, que registra `VERIFIED_UPSTREAM_ONNX_BYTES_HOSTED_UNPROVEN` apenas após leitura e hash de bytes reais. Se houver falha de rede/hash/tamanho, registra `BLOCKED_UPSTREAM_BYTES_NOT_VERIFIED` e o pré-voo mantém a trava. O executor do pré-voo lê esse relatório e inclui hash de sua proveniência. O arquivo de voz binário **não** entra nos artefatos.
+
+**Evidência da execução:** foi verificado o arquivo ONNX upstream por SHA em 17/11/2026; ainda não foi verificado o arquivo carregado pelo navegador do Kokoro Web, sua versão em cache, modelo correspondente ou notices de todas as dependências. Logo, a identidade do ambiente real e o uso comercial final continuam **PENDENTES**.
+
 ## 3. O motor executa e verifica
 
-Fluxo: `editorial_production` → `script_production` → `audio_preflight` → 8 auditores → coordenador.
+Fluxo: `editorial_production` → `script_production`; em paralelo, `onnx_voice_asset_check` → `audio_preflight` (espera ambos) → 8 auditores + coordenador.
 
-Artefato de GitHub Actions: `vnc-audio-preflight`.
+Artefatos de GitHub Actions: `vnc-onnx-voice-asset-audit` (somente JSON da checagem binária) e `vnc-audio-preflight`.
 
 - `audio-preflight/preflight.json`: E01, hashes de entrada, seis segmentos, voz candidata, revisão interna, bloqueios e estados.
 - `audio-preflight/context_crosscheck.json`: resultado do cruzamento editorial interno com o mesmo fingerprint do roteiro.
