@@ -3,7 +3,10 @@
   "status": "APPROVED_VOICE_PENDING_RUNTIME_VALIDATION",
   "engine": "Kokoro-82M",
   "language": "pt-BR",
-  "deployment": "local",
+  "deployment": "cloud_browser",
+  "cloud_execution_surface": "work_managed_browser",
+  "phone_role": "control_only",
+  "local_device_compute_required": false,
   "selected_voice": "pm_alex",
   "voice_selection_scope": "PROVISIONAL_BASELINE",
   "alternatives_to_benchmark": ["pm_santa", "pf_dora"],
@@ -11,7 +14,7 @@
   "voice_license_status": "PENDING_EXACT_VOICE_PACK_AUDIT",
   "runtime_license_status": "PENDING_DEPENDENCY_NOTICE_REVIEW",
   "runtime_smoke_test_status": "PARTIAL_SIMPLIFIED_TEXT_ONLY",
-  "local_runtime_status": "BLOCKED_CONTAINER_MEMORY",
+  "local_runtime_status": "NOT_REQUIRED_CLOUD_ONLY",
   "commercial_use_intent": true,
   "audio_generated": false,
   "publication_authorized": false,
@@ -32,5 +35,5 @@
       "url": "https://github.com/hexgrad/kokoro/blob/main/LICENSE"
     }
   ],
-  "next_gate": "use_lightweight_onnx_runtime_or_user_pc_benchmark_with_canonical_text"
+  "next_gate": "segment_canonical_script_in_cloud_browser_and_generate_wav_chunks"
 }
