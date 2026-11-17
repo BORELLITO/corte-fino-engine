@@ -17,6 +17,7 @@ from agents.e01_context_review import validate_context_crosscheck
 from agents.controlled_smoke_evidence import validate_smoke_attestation
 from agents.e01_rights_handoff import verify_dossier, render_human_review_packet
 from agents.autonomous_editorial_gate import verify_ai_editorial_review
+from agents.video_pillar_readiness import video_pillar_readiness, validate_video_pillar_report
 from agents.onnx_byte_audit import validate_report as validate_onnx_report, EXPECTED_SHA256 as ONNX_EXPECTED_SHA256
 
 TARGET_ID = "VNC-W01-E1"
@@ -144,6 +145,7 @@ def produce(root: Path, upstream_dir: Path, out_dir: Path, *, onnx_audit: Path |
     rights_dossier = read(root, "contracts/e01_rights_review_dossier_v1.json", evidence)
     auto_policy = read(root, "contracts/autonomous_editorial_policy_v1.json", evidence)
     ai_review = read(root, "contracts/e01_ai_editorial_review_v1.json", evidence)
+    video_policy = read(root, "contracts/video_workflow_policy.json", evidence)
     package = read(upstream_dir, "operations/first_batch_scripts.json", evidence)
     report = read(upstream_dir, "editorial-deliveries/first_batch_report.json", evidence)
     check(isinstance(report, dict) and isinstance(report.get("files"), list),
@@ -162,6 +164,8 @@ def produce(root: Path, upstream_dir: Path, out_dir: Path, *, onnx_audit: Path |
     autonomous_editorial = verify_ai_editorial_review(auto_policy, ai_review, script)
     check(autonomous_editorial["script_sha256"] == proof["narration_sha256"],
           "audio_preflight:ai_review_script_digest_mismatch")
+    pillar_readiness = video_pillar_readiness(auto_policy, video_policy, autonomous_editorial)
+    validate_video_pillar_report(pillar_readiness)
     historical_smoke_verified = validate_smoke_attestation(historical_smoke)
     rights_handoff = verify_dossier(
         rights_dossier, editorial_crosscheck, historical_smoke,
@@ -194,6 +198,7 @@ def produce(root: Path, upstream_dir: Path, out_dir: Path, *, onnx_audit: Path |
         "script_review_status": "AUTO_APPROVED_FOR_INTERNAL_PRODUCTION",
         "biblical_context_status": "AI_SEMANTICALLY_REVIEWED_HUMAN_ENDORSEMENT_NOT_CLAIMED",
         "autonomous_editorial_qa": autonomous_editorial,
+        "twelve_pillar_video_readiness": pillar_readiness,
         "internal_editorial_source_crosscheck": crosscheck_result,
         "historical_short_technical_smoke": historical_smoke_verified,
         "rights_and_editorial_handoff": rights_handoff,
@@ -287,6 +292,7 @@ def produce(root: Path, upstream_dir: Path, out_dir: Path, *, onnx_audit: Path |
         write("audio-preflight/rights_review_handoff.json", dump(rights_handoff)),
         write("audio-preflight/e01_human_review_packet.md", human_review_md),
         write("audio-preflight/ai_editorial_approval.json", dump(autonomous_editorial)),
+        write("audio-preflight/video_pillar_readiness.json", dump(pillar_readiness)),
     ]
     summary = {
         "schema_version": "1.0.0", "project": "verbo-no-chao",
@@ -295,6 +301,9 @@ def produce(root: Path, upstream_dir: Path, out_dir: Path, *, onnx_audit: Path |
         "files": files, "blockers": list(REQUIRED_BLOCKERS),
         "ai_editorial_review_verified": True,
         "ai_editorial_script_approved": True,
+        "video_readiness_status": "BLOCKED_PHYSICAL_MEDIA_AND_RIGHTS_NOT_PROVEN",
+        "final_video_qa_completed": False,
+        "owner_finished_video_review_required": False,
         "ai_editorial_review_status": "AUTO_APPROVED_FOR_INTERNAL_PRODUCTION",
         "owner_script_review_required": False,
         "human_theological_review_required_for_script": False,
