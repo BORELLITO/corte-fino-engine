@@ -10,50 +10,59 @@ Candidato-base selecionado para benchmark: **pm_alex**.
 
 ## Resultado do benchmark
 
-As três vozes pt-BR foram geradas com sucesso no smoke test usando o mesmo trecho simplificado:
+As três vozes pt-BR passaram no smoke test simplificado:
 
 - pm_alex;
 - pm_santa;
 - pf_dora.
 
-O navegador rejeitou o trecho canônico com acentos e pontuação, exibindo: “No readable Brazilian Portuguese · Português text was found.”
+O trecho canônico completo, com reticências, foi recusado pelo runtime com: “No readable Brazilian Portuguese · Português text was found.”
 
-Isso é um bloqueio do fluxo de entrada desse runtime de navegador, não uma autorização para remover acentos do roteiro. O texto bíblico e a narração canônica devem preservar ortografia, contexto e naturalidade.
+Isso não autoriza remover acentos nem alterar o roteiro. O texto editorial continua canônico e intacto.
+
+A solução validada foi uma camada de pronúncia separada, com três blocos curtos:
+
+1. “Tem dias em que o silêncio parece uma resposta.”
+2. “Você ora, espera, olha para o relógio.”
+3. “E nada muda.”
+
+Os três blocos foram gerados em WAV 24 kHz com **pm_alex** na sessão de navegador cloud. O segundo e o terceiro bloco representam a mesma frase editorial original, preservando visualmente a reticência durante a montagem.
 
 ## Arquitetura operacional cloud-only
 
-1. O motor prepara e segmenta o roteiro canônico em blocos curtos, sem alterar o texto editorial.
-2. O navegador cloud gerenciado abre o gerador de voz.
-3. Cada bloco é enviado e gerado como WAV em sessão controlada.
-4. Os blocos são revisados e rastreados por segmento.
+1. O motor mantém o roteiro editorial canônico.
+2. O motor deriva uma camada de pronúncia somente para o TTS quando o runtime rejeita pontuação ou reticências.
+3. O navegador cloud gerenciado gera cada bloco como WAV.
+4. Os blocos são baixados e rastreados por segmento dentro da sessão cloud.
 5. A montagem do áudio ocorre na pipeline cloud do projeto.
-6. Somente depois dos gates de direitos, precisão e qualidade o material poderá seguir para vídeo e publicação.
+6. Direitos, inteligibilidade, sincronização e revisão continuam bloqueando publicação até aprovação.
 
-O telefone controla a sessão e a aprovação; não hospeda o motor nem precisa executar PyTorch, ONNX ou outro runtime local.
+O telefone controla a sessão e a aprovação; não hospeda o motor nem executa PyTorch, ONNX ou outro runtime local.
 
 ## Tentativas e limites
 
-A instalação isolada do runtime oficial PyTorch foi tentada fora do repositório. O processo foi encerrado pelo ambiente com status 137 por consumo de memória. Esse resultado não altera a arquitetura: execução local não é requisito do canal e a tentativa histórica permanece apenas como evidência de que não devemos depender dela neste ambiente.
-
-## Próxima correção necessária
-
-1. Segmentar o texto canônico em blocos naturais curtos no navegador cloud.
-2. Gerar cada bloco preservando acentos, pontuação e texto exibido.
-3. Se um bloco continuar sendo recusado, registrar o erro e criar uma camada de pronúncia separada, sem substituir o roteiro visual/editorial.
-4. Comparar novamente as três vozes no mesmo conjunto de blocos.
-5. Confirmar a licença da voz, do runtime e das dependências antes de qualquer áudio de produção.
-6. Manter publicação bloqueada.
+A instalação isolada do runtime oficial PyTorch foi tentada fora do repositório. O processo foi encerrado pelo ambiente com status 137 por consumo de memória. Esse registro é histórico e não altera a arquitetura: execução local não é requisito do canal.
 
 ## Estado atual
 
 - direção: **APROVADA**;
 - candidato-base: **pm_alex**;
 - smoke test simplificado: **PASS nas três vozes**;
-- texto canônico no runtime de navegador: **BLOCKED**;
+- texto canônico combinado: **BLOCKED pelo runtime**;
+- texto canônico segmentado: **PASS com camada de pronúncia**;
 - processamento local no PC/telefone: **NÃO REQUERIDO**;
-- voice ID definitivo: **pendente**;
-- áudio de produção: **não gerado**;
+- voice ID definitivo: **pendente de auditoria de direitos e revisão auditiva**;
+- amostras WAV: **geradas para avaliação**;
+- áudio de produção: **não autorizado**;
 - publicação: **não autorizada**.
+
+## Próximo gate
+
+1. Montar os três WAVs na ordem canônica.
+2. Revisar a inteligibilidade, pausas e transição entre blocos.
+3. Auditar licença da voz, runtime e dependências para uso comercial.
+4. Só então decidir se pm_alex é promovida a voz definitiva.
+5. Manter publicação bloqueada.
 
 ## Evidências consultadas
 
