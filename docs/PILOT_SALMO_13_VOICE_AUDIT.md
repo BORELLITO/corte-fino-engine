@@ -28,13 +28,15 @@ A solução validada foi uma camada de pronúncia separada, com três blocos cur
 
 Os três blocos foram gerados em WAV 24 kHz com **pm_alex** na sessão de navegador cloud. O segundo e o terceiro bloco representam a mesma frase editorial original, preservando visualmente a reticência durante a montagem.
 
+Os controles de download foram acionados para os três blocos, mas a persistência dos arquivos ainda não foi comprovada; por isso, eles não são considerados ativos de produção.
+
 ## Arquitetura operacional cloud-only
 
 1. O motor mantém o roteiro editorial canônico.
 2. O motor deriva uma camada de pronúncia somente para o TTS quando o runtime rejeita pontuação ou reticências.
 3. O navegador cloud gerenciado gera cada bloco como WAV.
-4. Os blocos são baixados e rastreados por segmento dentro da sessão cloud.
-5. A montagem do áudio ocorre na pipeline cloud do projeto.
+4. Cada bloco é revisado e rastreado por segmento.
+5. A persistência/montagem do áudio ocorre na pipeline cloud do projeto somente após confirmação dos arquivos.
 6. Direitos, inteligibilidade, sincronização e revisão continuam bloqueando publicação até aprovação.
 
 O telefone controla a sessão e a aprovação; não hospeda o motor nem executa PyTorch, ONNX ou outro runtime local.
@@ -53,16 +55,18 @@ A instalação isolada do runtime oficial PyTorch foi tentada fora do repositór
 - processamento local no PC/telefone: **NÃO REQUERIDO**;
 - voice ID definitivo: **pendente de auditoria de direitos e revisão auditiva**;
 - amostras WAV: **geradas para avaliação**;
+- persistência dos arquivos: **não comprovada**;
 - áudio de produção: **não autorizado**;
 - publicação: **não autorizada**.
 
 ## Próximo gate
 
-1. Montar os três WAVs na ordem canônica.
-2. Revisar a inteligibilidade, pausas e transição entre blocos.
-3. Auditar licença da voz, runtime e dependências para uso comercial.
-4. Só então decidir se pm_alex é promovida a voz definitiva.
-5. Manter publicação bloqueada.
+1. Confirmar a presença dos três WAVs na superfície cloud.
+2. Montar os três WAVs na ordem canônica.
+3. Revisar a inteligibilidade, pausas e transição entre blocos.
+4. Auditar licença da voz, runtime e dependências para uso comercial.
+5. Só então decidir se pm_alex é promovida a voz definitiva.
+6. Manter publicação bloqueada.
 
 ## Evidências consultadas
 
