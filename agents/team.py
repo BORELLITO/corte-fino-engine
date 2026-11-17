@@ -276,7 +276,7 @@ def run_agent(agent: str, root: Path) -> dict[str, Any]:
     }
 
 
-def aggregate(input_dir: Path) -> dict[str, Any]:
+def aggregate(input_dir: Path, audio_preflight_path: Path | None = None) -> dict[str, Any]:
     found: dict[str, Any] = {}
     for path in sorted(input_dir.rglob("*.json")):
         payload = json.loads(path.read_text(encoding="utf-8"))
@@ -293,12 +293,38 @@ def aggregate(input_dir: Path) -> dict[str, Any]:
     if set(found) != set(CANONICAL_IDS):
         raise ValueError(f"missing_agent_reports:{sorted(set(CANONICAL_IDS) - set(found))}")
     statuses = {aid: found[aid]["status"] for aid in CANONICAL_IDS}
+    audio_status: dict[str, Any] | None = None
+    if audio_preflight_path is not None:
+        raw = audio_preflight_path.read_bytes()
+        preflight = json.loads(raw)
+        if not isinstance(preflight, dict):
+            raise ValueError("invalid_audio_preflight_report")
+        if (
+            preflight.get("project") != "verbo-no-chao"
+            or preflight.get("episode_id") != "VNC-W01-E1"
+            or preflight.get("stage") != "AUDIO_PREFLIGHT_ONLY"
+            or preflight.get("status") != "BLOCKED"
+            or preflight.get("voice_license_approved") is not False
+            or preflight.get("audio_generated") is not False
+            or preflight.get("publication_authorized") is not False
+            or not isinstance(preflight.get("blockers"), list)
+            or not preflight["blockers"]
+        ):
+            raise ValueError("audio_preflight_failed_closed_contract")
+        audio_status = {
+            "status": "BLOCKED",
+            "report_sha256": hashlib.sha256(raw).hexdigest(),
+            "blockers": preflight["blockers"],
+            "voice_license_approved": False,
+            "audio_generated": False,
+        }
     return {
         "schema_version": "1.0.0", "project": "verbo-no-chao", "coordinator": "specialist-evidence-collector",
-        "status": "BLOCKED" if any(v == "BLOCKED" for v in statuses.values()) else "CHECKS_PASSED_NOT_PUBLICATION_APPROVED",
+        "status": "BLOCKED" if audio_status is not None or any(v == "BLOCKED" for v in statuses.values()) else "CHECKS_PASSED_NOT_PUBLICATION_APPROVED",
         "agents_executed": len(found),
         "agents_passed_scope": sum(v == "PASS_CHECKED_SCOPE" for v in statuses.values()),
         "agents_blocked": sum(v == "BLOCKED" for v in statuses.values()),
+        "audio_preflight": audio_status,
         "reports": [found[aid] for aid in CANONICAL_IDS],
         "publication_authorized": False,
     }
@@ -311,12 +337,13 @@ def main() -> int:
     group.add_argument("--aggregate", action="store_true")
     parser.add_argument("--root", type=Path, default=Path("."))
     parser.add_argument("--input-dir", type=Path)
+    parser.add_argument("--audio-preflight", type=Path, default=None)
     parser.add_argument("--output", type=Path, required=True)
     args = parser.parse_args()
     if args.aggregate:
         if args.input_dir is None:
             parser.error("--aggregate requires --input-dir")
-        result = aggregate(args.input_dir)
+        result = aggregate(args.input_dir, audio_preflight_path=args.audio_preflight)
     else:
         result = run_agent(args.agent, args.root)
     args.output.parent.mkdir(parents=True, exist_ok=True)

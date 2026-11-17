@@ -60,6 +60,30 @@ jobs:
           if-no-files-found: error
           retention-days: 14
 
+  audio_preflight:
+    name: Blocked-by-design audio readiness evidence
+    needs: script_production
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Download three canonical script drafts
+        uses: actions/download-artifact@v4
+        with:
+          name: vnc-first-batch-scripts
+          path: .
+      - name: Generate proof-linked audio preflight, not WAV
+        run: python -m agents.audio_preflight --root . --upstream-dir . --output-dir .
+      - name: Preserve explicit blocked status and supporting evidence
+        uses: actions/upload-artifact@v4
+        with:
+          name: vnc-audio-preflight
+          path: audio-preflight/
+          if-no-files-found: error
+          retention-days: 14
+
   specialists:
     name: Audit — ${{ matrix.agent }}
     needs: [editorial_production, script_production]
@@ -105,7 +129,7 @@ jobs:
 
   coordinator:
     name: Aggregate all eight reports
-    needs: specialists
+    needs: [specialists, audio_preflight]
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -117,8 +141,13 @@ jobs:
           pattern: vnc-specialist-*
           merge-multiple: true
           path: agent-reports/
-      - name: Verify and integrate specialist evidence
-        run: python -m agents.team --aggregate --input-dir agent-reports --output agent-team-report.json
+      - name: Retrieve blocked-by-design audio preflight report
+        uses: actions/download-artifact@v4
+        with:
+          name: vnc-audio-preflight
+          path: audio-preflight/
+      - name: Verify and integrate specialist plus audio evidence
+        run: python -m agents.team --aggregate --input-dir agent-reports --audio-preflight audio-preflight/report.json --output agent-team-report.json
       - name: Preserve team report
         uses: actions/upload-artifact@v4
         with:
