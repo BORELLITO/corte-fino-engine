@@ -9,7 +9,7 @@
   "phase": "0.9",
   "validation": {
     "clean_room_gate": "PASS",
-    "unit_tests": {"passed": 36, "failed": 0},
+    "unit_tests": {"passed": 38, "failed": 0},
     "contract_json_files": {"validated": 12, "invalid": 0},
     "runtime_dependencies": 0,
     "dry_run": "PASS",
@@ -18,7 +18,8 @@
     "source_audit": "PARAPHRASE_ONLY_PENDING_LICENSE",
     "script_draft": "APPROVED_FOR_AUDIO",
     "script_approval": "APPROVED_BY_CHANNEL_OWNER",
-    "voice_direction": "APPROVED_KOKORO_PM_ALEX_PENDING_RUNTIME_GATE",
+    "voice_direction": "APPROVED_KOKORO_PM_ALEX_RUNTIME_BLOCKED",
+    "voice_smoke_test": "PARTIAL_ALL_VOICES_SIMPLIFIED_TEXT",
     "automated_editorial_review": "PASS_AUTOMATED_REVIEW"
   },
   "gates": [

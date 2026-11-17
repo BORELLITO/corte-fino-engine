@@ -1,0 +1,28 @@
+{
+  "benchmark_id": "vnc-salmo-13-voice-benchmark-001",
+  "status": "PARTIAL_SMOKE_PASS_RUNTIME_BLOCKER",
+  "source": "browser_smoke_test",
+  "tool": "Kokoro Web",
+  "test_url": "https://kokoroweb.app/#demoContainer",
+  "language": "pt-BR",
+  "speed": 1.0,
+  "sample_text_simplified": "Tem dias em que o silencio parece uma resposta.",
+  "canonical_text_sample": "Tem dias em que o silêncio parece uma resposta. Você ora, espera, olha para o relógio... e nada muda.",
+  "voices": [
+    {"voice_id": "pm_alex", "label": "Alex", "gender": "male", "generated": true, "result_index": 2},
+    {"voice_id": "pm_santa", "label": "Santa", "gender": "male", "generated": true, "result_index": 3},
+    {"voice_id": "pf_dora", "label": "Dora", "gender": "female", "generated": true, "result_index": 4}
+  ],
+  "canonical_text_result": {
+    "status": "NO_GO_BROWSER_RUNTIME",
+    "message": "No readable Brazilian Portuguese · Português text was found.",
+    "observed_on": "Kokoro Web browser runtime"
+  },
+  "interpretation": [
+    "As três vozes passaram no smoke test com texto simplificado.",
+    "O mesmo runtime rejeitou o trecho canônico com diacríticos e pontuação.",
+    "O roteiro canônico não será mutilado para contornar a falha.",
+    "Amostras geradas são apenas de avaliação; não estão liberadas para publicação."
+  ],
+  "next_action": "benchmark_official_local_runtime_or_safe_text_normalization_layer"
+}

@@ -10,6 +10,7 @@
   "model_license": "Apache-2.0",
   "voice_license_status": "PENDING_EXACT_VOICE_PACK_AUDIT",
   "runtime_license_status": "PENDING_DEPENDENCY_NOTICE_REVIEW",
+  "runtime_smoke_test_status": "PARTIAL_SIMPLIFIED_TEXT_ONLY",
   "commercial_use_intent": true,
   "audio_generated": false,
   "publication_authorized": false,
@@ -30,5 +31,5 @@
       "url": "https://github.com/hexgrad/kokoro/blob/main/LICENSE"
     }
   ],
-  "next_gate": "benchmark_pm_alex_against_pm_santa_and_pf_dora_then_close_exact_voice_license_gate"
+  "next_gate": "test_local_official_runtime_with_canonical_diacritics_and_punctuation"
 }

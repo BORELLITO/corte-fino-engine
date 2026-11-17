@@ -6,32 +6,35 @@ Direção aprovada: **Kokoro-82M local, português brasileiro**.
 
 Candidato-base selecionado para benchmark: **pm_alex**.
 
-A escolha é provisória. O motor só poderá fechar o voice ID depois de comparar pm_alex, pm_santa e pf_dora no mesmo trecho do roteiro.
+## Resultado do benchmark
 
-## Por que pm_alex é o baseline
+As três vozes pt-BR foram geradas com sucesso no smoke test usando o mesmo trecho simplificado:
 
-- é uma voz masculina pt-BR;
-- aparece no exemplo oficial de execução do Kokoro para português brasileiro;
-- oferece um ponto de comparação neutro para um canal narrativo de reflexão;
-- mantém pm_santa e pf_dora como alternativas reversíveis.
+- pm_alex;
+- pm_santa;
+- pf_dora.
 
-## Travas antes da geração final
+O navegador rejeitou o trecho canônico com acentos e pontuação, exibindo: “No readable Brazilian Portuguese · Português text was found.”
 
-1. Comparar os três voice IDs no mesmo trecho de 15–20 segundos.
-2. Verificar pronúncia de “Salmo”, “lamento”, “angústia” e “esperança”.
-3. Avaliar naturalidade, ritmo, pausas, emoção e fadiga auditiva.
-4. Confirmar a licença do pacote/voz exato.
-5. Auditar as dependências de inferência e seus avisos de licença.
-6. Fazer benchmark no ambiente disponível.
-7. Gerar a narração final somente após o gate de voz.
-8. Manter publicação bloqueada até o QA audiovisual e de direitos.
+Isso é um bloqueio do runtime de navegador para produção, não uma autorização para remover acentos do roteiro. O texto bíblico e a narração canônica devem preservar ortografia, contexto e naturalidade.
+
+## Próxima correção necessária
+
+1. Testar o runtime oficial local com o texto canônico.
+2. Se necessário, criar uma camada de pronúncia separada do texto exibido, preservando o roteiro original.
+3. Comparar novamente as três vozes com o mesmo trecho canônico.
+4. Escolher o voice ID definitivo somente após ouvir a pronúncia real.
+5. Confirmar a licença do pacote/voz e das dependências.
+6. Manter publicação bloqueada.
 
 ## Estado atual
 
 - direção: **APROVADA**;
 - candidato-base: **pm_alex**;
-- voice ID definitivo: **pendente de benchmark**;
-- áudio: **não gerado**;
+- smoke test simplificado: **PASS nas três vozes**;
+- texto canônico no runtime de navegador: **BLOCKED**;
+- voice ID definitivo: **pendente**;
+- áudio de produção: **não gerado**;
 - publicação: **não autorizada**.
 
 ## Evidências consultadas
