@@ -60,9 +60,28 @@ jobs:
           if-no-files-found: error
           retention-days: 14
 
+  onnx_voice_asset_check:
+    name: Verify upstream ONNX pm_alex.bin bytes (no execution)
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Bounded upstream voice SHA256 audit
+        run: python -m agents.onnx_byte_audit --root . --output voice-asset-audit/report.json
+      - name: Preserve hash evidence only (never voice binary)
+        uses: actions/upload-artifact@v4
+        with:
+          name: vnc-onnx-voice-asset-audit
+          path: voice-asset-audit/report.json
+          if-no-files-found: error
+          retention-days: 14
+
   audio_preflight:
     name: Blocked-by-design audio readiness evidence
-    needs: script_production
+    needs: [script_production, onnx_voice_asset_check]
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -74,8 +93,13 @@ jobs:
         with:
           name: vnc-first-batch-scripts
           path: .
+      - name: Retrieve hashed upstream ONNX voice evidence
+        uses: actions/download-artifact@v4
+        with:
+          name: vnc-onnx-voice-asset-audit
+          path: voice-asset-audit/
       - name: Generate proof-linked audio preflight, not WAV
-        run: python -m agents.audio_preflight --root . --upstream-dir . --output-dir .
+        run: python -m agents.audio_preflight --root . --upstream-dir . --onnx-voice-audit voice-asset-audit/report.json --output-dir .
       - name: Preserve explicit blocked status and supporting evidence
         uses: actions/upload-artifact@v4
         with:
