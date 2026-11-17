@@ -4,6 +4,8 @@
 
 O proprietário não deverá conduzir manualmente a produção. Ao solicitar o próximo vídeo, o coordenador operacional executará automaticamente as etapas seguras e autorizadas na infraestrutura cloud e entregará o vídeo renderizado para aprovação final.
 
+Este fluxo é independente e clean-room: não utiliza conteúdo, mídia, identidade, prompts, contratos, vozes, assets ou fluxo operacional do Because Of This Stories.
+
 ## Fluxo oficial
 
 `PEDIDO → SELEÇÃO INTELIGENTE → PRODUÇÃO CLOUD → QA INTERNO → VÍDEO PRONTO → APROVAÇÃO DO PROPRIETÁRIO`
@@ -49,6 +51,16 @@ A entrega ao proprietário deve conter o vídeo renderizado, o resumo de qualida
 ### 6. Aprovação
 
 O proprietário aprova ou rejeita o resultado final. A aprovação do vídeo não equivale automaticamente à autorização de publicação.
+
+## Estados obrigatórios
+
+- `PLANNED`: fluxo definido, sem produção iniciada.
+- `IN_PROGRESS`: produção cloud em andamento.
+- `BLOCKED`: uma dependência real impede uma entrega íntegra; o coordenador registra causa, evidência e única ação indispensável.
+- `READY_FOR_OWNER_APPROVAL`: vídeo renderizado, QA interno concluído e direitos com status compatível.
+- `PUBLISHED`: publicação confirmada somente após autorização específica e evidência da plataforma.
+
+Um clipe isolado, uma prévia ou um arquivo transferido entre serviços não pode ser apresentado como vídeo final. Se qualquer gate essencial falhar, o estado permanece `BLOCKED` e a entrega deve declarar explicitamente o que foi comprovado e o que ainda não foi.
 
 ## Regra de autonomia
 
