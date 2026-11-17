@@ -102,7 +102,7 @@ class VerboNoChaoGateTests(unittest.TestCase):
             )
         self.assertEqual(result.status, "BLOCKED")
         self.assertEqual(result.state, "BLOCKED")
-        self.assertTrue(any("assets:required" in item for item in result.errors))
+        self.assertTrue(any("render:assets_missing" in item for item in result.errors))
 
 
 if __name__ == "__main__":
