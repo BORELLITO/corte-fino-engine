@@ -27,7 +27,7 @@ EXPECTED_BLOCKS = (
 REQUIRED_BLOCKERS = (
     "script_owner_approval_pending",
     "independent_biblical_review_pending",
-    "hosted_voice_pack_byte_identity_unverified",
+    "hosted_inference_voice_asset_consumption_unverified",
     "exact_voice_pack_commercial_rights_pending",
     "runtime_dependency_notices_unverified",
     "voice_audio_not_generated",
@@ -249,7 +249,7 @@ def produce(root: Path, upstream_dir: Path, out_dir: Path, *, onnx_audit: Path |
         "", "## O que permanece bloqueado", "",
         "- O roteiro não passou por revisão bíblica independente nem aprovação do proprietário.",
         "- O upstream original publica pm_alex.pt e o upstream ONNX publica pm_alex.bin com SHA-256 diferente: um não comprova o outro.",
-        "- Status da checagem ONNX: " + result["voice"]["upstream_onnx_audit_status"] + ". Mesmo se o hash da distribuição pública passar, o cache real do Kokoro Web continua não verificado.",
+        "- Status da checagem ONNX: " + result["voice"]["upstream_onnx_audit_status"] + ". O hash do cache foi confirmado no teste histórico, mas não há prova independente de que a inferência consumiu aquele objeto.",
         "- O Kokoro Web permite narração comercial condicionalmente; ainda falta provar a identidade do pack realmente carregado e conferir licenças/avisos das dependências.",
         "- Em uma sessão isolada de Chrome, uma frase técnica não bíblica gerou um áudio temporário de 5,875 s e o cache continha pm_alex.bin com SHA correspondente ao ONNX upstream.",
         "- Esse teste histórico NÃO prova a identidade do arquivo consumido pela inferência, a licença completa nem a inteligibilidade de áudio de produção.",
