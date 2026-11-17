@@ -1,6 +1,6 @@
 # Rights ledger — piloto Salmo 13
 
-Estado: VISUAL_QA_COMPLETE_HASHED_PENDING_FINAL_RIGHTS_REVIEW_AND_ASSEMBLY
+Estado: MASTER_PREVIEW_READY_PENDING_FINAL_RIGHTS_REVIEW
 Data: 2026-11-17 (America/Sao_Paulo)
 
 ## Regra
@@ -59,3 +59,10 @@ Importação persistente e licença pública da fonte não equivalem, sozinhas, 
 4. gerar narração comercialmente autorizada;
 5. inserir trilha e legendas;
 6. executar QA final e manter publicação bloqueada até aprovação do proprietário.
+
+
+## Master associado
+
+- Arquivo: salmo13_pilot_master_v1.mp4.
+- Oito assets PRIMARY usados uma vez cada.
+- O master é apenas PREVIEW_READY: o ledger de direitos não autoriza publicação.
