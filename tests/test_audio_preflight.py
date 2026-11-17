@@ -9,6 +9,7 @@ from pathlib import Path
 from agents.content_production import ProductionError, produce as editorial
 from agents.first_batch_production import produce as scripts
 from agents.audio_preflight import produce, validate_voice_evidence, validate_input
+from agents.team import aggregate, CANONICAL_IDS
 
 ROOT = Path(__file__).resolve().parents[1]
 
@@ -113,6 +114,44 @@ class AudioPreflightTests(unittest.TestCase):
         bad["official_voice_registry"] = "https://random-site.invalid/voice-license"
         with self.assertRaisesRegex(ProductionError, "untrusted_url"):
             validate_voice_evidence(bad)
+
+
+    def test_team_coordinator_explicitly_includes_audio_blockers(self):
+        with tempfile.TemporaryDirectory() as folder:
+            root = Path(folder)
+            reports = root / "reports"
+            reports.mkdir()
+            for name in CANONICAL_IDS:
+                (reports / f"{name}.json").write_text(json.dumps({
+                    "agent": name, "project": "verbo-no-chao", "publication_authorized": False,
+                    "status": "BLOCKED", "blockers": ["test_fixture"],
+                }), encoding="utf-8")
+            produce(ROOT, self.upstream, root)
+            combined = aggregate(reports, root / "audio-preflight/report.json")
+        self.assertEqual(combined["agents_executed"], 8)
+        self.assertEqual(combined["audio_preflight"]["status"], "BLOCKED")
+        self.assertFalse(combined["audio_preflight"]["voice_license_approved"])
+        self.assertIn("runtime_service_terms_unverified",
+                      combined["audio_preflight"]["blockers"])
+        self.assertEqual(combined["status"], "BLOCKED")
+
+    def test_team_rejects_forged_audio_license_clearance(self):
+        with tempfile.TemporaryDirectory() as folder:
+            root = Path(folder)
+            reports = root / "reports"
+            reports.mkdir()
+            for name in CANONICAL_IDS:
+                (reports / f"{name}.json").write_text(json.dumps({
+                    "agent": name, "project": "verbo-no-chao", "publication_authorized": False,
+                    "status": "BLOCKED", "blockers": ["test_fixture"],
+                }), encoding="utf-8")
+            produce(ROOT, self.upstream, root)
+            audio_path = root / "audio-preflight/report.json"
+            forged = json.loads(audio_path.read_text(encoding="utf-8"))
+            forged["voice_license_approved"] = True
+            audio_path.write_text(json.dumps(forged), encoding="utf-8")
+            with self.assertRaisesRegex(ValueError, "audio_preflight_failed_closed_contract"):
+                aggregate(reports, audio_path)
 
 
 if __name__ == "__main__":
