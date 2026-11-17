@@ -47,7 +47,9 @@ def verify_ai_editorial_review(policy: Any, review: Any, draft: Any) -> dict[str
           and policy.get("automated_internal_script_approval_permitted") is True
           and policy.get("approver_kind") == "AI_ASSISTANT_INTERNAL_EDITORIAL_NOT_INDEPENDENT_HUMAN"
           and policy.get("publication_authorized") is False
-          and policy.get("owner_final_video_approval_required") is True
+          and policy.get("owner_final_video_approval_required") is False
+          and policy.get("internal_final_video_qa_required") is True
+          and policy.get("final_video_owner_review_optional") is True
           and policy.get("separate_explicit_publication_authorization_required") is True
           and policy.get("protected_pilot_can_be_retroactively_auto_approved") is False,
           "ai_editorial:policy_contract_changed")
@@ -143,7 +145,9 @@ def verify_ai_editorial_review(policy: Any, review: Any, draft: Any) -> dict[str
         "human_theological_endorsement": False,
         "voice_audio_generation_authorized": False,
         "full_video_ready": False,
-        "final_video_owner_approval_required": True,
+        "final_video_owner_approval_required": False,
+        "internal_final_video_qa_required": True,
+        "owner_final_video_review_optional": True,
         "publication_authorized": False,
         "remaining_gates": [
             "VOICE_RIGHTS_AND_RUNTIME_NOTICES",
