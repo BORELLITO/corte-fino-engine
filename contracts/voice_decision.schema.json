@@ -1,0 +1,40 @@
+{
+  "name": "verbo-no-chao-voice-decision",
+  "version": "0.1.0",
+  "required": [
+    "decision_id",
+    "status",
+    "engine",
+    "language",
+    "deployment",
+    "selected_voice",
+    "model_license",
+    "voice_license_status",
+    "runtime_license_status",
+    "audio_generated",
+    "publication_authorized"
+  ],
+  "properties": {
+    "decision_id": {"type": "string", "minLength": 1},
+    "status": {
+      "enum": [
+        "APPROVED_DIRECTION_PENDING_LICENSE_GATE",
+        "APPROVED_VOICE_PENDING_RUNTIME_VALIDATION",
+        "BLOCKED"
+      ]
+    },
+    "engine": {"enum": ["Kokoro-82M"]},
+    "language": {"enum": ["pt-BR"]},
+    "deployment": {"enum": ["local"]},
+    "selected_voice": {"type": ["string", "null"]},
+    "model_license": {"enum": ["Apache-2.0"]},
+    "voice_license_status": {
+      "enum": ["PENDING_EXACT_VOICE_PACK_AUDIT", "CLEARED", "BLOCKED"]
+    },
+    "runtime_license_status": {
+      "enum": ["PENDING_DEPENDENCY_NOTICE_REVIEW", "CLEARED", "BLOCKED"]
+    },
+    "audio_generated": {"enum": [false, true]},
+    "publication_authorized": {"enum": [false, true]}
+  }
+}

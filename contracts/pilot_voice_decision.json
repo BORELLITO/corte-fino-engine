@@ -1,0 +1,31 @@
+{
+  "decision_id": "vnc-salmo-13-voice-001",
+  "status": "APPROVED_DIRECTION_PENDING_LICENSE_GATE",
+  "engine": "Kokoro-82M",
+  "language": "pt-BR",
+  "deployment": "local",
+  "selected_voice": null,
+  "model_license": "Apache-2.0",
+  "voice_license_status": "PENDING_EXACT_VOICE_PACK_AUDIT",
+  "runtime_license_status": "PENDING_DEPENDENCY_NOTICE_REVIEW",
+  "commercial_use_intent": true,
+  "audio_generated": false,
+  "publication_authorized": false,
+  "approval_source": "chat_confirmation",
+  "approval_text": "Aprovo",
+  "evidence": [
+    {
+      "label": "official_model_repository",
+      "url": "https://github.com/hexgrad/kokoro"
+    },
+    {
+      "label": "official_model_license",
+      "url": "https://github.com/hexgrad/kokoro/blob/main/LICENSE"
+    },
+    {
+      "label": "official_model_card",
+      "url": "https://huggingface.co/hexgrad/Kokoro-82M"
+    }
+  ],
+  "next_gate": "select_exact_pt_BR_voice_and_benchmark_local_runtime"
+}
