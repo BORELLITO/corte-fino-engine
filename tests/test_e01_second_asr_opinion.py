@@ -48,7 +48,7 @@ class SecondOpinionTests(unittest.TestCase):
 
     def test_both_clean_status_does_not_authorize_publication(self):
         record = adjudicate(flags(), flags())
-        self.assertEqual(record["status"], "SECOND_ASR_HEARD_CRITICAL_WORDS_SMALL_MODEL_DISAGREES")
+        self.assertEqual(record["status"], "NO_CRITICAL_WORDING_ALERTS_BOTH_MODELS")
         self.assertFalse(record["publication_authorized"])
 
     def test_missing_sentry_is_blocked(self):
