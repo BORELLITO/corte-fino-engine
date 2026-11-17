@@ -305,6 +305,11 @@ def aggregate(input_dir: Path, audio_preflight_path: Path | None = None) -> dict
             or preflight.get("stage") != "AUDIO_PREFLIGHT_ONLY"
             or preflight.get("status") != "BLOCKED"
             or preflight.get("voice_license_approved") is not False
+            or preflight.get("ai_editorial_review_verified") is not True
+            or preflight.get("ai_editorial_script_approved") is not True
+            or preflight.get("ai_editorial_review_status") != "AUTO_APPROVED_FOR_INTERNAL_PRODUCTION"
+            or preflight.get("owner_script_review_required") is not False
+            or preflight.get("human_theological_review_required_for_script") is not False
             or preflight.get("rights_review_handoff_generated") is not True
             or preflight.get("rights_review_handoff_status") != "REVIEW_PACKET_READY_NOT_APPROVED"
             or preflight.get("historical_smoke_evidence_verified") is not True
@@ -328,6 +333,7 @@ def aggregate(input_dir: Path, audio_preflight_path: Path | None = None) -> dict
             "audio-preflight/historical_smoke.json",
             "audio-preflight/rights_review_handoff.json",
             "audio-preflight/e01_human_review_packet.md",
+            "audio-preflight/ai_editorial_approval.json",
         }
         file_specs = preflight.get("files")
         if not isinstance(file_specs, list) or len(file_specs) != len(required_files):
@@ -355,6 +361,10 @@ def aggregate(input_dir: Path, audio_preflight_path: Path | None = None) -> dict
         audio_status = {
             "supporting_file_hashes_verified": True,
             "supporting_file_count": len(verified_paths),
+            "ai_editorial_approval_sha256": verified_paths["audio-preflight/ai_editorial_approval.json"],
+            "ai_editorial_script_approved": True,
+            "owner_script_review_required": False,
+            "human_theological_review_required_for_script": False,
             "human_review_packet_sha256": verified_paths["audio-preflight/e01_human_review_packet.md"],
             "status": "BLOCKED",
             "report_sha256": hashlib.sha256(raw).hexdigest(),
