@@ -6,13 +6,14 @@
   "legacy_operational_reuse": false,
   "external_publication": false,
   "secrets_configured": false,
-  "phase": "0.4",
+  "phase": "0.5",
   "validation": {
     "clean_room_gate": "PASS",
-    "unit_tests": {"passed": 19, "failed": 0},
+    "unit_tests": {"passed": 22, "failed": 0},
     "contract_json_files": {"validated": 7, "invalid": 0},
     "runtime_dependencies": 0,
-    "dry_run": "PASS"
+    "dry_run": "PASS",
+    "pilot_fixture": "PASS_FIXTURE_ONLY"
   },
   "gates": [
     "clean-room",
@@ -21,6 +22,7 @@
     "rights",
     "audiovisual",
     "orchestrator",
+    "fixture-isolation",
     "no-publication",
     "security",
     "rollback"
