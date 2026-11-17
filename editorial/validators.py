@@ -4,20 +4,17 @@ from __future__ import annotations
 
 from typing import Any
 
-REQUIRED_EDITORIAL = (
+EDITORIAL_TEXT_FIELDS = (
     "video_id",
     "audience",
     "theme",
     "opening",
-    "biblical_basis",
     "reflection",
     "application",
     "conclusion",
     "language",
     "format",
-    "duration_seconds",
     "originality",
-    "safety",
 )
 
 REQUIRED_BIBLICAL = (
@@ -65,8 +62,10 @@ def validate_biblical_basis(basis: Any) -> list[str]:
 def validate_editorial_package(payload: Any) -> list[str]:
     if not isinstance(payload, dict):
         return ["editorial:not_object"]
-    errors = [f"editorial:{key}" for key in _missing_text(payload, REQUIRED_EDITORIAL)]
+    errors = [f"editorial:{key}" for key in _missing_text(payload, EDITORIAL_TEXT_FIELDS)]
     errors.extend(validate_biblical_basis(payload.get("biblical_basis")))
+    if not isinstance(payload.get("biblical_basis"), dict):
+        errors.append("editorial:biblical_basis")
     if payload.get("language") != "pt-BR":
         errors.append("editorial:language")
     if payload.get("format") not in {"short", "long"}:
