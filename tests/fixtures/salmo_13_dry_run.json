@@ -1,0 +1,98 @@
+{
+  "run_id": "pilot-salmo-13-dry-run-001",
+  "fixture_mode": true,
+  "publication_requested": false,
+  "editorial": {
+    "video_id": "vnc-salmo-13-001",
+    "audience": "pessoas em dificuldades",
+    "theme": "Quando a espera parece abandono",
+    "opening": "E quando o silêncio parece uma resposta?",
+    "biblical_basis": {
+      "reference": "Salmo 13",
+      "translation": "fonte de tradução a confirmar antes da publicação",
+      "context": "oração de lamento em meio à sensação de abandono",
+      "textual_basis": "o salmista apresenta perguntas, dor e uma retomada de confiança",
+      "interpretation": "o lamento pode coexistir com a fé sem transformar a dor em promessa automática",
+      "application": "nomear a dor diante de Deus e procurar apoio responsável",
+      "certainty": "GROUNDED_INTERPRETATION",
+      "safety": {}
+    },
+    "reflection": "A fé não exige fingir que está tudo bem.",
+    "application": "A espera pode ser atravessada com honestidade, oração e apoio.",
+    "conclusion": "O silêncio não precisa ser o fim da esperança.",
+    "language": "pt-BR",
+    "format": "short",
+    "duration_seconds": 75,
+    "originality": "ORIGINAL",
+    "safety": {}
+  },
+  "rights": [{
+    "asset_id": "fixture-landscape-001",
+    "source": "fixture-only",
+    "license": "not-a-release-license",
+    "commercial_use": false,
+    "evidence_ref": "FIXTURE_ONLY",
+    "status": "FIXTURE_ONLY"
+  }],
+  "audiovisual": {
+    "video_id": "vnc-salmo-13-001",
+    "format": "vertical_short",
+    "resolution": "1080x1920",
+    "fps": 60,
+    "scenes": [
+      {
+        "scene_id": "s01",
+        "start_ms": 0,
+        "end_ms": 18000,
+        "narration_ref": "n01",
+        "visual_intent": "silêncio, distância e espera",
+        "relation": "atmospheric",
+        "rights_ref": "fixture-landscape-001"
+      },
+      {
+        "scene_id": "s02",
+        "start_ms": 18000,
+        "end_ms": 47000,
+        "narration_ref": "n02",
+        "visual_intent": "interioridade e busca",
+        "relation": "symbolic",
+        "rights_ref": "fixture-landscape-001"
+      },
+      {
+        "scene_id": "s03",
+        "start_ms": 47000,
+        "end_ms": 75000,
+        "narration_ref": "n03",
+        "visual_intent": "luz gradual e esperança sóbria",
+        "relation": "contextual",
+        "rights_ref": "fixture-landscape-001"
+      }
+    ],
+    "audio": {
+      "voice": {
+        "source": "fixture-voice",
+        "language": "pt-BR",
+        "commercial_use": true,
+        "evidence_ref": "FIXTURE_ONLY",
+        "intelligibility_status": "PASSED"
+      },
+      "music": {
+        "source": "fixture-instrumental",
+        "commercial_use": true,
+        "evidence_ref": "FIXTURE_ONLY",
+        "voice_priority": true,
+        "lyrics": "instrumental"
+      }
+    },
+    "captions": {
+      "language": "pt-BR",
+      "max_lines": 2,
+      "no_overlap": true,
+      "segments": [
+        {"start_ms": 0, "end_ms": 3500, "text": "E quando o silêncio parece uma resposta?"},
+        {"start_ms": 3500, "end_ms": 9000, "text": "A dor também pode ser levada a Deus."},
+        {"start_ms": 9000, "end_ms": 15000, "text": "Sem fingir que está tudo bem."}
+      ]
+    }
+  }
+}

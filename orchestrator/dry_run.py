@@ -38,6 +38,8 @@ def run_dry_run(payload: Any) -> DryRunResult:
     if not isinstance(payload, dict):
         return DryRunResult("BLOCKED", "BLOCKED", gates, ("run:not_object",))
 
+    fixture_mode = payload.get("fixture_mode") is True
+
     editorial_errors = validate_editorial_package(payload.get("editorial"))
     if editorial_errors:
         errors.extend(editorial_errors)
@@ -52,7 +54,7 @@ def run_dry_run(payload: Any) -> DryRunResult:
     else:
         index = {}
         for record in rights_records:
-            rights_errors.extend(validate_rights_record(record))
+            rights_errors.extend(validate_rights_record(record, allow_fixture=fixture_mode))
             if isinstance(record, dict) and record.get("asset_id"):
                 index[record["asset_id"]] = record
 

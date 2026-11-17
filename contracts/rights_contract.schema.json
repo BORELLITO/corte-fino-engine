@@ -1,14 +1,7 @@
 {
   "name": "verbo-no-chao-rights-record",
-  "version": "0.1.0",
-  "required": [
-    "asset_id",
-    "source",
-    "license",
-    "commercial_use",
-    "evidence_ref",
-    "status"
-  ],
+  "version": "0.1.1",
+  "required": ["asset_id", "source", "license", "commercial_use", "evidence_ref", "status"],
   "properties": {
     "asset_id": {"type": "string", "minLength": 1},
     "source": {"type": "string", "minLength": 1},
@@ -16,6 +9,6 @@
     "commercial_use": {"type": "boolean"},
     "evidence_ref": {"type": "string", "minLength": 1},
     "attribution_required": {"type": "boolean"},
-    "status": {"enum": ["UNREVIEWED", "CLEARED", "BLOCKED"]}
+    "status": {"enum": ["UNREVIEWED", "CLEARED", "FIXTURE_ONLY", "BLOCKED"]}
   }
 }

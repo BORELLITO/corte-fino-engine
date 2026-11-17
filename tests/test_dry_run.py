@@ -31,16 +31,14 @@ def package():
             "originality": "ORIGINAL",
             "safety": {}
         },
-        "rights": [
-            {
-                "asset_id": "asset-001",
-                "source": "licensed-library",
-                "license": "commercial-use",
-                "commercial_use": True,
-                "evidence_ref": "license-001",
-                "status": "CLEARED"
-            }
-        ],
+        "rights": [{
+            "asset_id": "asset-001",
+            "source": "licensed-library",
+            "license": "commercial-use",
+            "commercial_use": True,
+            "evidence_ref": "license-001",
+            "status": "CLEARED"
+        }],
         "audiovisual": {
             "video_id": "vnc-001",
             "format": "vertical_short",
@@ -75,11 +73,7 @@ def package():
                 "language": "pt-BR",
                 "max_lines": 2,
                 "no_overlap": True,
-                "segments": [{
-                    "start_ms": 0,
-                    "end_ms": 2000,
-                    "text": "Quando a espera parece abandono"
-                }]
+                "segments": [{"start_ms": 0, "end_ms": 2000, "text": "Quando a espera parece abandono"}]
             }
         }
     }
@@ -111,6 +105,24 @@ class DryRunTests(unittest.TestCase):
         before = copy.deepcopy(payload)
         run_dry_run(payload)
         self.assertEqual(payload, before)
+
+    def test_fixture_only_rights_need_fixture_mode(self):
+        payload = package()
+        payload["fixture_mode"] = True
+        payload["rights"][0] = {
+            "asset_id": "asset-001",
+            "source": "fixture",
+            "license": "not-a-release-license",
+            "commercial_use": False,
+            "evidence_ref": "FIXTURE_ONLY",
+            "status": "FIXTURE_ONLY"
+        }
+        result = run_dry_run(payload)
+        self.assertEqual(result.status, "PASS")
+
+        payload["fixture_mode"] = False
+        result = run_dry_run(payload)
+        self.assertEqual(result.status, "BLOCKED")
 
 
 if __name__ == "__main__":
