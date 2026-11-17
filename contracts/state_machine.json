@@ -1,0 +1,12 @@
+{
+  "version": "0.1.0",
+  "initial": "CLEAN_BOOTSTRAP",
+  "terminal": ["STABLE", "BLOCKED"],
+  "transitions": {
+    "CLEAN_BOOTSTRAP": ["INTERNAL_VALIDATED", "BLOCKED"],
+    "INTERNAL_VALIDATED": ["RELEASE_CANDIDATE", "BLOCKED"],
+    "RELEASE_CANDIDATE": ["STABLE", "BLOCKED"],
+    "STABLE": [],
+    "BLOCKED": []
+  }
+}

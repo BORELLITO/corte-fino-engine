@@ -1,0 +1,12 @@
+{
+  "name": "verbo-no-chao-run",
+  "version": "0.1.0",
+  "required": ["run_id", "state", "source", "rights_status", "publication_status"],
+  "properties": {
+    "run_id": {"type": "string", "minLength": 1},
+    "state": {"enum": ["CLEAN_BOOTSTRAP", "INTERNAL_VALIDATED", "RELEASE_CANDIDATE", "STABLE", "BLOCKED"]},
+    "source": {"type": "string", "minLength": 1},
+    "rights_status": {"enum": ["UNREVIEWED", "CLEARED", "BLOCKED"]},
+    "publication_status": {"enum": ["NOT_REQUESTED", "DRY_RUN", "AUTHORIZED", "PUBLISHED"]}
+  }
+}

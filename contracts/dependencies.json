@@ -1,0 +1,7 @@
+{
+  "policy": "free-first",
+  "runtime": {},
+  "development": {},
+  "external_services": [],
+  "note": "Phase 0 uses only the Python standard library."
+}
