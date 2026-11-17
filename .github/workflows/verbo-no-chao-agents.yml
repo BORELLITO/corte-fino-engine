@@ -33,9 +33,36 @@ jobs:
           if-no-files-found: error
           retention-days: 14
 
+  script_production:
+    name: Generate 3 context-grounded script drafts
+    needs: editorial_production
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Retrieve validated 90-day editorial plan
+        uses: actions/download-artifact@v4
+        with:
+          name: vnc-editorial-deliverables
+          path: .
+      - name: Generate and validate original script drafts
+        run: python -m agents.first_batch_production --root . --output-dir .
+      - name: Preserve actual review-only script drafts
+        uses: actions/upload-artifact@v4
+        with:
+          name: vnc-first-batch-scripts
+          path: |
+            operations/first_batch_scripts.json
+            editorial-deliveries/first_batch_scripts.md
+            editorial-deliveries/first_batch_report.json
+          if-no-files-found: error
+          retention-days: 14
+
   specialists:
     name: Audit — ${{ matrix.agent }}
-    needs: editorial_production
+    needs: [editorial_production, script_production]
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
@@ -58,6 +85,11 @@ jobs:
         uses: actions/download-artifact@v4
         with:
           name: vnc-editorial-deliverables
+          path: .
+      - name: Retrieve new scripts for independent audit
+        uses: actions/download-artifact@v4
+        with:
+          name: vnc-first-batch-scripts
           path: .
       - name: Execute independent specialist
         env:
