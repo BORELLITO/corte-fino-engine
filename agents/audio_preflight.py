@@ -251,7 +251,7 @@ def produce(root: Path, upstream_dir: Path, out_dir: Path, *, onnx_audit: Path |
         f"Voz candidata preservada: **pm_alex** / Kokoro-82M / pt-BR.",
         f"Estimativa automatizada: **{audit['estimated_seconds']} s**, não medição de áudio.",
         "", "## O que já está demonstrado", "",
-        "- Habacuque 1:2–4 foi cruzado com três referências documentadas; revisão teológica humana continua pendente.",
+        "- Habacuque 1:2–4 foi cruzado com três referências documentadas; o parecer semântico por IA tem hash e oito pilares. Certificação teológica humana não foi feita nem é exigida para o roteiro.",
         "- A voz pm_alex aparece no catálogo oficial da upstream do modelo.",
         "- A upstream do modelo declara licença Apache-2.0.",
         "- Os seis blocos do rascunho foram preservados literalmente em ordem e hasheados.",
@@ -265,7 +265,7 @@ def produce(root: Path, upstream_dir: Path, out_dir: Path, *, onnx_audit: Path |
         "- O Kokoro Web permite narração comercial condicionalmente; ainda falta provar a identidade do pack realmente carregado e conferir licenças/avisos das dependências.",
         "- Em uma sessão isolada de Chrome, uma frase técnica não bíblica gerou um áudio temporário de 5,875 s e o cache continha pm_alex.bin com SHA correspondente ao ONNX upstream.",
         "- Esse teste histórico NÃO prova a identidade do arquivo consumido pela inferência, a licença completa nem a inteligibilidade de áudio de produção.",
-        "- Foi preparado um pacote humano com seis blocos do texto exato, fontes, checklist e estado jurídico condicional, mas não existe aprovação humana.",
+        "- Foi preservado um pacote opcional de auditoria humana/histórica, porém a aprovação editorial interna agora depende da crítica por IA já comprovada, não do usuário.",
         "- Nenhuma voz nova nem WAV do roteiro E01 é produzido por este pré-voo.",
         "- Não houve geração de WAV, renderização, agendamento ou publicação.",
         "", "## Segmentos prontos para futura revisão", "",
@@ -273,7 +273,7 @@ def produce(root: Path, upstream_dir: Path, out_dir: Path, *, onnx_audit: Path |
     for seg in result["narration"]["segments"]:
         md.extend([f"### {seg['index']} — {seg['block_type']}", seg["text"], ""])
     md.extend(["## Próxima decisão", "",
-               "Revisão contextual humana do roteiro e evidências específicas da voz/serviço, antes de iniciar o TTS.",
+               "Próxima dependência: completar direitos da voz/serviço e provas de mídia real; roteiro E01 já passou na revisão interna por IA, sem revisão humana obrigatória.",
                "A licença Apache-2.0 da upstream e as permissões condicionais do site não comprovam, sozinhas, os direitos e a identidade dos assets efetivamente utilizados.",
                ""])
     def dump(data: Any) -> str:
