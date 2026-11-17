@@ -7,6 +7,7 @@
   "external_publication": false,
   "secrets_configured": false,
   "phase": "0.9",
+  "architecture": "CLOUD_ONLY",
   "validation": {
     "clean_room_gate": "PASS",
     "unit_tests": {"passed": 39, "failed": 0},
@@ -18,9 +19,9 @@
     "source_audit": "PARAPHRASE_ONLY_PENDING_LICENSE",
     "script_draft": "APPROVED_FOR_AUDIO",
     "script_approval": "APPROVED_BY_CHANNEL_OWNER",
-    "voice_direction": "APPROVED_KOKORO_PM_ALEX_RUNTIME_BLOCKED",
+    "voice_direction": "APPROVED_KOKORO_PM_ALEX_CLOUD_BROWSER",
     "voice_smoke_test": "PARTIAL_ALL_VOICES_SIMPLIFIED_TEXT",
-    "local_runtime": "BLOCKED_CONTAINER_MEMORY",
+    "local_runtime": "NOT_REQUIRED",
     "automated_editorial_review": "PASS_AUTOMATED_REVIEW"
   },
   "gates": [
