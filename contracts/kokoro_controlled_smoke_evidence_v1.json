@@ -1,0 +1,59 @@
+{
+  "schema_version": "1.0.0",
+  "project": "verbo-no-chao",
+  "evidence_id": "VNC-CONTROLLED-SMOKE-2026-11-17-01",
+  "source": {
+    "run_id": 44179520750,
+    "workflow_url": "https://github.com/BORELLITO/corte-fino-engine/actions/runs/44179520750",
+    "artifact_id": 14371033576,
+    "artifact_name": "vnc-kokoro-controlled-smoke-evidence",
+    "head_sha": "781817eee77369739174fe24751a3111eb0af682",
+    "report_name": "report.json",
+    "original_report_sha256": "1b83c7dcdcf11c18241d20c572b72db286b3c4a1a38cdae45dc8ffa5acf9af37",
+    "report_bytes": 1723,
+    "observed_date": "2026-11-17",
+    "evidence_type": "OBSERVED_GITHUB_ACTIONS_REAL_BROWSER_REPORT"
+  },
+  "site": "https://kokoroweb.app/",
+  "fixture_sha256": "080334bb6a03686b996284829618413ab113624ce07b1c5640974b55a9bc2c7c",
+  "test_character_count": 74,
+  "browser": "Chrome headless on GitHub Actions",
+  "pt_br_selected": true,
+  "pm_alex_selected": true,
+  "generate_clicked": true,
+  "test_audio_element_observed": true,
+  "test_audio_duration_seconds": 5.875,
+  "model_resources_observed": 12,
+  "cached_voice_observation": {
+    "name": "pm_alex.bin",
+    "format": "onnx_voice_bin",
+    "bytes": 522240,
+    "cached_file_sha256": "0175c753f59c54e7fd5a995bedef0c5ff2fb67e0043dd3dcb2ae74ec2acbeb2a",
+    "comparison_source": "onnx-community/Kokoro-82M-v1.0-ONNX",
+    "upstream_onnx_file_sha256": "0175c753f59c54e7fd5a995bedef0c5ff2fb67e0043dd3dcb2ae74ec2acbeb2a",
+    "hash_matches_upstream": true,
+    "source_observation": "READ_ONLY_CACHE_API_IN_ORIGINAL_BROWSER_SESSION",
+    "proves_effective_inference_use": false
+  },
+  "network_voice_hash_matches": 0,
+  "warnings": [
+    "voice_response_not_hashable"
+  ],
+  "test_audio_saved": false,
+  "binary_pack_saved": false,
+  "production_audio_generated": false,
+  "human_listening_review": "PENDING",
+  "effective_runtime_asset_usage_proven": false,
+  "exact_dependencies_and_rights_cleared": false,
+  "owner_script_approval": false,
+  "publication_authorized": false,
+  "historical_observation_only": true,
+  "status": "TECHNICAL_SMOKE_AND_CACHE_MATCH_OBSERVED_RIGHTS_BLOCKED",
+  "limitations": [
+    "Cache identity was measured using SHA-256 in the same isolated browser that produced a short test audio; it does not independently prove the inference engine consumed that exact cached object.",
+    "An HTML audio element with duration verifies browser playback metadata, not intelligibility or audio mastering quality.",
+    "The phrase is a synthetic fixture, not a Bible passage, owner-approved script or a published video.",
+    "Original GitHub artifact expires after 14 days; this source snapshot and its hash preserve the factual audit trail without binary assets.",
+    "Do not repeat an expensive model download on every editorial commit; use explicit manual workflow execution for future smoke tests."
+  ]
+}
