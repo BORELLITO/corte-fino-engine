@@ -51,35 +51,13 @@ def _read_json(path: Path, label: str) -> tuple[dict[str, Any] | None, list[str]
     return value, []
 
 
-def _artifact_hash(path: Path) -> str:
-    return hashlib.sha256(path.read_bytes()).hexdigest()
-
-
-def _materialize_manifest(package_dir: Path, package: dict[str, Any], run_id: str) -> dict[str, Any]:
+def _materialize_manifest(package: dict[str, Any], run_id: str) -> dict[str, Any]:
+    # Never rewrite a provider's execution declaration or declared checksums.
+    # The independent quality gate must reject contradictions, not erase them.
     manifest = json.loads(json.dumps(package))
     manifest["run_id"] = run_id
-    manifest["execution"] = {
-        **(manifest.get("execution") or {}),
-        "mode": "cloud_only",
-        "device_role": "control_only",
-        "legacy_projects_used": False,
-    }
     manifest.setdefault("owner_approval", False)
     manifest.setdefault("publication_authorized", False)
-
-    artifacts = manifest.get("artifacts") or {}
-    if not isinstance(artifacts, dict):
-        artifacts = {}
-    for key in ("audio", "music", "captions", "output"):
-        item = artifacts.get(key)
-        if not isinstance(item, dict):
-            continue
-        relative = item.get("path")
-        if isinstance(relative, str):
-            target = (package_dir / relative).resolve()
-            if target.is_file():
-                item["sha256"] = _artifact_hash(target)
-    manifest["artifacts"] = artifacts
     return manifest
 
 
@@ -128,6 +106,21 @@ def run_flow(
         return _write_blocked(result, report_path)
 
     provider_status = "MATERIALIZED"
+    if (
+        package.get("state") == "PUBLISHED"
+        or package.get("owner_approval") is True
+        or package.get("publication_authorized") is True
+    ):
+        result = RunResult(
+            run_id,
+            "BLOCKED",
+            "BLOCKED",
+            str(manifest_path),
+            ("provider_package:publication_or_owner_approval_claim_forbidden",),
+            provider_status,
+        )
+        return _write_blocked(result, report_path)
+
     if render or (isinstance(package.get("render"), dict) and package["render"].get("enabled") is True):
         try:
             rendered = render_package(package_dir, package)
@@ -157,7 +150,7 @@ def run_flow(
             "physical_validation": rendered["physical_validation"],
         }
 
-    manifest = _materialize_manifest(package_dir, package, run_id)
+    manifest = _materialize_manifest(package, run_id)
     manifest_path.write_text(
         json.dumps(manifest, ensure_ascii=False, indent=2) + "\n",
         encoding="utf-8",

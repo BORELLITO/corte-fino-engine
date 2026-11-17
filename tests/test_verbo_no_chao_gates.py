@@ -128,5 +128,78 @@ class VerboNoChaoGateTests(unittest.TestCase):
         self.assertTrue(any("render:assets_missing" in item for item in result.errors))
 
 
+    def test_materialized_run_requires_all_four_artifact_records(self):
+        broken = copy.deepcopy(self.manifest)
+        broken["artifacts"] = {}
+        with tempfile.TemporaryDirectory() as directory:
+            errors = validate_manifest(broken, artifact_root=Path(directory))
+        for key in ("audio", "music", "captions", "output"):
+            self.assertIn(f"artifact.{key} record is missing", errors)
+
+    def test_artifact_summary_hash_cannot_disagree_with_provided_file(self):
+        broken = copy.deepcopy(self.manifest)
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            (root / "voice.wav").write_bytes(b"voice bytes")
+            true_sha = hashlib.sha256(b"voice bytes").hexdigest()
+            broken["artifacts"] = {"audio": {"path": "voice.wav", "sha256": true_sha}}
+            errors = validate_manifest(broken, artifact_root=root)
+        self.assertIn("artifact.audio sha256 conflicts with canonical summary", errors)
+        self.assertFalse(any("artifact.audio sha256 does not match the file" in e for e in errors))
+
+    def test_output_artifact_path_must_match_declared_master(self):
+        broken = copy.deepcopy(self.manifest)
+        broken["artifacts"] = {"output": {"path": "wrong-master.mp4", "sha256": broken["output"]["sha256"]}}
+        with tempfile.TemporaryDirectory() as directory:
+            errors = validate_manifest(broken, artifact_root=Path(directory))
+        self.assertIn("artifact.output path conflicts with canonical output.file", errors)
+
+    def test_runflow_does_not_rewrite_provider_sha_to_hide_mismatch(self):
+        package = copy.deepcopy(self.manifest)
+        package["artifacts"] = {"audio": {"path": "voice.wav", "sha256": "0" * 64}}
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            pack_dir = root / "package"
+            pack_dir.mkdir()
+            (pack_dir / "voice.wav").write_bytes(b"actual voice")
+            (pack_dir / "package.json").write_text(json.dumps(package), encoding="utf-8")
+            result = run_flow({"topic": "Salmo 13"}, pack_dir, root / "reports")
+            written = json.loads(Path(result.manifest_path).read_text(encoding="utf-8"))
+        self.assertEqual(result.status, "BLOCKED")
+        self.assertEqual(written["artifacts"]["audio"]["sha256"], "0" * 64)
+        self.assertTrue(any("artifact.audio sha256 does not match the file" in e for e in result.errors))
+
+    def test_runflow_preserves_and_rejects_legacy_execution_claim(self):
+        package = copy.deepcopy(self.manifest)
+        package["execution"]["legacy_projects_used"] = True
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            pack_dir = root / "package"
+            pack_dir.mkdir()
+            (pack_dir / "package.json").write_text(json.dumps(package), encoding="utf-8")
+            result = run_flow({"topic": "Salmo 13"}, pack_dir, root / "reports")
+            written = json.loads(Path(result.manifest_path).read_text(encoding="utf-8"))
+        self.assertTrue(written["execution"]["legacy_projects_used"])
+        self.assertIn("legacy project usage is forbidden", result.errors)
+        self.assertEqual(result.status, "BLOCKED")
+
+    def test_runflow_refuses_provider_claimed_publication_or_owner_approval(self):
+        invalid_claims = (
+            {"state": "PUBLISHED"},
+            {"publication_authorized": True},
+            {"owner_approval": True},
+        )
+        for claim in invalid_claims:
+            with self.subTest(claim=claim), tempfile.TemporaryDirectory() as directory:
+                root = Path(directory)
+                pack_dir = root / "package"
+                pack_dir.mkdir()
+                package = {**copy.deepcopy(self.manifest), **claim}
+                (pack_dir / "package.json").write_text(json.dumps(package), encoding="utf-8")
+                result = run_flow({"topic": "Salmo 13"}, pack_dir, root / "reports")
+                self.assertEqual(result.status, "BLOCKED")
+                self.assertIn("provider_package:publication_or_owner_approval_claim_forbidden", result.errors)
+
+
 if __name__ == "__main__":
     unittest.main()
