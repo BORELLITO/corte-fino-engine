@@ -34,7 +34,7 @@ jobs:
           python -m pip install --disable-pip-version-check "playwright==1.56.0"
           google-chrome --version
       - name: Test strict evidence rules before browser navigation
-        run: python -m unittest -v tests.test_hosted_browser_probe
+        run: python -m unittest discover -s tests -p 'test_hosted_browser_probe.py' -v
       - name: Navigate public site and observe network without clicking Generate
         run: python -m agents.hosted_browser_probe --output voice-host-probe/report.json
       - name: Upload JSON report only (never model, audio, screenshots or cookies)
