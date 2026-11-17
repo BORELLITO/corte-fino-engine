@@ -306,6 +306,9 @@ def aggregate(input_dir: Path, audio_preflight_path: Path | None = None) -> dict
             or preflight.get("status") != "BLOCKED"
             or preflight.get("voice_license_approved") is not False
             or preflight.get("ai_editorial_review_verified") is not True
+            or preflight.get("video_readiness_status") != "BLOCKED_PHYSICAL_MEDIA_AND_RIGHTS_NOT_PROVEN"
+            or preflight.get("final_video_qa_completed") is not False
+            or preflight.get("owner_finished_video_review_required") is not False
             or preflight.get("ai_editorial_script_approved") is not True
             or preflight.get("ai_editorial_review_status") != "AUTO_APPROVED_FOR_INTERNAL_PRODUCTION"
             or preflight.get("owner_script_review_required") is not False
@@ -334,6 +337,7 @@ def aggregate(input_dir: Path, audio_preflight_path: Path | None = None) -> dict
             "audio-preflight/rights_review_handoff.json",
             "audio-preflight/e01_human_review_packet.md",
             "audio-preflight/ai_editorial_approval.json",
+            "audio-preflight/video_pillar_readiness.json",
         }
         file_specs = preflight.get("files")
         if not isinstance(file_specs, list) or len(file_specs) != len(required_files):
@@ -358,8 +362,14 @@ def aggregate(input_dir: Path, audio_preflight_path: Path | None = None) -> dict
             if actual != expected:
                 raise ValueError("audio_preflight_artifact_hash_mismatch")
             verified_paths[name] = actual
+        from agents.video_pillar_readiness import validate_video_pillar_report
+        pillar_report = json.loads((artifact_root / "audio-preflight/video_pillar_readiness.json").read_bytes())
+        validate_video_pillar_report(pillar_report)
         audio_status = {
             "supporting_file_hashes_verified": True,
+            "twelve_pillar_video_readiness": pillar_report["status"],
+            "owner_finished_video_review_required": False,
+            "final_video_qa_completed": False,
             "supporting_file_count": len(verified_paths),
             "ai_editorial_approval_sha256": verified_paths["audio-preflight/ai_editorial_approval.json"],
             "ai_editorial_script_approved": True,
