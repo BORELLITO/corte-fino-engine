@@ -7,11 +7,14 @@ FIXTURE = Path(__file__).resolve().parents[1] / "contracts" / "pilot_voice_decis
 
 
 class VoiceDecisionTests(unittest.TestCase):
-    def test_voice_baseline_is_selected_but_gate_remains_open(self):
+    def test_voice_baseline_is_cloud_only(self):
         payload = json.loads(FIXTURE.read_text(encoding="utf-8"))
         self.assertEqual(payload["status"], "APPROVED_VOICE_PENDING_RUNTIME_VALIDATION")
         self.assertEqual(payload["engine"], "Kokoro-82M")
         self.assertEqual(payload["language"], "pt-BR")
+        self.assertEqual(payload["deployment"], "cloud_browser")
+        self.assertEqual(payload["cloud_execution_surface"], "work_managed_browser")
+        self.assertFalse(payload["local_device_compute_required"])
         self.assertEqual(payload["selected_voice"], "pm_alex")
         self.assertEqual(payload["voice_selection_scope"], "PROVISIONAL_BASELINE")
         self.assertEqual(payload["voice_license_status"], "PENDING_EXACT_VOICE_PACK_AUDIT")
