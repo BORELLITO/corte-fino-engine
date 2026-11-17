@@ -33,7 +33,7 @@ A solução validada é uma camada de pronúncia separada. Para o roteiro comple
 
 Os oito segmentos foram gerados na sessão cloud com **pm_alex/Alex**, em WAV 24 kHz, velocidade 1.0x. Os oito controles de download foram acionados. Os cards de áudio ficaram visíveis na ordem 1–8.
 
-A persistência dos arquivos fora da sessão ainda não foi comprovada; por isso, eles não são considerados ativos de produção.
+A persistência dos arquivos foi comprovada por downloads capturados pelo navegador cloud. Os oito WAVs foram medidos, hasheados e concatenados em 60,25 s. Eles são ativos de prévia; a promoção para produção/publicação continua bloqueada até a auditoria exata da voz e do runtime.
 
 ## Arquitetura operacional cloud-only
 
