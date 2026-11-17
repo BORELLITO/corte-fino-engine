@@ -1,0 +1,62 @@
+{
+  "schema_version": "1.0.0",
+  "project": "verbo-no-chao",
+  "episode_id": "VNC-W01-E1",
+  "evidence_id": "VNC-E01-INDEPENDENT-ASR-REAL-2026-11-17-001",
+  "provenance": "HISTORICAL_GITHUB_ACTIONS_ASR_EXECUTION",
+  "source_workflow_run_id": 44201071884,
+  "source_workflow_url": "https://github.com/BORELLITO/corte-fino-engine/actions/runs/44201071884",
+  "source_workflow_head_sha": "2813474a2d0fae026eb6cfc96e9e86a70832c34f",
+  "source_artifact_id": 14381047221,
+  "source_artifact_name": "vnc-e01-independent-asr-report",
+  "source_report_name": "report.json",
+  "source_report_bytes": 33248,
+  "source_report_sha256": "917650006cd03b95ede779efe6b831fc520c9d2eb37d59c63e99c0c4efc2a406",
+  "source_wav_sha256": "f7c18eac3b8ebc59069665d5e633d8ace1c342efd34546e0591cb7dd713a05d4",
+  "source_script_sha256": "67052ec614f3beaca25cbac40414eecb7f197be0b73b7c1af4fd6579c0cf6990",
+  "asr_model_repository": "Systran/faster-whisper-small",
+  "asr_model_license_declared": "MIT",
+  "asr_model_repo_revision": "536b0662742c02347bc0e980a01041f333bce120",
+  "asr_model_bin_sha256": "3e305921506d8872816023e4c273e75d2419fb89b24da97b4fe7bce14170d671",
+  "asr_model_bin_bytes": 483546902,
+  "transcription_prompt_contains_reference_text": false,
+  "recognized_words": 182,
+  "expected_words": 182,
+  "word_edits": 5,
+  "character_edits": 8,
+  "word_error_rate": 0.02747,
+  "character_error_rate": 0.0075,
+  "word_timestamps_observed": 182,
+  "segmented_phrases": 17,
+  "low_confidence_words": 1,
+  "asr_aggregate_thresholds_passed": true,
+  "asr_subject_to_critical_word_review": true,
+  "known_lexical_or_punctuation_warnings": [
+    {
+      "reference": "dói esperar",
+      "asr": "dou esperar",
+      "classification": "POTENTIAL_WORD_PRONUNCIATION_OR_ASR_RECOGNITION",
+      "not_a_proven_tts_defect": true
+    },
+    {
+      "reference": "Habacuque",
+      "asr": "Abacuque",
+      "classification": "PHONETICALLY_PLAUSIBLE_SILENT_H_ASR_SPELLING",
+      "not_a_proven_tts_defect": true
+    },
+    {
+      "reference": "em favor de alguém. E pode",
+      "asr": "em favor de. Alguém pode",
+      "classification": "POTENTIAL_SENTENCE_BOUNDARY_OR_ASR_PUNCTUATION_ERROR",
+      "not_a_proven_tts_defect": true
+    }
+  ],
+  "human_listening_qa_completed": false,
+  "critical_semantic_recheck_completed": false,
+  "voice_rights_cleared": false,
+  "production_audio_master_approved": false,
+  "caption_track_verified": false,
+  "final_video_exists": false,
+  "publication_authorized": false,
+  "status": "ASR_AGGREGATE_MATCH_BUT_CRITICAL_WORDS_UNRESOLVED"
+}
