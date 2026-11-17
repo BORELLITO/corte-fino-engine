@@ -1,0 +1,21 @@
+{
+  "policy_id": "VNC-NEW-EDITORIAL-SCRIPTS-SOURCES-001",
+  "version": "1.0.0",
+  "project": "verbo-no-chao",
+  "scope": "non-pilot-new-episode-scripts",
+  "source_mode": "reference_and_paraphrase",
+  "selected_translation": null,
+  "contains_verbatim_quote": false,
+  "verbatim_quote_status": "BLOCKED_UNTIL_EDITION_LICENSE_VERIFIED",
+  "biblical_review_required": true,
+  "owner_approval_required": true,
+  "publication_authorized": false,
+  "requirements": [
+    "Reference each biblical passage accurately and preserve historical and literary context",
+    "Distinguish the biblical text, interpretation and contemporary application",
+    "Use only original narration: never copy a modern copyrighted translation, commentary, or website text",
+    "Document research sources with URL and contextual claims, but do not treat a URL as license evidence",
+    "Cross-check justice, lament and hope without promising a timed supernatural outcome",
+    "Do not promote DRAFT_REVIEW_REQUIRED to APPROVED_FOR_AUDIO without independent editorial review"
+  ]
+}
