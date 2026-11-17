@@ -21,7 +21,9 @@
   "script_review_mechanism": "AI_SEMANTIC_EDITORIAL_WITH_SOURCE_AND_HASH_EVIDENCE",
   "independent_human_theological_review_required": false,
   "human_theological_endorsement_implied": false,
-  "owner_final_video_approval_required": true,
+  "owner_final_video_approval_required": false,
   "publication_requires_separate_explicit_authorization": true,
-  "autonomous_editorial_policy_ref": "contracts/autonomous_editorial_policy_v1.json"
+  "autonomous_editorial_policy_ref": "contracts/autonomous_editorial_policy_v1.json",
+  "internal_final_video_qa_required": true,
+  "owner_final_video_review_optional": true
 }
