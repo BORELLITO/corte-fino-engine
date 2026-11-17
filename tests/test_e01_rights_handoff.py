@@ -11,6 +11,7 @@ from agents.audio_preflight import produce as produce_preflight
 from agents.e01_rights_handoff import (
     verify_dossier, render_human_review_packet, VOICE_SHA,
 )
+from agents.team import aggregate, CANONICAL_IDS
 
 ROOT = Path(__file__).resolve().parents[1]
 
@@ -146,6 +147,46 @@ class E01RightsReviewTests(unittest.TestCase):
         bad = "0" * 64
         with self.assertRaisesRegex(ProductionError, "canonical_script_fingerprint_changed"):
             self.assess(digest=bad)
+
+
+    def _prepare_coordinator_fixture(self, root):
+        produce_plan(ROOT, root)
+        produce_scripts(ROOT, root, upstream_root=root)
+        produce_preflight(ROOT, root, root)
+        out = root / "reports"
+        out.mkdir(exist_ok=True)
+        for name in CANONICAL_IDS:
+            (out / (name + ".json")).write_text(json.dumps({
+                "project": "verbo-no-chao", "agent": name,
+                "publication_authorized": False, "status": "BLOCKED",
+                "blockers": ["test_fixture"],
+            }), encoding="utf-8")
+        return out, root / "audio-preflight/report.json"
+
+    def test_coordinator_checks_real_supporting_files_and_review_hash(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            reports, preflight_path = self._prepare_coordinator_fixture(Path(tmp))
+            result = aggregate(reports, preflight_path)
+        self.assertTrue(result["audio_preflight"]["supporting_file_hashes_verified"])
+        self.assertEqual(result["audio_preflight"]["supporting_file_count"], 6)
+        self.assertEqual(len(result["audio_preflight"]["human_review_packet_sha256"]), 64)
+        self.assertEqual(result["status"], "BLOCKED")
+
+    def test_coordinator_rejects_tampered_human_review_packet(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            reports, preflight_path = self._prepare_coordinator_fixture(Path(tmp))
+            human = Path(tmp) / "audio-preflight/e01_human_review_packet.md"
+            human.write_text(human.read_text(encoding="utf-8") + "\nAprovado sem revisão!\n",
+                             encoding="utf-8")
+            with self.assertRaisesRegex(ValueError, "audio_preflight_artifact_hash_mismatch"):
+                aggregate(reports, preflight_path)
+
+    def test_coordinator_rejects_missing_source_handoff_file(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            reports, preflight_path = self._prepare_coordinator_fixture(Path(tmp))
+            (Path(tmp) / "audio-preflight/rights_review_handoff.json").unlink()
+            with self.assertRaisesRegex(ValueError, "audio_preflight_artifact_missing"):
+                aggregate(reports, preflight_path)
 
 
 if __name__ == "__main__":
