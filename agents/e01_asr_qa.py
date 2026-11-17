@@ -23,6 +23,9 @@ from agents.e01_voice_preview import approved_source
 
 REPO = "Systran/faster-whisper-small"
 ASR_BACKEND = "faster-whisper==1.2.1"
+# Official faster-whisper downloader includes vocabulary.* alongside JSON/bin.
+# Missing vocabulary.txt caused a real CTranslate2 RuntimeError in first CI.
+ASR_MODEL_FILE_PATTERNS = ("*.bin", "*.json", "vocabulary.*")
 SCRIPT_HASH = "67052ec614f3beaca25cbac40414eecb7f197be0b73b7c1af4fd6579c0cf6990"
 WAV_SHA = "f7c18eac3b8ebc59069665d5e633d8ace1c342efd34546e0591cb7dd713a05d4"
 REPORT_SHA = "a11f144722de64a1cd096deb460a21522104ba09cd4572bf13cc61a64c570686"
@@ -242,15 +245,21 @@ def run_independent_asr(wav: Path, model_root: Path) -> tuple[
     try:
         model_dir = snapshot_download(
             repo_id=REPO, revision=revision,
-            allow_patterns=["*.bin", "*.json"],
+            allow_patterns=list(ASR_MODEL_FILE_PATTERNS),
             local_dir=str(model_root),
         )
     except Exception as exc:
         raise safe_stage_error("snapshot_download", exc) from exc
-    binary = Path(model_dir)/"model.bin"
+    model_path = Path(model_dir)
+    binary = model_path / "model.bin"
     check(binary.is_file()
           and 100_000_000 < binary.stat().st_size < 800_000_000,
           "asr:model_binary_missing_or_wrong_size")
+    check((model_path / "config.json").is_file()
+          and (model_path / "tokenizer.json").is_file()
+          and any((model_path / name).is_file()
+                  for name in ("vocabulary.txt", "vocabulary.json")),
+          "asr:model_vocab_or_tokenizer_missing")
     model_sha = sha256_file(binary)
     try:
         model = WhisperModel(
