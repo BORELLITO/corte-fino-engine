@@ -1,11 +1,16 @@
 {
   "project": "verbo-no-chao",
   "contract_id": "VNC-CLEANROOM-CONTRACT-002",
-  "state": "CLEAN_BOOTSTRAP",
+  "state": "INTERNAL_VALIDATED",
   "operational_source": "clean-room",
   "legacy_operational_reuse": false,
   "external_publication": false,
   "secrets_configured": false,
   "phase": 0,
+  "validation": {
+    "clean_room_gate": "PASS",
+    "unit_tests": {"passed": 6, "failed": 0},
+    "runtime_dependencies": 0
+  },
   "gates": ["clean-room", "contracts", "security", "rollback"]
 }
