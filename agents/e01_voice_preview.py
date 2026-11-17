@@ -23,6 +23,7 @@ from typing import Any
 from agents.autonomous_editorial_gate import verify_ai_editorial_review
 from agents.content_production import ProductionError, check
 from agents.onnx_byte_audit import EXPECTED_SHA256 as ONNX_VOICE_SHA
+from agents.wav_normalization import normalize_riff_wav
 
 SITE = "https://kokoroweb.app/#demoContainer"
 SITE_ORIGIN = "https://kokoroweb.app/"
@@ -310,7 +311,8 @@ def main() -> int:
         text, decision = approved_source(root)
         report["source_script_sha256"] = decision["script_sha256"]
         report["script_character_count"] = len(text)
-        wav, cache = synthesize_browser(text, max_seconds=args.max_seconds)
+        raw_wav, cache = synthesize_browser(text, max_seconds=args.max_seconds)
+        wav, normalization = normalize_riff_wav(raw_wav)
         metrics = inspect_pcm_wav(wav)
         preview.write_bytes(wav)
         report.update({
@@ -318,6 +320,7 @@ def main() -> int:
             "audio_preview_saved": True,
             "audio_preview_file": preview.name,
             "physical_wav_metrics": metrics,
+            "source_wav_normalization": normalization,
             "browser_voice_cache": cache,
             "github_sha": os.environ.get("GITHUB_SHA"),
             "github_run_id": os.environ.get("GITHUB_RUN_ID"),
