@@ -30,7 +30,7 @@ class VoiceBenchmarkTests(unittest.TestCase):
         self.assertTrue(result["pronunciation_layer_required"])
         self.assertEqual(len(result["segments"]), 8)
         self.assertTrue(all(item["generated"] for item in result["segments"]))
-        self.assertEqual(result["audio_format"], "WAV 24 kHz")
+        self.assertEqual(payload["audio_format"], "WAV 24 kHz")
 
     def test_full_local_runtime_attempt_is_explicitly_blocked(self):
         payload = json.loads(FIXTURE.read_text(encoding="utf-8"))
