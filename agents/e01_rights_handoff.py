@@ -12,7 +12,6 @@ from typing import Any
 from agents.content_production import check
 from agents.e01_context_review import validate_context_crosscheck
 from agents.controlled_smoke_evidence import validate_smoke_attestation
-from agents.audio_preflight import validate_voice_evidence
 
 EPISODE = "VNC-W01-E1"
 EXPECTED_IDS = ("MODEL", "ONNX", "VOICE", "HOST", "HOST_NOTICE", "SCRIPT")
@@ -55,6 +54,9 @@ def verify_dossier(dossier: Any, crosscheck: Any, smoke: Any,
           and dossier.get("scope") ==
           "DRAFT_E01_AND_KOKORO_WEB_NARRATION_PREPARATION_ONLY",
           "rights_review:source_linkage")
+    # Import lazily: audio_preflight consumes this module, so a top-level import
+    # would create a circular dependency.
+    from agents.audio_preflight import validate_voice_evidence
     validate_voice_evidence(voice)
     ctx = validate_context_crosscheck(crosscheck, draft, draft_hash)
     historical = validate_smoke_attestation(smoke)
