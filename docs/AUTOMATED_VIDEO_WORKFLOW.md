@@ -42,7 +42,8 @@ Antes de entregar, o motor verifica:
 - direitos e licenças;
 - elegibilidade de monetização;
 - especificações de exportação;
-- ausência de regressões.
+- ausência de regressões;
+- **não repetição de clipes**.
 
 ### 5. Entrega final
 
@@ -52,6 +53,16 @@ A entrega ao proprietário deve conter o vídeo renderizado, o resumo de qualida
 
 O proprietário aprova ou rejeita o resultado final. A aprovação do vídeo não equivale automaticamente à autorização de publicação.
 
+## Invariante editorial — zero repetição de clipes
+
+- O mesmo clipe ou asset de origem só pode aparecer uma vez no mesmo vídeo final.
+- Repetir o arquivo com outro crop, zoom, velocidade, espelhamento, reversão, cor, máscara ou enquadramento continua sendo repetição e é proibido.
+- Cada plano deve registrar `asset_id`, URL de origem e intervalo temporal utilizado.
+- O mesmo intervalo temporal não pode ser reutilizado em outro plano.
+- Se duas entradas vierem do mesmo arquivo de origem, o QA deve tratá-las como repetição potencial e bloquear até comprovar que são assets e trechos realmente distintos.
+- Qualquer violação bloqueia `READY_FOR_OWNER_APPROVAL`.
+- Reutilização em vídeos diferentes não é automaticamente proibida, mas deverá ser evitada quando criar sensação de reciclagem; o motor deve priorizar assets novos e manter histórico de uso.
+
 ## Estados obrigatórios
 
 - `PLANNED`: fluxo definido, sem produção iniciada.
@@ -60,7 +71,7 @@ O proprietário aprova ou rejeita o resultado final. A aprovação do vídeo nã
 - `READY_FOR_OWNER_APPROVAL`: vídeo renderizado, QA interno concluído e direitos com status compatível.
 - `PUBLISHED`: publicação confirmada somente após autorização específica e evidência da plataforma.
 
-Um clipe isolado, uma prévia ou um arquivo transferido entre serviços não pode ser apresentado como vídeo final. Se qualquer gate essencial falhar, o estado permanece `BLOCKED` e a entrega deve declarar explicitamente o que foi comprovado e o que ainda não foi.
+Um clipe isolado, uma prévia ou um arquivo transferido entre serviços não pode ser apresentado como vídeo final. Se qualquer gate essencial falhar, o estado permanece `BLOCKED` e a entrega deve declarar explicitamente o que foi comprovado e o que ainda foi comprovado.
 
 ## Regra de autonomia
 
