@@ -1,0 +1,82 @@
+name: Verbo no Chão — E01 Second Multilingual ASR Opinion
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - "verbo-no-chao/e01-independent-asr-audit-v1"
+    paths:
+      - ".github/workflows/verbo-no-chao-e01-second-asr.yml"
+
+permissions:
+  contents: read
+  actions: read
+
+concurrency:
+  group: vnc-e01-independent-second-asr
+  cancel-in-progress: false
+
+jobs:
+  second_asr_opinion:
+    name: Recheck exact 70-second E01 via independent multilingual Whisper-base
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    env:
+      HF_HUB_DISABLE_XET: "1"
+      OMP_NUM_THREADS: "4"
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Fetch original WAV with its immutable producer report
+        uses: actions/download-artifact@v4
+        with:
+          name: vnc-e01-quarantined-voice-preview
+          repository: BORELLITO/corte-fino-engine
+          run-id: 44192226678
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          path: original-wav/
+      - name: Fetch previously computed independent Whisper-small report
+        uses: actions/download-artifact@v4
+        with:
+          name: vnc-e01-independent-asr-report
+          repository: BORELLITO/corte-fino-engine
+          run-id: 44201071884
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          path: first-asr/
+      - name: Fetch SHA-pinned critical-word and sentence-boundary warnings
+        uses: actions/download-artifact@v4
+        with:
+          name: vnc-e01-asr-critical-word-sentry
+          repository: BORELLITO/corte-fino-engine
+          run-id: 44201836988
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          path: first-sentry/
+      - name: Verify canonical WAV and script hashes before any new model download
+        run: |
+          python -m agents.e01_asr_qa \
+            --root . --input-dir original-wav \
+            --model-dir unused-model --output-dir unused-report \
+            --verify-input-only
+      - name: Test possible agreement, disagreement and release locks
+        run: python -m unittest discover -s tests -p "test_e01_second_asr_opinion.py" -v
+      - name: Install free version-pinned multilingual ASR dependencies
+        run: python -m pip install --disable-pip-version-check "faster-whisper==1.2.1"
+      - name: Run real Whisper-base on original voice and compare critical words
+        run: |
+          python -m agents.e01_second_asr_opinion \
+            --root . \
+            --wav-dir original-wav \
+            --first-asr first-asr/report.json \
+            --first-alerts first-sentry/report.json \
+            --model-dir second-model \
+            --output second-evidence/report.json
+      - name: Keep only second model JSON results (no WAV/model/credentials)
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: vnc-e01-second-asr-opinion
+          path: second-evidence/report.json
+          if-no-files-found: warn
+          retention-days: 14
