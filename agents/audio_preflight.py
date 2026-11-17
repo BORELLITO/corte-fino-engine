@@ -15,6 +15,7 @@ from typing import Any
 from agents.content_production import ProductionError, check, read
 from agents.e01_context_review import validate_context_crosscheck
 from agents.controlled_smoke_evidence import validate_smoke_attestation
+from agents.e01_rights_handoff import verify_dossier, render_human_review_packet
 from agents.onnx_byte_audit import validate_report as validate_onnx_report, EXPECTED_SHA256 as ONNX_EXPECTED_SHA256
 
 TARGET_ID = "VNC-W01-E1"
@@ -141,6 +142,7 @@ def produce(root: Path, upstream_dir: Path, out_dir: Path, *, onnx_audit: Path |
     voice = read(root, "contracts/kokoro_voice_research_v1.json", evidence)
     editorial_crosscheck = read(root, "contracts/e01_editorial_crosscheck_v1.json", evidence)
     historical_smoke = read(root, "contracts/kokoro_controlled_smoke_evidence_v1.json", evidence)
+    rights_dossier = read(root, "contracts/e01_rights_review_dossier_v1.json", evidence)
     package = read(upstream_dir, "operations/first_batch_scripts.json", evidence)
     report = read(upstream_dir, "editorial-deliveries/first_batch_report.json", evidence)
     check(isinstance(report, dict) and isinstance(report.get("files"), list),
@@ -157,6 +159,13 @@ def produce(root: Path, upstream_dir: Path, out_dir: Path, *, onnx_audit: Path |
         editorial_crosscheck, script, proof["narration_sha256"]
     )
     historical_smoke_verified = validate_smoke_attestation(historical_smoke)
+    rights_handoff = verify_dossier(
+        rights_dossier, editorial_crosscheck, historical_smoke,
+        voice, script, proof["narration_sha256"]
+    )
+    human_review_md = render_human_review_packet(
+        script, rights_handoff, rights_dossier, editorial_crosscheck
+    )
     onnx_result = None
     if onnx_audit is not None:
         report_path = onnx_audit.resolve()
@@ -182,6 +191,7 @@ def produce(root: Path, upstream_dir: Path, out_dir: Path, *, onnx_audit: Path |
         "biblical_context_status": "PENDING_INDEPENDENT_REVIEW",
         "internal_editorial_source_crosscheck": crosscheck_result,
         "historical_short_technical_smoke": historical_smoke_verified,
+        "rights_and_editorial_handoff": rights_handoff,
         "voice_selection_scope": "PREVIEW_BASELINE_NOT_COMMERCIAL_RELEASE",
         "voice": {
             "engine": "Kokoro-82M",
@@ -243,6 +253,7 @@ def produce(root: Path, upstream_dir: Path, out_dir: Path, *, onnx_audit: Path |
         "- O Kokoro Web permite narração comercial condicionalmente; ainda falta provar a identidade do pack realmente carregado e conferir licenças/avisos das dependências.",
         "- Em uma sessão isolada de Chrome, uma frase técnica não bíblica gerou um áudio temporário de 5,875 s e o cache continha pm_alex.bin com SHA correspondente ao ONNX upstream.",
         "- Esse teste histórico NÃO prova a identidade do arquivo consumido pela inferência, a licença completa nem a inteligibilidade de áudio de produção.",
+        "- Foi preparado um pacote humano com seis blocos do texto exato, fontes, checklist e estado jurídico condicional, mas não existe aprovação humana.",
         "- Nenhuma voz nova nem WAV do roteiro E01 é produzido por este pré-voo.",
         "- Não houve geração de WAV, renderização, agendamento ou publicação.",
         "", "## Segmentos prontos para futura revisão", "",
@@ -266,6 +277,8 @@ def produce(root: Path, upstream_dir: Path, out_dir: Path, *, onnx_audit: Path |
         write("audio-preflight/preflight.md", "\n".join(md)),
         write("audio-preflight/context_crosscheck.json", dump(crosscheck_result)),
         write("audio-preflight/historical_smoke.json", dump(historical_smoke_verified)),
+        write("audio-preflight/rights_review_handoff.json", dump(rights_handoff)),
+        write("audio-preflight/e01_human_review_packet.md", human_review_md),
     ]
     summary = {
         "schema_version": "1.0.0", "project": "verbo-no-chao",
@@ -274,6 +287,8 @@ def produce(root: Path, upstream_dir: Path, out_dir: Path, *, onnx_audit: Path |
         "files": files, "blockers": list(REQUIRED_BLOCKERS),
         "voice_license_approved": False,
         "historical_smoke_evidence_verified": True,
+        "rights_review_handoff_generated": True,
+        "rights_review_handoff_status": "REVIEW_PACKET_READY_NOT_APPROVED",
         "historical_smoke_source_report_sha256": historical_smoke_verified["source_report_sha256"],
         "upstream_onnx_bytes_verified": onnx_upstream_verified,
         "hosted_voice_pack_bytes_verified": False,
