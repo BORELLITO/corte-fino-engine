@@ -22,6 +22,7 @@ from agents.content_production import ProductionError, check
 from agents.e01_voice_preview import approved_source
 
 REPO = "Systran/faster-whisper-small"
+SECOND_OPINION_REPO = "Systran/faster-whisper-base"
 ASR_BACKEND = "faster-whisper==1.2.1"
 # Official faster-whisper downloader includes vocabulary.* alongside JSON/bin.
 # Missing vocabulary.txt caused a real CTranslate2 RuntimeError in first CI.
@@ -255,14 +256,17 @@ def load_pcm16_as_whisper_16khz(wav: Path) -> Any:
     return dest
 
 
-def run_independent_asr(wav: Path, model_root: Path) -> tuple[
+def run_independent_asr(wav: Path, model_root: Path,
+                        repository: str = REPO) -> tuple[
         list[dict[str, Any]], dict[str, Any]]:
     # Download only public licensed ASR weights. Resolve their exact commit first
     # so a changing "main" cannot silently change the evaluated model mid-job.
     from huggingface_hub import HfApi, snapshot_download
     from faster_whisper import WhisperModel
+    check(repository in (REPO, SECOND_OPINION_REPO),
+          "asr:model_repository_not_allowlisted")
     try:
-        info = HfApi().model_info(REPO)
+        info = HfApi().model_info(repository)
     except Exception as exc:
         raise safe_stage_error("hub_metadata", exc) from exc
     revision = info.sha
@@ -271,7 +275,7 @@ def run_independent_asr(wav: Path, model_root: Path) -> tuple[
           "asr:model_revision_unpinned")
     try:
         model_dir = snapshot_download(
-            repo_id=REPO, revision=revision,
+            repo_id=repository, revision=revision,
             allow_patterns=list(ASR_MODEL_FILE_PATTERNS),
             local_dir=str(model_root),
         )
@@ -329,7 +333,7 @@ def run_independent_asr(wav: Path, model_root: Path) -> tuple[
     except Exception as exc:
         raise safe_stage_error("transcribe_stream", exc) from exc
     return segments, {
-        "backend": ASR_BACKEND, "repository": REPO,
+        "backend": ASR_BACKEND, "repository": repository,
         "repository_revision": revision,
         "model_bin_sha256": model_sha,
         "model_bin_bytes": binary.stat().st_size,
