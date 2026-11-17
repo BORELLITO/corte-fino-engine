@@ -12,7 +12,7 @@
   "automated_internal_script_approval_permitted": true,
   "approver_kind": "AI_ASSISTANT_INTERNAL_EDITORIAL_NOT_INDEPENDENT_HUMAN",
   "publication_authorized": false,
-  "owner_final_video_approval_required": true,
+  "owner_final_video_approval_required": false,
   "separate_explicit_publication_authorization_required": true,
   "protected_pilot_can_be_retroactively_auto_approved": false,
   "pillars": [
@@ -93,6 +93,9 @@
     "GitHub Models inference API was retired 2026-07-30 and is forbidden as a new dependency.",
     "A static JSON receipt does not mean a CI job ran independent LLM inference; CI checks provenance, schema and alignment.",
     "Future episodes require their own actual semantic assessment by an available model before internal approval; no silent blanket pass.",
-    "Rights, media render, video QA and publication always require their own independent evidence and gates."
-  ]
+    "Rights, media render, video QA and publication always require their own independent evidence and gates.",
+    "The owner does not need to review or sign off the finished video after all physical, rights and creative gates pass. Publishing or external distribution remains a separate explicit user action."
+  ],
+  "internal_final_video_qa_required": true,
+  "final_video_owner_review_optional": true
 }
