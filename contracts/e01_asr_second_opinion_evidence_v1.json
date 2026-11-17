@@ -1,0 +1,77 @@
+{
+  "schema_version": "1.0.0",
+  "project": "verbo-no-chao",
+  "episode_id": "VNC-W01-E1",
+  "evidence_id": "VNC-E01-ASR-SECOND-MODEL-2026-11-17-001",
+  "stage": "AUDIO_PROSODY_PRONUNCIATION_RECHECK_REQUIRED",
+  "source_workflow_run_id": 44202391104,
+  "source_workflow_url": "https://github.com/BORELLITO/corte-fino-engine/actions/runs/44202391104",
+  "source_workflow_head_sha": "360601c0f2766ad1f872511dfd24534a20431f9d",
+  "source_artifact_id": 14381293309,
+  "source_artifact_name": "vnc-e01-second-asr-opinion",
+  "source_report_sha256": "baecf5d97926aef655fbd00097d1eaa31ee7055e2da9d89ddae9472f47d89a05",
+  "source_report_bytes": 31703,
+  "original_wav_sha256": "f7c18eac3b8ebc59069665d5e633d8ace1c342efd34546e0591cb7dd713a05d4",
+  "original_script_sha256": "67052ec614f3beaca25cbac40414eecb7f197be0b73b7c1af4fd6579c0cf6990",
+  "primary_asr": {
+    "repository": "Systran/faster-whisper-small",
+    "report_sha256": "917650006cd03b95ede779efe6b831fc520c9d2eb37d59c63e99c0c4efc2a406",
+    "recognized_words": 182,
+    "word_edits": 5,
+    "wer": 0.02747,
+    "cer": 0.0075
+  },
+  "secondary_asr": {
+    "repository": "Systran/faster-whisper-base",
+    "revision": "ebe41f70d5b6dfa9166e2c581c45c9c0cfc57b66",
+    "binary_sha256": "d01c3014881c9c6f3133c182f3d2887eb6ca1c789a7538c5c007196857a0a6a9",
+    "binary_bytes": 145217532,
+    "license_declared": "MIT",
+    "recognized_words": 182,
+    "word_edits": 5,
+    "wer": 0.02747,
+    "cer": 0.01031
+  },
+  "findings": [
+    {
+      "category": "POTENTIAL_PRONUNCIATION_PROBLEM_CORROBORATED_BY_TWO_ASR_MODELS",
+      "source_script_phrase": "Às vezes, dói esperar",
+      "primary_recognition": "Às vezes, dou esperar",
+      "secondary_recognition": "Às vezes, do esperar",
+      "interpretation": "Both ASR models missed one instance of DOI; revoice or independently check this phrase, but ASR agreement alone is not a definitive acoustic diagnosis.",
+      "requires_new_script_and_review_if_edited": true,
+      "owner_manual_review_required": false
+    },
+    {
+      "category": "SINGLE_MODEL_PUNCTUATION_FALSE_POSITIVE_POSSIBLE",
+      "source_script_phrase": "em favor de alguém. E pode levar",
+      "primary_recognition": "em favor de. Alguém pode levar",
+      "secondary_recognition": "em favor de alguém e pode levar",
+      "interpretation": "Only one ASR model split the phrase incorrectly; do not rewrite the canonical text solely on this evidence.",
+      "requires_new_script_and_review_if_edited": false,
+      "owner_manual_review_required": false
+    },
+    {
+      "category": "BIBLICAL_NAME_RECOGNITION_VARIATION",
+      "source_script_phrase": "Habacuque",
+      "primary_recognition": "Abacuque",
+      "secondary_recognition": "a Bakuk",
+      "interpretation": "Portuguese silent initial H and ASR spelling uncertainty; not an automatic proof of mispronunciation.",
+      "requires_new_script_and_review_if_edited": false,
+      "owner_manual_review_required": false
+    }
+  ],
+  "source_audio_corrupted": false,
+  "asr_similarity_preliminary_passed": true,
+  "spoken_word_integrity_fully_verified": false,
+  "audio_candidate_ready_for_master": false,
+  "production_wav_master_approved": false,
+  "owner_script_review_required": false,
+  "owner_final_video_review_required": false,
+  "voice_rights_cleared": false,
+  "caption_track_approved": false,
+  "final_video_rendered": false,
+  "publication_authorized": false,
+  "status": "BLOCKED_E01_CRITICAL_PRONUNCIATION_POSSIBLE_REVOICE_REQUIRED",
+  "remediation_next": "Target a new, distinct canonical-script version with pronunciation-safe replacement of the first occurrence of DOI, re-run semantic source review/hash and resynthesize; preserve original audio and all old evidence. Do not publish until all media and rights gates pass."
+}
