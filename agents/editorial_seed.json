@@ -1,0 +1,502 @@
+{
+  "schema_version": "1.0.0",
+  "project": "verbo-no-chao",
+  "producer_role": "niche_strategy+growth_90d",
+  "approval_scope": {
+    "name": {
+      "value": "VERBO NO CHÃO",
+      "status": "OWNER_APPROVED_2026-11-16"
+    },
+    "tagline": {
+      "value": "Bíblia para a vida real",
+      "status": "PROPOSED_NOT_FINAL_APPROVAL"
+    },
+    "editorial_promise": {
+      "value": "Dar sentido bíblico às dores, dúvidas e recomeços da vida real — com contexto, profundidade e esperança honesta.",
+      "status": "OWNER_APPROVED_2026-11-16"
+    },
+    "primary_audience": {
+      "value": "Pessoas que atravessam dores, dúvidas e recomeços",
+      "status": "OWNER_APPROVED_2026-11-16"
+    },
+    "secondary_audience": {
+      "value": "Cristãos que buscam aprofundamento bíblico",
+      "status": "OWNER_APPROVED_2026-11-16"
+    },
+    "theological_voice": {
+      "value": "Cristã ampla, bíblica, cristocêntrica e não sectária",
+      "status": "OWNER_APPROVED_2026-11-16"
+    },
+    "editorial_guardrails": {
+      "value": [
+        "Referência e contexto bíblico obrigatórios",
+        "Diferenciar texto, interpretação e aplicação",
+        "Sem inventar fatos, voz divina ou promessas de cura, milagre e prosperidade",
+        "Sem medo, culpa ou pressão espiritual como técnica de retenção",
+        "Sem substituir apoio profissional de saúde, jurídico ou segurança",
+        "Sem citação literal de tradução bíblica sem licença comprovada",
+        "Sem publicação ou gastos sem autorização específica"
+      ],
+      "status": "OWNER_APPROVED_2026-11-16"
+    }
+  },
+  "proposal": {
+    "status": "DRAFT_REVIEW_REQUIRED",
+    "window_days": 90,
+    "cadence": {
+      "shorts_per_week": 3,
+      "slot_days": [
+        1,
+        4,
+        6
+      ],
+      "status": "HYPOTHESIS_NOT_APPROVED"
+    },
+    "duration_target_seconds": 75,
+    "duration_status": "PROPOSED_COMPATIBLE_WITH_SCRIPT_CONTRACT",
+    "pillars": [
+      {
+        "id": "dor_e_lamento",
+        "label": "Dor, dúvidas e lamento",
+        "editorial_goal": "Nomear perdas e perguntas sem culpa ou triunfalismo"
+      },
+      {
+        "id": "ansiedade_e_descanso",
+        "label": "Ansiedade, limites e cuidado",
+        "editorial_goal": "Conectar fé, necessidades humanas e apoio responsável"
+      },
+      {
+        "id": "graca_e_recomecos",
+        "label": "Graça, perdão e recomeços",
+        "editorial_goal": "Responsabilizar sem aprisionar em vergonha"
+      },
+      {
+        "id": "vida_pratica_e_relacoes",
+        "label": "Fé na vida comum",
+        "editorial_goal": "Converter reflexão em pequenas escolhas e cuidado"
+      },
+      {
+        "id": "esperanca_e_perseveranca",
+        "label": "Esperança honesta e perseverança",
+        "editorial_goal": "Sustentar esperança sem previsões e garantias"
+      }
+    ],
+    "pilot_exclusion": {
+      "reference": "Salmo 13",
+      "reason": "Pilot unchanged and excluded from new 90-day slots"
+    },
+    "weeks": [
+      {
+        "week": 1,
+        "theme": "Quando a espera pesa",
+        "pillar": "dor_e_lamento",
+        "ideas": [
+          {
+            "id": "VNC-W01-E1",
+            "reference": "Habacuque 1:2-4",
+            "title_proposal": "Quando você pergunta e nada muda",
+            "hook_proposal": "Você já se sentiu ignorado justamente quando mais precisava de resposta?",
+            "practical_angle": "Nomear a espera sem fabricar uma explicação fácil",
+            "theological_caution": "Não tratar o lamento do profeta como promessa de resposta imediata"
+          },
+          {
+            "id": "VNC-W01-E2",
+            "reference": "Lamentações 3:19-26",
+            "title_proposal": "A esperança que não apaga a dor",
+            "hook_proposal": "Como encontrar esperança sem fingir que tudo está bem?",
+            "practical_angle": "Diferenciar memória da aflição e renovação de esperança",
+            "theological_caution": "Respeitar o contexto de sofrimento coletivo"
+          },
+          {
+            "id": "VNC-W01-E3",
+            "reference": "Lucas 18:1-8",
+            "title_proposal": "Persistir sem transformar oração em cobrança",
+            "hook_proposal": "Você continua orando mesmo quando está cansado?",
+            "practical_angle": "Persistência responsável na oração",
+            "theological_caution": "Não equiparar Deus ao juiz injusto da parábola"
+          }
+        ]
+      },
+      {
+        "week": 2,
+        "theme": "A ansiedade da vida real",
+        "pillar": "ansiedade_e_descanso",
+        "ideas": [
+          {
+            "id": "VNC-W02-E1",
+            "reference": "Mateus 6:25-34",
+            "title_proposal": "O peso do amanhã",
+            "hook_proposal": "Quantas vezes o amanhã rouba sua atenção de hoje?",
+            "practical_angle": "Cuidar do presente sem desprezar responsabilidades",
+            "theological_caution": "Não usar a passagem para desestimular tratamento de ansiedade"
+          },
+          {
+            "id": "VNC-W02-E2",
+            "reference": "Filipenses 4:4-9",
+            "title_proposal": "Paz em dias difíceis",
+            "hook_proposal": "É possível buscar paz e ainda estar preocupado?",
+            "practical_angle": "Práticas de oração e discernimento sem negar emoções",
+            "theological_caution": "Não prometer desaparecimento automático da ansiedade"
+          },
+          {
+            "id": "VNC-W02-E3",
+            "reference": "1 Pedro 5:6-7",
+            "title_proposal": "O que você não precisa carregar sozinho",
+            "hook_proposal": "E quando você tenta resolver tudo sem ajuda?",
+            "practical_angle": "Confiar e procurar apoio concreto",
+            "theological_caution": "Não apresentar a fé como substituta de cuidado profissional"
+          }
+        ]
+      },
+      {
+        "week": 3,
+        "theme": "Cansaço, limites e descanso",
+        "pillar": "ansiedade_e_descanso",
+        "ideas": [
+          {
+            "id": "VNC-W03-E1",
+            "reference": "1 Reis 19:1-18",
+            "title_proposal": "Até quem é forte se cansa",
+            "hook_proposal": "Quem cuida de você quando você não aguenta mais?",
+            "practical_angle": "Reconhecer limites e necessidades básicas",
+            "theological_caution": "Não diagnosticar Elias nem sugerir solução única para esgotamento"
+          },
+          {
+            "id": "VNC-W03-E2",
+            "reference": "Marcos 6:30-44",
+            "title_proposal": "Quando não há espaço nem para descansar",
+            "hook_proposal": "Seu dia termina e você continua sem pausa?",
+            "practical_angle": "Observar o cuidado e os limites no serviço",
+            "theological_caution": "Manter o contexto completo do episódio e não reduzir o milagre a técnica"
+          },
+          {
+            "id": "VNC-W03-E3",
+            "reference": "Mateus 11:28-30",
+            "title_proposal": "Descanso não é negar responsabilidade",
+            "hook_proposal": "Você confunde descanso com desistência?",
+            "practical_angle": "Refletir sobre descanso e discipulado",
+            "theological_caution": "Não prometer alívio clínico instantâneo"
+          }
+        ]
+      },
+      {
+        "week": 4,
+        "theme": "Recomeços que custam",
+        "pillar": "graca_e_recomecos",
+        "ideas": [
+          {
+            "id": "VNC-W04-E1",
+            "reference": "Lucas 15:11-32",
+            "title_proposal": "Voltar também exige coragem",
+            "hook_proposal": "E quando a vergonha faz você adiar o primeiro passo?",
+            "practical_angle": "Examinar acolhimento, arrependimento e reconciliação",
+            "theological_caution": "Não forçar reconciliação em relações abusivas"
+          },
+          {
+            "id": "VNC-W04-E2",
+            "reference": "João 21:15-19",
+            "title_proposal": "Seu erro não precisa ser seu último capítulo",
+            "hook_proposal": "Um erro antigo ainda define o modo como você se vê?",
+            "practical_angle": "Distinguir restauração e responsabilidade",
+            "theological_caution": "Não afirmar que toda consequência desaparece"
+          },
+          {
+            "id": "VNC-W04-E3",
+            "reference": "Salmo 51:1-12",
+            "title_proposal": "Arrependimento não é autopunição",
+            "hook_proposal": "Você está assumindo o erro ou vivendo preso à culpa?",
+            "practical_angle": "Refletir sobre confissão e mudança",
+            "theological_caution": "Contextualizar o lamento e não banalizar o dano causado"
+          }
+        ]
+      },
+      {
+        "week": 5,
+        "theme": "Quando o resultado não chega",
+        "pillar": "dor_e_lamento",
+        "ideas": [
+          {
+            "id": "VNC-W05-E1",
+            "reference": "Habacuque 3:17-19",
+            "title_proposal": "Quando o cenário não melhora",
+            "hook_proposal": "Como continuar quando a resposta ainda é não?",
+            "practical_angle": "Esperança que não depende de resultado imediato",
+            "theological_caution": "Não garantir prosperidade futura"
+          },
+          {
+            "id": "VNC-W05-E2",
+            "reference": "Salmo 73:1-17",
+            "title_proposal": "Por que parece que quem erra prospera?",
+            "hook_proposal": "Você já comparou sua dor com o sucesso dos outros?",
+            "practical_angle": "Lidar com comparação e perplexidade diante da injustiça",
+            "theological_caution": "Ler a virada do salmo em seu contexto, sem desprezar injustiças reais"
+          },
+          {
+            "id": "VNC-W05-E3",
+            "reference": "2 Coríntios 12:7-10",
+            "title_proposal": "Força sem triunfalismo",
+            "hook_proposal": "E quando a fraqueza continua mesmo depois de orar?",
+            "practical_angle": "Abordar limites e dependência sem negar dificuldades",
+            "theological_caution": "Não afirmar cura garantida nem romantizar sofrimento"
+          }
+        ]
+      },
+      {
+        "week": 6,
+        "theme": "Solidão e companhia",
+        "pillar": "ansiedade_e_descanso",
+        "ideas": [
+          {
+            "id": "VNC-W06-E1",
+            "reference": "Salmo 42:1-11",
+            "title_proposal": "Quando você se sente distante de tudo",
+            "hook_proposal": "Você também sente saudade de dias em que tinha esperança?",
+            "practical_angle": "Articular sentimento, memória e esperança honesta",
+            "theological_caution": "Não confundir linguagem poética com diagnóstico clínico"
+          },
+          {
+            "id": "VNC-W06-E2",
+            "reference": "2 Timóteo 4:16-18",
+            "title_proposal": "Quando ninguém aparece",
+            "hook_proposal": "Como lidar quando pessoas falham no momento decisivo?",
+            "practical_angle": "Reconhecer abandono sem alimentar ressentimento",
+            "theological_caution": "Não prometer ausência de abandono futuro"
+          },
+          {
+            "id": "VNC-W06-E3",
+            "reference": "Marcos 2:1-12",
+            "title_proposal": "A fé que chega com ajuda",
+            "hook_proposal": "Você aceita apoio ou sempre tenta resolver tudo sozinho?",
+            "practical_angle": "Valorizar comunidade e ações práticas de cuidado",
+            "theological_caution": "Não usar o milagre como garantia de cura física"
+          }
+        ]
+      },
+      {
+        "week": 7,
+        "theme": "Decisões sem certezas mágicas",
+        "pillar": "vida_pratica_e_relacoes",
+        "ideas": [
+          {
+            "id": "VNC-W07-E1",
+            "reference": "Tiago 1:5-8",
+            "title_proposal": "Pedir sabedoria também pede humildade",
+            "hook_proposal": "Você está buscando orientação ou apenas confirmação?",
+            "practical_angle": "Tomar decisões com reflexão e responsabilidade",
+            "theological_caution": "Não interpretar dúvida comum como condenação pessoal"
+          },
+          {
+            "id": "VNC-W07-E2",
+            "reference": "Provérbios 3:5-8",
+            "title_proposal": "Confiar sem desligar a cabeça",
+            "hook_proposal": "Você quer uma direção pronta para não ter de escolher?",
+            "practical_angle": "Combinar prudência, oração e responsabilidade",
+            "theological_caution": "Distinguir provérbio sapiencial de promessa automática"
+          },
+          {
+            "id": "VNC-W07-E3",
+            "reference": "Lucas 14:28-33",
+            "title_proposal": "Antes de começar, conte o custo",
+            "hook_proposal": "O entusiasmo basta para sustentar uma decisão?",
+            "practical_angle": "Planejamento e compromisso consciente",
+            "theological_caution": "Preservar o contexto do ensino sobre discipulado"
+          }
+        ]
+      },
+      {
+        "week": 8,
+        "theme": "Quando o mundo parece injusto",
+        "pillar": "dor_e_lamento",
+        "ideas": [
+          {
+            "id": "VNC-W08-E1",
+            "reference": "Salmo 10:1-18",
+            "title_proposal": "Quando a injustiça parece impune",
+            "hook_proposal": "Você já se perguntou por que tanta maldade continua?",
+            "practical_angle": "Levar a sério a dor das vítimas e o clamor por justiça",
+            "theological_caution": "Não simplificar situações de violência nem culpar vítimas"
+          },
+          {
+            "id": "VNC-W08-E2",
+            "reference": "Jó 1:1-22",
+            "title_proposal": "Sofrer não prova falta de fé",
+            "hook_proposal": "Por que a dor precisa virar culpa de alguém?",
+            "practical_angle": "Evitar explicações automáticas para sofrimento",
+            "theological_caution": "Não atribuir toda perda a teste enviado por Deus"
+          },
+          {
+            "id": "VNC-W08-E3",
+            "reference": "Romanos 12:17-21",
+            "title_proposal": "Não devolver dor com mais dor",
+            "hook_proposal": "Como reagir sem repetir o mal que fizeram com você?",
+            "practical_angle": "Buscar justiça e limites sem alimentar vingança",
+            "theological_caution": "Não exigir passividade diante de violência"
+          }
+        ]
+      },
+      {
+        "week": 9,
+        "theme": "Culpa e graça",
+        "pillar": "graca_e_recomecos",
+        "ideas": [
+          {
+            "id": "VNC-W09-E1",
+            "reference": "Romanos 8:1-4",
+            "title_proposal": "Quando a culpa vira identidade",
+            "hook_proposal": "Você se enxerga apenas pelo pior erro que cometeu?",
+            "practical_angle": "Distinguir condenação, responsabilidade e graça",
+            "theological_caution": "Não apagar a necessidade de reparação"
+          },
+          {
+            "id": "VNC-W09-E2",
+            "reference": "Lucas 18:9-14",
+            "title_proposal": "O orgulho também se esconde na religião",
+            "hook_proposal": "Você mede seu valor comparando sua fé à dos outros?",
+            "practical_angle": "Humildade na oração e autocrítica",
+            "theological_caution": "Não atacar grupos religiosos com caricaturas"
+          },
+          {
+            "id": "VNC-W09-E3",
+            "reference": "Efésios 2:1-10",
+            "title_proposal": "Valor não é troféu de desempenho",
+            "hook_proposal": "Você tenta merecer até aquilo que recebe como graça?",
+            "practical_angle": "Explorar graça e boas obras sem barganha espiritual",
+            "theological_caution": "Não prometer recompensa material por comportamento"
+          }
+        ]
+      },
+      {
+        "week": 10,
+        "theme": "Relações difíceis",
+        "pillar": "vida_pratica_e_relacoes",
+        "ideas": [
+          {
+            "id": "VNC-W10-E1",
+            "reference": "Mateus 18:15-20",
+            "title_proposal": "Conversas que a gente evita",
+            "hook_proposal": "Você adia aquela conversa até a relação piorar?",
+            "practical_angle": "Diálogo franco, limites e busca responsável de resolução",
+            "theological_caution": "Não recomendar confronto direto quando há risco de abuso"
+          },
+          {
+            "id": "VNC-W10-E2",
+            "reference": "Romanos 12:9-16",
+            "title_proposal": "Amor real não é performance",
+            "hook_proposal": "Você mostra cuidado ou apenas diz que se importa?",
+            "practical_angle": "Ações concretas de hospitalidade e respeito",
+            "theological_caution": "Não transformar amor em exigência de autonegação"
+          },
+          {
+            "id": "VNC-W10-E3",
+            "reference": "Tiago 1:19-27",
+            "title_proposal": "Escutar antes de responder",
+            "hook_proposal": "Qual foi a última vez que você realmente escutou alguém?",
+            "practical_angle": "Praticar escuta, coerência e cuidado",
+            "theological_caution": "Não apresentar regras de comunicação como cura de todos os conflitos"
+          }
+        ]
+      },
+      {
+        "week": 11,
+        "theme": "Mudar leva tempo",
+        "pillar": "esperanca_e_perseveranca",
+        "ideas": [
+          {
+            "id": "VNC-W11-E1",
+            "reference": "Tiago 5:7-11",
+            "title_proposal": "Paciência não é ficar parado",
+            "hook_proposal": "O que você consegue cultivar enquanto espera?",
+            "practical_angle": "Distinguir perseverança de inércia",
+            "theological_caution": "Não normalizar permanência em situações perigosas"
+          },
+          {
+            "id": "VNC-W11-E2",
+            "reference": "Gálatas 5:22-26",
+            "title_proposal": "Crescer nem sempre faz barulho",
+            "hook_proposal": "E se a mudança mais importante for silenciosa?",
+            "practical_angle": "Observar transformação de caráter e relações",
+            "theological_caution": "Não usar virtudes como ferramenta de culpa"
+          },
+          {
+            "id": "VNC-W11-E3",
+            "reference": "Filipenses 1:3-11",
+            "title_proposal": "O processo ainda não acabou",
+            "hook_proposal": "Você abandona tudo porque ainda não chegou onde queria?",
+            "practical_angle": "Esperança, responsabilidade e amadurecimento",
+            "theological_caution": "Não garantir data ou resultado específico"
+          }
+        ]
+      },
+      {
+        "week": 12,
+        "theme": "Esperança que não engana",
+        "pillar": "esperanca_e_perseveranca",
+        "ideas": [
+          {
+            "id": "VNC-W12-E1",
+            "reference": "Romanos 5:1-5",
+            "title_proposal": "Esperança em meio à pressão",
+            "hook_proposal": "O sofrimento está consumindo sua capacidade de olhar adiante?",
+            "practical_angle": "Refletir sobre perseverança e apoio comunitário",
+            "theological_caution": "Não glorificar sofrimento nem desestimular ajuda"
+          },
+          {
+            "id": "VNC-W12-E2",
+            "reference": "Hebreus 12:1-3",
+            "title_proposal": "Continuar sem fingir invencibilidade",
+            "hook_proposal": "O que tem tirado seu fôlego na caminhada?",
+            "practical_angle": "Persistir com propósito e limites",
+            "theological_caution": "Não reduzir exaustão a fraqueza espiritual"
+          },
+          {
+            "id": "VNC-W12-E3",
+            "reference": "Apocalipse 21:1-5",
+            "title_proposal": "A esperança não nega as lágrimas",
+            "hook_proposal": "Como olhar para frente sem desprezar a dor de hoje?",
+            "practical_angle": "Distinguir esperança escatológica e realidade atual",
+            "theological_caution": "Não prometer eliminação imediata de perdas"
+          }
+        ]
+      },
+      {
+        "week": 13,
+        "theme": "Amor no chão da vida",
+        "pillar": "vida_pratica_e_relacoes",
+        "ideas": [
+          {
+            "id": "VNC-W13-E1",
+            "reference": "1 Coríntios 13:1-13",
+            "title_proposal": "Quando o amor vira ação",
+            "hook_proposal": "Você mede amor por discurso ou por atitudes?",
+            "practical_angle": "Conectar amor e responsabilidade nas relações",
+            "theological_caution": "Lembrar contexto comunitário da carta"
+          },
+          {
+            "id": "VNC-W13-E2",
+            "reference": "João 13:34-35",
+            "title_proposal": "O que sua fé faz com o próximo?",
+            "hook_proposal": "O que as pessoas experimentam quando convivem com você?",
+            "practical_angle": "Praticar cuidado concreto sem espetáculo",
+            "theological_caution": "Não converter serviço em estratégia de autopromoção"
+          },
+          {
+            "id": "VNC-W13-E3",
+            "reference": "Miqueias 6:6-8",
+            "title_proposal": "Fé que aparece na segunda-feira",
+            "hook_proposal": "O que muda fora do culto quando você diz que crê?",
+            "practical_angle": "Justiça, misericórdia e humildade no cotidiano",
+            "theological_caution": "Respeitar o contexto profético e não reduzir justiça a marketing"
+          }
+        ]
+      }
+    ]
+  },
+  "provenance": [
+    "docs/CLEAN_ROOM_POLICY.md",
+    "docs/ENGINE_LOCK.md",
+    "contracts/pilot_source_decision.json",
+    "contracts/video_workflow_policy.json",
+    "docs/PILOT_SALMO_13_EDITORIAL_REVIEW.md"
+  ],
+  "publication_authorized": false
+}
