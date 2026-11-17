@@ -16,7 +16,8 @@
     "pilot_fixture": "PASS_FIXTURE_ONLY",
     "release_gate": "IMPLEMENTED_FIXTURE_NO_GO",
     "source_audit": "PARAPHRASE_ONLY_PENDING_LICENSE",
-    "script_draft": "PASS_REVIEW_REQUIRED",
+    "script_draft": "APPROVED_FOR_AUDIO",
+    "script_approval": "APPROVED_BY_CHANNEL_OWNER",
     "automated_editorial_review": "PASS_AUTOMATED_REVIEW"
   },
   "gates": [

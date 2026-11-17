@@ -13,6 +13,8 @@ REQUIRED_BLOCKS = (
     "conclusion",
 )
 
+ALLOWED_STATUSES = {"DRAFT_REVIEW_REQUIRED", "APPROVED_FOR_AUDIO"}
+
 
 def validate_script_package(payload: Any) -> list[str]:
     if not isinstance(payload, dict):
@@ -32,7 +34,7 @@ def validate_script_package(payload: Any) -> list[str]:
         if value is None or (isinstance(value, str) and not value.strip()):
             errors.append(f"script:{key}")
 
-    if payload.get("status") != "DRAFT_REVIEW_REQUIRED":
+    if payload.get("status") not in ALLOWED_STATUSES:
         errors.append("script:status")
     if payload.get("source_mode") != "reference_and_paraphrase":
         errors.append("script:source_mode")

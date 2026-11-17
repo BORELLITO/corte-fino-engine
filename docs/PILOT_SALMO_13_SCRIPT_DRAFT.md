@@ -1,6 +1,8 @@
 # Roteiro original — Salmo 13
 
-Estado: DRAFT_REVIEW_REQUIRED
+Estado: APPROVED_FOR_AUDIO
+
+Aprovação editorial: confirmada pelo proprietário do canal no chat, com a mensagem “APROVO O ROTEIRO”.
 
 Estrutura usada:
 
@@ -17,6 +19,6 @@ Regras aplicadas:
 - nenhuma promessa automática;
 - nenhuma garantia de milagre ou cura;
 - nenhuma substituição de aconselhamento profissional;
-- nenhuma geração de voz ou mídia nesta etapa.
+- geração de voz ainda depende da escolha e validação de uma solução comercialmente autorizada.
 
-Este roteiro ainda precisa de revisão editorial humana antes de ser aprovado para áudio.
+O roteiro está aprovado para a etapa de pré-produção de áudio, mas ainda não está liberado para publicação.

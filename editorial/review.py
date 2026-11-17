@@ -84,8 +84,8 @@ def review_script(payload: Any) -> ScriptReview:
         errors.append("review:verbatim_quote")
     if payload.get("source_mode") != "reference_and_paraphrase":
         errors.append("review:source_mode")
-    if payload.get("status") != "DRAFT_REVIEW_REQUIRED":
-        warnings.append("review:status_not_draft")
+    if payload.get("status") not in {"DRAFT_REVIEW_REQUIRED", "APPROVED_FOR_AUDIO"}:
+        warnings.append("review:status_not_ready")
 
     return ScriptReview(
         "PASS_AUTOMATED_REVIEW" if not errors else "NO_GO",
