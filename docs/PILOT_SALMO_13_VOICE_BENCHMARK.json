@@ -1,7 +1,7 @@
 {
   "benchmark_id": "vnc-salmo-13-voice-benchmark-001",
-  "status": "SEGMENTED_CANONICAL_PASS_LICENSE_BLOCKER",
-  "source": "browser_smoke_test",
+  "status": "FULL_SCRIPT_SEGMENTED_PASS_PERSISTENCE_PENDING",
+  "source": "browser_smoke_test_and_full_script_run",
   "tool": "Kokoro Web",
   "test_url": "https://kokoroweb.app/#demoContainer",
   "deployment": "cloud_browser",
@@ -10,8 +10,11 @@
   "local_device_compute_required": false,
   "language": "pt-BR",
   "speed": 1.0,
+  "voice_id": "pm_alex",
+  "voice_label": "Alex",
+  "audio_format": "WAV 24 kHz",
   "sample_text_simplified": "Tem dias em que o silencio parece uma resposta.",
-  "canonical_text_sample": "Tem dias em que o silêncio parece uma resposta. Você ora, espera, olha para o relógio... e nada muda.",
+  "canonical_text_sample": "Tem dias em que o silêncio parece uma resposta. Você ora, espera, olha para o relógio… e nada muda.",
   "voices": [
     {"voice_id": "pm_alex", "label": "Alex", "gender": "male", "generated": true, "result_index": 2},
     {"voice_id": "pm_santa", "label": "Santa", "gender": "male", "generated": true, "result_index": 3},
@@ -24,8 +27,9 @@
     "scope": "combined_text_with_ellipsis"
   },
   "segmented_canonical_result": {
-    "status": "PASS_SEGMENTED",
+    "status": "FULL_SCRIPT_SEGMENTED_PASS_PERSISTENCE_PENDING",
     "voice_id": "pm_alex",
+    "voice_label": "Alex",
     "editorial_text_preserved": true,
     "pronunciation_layer_required": true,
     "segments": [
@@ -38,22 +42,58 @@
       },
       {
         "segment_id": "salmo13-vnc-voice-02",
-        "editorial_text": "Você ora, espera, olha para o relógio... e nada muda.",
+        "editorial_text": "Você ora, espera, olha para o relógio… e nada muda.",
         "tts_text": "Você ora, espera, olha para o relógio.",
         "generated": true,
         "result_index": 2
       },
       {
         "segment_id": "salmo13-vnc-voice-03",
-        "editorial_text": "Você ora, espera, olha para o relógio... e nada muda.",
+        "editorial_text": "Você ora, espera, olha para o relógio… e nada muda.",
         "tts_text": "E nada muda.",
         "generated": true,
         "result_index": 3
+      },
+      {
+        "segment_id": "salmo13-vnc-voice-04",
+        "editorial_text": "Talvez você esteja cansado de parecer forte. Cansado de explicar o que sente. Cansado de esperar uma mudança que não chega.",
+        "tts_text": "Talvez você esteja cansado de parecer forte. Cansado de explicar o que sente. Cansado de esperar uma mudança que não chega.",
+        "generated": true,
+        "result_index": 4
+      },
+      {
+        "segment_id": "salmo13-vnc-voice-05",
+        "editorial_text": "O Salmo 13 nasce exatamente nesse lugar: uma oração de lamento, feita por alguém que se sente esquecido, mas ainda decide falar com Deus.",
+        "tts_text": "O Salmo 13 nasce exatamente nesse lugar: uma oração de lamento, feita por alguém que se sente esquecido, mas ainda decide falar com Deus.",
+        "generated": true,
+        "result_index": 5
+      },
+      {
+        "segment_id": "salmo13-vnc-voice-06",
+        "editorial_text": "Davi não transforma a dor em aparência de vitória. Ele pergunta, insiste e apresenta sua angústia. A Bíblia não trata esse lamento como falta de fé. Ela mostra que a dor também pode ser levada à presença de Deus.",
+        "tts_text": "Davi não transforma a dor em aparência de vitória. Ele pergunta, insiste e apresenta sua angústia. A Bíblia não trata esse lamento como falta de fé. Ela mostra que a dor também pode ser levada à presença de Deus.",
+        "generated": true,
+        "result_index": 6
+      },
+      {
+        "segment_id": "salmo13-vnc-voice-07",
+        "editorial_text": "Hoje, talvez a sua oração não precise ser bonita. Pode ser honesta. Diga o que está pesado. Procure apoio. Continue dando o próximo passo possível, sem inventar certezas que você ainda não tem.",
+        "tts_text": "Hoje, talvez a sua oração não precise ser bonita. Pode ser honesta. Diga o que está pesado. Procure apoio. Continue dando o próximo passo possível, sem inventar certezas que você ainda não tem.",
+        "generated": true,
+        "result_index": 7
+      },
+      {
+        "segment_id": "salmo13-vnc-voice-08",
+        "editorial_text": "A espera continua sendo difícil, mas o silêncio não precisa ser o fim da esperança. Você pode atravessar este momento um dia de cada vez.",
+        "tts_text": "A espera continua sendo difícil, mas o silêncio não precisa ser o fim da esperança. Você pode atravessar este momento um dia de cada vez.",
+        "generated": true,
+        "result_index": 8
       }
     ],
-    "audio_format": "WAV 24 kHz",
-    "download_controls_activated": 3,
-    "persistent_storage_verified": false
+    "download_controls_activated": 8,
+    "persistent_storage_verified": false,
+    "hashes_recorded": false,
+    "observed_session_state": "Eight audio cards visible in Kokoro Web; each displayed Download WAV; session marked for review."
   },
   "local_runtime_attempt": {
     "status": "BLOCKED_CONTAINER_RESOURCE",
@@ -67,11 +107,12 @@
   "interpretation": [
     "As três vozes passaram no smoke test com texto simplificado.",
     "O texto canônico combinado com reticências foi recusado pelo runtime.",
-    "A segmentação em blocos curtos preservou os acentos e gerou três WAVs com pm_alex.",
-    "O texto editorial permanece intacto; a camada de pronúncia é exclusiva do TTS.",
-    "Os controles de download foram acionados, mas a persistência dos arquivos ainda não foi comprovada.",
+    "A segmentação em oito blocos preservou os acentos e o significado editorial.",
+    "Os oito segmentos do roteiro completo foram gerados com pm_alex/Alex em WAV 24 kHz.",
+    "Os controles de download dos oito segmentos foram acionados.",
+    "A persistência, duração, tamanho e hash dos WAVs ainda não foram comprovados.",
     "Não há requisito de processamento local no PC ou no telefone.",
-    "As amostras são apenas de avaliação; não estão liberadas para publicação."
+    "Os áudios permanecem amostras de pré-produção; não estão liberados para publicação."
   ],
-  "next_action": "assemble_cloud_audio_chunks_and_complete_voice_rights_gate"
+  "next_action": "confirm_persistent_audio_assets_then_assemble_and_audit"
 }
