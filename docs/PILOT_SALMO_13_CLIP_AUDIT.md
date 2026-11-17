@@ -1,6 +1,6 @@
 # Auditoria do lote visual cloud — Salmo 13
 
-Estado: `VISUAL_QA_COMPLETE_ASSET_GATE_PASSED_PENDING_AUDIO_AND_ASSEMBLY`
+Estado: `VISUAL_QA_COMPLETE_ASSET_GATE_PASSED_MASTER_PREVIEW_ASSEMBLED`
 
 Data da execução: 2026-11-17 (America/Sao_Paulo)
 
@@ -71,3 +71,13 @@ Bloquear se:
 ## Decisão operacional
 
 O banco visual foi validado para avançar à etapa de storyboard/timeline e áudio, não para publicação. Nenhum gasto, publicação, criação de conta ou uso de conteúdo do Because Of This Stories foi realizado. O estado de publicação permanece bloqueado até que os gates restantes tenham evidência registrada.
+
+
+## Master validado
+
+- Arquivo: salmo13_pilot_master_v1.mp4.
+- Canvas: 1080x1920; duração: 60,25 s.
+- Decodificação: PASS.
+- Assets usados: 8; repetição: 0.
+- SHA-256: 363283d1872738690abe19d388fdc489c3085bbb5584ce009812822a2170c43c.
+- Estado: PREVIEW_READY, não publicável.
