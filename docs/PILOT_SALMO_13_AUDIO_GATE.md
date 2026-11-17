@@ -1,75 +1,64 @@
 # Gate de áudio — piloto Salmo 13
 
-Estado: VOICE_RESEARCH_COMPLETE_PENDING_OWNER_SELECTION_AND_ZERO_CREDIT_ROUTE
+Estado: KOKORO_TTS_CLOUD_ROUTE_ACTIVE_PENDING_AUDIO_PERSISTENCE
 Data: 2026-11-17 (America/Sao_Paulo)
 
-## Situação comprovada
+## Decisão canônica
 
-- Conta Creative Claw conectada e consultada em modo somente leitura.
-- Saldo atual: 0 créditos.
-- Não há voz clonada salva.
-- Há limite de uma voz sintética projetada, mas não foi criada.
-- Nenhuma narração foi gerada nesta etapa.
-- Nenhuma cobrança, compra ou alteração de plano foi realizada.
+A rota oficial de narração do piloto é o **Kokoro-82M no Kokoro Web**, executado em navegador cloud gerenciado:
 
-## Critério editorial
+- página: https://kokoroweb.app/#demoContainer
+- idioma: Português (Brazil)
+- voz-base: `pm_alex` — exibida na interface como **Alex**
+- formato: WAV 24 kHz
+- velocidade inicial: 1.0x
+- limite observado do site: 2.000 caracteres por entrada
+- conta: não necessária
+- cobrança por caractere: não aplicada na rota web observada
 
-A voz do Verbo no Chão deve soar humana, próxima, contemplativa e confiável. O objetivo é sustentar reflexão bíblica sem tom de locutor publicitário, sem teatralidade artificial e sem promessas emocionais exageradas.
+O POCO X8 Pro Max serve apenas como interface de controle. O processamento ocorre na sessão de navegador cloud, sem instalação, PyTorch, ONNX ou processamento no telefone.
 
-Para o piloto, a melhor família técnica pesquisada foi `speech/elevenlabs-v4`, com suporte a português do Brasil, marcação de entrega, timestamps de palavras e uso comercial conforme o plano/licença efetivamente disponível. A elegibilidade comercial final ainda precisa ser confirmada na conta antes de publicação.
+## Correção de conflito
 
-## Pesquisa de catálogo
+Uma versão anterior deste documento apontou Creative Claw/ElevenLabs como rota principal. Isso foi corrigido porque o branch canônico já contém uma decisão de voz aprovada e um benchmark real do Kokoro Web. Creative Claw não é dependência do piloto e não deve ser usado para substituir silenciosamente a rota Kokoro.
 
-A busca retornou 29 vozes compatíveis com português brasileiro. As duas melhores candidatas para teste são:
+## Evidência já existente
 
-1. **Lucas — Natural, Calm and Steady**
-   - modelo: `speech/elevenlabs-v4`
-   - voice_id: `SVgp5d1fyFQRW1eQbwkq`
-   - perfil catalogado: masculino, brasileiro, calmo, narrativo e estável
-   - decisão: recomendação principal
+- As vozes `pm_alex`, `pm_santa` e `pf_dora` passaram no smoke test pt-BR.
+- `pm_alex` foi selecionada como baseline provisória.
+- O texto completo com reticência foi recusado pelo runtime.
+- A camada de pronúncia segmentada passou mantendo o texto editorial canônico intacto.
+- Três blocos curtos foram anteriormente gerados em WAV 24 kHz; a persistência desses downloads ainda não havia sido comprovada.
+- Nesta execução, a primeira amostra foi regenerada com Alex e está visível na sessão cloud; a persistência do arquivo ainda aguarda confirmação.
 
-2. **Will — Deep, Smooth and Affectionate**
-   - modelo: `speech/elevenlabs-v4`
-   - voice_id: `CstacWqMhJQlnfLPxRG4`
-   - perfil catalogado: masculino, brasileiro, profundo, suave e afetivo
-   - decisão: alternativa de contraste
+## Roteiro e camada de pronúncia
 
-Amanda Kelly — Sweet, Warm and Clear foi mantida como alternativa feminina, não como escolha principal, para preservar uma assinatura sonora mais sóbria no primeiro piloto.
+O roteiro editorial aprovado permanece em `tests/fixtures/salmo_13_script.json`. A divisão abaixo altera somente o texto enviado ao TTS; não altera roteiro, legenda ou significado:
 
-## Pesquisa de rota gratuita e comercial
+1. `Tem dias em que o silêncio parece uma resposta.`
+2. `Você ora, espera, olha para o relógio.`
+3. `E nada muda.`
+4. `Talvez você esteja cansado de parecer forte. Cansado de explicar o que sente. Cansado de esperar uma mudança que não chega.`
+5. `O Salmo 13 nasce exatamente nesse lugar: uma oração de lamento, feita por alguém que se sente esquecido, mas ainda decide falar com Deus.`
+6. `Davi não transforma a dor em aparência de vitória. Ele pergunta, insiste e apresenta sua angústia. A Bíblia não trata esse lamento como falta de fé. Ela mostra que a dor também pode ser levada à presença de Deus.`
+7. `Hoje, talvez a sua oração não precise ser bonita. Pode ser honesta. Diga o que está pesado. Procure apoio. Continue dando o próximo passo possível, sem inventar certezas que você ainda não tem.`
+8. `A espera continua sendo difícil, mas o silêncio não precisa ser o fim da esperança. Você pode atravessar este momento um dia de cada vez.`
 
-A pesquisa oficial mostrou que “free” não é automaticamente compatível com monetização:
-
-- ElevenLabs Free permite uso não comercial com atribuição; direitos comerciais aparecem nos planos pagos. Portanto, não é aprovado como rota de publicação monetizada.
-- Google Cloud Text-to-Speech oferece cotas mensais sem custo em vários modelos, mas exige faturamento ativado e pode cobrar automaticamente após o limite. A própria documentação autoriza uso em aplicações/mídia conforme os termos do Google Cloud.
-- Azure Speech F0 oferece 0,5 milhão de caracteres neurais por mês; ainda exige conta/serviço Azure e verificação dos termos aplicáveis antes de publicação.
-- Amazon Polly informa ausência de restrições de armazenamento e reutilização do áudio e oferece nível gratuito para novos clientes, mas depende de conta AWS e da janela/condições do Free Tier.
-
-Conclusão operacional: nenhuma dessas rotas está conectada ao motor nesta sessão, e nenhuma conta de faturamento será criada ou usada sem autorização específica. A rota Creative Claw continua sendo a mais integrada, mas está bloqueada por saldo zero e por sua própria política de geração.
-
-## Configuração técnica prevista
-
-Quando houver uma rota de geração autorizada e com saldo:
-
-- modelo: `speech/elevenlabs-v4`;
-- idioma: texto integral em português brasileiro; usar `extras.language_code: "pt"` apenas se necessário;
-- `extras.timestamps: true`;
-- saída inicial: `mp3_44100_128`;
-- usar somente `extras.voice_settings.stability` e `similarity_boost`;
-- não usar SSML, velocidade, style ou speaker boost no v4;
-- inserir pausas por pontuação e, se necessário, tags curtas de entrega;
-- revisar pronúncia de nomes, referências e números antes da versão longa;
-- transcrever/revisar o áudio retornado antes de sincronizar legendas.
+As pausas narrativas entre os blocos 2 e 3 representam visualmente a reticência do texto editorial original. Nenhuma acentuação deve ser removida.
 
 ## Travas
 
-- Não gerar áudio com saldo zero.
-- Não criar voz sintética ou clonar voz sem necessidade editorial e autorização específica.
-- Não declarar licença comercial sem verificar os termos do plano e do provedor no momento da geração.
-- Não substituir a voz recomendada silenciosamente.
-- Um áudio gerado deve receber asset ID, URL, hash, duração e transcript antes da montagem.
-- A montagem só avança com narração validada, trilha legalmente utilizável e legendas sincronizadas.
+- Não trocar `pm_alex` sem registrar nova decisão e novo benchmark.
+- Não usar conteúdo, assets, prompts ou contratos do Because Of This Stories.
+- Não declarar o áudio como ativo de produção enquanto o download/persistência e o hash não forem comprovados.
+- Cada WAV precisa de segmento, duração, hash e revisão auditiva.
+- A montagem só avança depois de confirmar a ordem dos blocos, inteligibilidade, pausas, direitos do modelo/voz e sincronização das legendas.
+- Publicação permanece bloqueada.
 
 ## Próximo gate
 
-Destravar uma rota de voz sem gasto não comprovado ou obter autorização específica para créditos; em seguida gerar uma única amostra curta com Lucas, validar pronúncia, naturalidade e duração, e só então produzir a narração completa.
+1. Gerar os oito segmentos na sessão Kokoro Web com `pm_alex`.
+2. Confirmar que cada WAV pode ser baixado e recuperado na superfície cloud.
+3. Montar os segmentos na ordem canônica.
+4. Auditar duração, transição, inteligibilidade e hash.
+5. Só então sincronizar imagens, trilha e legendas.
