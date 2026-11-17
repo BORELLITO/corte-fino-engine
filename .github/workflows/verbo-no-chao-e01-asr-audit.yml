@@ -54,6 +54,8 @@ jobs:
           python -m pip install --disable-pip-version-check "faster-whisper==1.2.1"
           python -m pip show faster-whisper ctranslate2 huggingface-hub
 
+      # Retry after adding fail-safe stage-coded backend diagnostics.
+      # No audio is created again; the exact previous WAV is SHA-verified.
       - name: Transcribe exact E01 via independent small multilingual Whisper CPU model
         run: |
           python -m agents.e01_asr_qa \
