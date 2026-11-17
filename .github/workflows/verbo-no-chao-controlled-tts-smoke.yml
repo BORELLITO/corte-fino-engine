@@ -1,0 +1,42 @@
+name: Verbo no Chão — One-shot Kokoro controlled voice smoke
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - "verbo-no-chao/controlled-tts-smoke-v1"
+    paths:
+      - ".github/workflows/verbo-no-chao-controlled-tts-smoke.yml"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: verbo-no-chao-controlled-smoke
+  cancel-in-progress: false
+
+jobs:
+  technical_voice_smoke:
+    name: One original test phrase in isolated Chrome (no publication)
+    runs-on: ubuntu-24.04
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Install browser driver (preinstalled Chrome)
+        run: |
+          python -m pip install --disable-pip-version-check "playwright==1.56.0"
+          google-chrome --version
+      - name: Verify safety gates before touching website
+        run: python -m unittest discover -s tests -p "test_kokoro_controlled_smoke.py" -v
+      - name: Run bounded short original-text smoke
+        run: python -m agents.kokoro_controlled_smoke --max-seconds 175 --output voice-smoke/report.json
+      - name: Retain JSON evidence only (no model, WAV, screenshot, cookies, or tokens)
+        uses: actions/upload-artifact@v4
+        with:
+          name: vnc-kokoro-controlled-smoke-evidence
+          path: voice-smoke/report.json
+          retention-days: 14
+          if-no-files-found: error
