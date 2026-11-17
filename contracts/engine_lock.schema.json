@@ -1,0 +1,93 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Verbo no Chão Engine Lock",
+  "type": "object",
+  "required": ["engine_id", "manifest_version", "pilot_id", "state", "execution", "owner_approval", "publication_authorized", "assets", "audio", "music", "captions", "rights", "output", "gates"],
+  "properties": {
+    "engine_id": {"const": "verbo-no-chao"},
+    "manifest_version": {"type": "string", "minLength": 1},
+    "pilot_id": {"type": "string", "minLength": 1},
+    "state": {"enum": ["PLANNED", "IN_PROGRESS", "BLOCKED", "PREVIEW_READY", "READY_FOR_OWNER_APPROVAL", "PUBLISHED", "REJECTED"]},
+    "execution": {
+      "type": "object",
+      "required": ["mode", "device_role", "legacy_projects_used"],
+      "properties": {
+        "mode": {"const": "cloud_only"},
+        "device_role": {"const": "control_only"},
+        "legacy_projects_used": {"const": false}
+      }
+    },
+    "owner_approval": {"type": "boolean"},
+    "publication_authorized": {"type": "boolean"},
+    "assets": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "required": ["asset_id", "source_url", "source_hash", "in", "out", "rights_status"],
+        "properties": {
+          "asset_id": {"type": "string", "minLength": 1},
+          "source_url": {"type": "string", "format": "uri"},
+          "source_hash": {"type": "string", "pattern": "^[a-f0-9]{64}$"},
+          "in": {"type": "number", "minimum": 0},
+          "out": {"type": "number", "exclusiveMinimum": 0},
+          "rights_status": {"type": "string", "minLength": 1}
+        }
+      }
+    },
+    "audio": {
+      "type": "object",
+      "required": ["engine", "language", "format", "persisted", "segments", "duration_sec", "sha256", "integrated_lufs"],
+      "properties": {
+        "engine": {"const": "Kokoro-82M"},
+        "language": {"const": "pt-BR"},
+        "format": {"const": "WAV 24 kHz mono float"},
+        "persisted": {"const": true},
+        "segments": {"type": "integer", "minimum": 1},
+        "duration_sec": {"type": "number", "exclusiveMinimum": 0},
+        "sha256": {"type": "string", "pattern": "^[a-f0-9]{64}$"},
+        "integrated_lufs": {"type": "number"}
+      }
+    },
+    "music": {
+      "type": "object",
+      "required": ["present", "origin", "external_samples", "license_status", "hash", "ducking"],
+      "properties": {
+        "present": {"const": true},
+        "origin": {"enum": ["original_procedural", "licensed"]},
+        "external_samples": {"type": "boolean"},
+        "license_status": {"enum": ["CLEARED", "PENDING", "BLOCKED"]},
+        "hash": {"type": "string", "pattern": "^[a-f0-9]{64}$"},
+        "ducking": {"const": true}
+      }
+    },
+    "captions": {
+      "type": "object",
+      "required": ["present", "safe_area_pass", "synchronized"],
+      "properties": {
+        "present": {"const": true},
+        "safe_area_pass": {"const": true},
+        "synchronized": {"const": true}
+      }
+    },
+    "rights": {
+      "type": "object",
+      "required": ["visual_review", "voice_review", "music_review", "monetization"]
+    },
+    "output": {
+      "type": "object",
+      "required": ["file", "duration_sec", "width", "height", "sha256"],
+      "properties": {
+        "file": {"type": "string", "minLength": 1},
+        "duration_sec": {"type": "number", "exclusiveMinimum": 0},
+        "width": {"const": 1080},
+        "height": {"const": 1920},
+        "sha256": {"type": "string", "pattern": "^[a-f0-9]{64}$"}
+      }
+    },
+    "gates": {
+      "type": "object",
+      "required": ["clip_repetition", "audio_integrity", "video_decode", "subtitle_safe_area", "rights", "publication"]
+    }
+  }
+}
