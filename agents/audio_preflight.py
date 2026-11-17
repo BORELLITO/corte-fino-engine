@@ -13,6 +13,7 @@ from pathlib import Path
 from typing import Any
 
 from agents.content_production import ProductionError, check, read
+from agents.e01_context_review import validate_context_crosscheck
 
 TARGET_ID = "VNC-W01-E1"
 TARGET_REFERENCE = "Habacuque 1:2-4"
@@ -136,6 +137,7 @@ def produce(root: Path, upstream_dir: Path, out_dir: Path) -> dict[str, Any]:
           "audio_preflight:protected_output_directory")
     evidence: dict[str, str] = {}
     voice = read(root, "contracts/kokoro_voice_research_v1.json", evidence)
+    editorial_crosscheck = read(root, "contracts/e01_editorial_crosscheck_v1.json", evidence)
     package = read(upstream_dir, "operations/first_batch_scripts.json", evidence)
     report = read(upstream_dir, "editorial-deliveries/first_batch_report.json", evidence)
     check(isinstance(report, dict) and isinstance(report.get("files"), list),
@@ -148,6 +150,9 @@ def produce(root: Path, upstream_dir: Path, out_dir: Path) -> dict[str, Any]:
     proof = validate_input(package, report, voice)
     script = proof["script"]
     audit = proof["audit"]
+    crosscheck_result = validate_context_crosscheck(
+        editorial_crosscheck, script, proof["narration_sha256"]
+    )
     result = {
         "schema_version": "1.0.0",
         "project": "verbo-no-chao",
@@ -158,6 +163,7 @@ def produce(root: Path, upstream_dir: Path, out_dir: Path) -> dict[str, Any]:
         "stage": "AUDIO_PREFLIGHT_ONLY",
         "script_review_status": "DRAFT_REVIEW_REQUIRED",
         "biblical_context_status": "PENDING_INDEPENDENT_REVIEW",
+        "internal_editorial_source_crosscheck": crosscheck_result,
         "voice_selection_scope": "PREVIEW_BASELINE_NOT_COMMERCIAL_RELEASE",
         "voice": {
             "engine": "Kokoro-82M",
@@ -199,6 +205,7 @@ def produce(root: Path, upstream_dir: Path, out_dir: Path) -> dict[str, Any]:
         f"Voz candidata preservada: **pm_alex** / Kokoro-82M / pt-BR.",
         f"Estimativa automatizada: **{audit['estimated_seconds']} s**, não medição de áudio.",
         "", "## O que já está demonstrado", "",
+        "- Habacuque 1:2–4 foi cruzado com três referências documentadas; revisão teológica humana continua pendente.",
         "- A voz pm_alex aparece no catálogo oficial da upstream do modelo.",
         "- A upstream do modelo declara licença Apache-2.0.",
         "- Os seis blocos do rascunho foram preservados literalmente em ordem e hasheados.",
@@ -228,6 +235,7 @@ def produce(root: Path, upstream_dir: Path, out_dir: Path) -> dict[str, Any]:
     files = [
         write("audio-preflight/preflight.json", dump(result)),
         write("audio-preflight/preflight.md", "\n".join(md)),
+        write("audio-preflight/context_crosscheck.json", dump(crosscheck_result)),
     ]
     summary = {
         "schema_version": "1.0.0", "project": "verbo-no-chao",
@@ -235,6 +243,8 @@ def produce(root: Path, upstream_dir: Path, out_dir: Path) -> dict[str, Any]:
         "stage": "AUDIO_PREFLIGHT_ONLY",
         "files": files, "blockers": list(REQUIRED_BLOCKERS),
         "voice_license_approved": False,
+        "internal_context_crosscheck_completed": True,
+        "human_theological_review_pending": True,
         "audio_generated": False,
         "publication_authorized": False,
     }
