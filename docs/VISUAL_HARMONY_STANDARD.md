@@ -1,7 +1,7 @@
 # Padrão de harmonia visual — Verbo no Chão
 
-Estado: PROPOSTA RECOMENDADA — aguardando aprovação editorial
-Data: 2026-11-17 (America/Sao_Paulo)
+Estado: APROVADO — regra editorial vigente
+Data da aprovação: 2026-11-17 (America/Sao_Paulo)
 
 ## Objetivo
 
@@ -110,9 +110,9 @@ O motor deve manter um registro de:
 
 Isso evita repetição, quebra de estilo e decisões contraditórias entre vídeos.
 
-## Veredito recomendado
+## Veredito vigente
 
-Para o Verbo no Chão, a melhor combinação gratuita e sustentável é:
+Para o Verbo no Chão, a combinação gratuita e sustentável aprovada é:
 
 **Pexels como base + Coverr/Mixkit para planos cinematográficos + Pixabay para lacunas + Unsplash para stills + YouTube Audio Library para áudio + LoreMotion apenas como complemento simbólico.**
 
