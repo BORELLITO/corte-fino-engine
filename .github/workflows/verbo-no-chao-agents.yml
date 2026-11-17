@@ -1,0 +1,69 @@
+name: Verbo no Chão — Eight Specialist Audits
+
+on:
+  push:
+    branches:
+      - "verbo-no-chao/**"
+  pull_request:
+    branches:
+      - "verbo-no-chao/bootstrap"
+
+permissions:
+  contents: read
+
+jobs:
+  specialists:
+    name: Audit — ${{ matrix.agent }}
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        agent:
+          - niche_strategy
+          - growth_90d
+          - idea_research
+          - retention_script
+          - titles_covers
+          - shorts_production
+          - performance
+          - monetization
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Execute independent specialist
+        env:
+          AGENT_ID: ${{ matrix.agent }}
+        run: python -m agents.team --agent "$AGENT_ID" --root . --output "agent-reports/${AGENT_ID}.json"
+      - name: Preserve specialist evidence
+        uses: actions/upload-artifact@v4
+        with:
+          name: vnc-specialist-${{ matrix.agent }}
+          path: agent-reports/*.json
+          if-no-files-found: error
+          retention-days: 14
+
+  coordinator:
+    name: Aggregate all eight reports
+    needs: specialists
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: vnc-specialist-*
+          merge-multiple: true
+          path: agent-reports/
+      - name: Verify and integrate specialist evidence
+        run: python -m agents.team --aggregate --input-dir agent-reports --output agent-team-report.json
+      - name: Preserve team report
+        uses: actions/upload-artifact@v4
+        with:
+          name: vnc-team-report
+          path: agent-team-report.json
+          if-no-files-found: error
+          retention-days: 14
