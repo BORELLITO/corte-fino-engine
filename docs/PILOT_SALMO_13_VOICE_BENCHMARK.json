@@ -1,6 +1,6 @@
 {
   "benchmark_id": "vnc-salmo-13-voice-benchmark-001",
-  "status": "FULL_SCRIPT_SEGMENTED_PASS_PERSISTENCE_PENDING",
+  "status": "FULL_SCRIPT_SEGMENTED_PERSISTED_PASS_PREVIEW_ONLY",
   "source": "browser_smoke_test_and_full_script_run",
   "tool": "Kokoro Web",
   "test_url": "https://kokoroweb.app/#demoContainer",
@@ -9,16 +9,34 @@
   "phone_role": "control_only",
   "local_device_compute_required": false,
   "language": "pt-BR",
-  "speed": 1.0,
+  "speed": 1,
   "voice_id": "pm_alex",
   "voice_label": "Alex",
   "audio_format": "WAV 24 kHz",
   "sample_text_simplified": "Tem dias em que o silencio parece uma resposta.",
   "canonical_text_sample": "Tem dias em que o silêncio parece uma resposta. Você ora, espera, olha para o relógio… e nada muda.",
   "voices": [
-    {"voice_id": "pm_alex", "label": "Alex", "gender": "male", "generated": true, "result_index": 2},
-    {"voice_id": "pm_santa", "label": "Santa", "gender": "male", "generated": true, "result_index": 3},
-    {"voice_id": "pf_dora", "label": "Dora", "gender": "female", "generated": true, "result_index": 4}
+    {
+      "voice_id": "pm_alex",
+      "label": "Alex",
+      "gender": "male",
+      "generated": true,
+      "result_index": 2
+    },
+    {
+      "voice_id": "pm_santa",
+      "label": "Santa",
+      "gender": "male",
+      "generated": true,
+      "result_index": 3
+    },
+    {
+      "voice_id": "pf_dora",
+      "label": "Dora",
+      "gender": "female",
+      "generated": true,
+      "result_index": 4
+    }
   ],
   "canonical_text_result": {
     "status": "NO_GO_BROWSER_RUNTIME",
@@ -27,7 +45,7 @@
     "scope": "combined_text_with_ellipsis"
   },
   "segmented_canonical_result": {
-    "status": "FULL_SCRIPT_SEGMENTED_PASS_PERSISTENCE_PENDING",
+    "status": "FULL_SCRIPT_SEGMENTED_PERSISTED_PASS_PREVIEW_ONLY",
     "voice_id": "pm_alex",
     "voice_label": "Alex",
     "editorial_text_preserved": true,
@@ -91,9 +109,11 @@
       }
     ],
     "download_controls_activated": 8,
-    "persistent_storage_verified": false,
-    "hashes_recorded": false,
-    "observed_session_state": "Eight audio cards visible in Kokoro Web; each displayed Download WAV; session marked for review."
+    "persistent_storage_verified": true,
+    "hashes_recorded": true,
+    "observed_session_state": "Eight audio cards visible in Kokoro Web; each displayed Download WAV; session marked for review.",
+    "audio_duration_seconds": 60.25,
+    "audio_sha256": "946ab6c5ea4acec6b1332161bfae444735e0574e576d260214ded1fdd7cd03e0"
   },
   "local_runtime_attempt": {
     "status": "BLOCKED_CONTAINER_RESOURCE",
@@ -108,11 +128,10 @@
     "As três vozes passaram no smoke test com texto simplificado.",
     "O texto canônico combinado com reticências foi recusado pelo runtime.",
     "A segmentação em oito blocos preservou os acentos e o significado editorial.",
-    "Os oito segmentos do roteiro completo foram gerados com pm_alex/Alex em WAV 24 kHz.",
-    "Os controles de download dos oito segmentos foram acionados.",
-    "A persistência, duração, tamanho e hash dos WAVs ainda não foram comprovados.",
-    "Não há requisito de processamento local no PC ou no telefone.",
-    "Os áudios permanecem amostras de pré-produção; não estão liberados para publicação."
+    "Os oito segmentos foram gerados com pm_alex/Alex em WAV 24 kHz.",
+    "Os oito downloads foram capturados e persistidos pela sessão cloud.",
+    "Duração total e SHA-256 do áudio contínuo foram registrados.",
+    "O resultado é PREVIEW_ONLY até a auditoria exata de voz/runtime; publicação permanece bloqueada."
   ],
-  "next_action": "confirm_persistent_audio_assets_then_assemble_and_audit"
+  "next_action": "complete_exact_voice_pack_and_runtime_rights_gate"
 }
