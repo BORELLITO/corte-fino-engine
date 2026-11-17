@@ -12,7 +12,7 @@ from agents.content_production import ProductionError
 from agents.e01_asr_qa import (
     DURATION, SCRIPT_HASH, WAV_SHA, REPORT_SHA,
     tokenize, edit_distance, compare_text, validate_timecodes, check_source,
-    audit, MAX_WORD_ERROR_RATE, MAX_CHAR_ERROR_RATE,
+    audit, MAX_WORD_ERROR_RATE, MAX_CHAR_ERROR_RATE, safe_stage_error,
 )
 from agents.e01_voice_preview import approved_source
 
@@ -121,6 +121,13 @@ class E01ASRTests(unittest.TestCase):
         seg[0]["end"] = seg[0]["start"] - 1
         with self.assertRaisesRegex(ProductionError, "invalid_segment_time"):
             validate_timecodes(seg, DURATION)
+
+    def test_backend_failures_disclose_stage_not_private_error_text(self):
+        unsafe = RuntimeError("unable to open file /home/runner/token=SECRET")
+        x = safe_stage_error("model_load", unsafe)
+        self.assertIn("asr:model_load:MODEL_FILE_UNAVAILABLE", str(x))
+        self.assertNotIn("SECRET", str(x))
+        self.assertNotIn("/home/", str(x))
 
     def test_missing_real_audio_artifact_fails(self):
         with tempfile.TemporaryDirectory() as d:
