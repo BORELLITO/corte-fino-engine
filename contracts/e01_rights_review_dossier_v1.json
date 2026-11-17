@@ -1,0 +1,97 @@
+{
+  "schema_version": "1.0.0",
+  "project": "verbo-no-chao",
+  "assessment_id": "VNC-E01-RIGHTS-AND-REVIEW-HANDOFF-001",
+  "assessment_date": "2026-11-17",
+  "source_kind": "VERIFIED_PUBLIC_SOURCE_DECLARATIONS_NOT_LEGAL_OPINION",
+  "episode_id": "VNC-W01-E1",
+  "reference": "Habacuque 1:2-4",
+  "linked_review_contract": "contracts/e01_editorial_crosscheck_v1.json",
+  "linked_smoke_contract": "contracts/kokoro_controlled_smoke_evidence_v1.json",
+  "scope": "DRAFT_E01_AND_KOKORO_WEB_NARRATION_PREPARATION_ONLY",
+  "evidence": [
+    {
+      "id": "MODEL",
+      "class": "MODEL_WEIGHTS",
+      "provider": "hexgrad",
+      "url": "https://huggingface.co/hexgrad/Kokoro-82M",
+      "declared_license": "Apache-2.0",
+      "finding": "The upstream author declares the Kokoro-82M model weights Apache-2.0 and welcomes commercial production deployments.",
+      "status": "UPSTREAM_DECLARATION_VERIFIED",
+      "permission_inference": "MODEL_LICENSE_PERMISSIVE_WITH_LICENSE_CONDITIONS"
+    },
+    {
+      "id": "ONNX",
+      "class": "ONNX_MODEL_EXPORT",
+      "provider": "onnx-community",
+      "url": "https://huggingface.co/onnx-community/Kokoro-82M-v1.0-ONNX",
+      "declared_license": "Apache-2.0",
+      "finding": "The official ONNX distribution page declares Apache-2.0; exact pm_alex.bin upstream bytes were verified in GitHub CI.",
+      "status": "UPSTREAM_DECLARATION_AND_VOICE_BYTES_VERIFIED",
+      "permission_inference": "ONNX_UPSTREAM_DECLARATION_ONLY"
+    },
+    {
+      "id": "VOICE",
+      "class": "VOICE_CACHE_OBSERVATION",
+      "provider": "onnx-community",
+      "url": "https://huggingface.co/onnx-community/Kokoro-82M-v1.0-ONNX/blob/main/voices/pm_alex.bin",
+      "declared_license": "Apache-2.0 model repository declaration",
+      "finding": "In the same real Chrome session as a 5.875-second synthetic smoke, the cached pm_alex.bin (522240 bytes) matched the known ONNX upstream SHA256; effective inference consumption was not independently proved.",
+      "status": "CACHE_SHA_MATCH_OBSERVED_NOT_RUNTIME_CONSUMPTION_PROVEN",
+      "permission_inference": "VOICE_ASSET_LICENSE_DETAIL_REVIEW_PENDING"
+    },
+    {
+      "id": "HOST",
+      "class": "HOSTED_WEB_SERVICE_TERMS",
+      "provider": "kokoroweb.app",
+      "url": "https://kokoroweb.app/terms",
+      "declared_license": "Terms of Use (updated 2026-10-30)",
+      "finding": "Terms permit downloaded WAV narration in commercial projects if the user has the necessary rights and complies with applicable licenses, laws and platform rules; the hosted website is independent of upstream model authors.",
+      "status": "COMMERCIAL_OUTPUT_CONDITIONALLY_PERMITTED_BY_HOST_TERMS",
+      "permission_inference": "CONDITIONAL_SITE_PERMISSION_NOT_FULL_RIGHTS_CLEARANCE"
+    },
+    {
+      "id": "HOST_NOTICE",
+      "class": "HOSTED_RUNTIME_DISCLOSURE",
+      "provider": "kokoroweb.app",
+      "url": "https://kokoroweb.app/privacy",
+      "declared_license": "Privacy Policy",
+      "finding": "The provider describes browser-side synthesis. The deployed frontend bundle, precise runtime package versions and third-party notices were not proven identical to any public GitHub repository.",
+      "status": "FRONTEND_DEPENDENCY_VERSIONS_UNVERIFIED",
+      "permission_inference": "NO_CODE_REUSE_LICENSE_CLAIM"
+    },
+    {
+      "id": "SCRIPT",
+      "class": "BIBLICAL_SOURCE_RIGHTS",
+      "provider": "Verbo no Chão",
+      "url": "https://bibleproject.com/guides/book-of-habakkuk/",
+      "declared_license": "No content reproduction rights assumed",
+      "finding": "New E01 narration is original paraphrase and context, not an intentional verbatim excerpt from a modern Bible translation or commentary; an independent biblical review is still required.",
+      "status": "NO_VERBATIM_INTENDED_REVIEW_PENDING",
+      "permission_inference": "NO_BIBLICAL_TRANSLATION_COPY_LICENSE_CLAIM"
+    }
+  ],
+  "reviewed_at": "2026-11-17",
+  "audio_test_duration_seconds": 5.875,
+  "onnx_voice_sha256": "0175c753f59c54e7fd5a995bedef0c5ff2fb67e0043dd3dcb2ae74ec2acbeb2a",
+  "cache_voice_bytes": 522240,
+  "host_commercial_narration_terms": "CONDITIONAL_PERMISSION_DOCUMENTED",
+  "release_review_status": "NEEDS_INDEPENDENT_HUMAN_THEOLOGICAL_EDITORIAL_REVIEW_AND_OWNER_APPROVAL",
+  "independent_human_biblical_review": "PENDING",
+  "owner_script_approval": false,
+  "right_to_use_all_actual_runtime_assets": "NOT_FULLY_CONFIRMED",
+  "original_licensed_voice_runtime_notice_bundle": "NOT_VERIFIED",
+  "effective_voice_asset_consumption": "NOT_INDEPENDENTLY_PROVEN",
+  "production_wav_generated": false,
+  "human_audio_listening_test": "NOT_PERFORMED",
+  "publication_authorized": false,
+  "license_cleared": false,
+  "approved_for_audio": false,
+  "unresolved": [
+    "A qualified independent reader must review the specific E01 draft for contextual theological integrity and tone.",
+    "Owner approval must reference the exact canonical script hash and six blocks.",
+    "Actual runtime notices and voice-pack rights applicable to the chosen service require final pre-production review; do not assume a similar open-source repository is the hosted deployment.",
+    "A technical 5.875-second test is not a production WAV and has no human pronunciation/loudness review.",
+    "A commercial use permission in website terms is conditional, not a guarantee of exclusivity, copyright or compliance with platform rules."
+  ]
+}
