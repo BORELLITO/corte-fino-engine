@@ -3,14 +3,14 @@ name: Verbo no Chão — Kokoro Hosted Browser Probe (read-only)
 on:
   push:
     branches:
-      - "verbo-no-chao/hosted-runtime-probe-v1"
+      - "verbo-no-chao/**"
     paths:
       - "agents/hosted_browser_probe.py"
       - "tests/test_hosted_browser_probe.py"
       - ".github/workflows/verbo-no-chao-hosted-runtime-probe.yml"
   pull_request:
     branches:
-      - "verbo-no-chao/voice-onnx-byte-integrity-v1"
+      - "verbo-no-chao/**"
     paths:
       - "agents/hosted_browser_probe.py"
       - "tests/test_hosted_browser_probe.py"
