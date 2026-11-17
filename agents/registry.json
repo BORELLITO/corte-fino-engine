@@ -1,0 +1,16 @@
+{
+  "version": "1.0.0",
+  "project": "verbo-no-chao",
+  "execution": "cloud_ci_read_only",
+  "default_publication_authorized": false,
+  "agents": [
+    {"id": "niche_strategy", "title": "Estrategista de nicho", "scope": "Público, promessa editorial, diferenciação e fontes"},
+    {"id": "growth_90d", "title": "Planejador de crescimento 90 dias", "scope": "Plano de 90 dias, cadência, hipóteses e metas"},
+    {"id": "idea_research", "title": "Pesquisador de ideias", "scope": "Fontes bíblicas, referências e procedência"},
+    {"id": "retention_script", "title": "Roteirista de retenção", "scope": "Estrutura e revisão automática de roteiro"},
+    {"id": "titles_covers", "title": "Títulos e capas", "scope": "Pacote rastreável de títulos e briefing visual"},
+    {"id": "shorts_production", "title": "Especialista em Shorts", "scope": "Gates de manifesto e validação física"},
+    {"id": "performance", "title": "Analista de desempenho", "scope": "Métricas autênticas, datadas e rastreáveis"},
+    {"id": "monetization", "title": "Especialista em monetização", "scope": "Direitos e monetização sem autorização de publicação"}
+  ]
+}

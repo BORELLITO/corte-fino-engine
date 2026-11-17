@@ -1,0 +1,224 @@
+"""Eight bounded, read-only specialist audits and their evidence coordinator.
+
+Not eight persistent AI models. No external API calls, publication or cost.
+"""
+from __future__ import annotations
+
+import argparse
+import hashlib
+import json
+import os
+from datetime import datetime, timezone
+from pathlib import Path
+from typing import Any
+
+CANONICAL_IDS = (
+    "niche_strategy", "growth_90d", "idea_research", "retention_script",
+    "titles_covers", "shorts_production", "performance", "monetization",
+)
+
+
+def _read(root: Path, rel: str, evidence: dict[str, str]) -> Any:
+    path = (root / rel).resolve()
+    if not path.is_relative_to(root.resolve()) or not path.is_file():
+        raise ValueError(f"evidence_missing:{rel}")
+    raw = path.read_bytes()
+    evidence[rel] = hashlib.sha256(raw).hexdigest()
+    if rel.endswith(".json"):
+        return json.loads(raw)
+    return raw.decode("utf-8")
+
+
+def _require(condition: bool, why: str, blockers: list[str]) -> None:
+    if not condition:
+        blockers.append(why)
+
+
+def _governance(root: Path, evidence: dict[str, str], blockers: list[str]) -> None:
+    policy = _read(root, "docs/CLEAN_ROOM_POLICY.md", evidence)
+    lock = _read(root, "docs/ENGINE_LOCK.md", evidence)
+    _require("Estado: `APPROVED`" in policy, "clean_room_policy_not_approved", blockers)
+    _require("verbo-no-chao/bootstrap" in lock, "canonical_branch_not_recorded", blockers)
+    _require("publication_authorized" in lock, "publication_lock_missing", blockers)
+
+
+def _audit_role(agent: str, root: Path, evidence: dict[str, str], blockers: list[str], limitations: list[str]) -> None:
+    if agent == "niche_strategy":
+        _governance(root, evidence, blockers)
+        try:
+            strategy = _read(root, "operations/niche_strategy.json", evidence)
+            _require(strategy.get("project") == "verbo-no-chao", "strategy_project_invalid", blockers)
+            for key in ("audience", "editorial_promise", "differentiator", "evidence_refs"):
+                _require(bool(strategy.get(key)), f"strategy_missing:{key}", blockers)
+        except ValueError:
+            blockers.append("niche_strategy_not_documented:operations/niche_strategy.json")
+        limitations.append("Governance is verifiable; full niche strategy requires documented evidence")
+
+    elif agent == "growth_90d":
+        try:
+            plan = _read(root, "operations/growth_90d.json", evidence)
+            _require(plan.get("project") == "verbo-no-chao", "growth_project_invalid", blockers)
+            for key in ("start_date", "cadence", "milestones", "assumptions"):
+                _require(bool(plan.get(key)), f"growth_missing:{key}", blockers)
+            _require(isinstance(plan.get("milestones"), list) and len(plan["milestones"]) >= 3,
+                     "growth_milestones_insufficient", blockers)
+        except ValueError:
+            blockers.append("growth_plan_not_documented:operations/growth_90d.json")
+        limitations.append("Goals are hypotheses, not promises of reach or growth")
+
+    elif agent == "idea_research":
+        decision = _read(root, "contracts/pilot_source_decision.json", evidence)
+        manifest = _read(root, "contracts/pilot_salmo_13_master.json", evidence)
+        _read(root, "docs/PILOT_SALMO_13_SOURCE_AUDIT.md", evidence)
+        _require(isinstance(decision, dict), "source_decision_invalid", blockers)
+        assets = manifest.get("assets", [])
+        _require(isinstance(assets, list) and bool(assets), "research_assets_missing", blockers)
+        if isinstance(assets, list):
+            urls = [item.get("source_url") for item in assets if isinstance(item, dict)]
+            _require(len(urls) == len(assets), "research_asset_invalid", blockers)
+            _require(all(isinstance(url, str) and url.startswith("https://") for url in urls),
+                     "research_provenance_missing", blockers)
+            _require(len(set(urls)) == len(urls), "research_duplicate_source", blockers)
+        limitations.append("Provenance only; no independent proof of visual suitability, third-party rights or Bible translation license")
+
+    elif agent == "retention_script":
+        from editorial.review import review_script
+        from editorial.script_validator import validate_script_package
+        script = _read(root, "tests/fixtures/salmo_13_script.json", evidence)
+        source_ref = script.get("source_decision_ref") if isinstance(script, dict) else None
+        if isinstance(source_ref, str):
+            _read(root, source_ref, evidence)
+        else:
+            blockers.append("script_source_ref_missing")
+        blockers.extend(validate_script_package(script))
+        review = review_script(script)
+        _require(review.status == "PASS_AUTOMATED_REVIEW", "script_automated_review_failed", blockers)
+        blockers.extend(review.errors)
+        limitations.append("Automated narrative structure only; actual retention and theological fidelity need independent review")
+
+    elif agent == "titles_covers":
+        try:
+            package = _read(root, "operations/titles_covers.json", evidence)
+            titles = package.get("titles") if isinstance(package, dict) else None
+            _require(isinstance(titles, list) and len(titles) >= 2 and all(isinstance(t, str) and t.strip() for t in titles),
+                     "title_options_missing", blockers)
+            _require(bool(package.get("cover_brief")), "cover_brief_missing", blockers)
+            _require(bool(package.get("script_ref")), "title_script_reference_missing", blockers)
+        except ValueError:
+            blockers.append("title_package_not_documented:operations/titles_covers.json")
+        limitations.append("A title/cover brief does not prove an actual rendered, rights-cleared thumbnail")
+
+    elif agent == "shorts_production":
+        from engine.quality_gates import validate_manifest
+        manifest = _read(root, "contracts/pilot_salmo_13_master.json", evidence)
+        blockers.extend(f"manifest:{e}" for e in validate_manifest(manifest))
+        _require(manifest.get("publication_authorized") is False, "pilot_publication_not_locked", blockers)
+        blockers.append("physical_master_and_audio_not_available_to_ci")
+        limitations.append("Historical declared SHA-256 and PASS labels do not prove media decode or perceptual quality")
+
+    elif agent == "performance":
+        try:
+            metrics = _read(root, "operations/metrics_snapshot.json", evidence)
+            _require(metrics.get("project") == "verbo-no-chao", "metrics_project_invalid", blockers)
+            for key in ("platform", "collected_at", "source", "video_metrics"):
+                _require(bool(metrics.get(key)), f"metrics_missing:{key}", blockers)
+            _require(isinstance(metrics.get("video_metrics"), list) and bool(metrics["video_metrics"]),
+                     "metrics_need_real_videos", blockers)
+        except ValueError:
+            blockers.append("real_metrics_not_available:operations/metrics_snapshot.json")
+        limitations.append("Never fabricate views, retention, subscriber counts or benchmarks")
+
+    elif agent == "monetization":
+        manifest = _read(root, "contracts/pilot_salmo_13_master.json", evidence)
+        _read(root, "docs/PILOT_SALMO_13_RIGHTS_LEDGER.md", evidence)
+        rights = manifest.get("rights") or {}
+        for key in ("visual_review", "voice_review", "music_review", "monetization"):
+            _require(rights.get(key) in {"CLEARED", "PASS"}, f"rights_not_cleared:{key}", blockers)
+        for item in manifest.get("assets", []):
+            _require(item.get("rights_status") in {"CLEARED", "PASS"},
+                     f"asset_rights_pending:{item.get('asset_id', 'unknown')}", blockers)
+        _require(manifest.get("publication_authorized") is False, "unsafe_publication_flag", blockers)
+        limitations.append("Rights labels need actual license evidence and human review; never authorize publication")
+
+    else:
+        raise ValueError(f"agent_unknown:{agent}")
+
+
+def run_agent(agent: str, root: Path) -> dict[str, Any]:
+    root = root.resolve()
+    evidence: dict[str, str] = {}
+    registry = _read(root, "agents/registry.json", evidence)
+    agents = registry.get("agents", [])
+    ids = [item.get("id") for item in agents]
+    if ids != list(CANONICAL_IDS) or registry.get("project") != "verbo-no-chao" or registry.get("default_publication_authorized") is not False:
+        raise ValueError("agent_registry_contract_mismatch")
+    if agent not in ids:
+        raise ValueError(f"agent_unknown:{agent}")
+    blockers: list[str] = []
+    limitations: list[str] = []
+    try:
+        _audit_role(agent, root, evidence, blockers, limitations)
+    except (FileNotFoundError, ValueError, TypeError, KeyError, json.JSONDecodeError) as exc:
+        blockers.append(f"evidence_or_contract_error:{type(exc).__name__}:{exc}")
+    return {
+        "schema_version": "1.0.0", "project": "verbo-no-chao", "mode": "read_only_ci_audit",
+        "agent": agent, "title": agents[ids.index(agent)]["title"],
+        "status": "BLOCKED" if blockers else "PASS_CHECKED_SCOPE",
+        "blockers": sorted(set(blockers)), "limitations": limitations,
+        "evidence_sha256": evidence, "publication_authorized": False,
+        "commit_sha": os.environ.get("GITHUB_SHA", "local-unverified"),
+        "checked_at": datetime.now(timezone.utc).isoformat(),
+    }
+
+
+def aggregate(input_dir: Path) -> dict[str, Any]:
+    found: dict[str, Any] = {}
+    for path in sorted(input_dir.rglob("*.json")):
+        payload = json.loads(path.read_text(encoding="utf-8"))
+        aid = payload.get("agent")
+        if aid not in CANONICAL_IDS or aid in found:
+            raise ValueError(f"unexpected_or_duplicate_agent_report:{aid}")
+        if payload.get("project") != "verbo-no-chao" or payload.get("publication_authorized") is not False:
+            raise ValueError(f"unsafe_agent_report:{aid}")
+        if payload.get("status") not in {"BLOCKED", "PASS_CHECKED_SCOPE"}:
+            raise ValueError(f"invalid_status:{aid}")
+        if payload.get("status") == "BLOCKED" and not payload.get("blockers"):
+            raise ValueError(f"blocked_without_reason:{aid}")
+        found[aid] = payload
+    if set(found) != set(CANONICAL_IDS):
+        raise ValueError(f"missing_agent_reports:{sorted(set(CANONICAL_IDS) - set(found))}")
+    statuses = {aid: found[aid]["status"] for aid in CANONICAL_IDS}
+    return {
+        "schema_version": "1.0.0", "project": "verbo-no-chao", "coordinator": "specialist-evidence-collector",
+        "status": "BLOCKED" if any(v == "BLOCKED" for v in statuses.values()) else "CHECKS_PASSED_NOT_PUBLICATION_APPROVED",
+        "agents_executed": len(found),
+        "agents_passed_scope": sum(v == "PASS_CHECKED_SCOPE" for v in statuses.values()),
+        "agents_blocked": sum(v == "BLOCKED" for v in statuses.values()),
+        "reports": [found[aid] for aid in CANONICAL_IDS],
+        "publication_authorized": False,
+    }
+
+
+def main() -> int:
+    parser = argparse.ArgumentParser(description="Verbo no Chão specialist checks")
+    group = parser.add_mutually_exclusive_group(required=True)
+    group.add_argument("--agent", choices=CANONICAL_IDS)
+    group.add_argument("--aggregate", action="store_true")
+    parser.add_argument("--root", type=Path, default=Path("."))
+    parser.add_argument("--input-dir", type=Path)
+    parser.add_argument("--output", type=Path, required=True)
+    args = parser.parse_args()
+    if args.aggregate:
+        if args.input_dir is None:
+            parser.error("--aggregate requires --input-dir")
+        result = aggregate(args.input_dir)
+    else:
+        result = run_agent(args.agent, args.root)
+    args.output.parent.mkdir(parents=True, exist_ok=True)
+    args.output.write_text(json.dumps(result, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+    print(json.dumps({k: v for k, v in result.items() if k in ("agent", "status", "agents_executed", "agents_blocked", "blockers")}, ensure_ascii=False))
+    return 0
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())
