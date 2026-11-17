@@ -1,6 +1,6 @@
 # Candidatos visuais — piloto Salmo 13
 
-Estado: VISUAL_QA_COMPLETE_PENDING_AUDIO_AND_ASSEMBLY
+Estado: MASTER_PREVIEW_ASSEMBLED_PENDING_FINAL_RIGHTS_REVIEW
 Data: 2026-11-17 (America/Sao_Paulo)
 
 ## Critério
@@ -17,7 +17,7 @@ A regra de zero repetição é bloqueante: um mesmo asset não pode aparecer dua
 - Todos os 12 foram baixados por CDN, inspecionados com quadros de início/meio/fim e receberam SHA-256 local.
 - S13-V09, S13-V10 e S13-V11 tiveram crop central 9:16 testado.
 - Nenhum crédito Creative Claw foi consumido; a inspeção foi concluída por rota gratuita local.
-- O lote permanece candidato de montagem; não é autorização de publicação.
+- O lote foi montado no master de prévia; não é autorização de publicação.
 
 ## Seleção editorial
 
@@ -56,3 +56,8 @@ A seleção não força 10–12 planos quando isso criaria redundância. O núcl
 - normalizar V04 somente se ele for necessário;
 - montar sem repetição e executar QA de áudio, legenda, safe area e elegibilidade para publicação.
 
+
+
+## Uso efetivo no master
+
+S13-V02, S13-V03, S13-V05, S13-V07, S13-V08, S13-V09, S13-V10 e S13-V11 aparecem uma única vez cada. O gate de repetição passou; o master usa 8 assets distintos e não usa S13-V12.
