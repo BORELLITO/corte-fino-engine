@@ -1,6 +1,6 @@
 {
   "name": "verbo-no-chao-voice-decision",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "required": [
     "decision_id",
     "status",
@@ -25,7 +25,7 @@
     },
     "engine": {"enum": ["Kokoro-82M"]},
     "language": {"enum": ["pt-BR"]},
-    "deployment": {"enum": ["local"]},
+    "deployment": {"enum": ["cloud_browser", "cloud_api"]},
     "selected_voice": {"type": ["string", "null"]},
     "model_license": {"enum": ["Apache-2.0"]},
     "voice_license_status": {
