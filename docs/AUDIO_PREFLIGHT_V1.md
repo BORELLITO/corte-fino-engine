@@ -1,7 +1,7 @@
 # VERBO NO CHÃO — Pré-voo de áudio E01 (evidência revisada em 17/11/2026)
 
 **Estado: `BLOCKED`. A etapa executável produz documentos, NÃO áudios.**  
-Branch experimental empilhada sobre PR #29, sem alterar o piloto Salmo 13 nem liberar publicação.
+Branch experimental empilhada sobre PR #33, sem alterar o piloto Salmo 13 nem liberar publicação.
 
 ## 1. Revisão bíblica do primeiro roteiro
 
@@ -23,13 +23,13 @@ O texto de 1:2–4 é um **lamento profético por violência, injustiça e perda
 - **Voz `pm_alex`:** presente na lista oficial de pt-BR, hash abreviado `cf0ba8c5`. https://huggingface.co/hexgrad/Kokoro-82M/blob/main/VOICES.md
 - **Arquivo upstream:** a própria página do arquivo publica o SHA-256 integral `cf0ba8c573c2480fc54123683a35cf1e2ae130428e441eb91f9149bdb188a526`. https://huggingface.co/hexgrad/Kokoro-82M/blob/main/voices/pm_alex.pt
 - **Termos Kokoro Web:** atualizados em **30/10/2026**, permitem baixar WAV e usar narração em projetos pessoais ou comerciais **desde que todos os direitos e licenças necessários sejam respeitados**. https://kokoroweb.app/terms
-- **Execução:** o serviço informa que faz a síntese **dentro do navegador** usando recursos do dispositivo que está executando a página; não é uma API de sintetização no servidor. Em um navegador cloud, a computação pode ocorrer na sessão cloud, mas isso não foi testado nesta camada. https://kokoroweb.app/privacy
+- **Execução:** o serviço informa que faz a síntese **dentro do navegador** usando recursos do dispositivo que está executando a página; não é uma API de sintetização no servidor. Em navegador cloud, a síntese de uma **frase técnica original** já foi comprovada em 17/11/2026; essa sessão não gerou o roteiro E01. https://kokoroweb.app/privacy
 
 A upstream do modelo e o site de TTS **são entidades independentes**. O hash publicado no Hugging Face é **metadado do arquivo upstream**, não a medição dos bytes realmente baixados ou usados pelo site. Não baixamos nem carregamos o `.pt`; formatos PyTorch com pickle não devem ser desserializados a partir de conteúdo não verificado.
 
 ### Direitos ainda não comprovados
 
-1. Identidade do arquivo de voz realmente carregado pelo site hospedado e sua correspondência com a upstream.
+1. Uso efetivo do objeto de voz pelo mecanismo de inferência: o cache real da sessão apresentou `pm_alex.bin` com SHA-256 oficial, mas isso não prova de forma independente o consumo desse objeto pelo runtime.
 2. Avisos e licenças das dependências realmente usadas, incluindo eventuais direitos de terceiros sobre o pack.
 3. Revisão teológica/editorial independente e aprovação explícita do roteiro pelo proprietário.
 4. Integridade, inteligibilidade, sincronização e duração do WAV que somente será produzido depois dos gates.
@@ -50,7 +50,7 @@ O contrato `contracts/onnx_voice_asset_v1.json` fixa formato, revisão de origem
 
 O GitHub Actions gera `vnc-onnx-voice-asset-audit`, que registra `VERIFIED_UPSTREAM_ONNX_BYTES_HOSTED_UNPROVEN` apenas após leitura e hash de bytes reais. Se houver falha de rede/hash/tamanho, registra `BLOCKED_UPSTREAM_BYTES_NOT_VERIFIED` e o pré-voo mantém a trava. O executor do pré-voo lê esse relatório e inclui hash de sua proveniência. O arquivo de voz binário **não** entra nos artefatos.
 
-**Evidência da execução:** foi verificado o arquivo ONNX upstream por SHA em 17/11/2026; ainda não foi verificado o arquivo carregado pelo navegador do Kokoro Web, sua versão em cache, modelo correspondente ou notices de todas as dependências. Logo, a identidade do ambiente real e o uso comercial final continuam **PENDENTES**.
+**Evidência atualizada:** o ONNX upstream foi verificado por SHA e, durante uma síntese controlada de 5,875 s no Kokoro Web, um arquivo `pm_alex.bin` no cache do navegador correspondeu ao SHA oficial e tinha 522.240 bytes. Isso comprova a integridade do item em cache naquela sessão, **não o uso efetivo desse objeto pela inferência**, nem os avisos de todos os componentes e a liberação comercial final. Ver `docs/KOKORO_CONTROLLED_SMOKE_V1.md`.
 
 ## 3. O motor executa e verifica
 
@@ -61,12 +61,15 @@ Artefatos de GitHub Actions: `vnc-onnx-voice-asset-audit` (somente JSON da checa
 - `audio-preflight/preflight.json`: E01, hashes de entrada, seis segmentos, voz candidata, revisão interna, bloqueios e estados.
 - `audio-preflight/context_crosscheck.json`: resultado do cruzamento editorial interno com o mesmo fingerprint do roteiro.
 - `audio-preflight/preflight.md`: texto em seis segmentos, limitações e direitos pendentes.
+- `audio-preflight/historical_smoke.json`: prova do teste técnico anterior, sem liberação de direitos.
+- `audio-preflight/rights_review_handoff.json`: dossiê de seis fontes, licenças e bloqueios.
+- `audio-preflight/e01_human_review_packet.md`: roteiro integral e checklist para um revisor bíblico humano independente.
 - `audio-preflight/report.json`: estado `BLOCKED`, arquivos e hashes para o coordenador.
 
 O coordenador impede qualquer falsa conclusão de que `internal_context_crosscheck_completed` seja uma revisão humana ou autorização de áudio. A CI pode passar tecnicamente enquanto a **produção de áudio permanece bloqueada com motivos reais**.
 
 ## 4. Escopo e rollback
 
-Sem gastos, publicação, WAV, upload, mudanças no piloto Salmo 13, alteração de `main` ou merge automático. A voz `pm_alex` é **baseline**, não voz definitivamente liberada. Os demais roteiros E02 e E03 não foram revisados nesta etapa.
+Sem contratação paga, publicação, WAV do E01, upload de mídia de produção, mudanças no piloto Salmo 13, alteração de `main` ou merge automático. O workflow utiliza minutos da cota GitHub Actions. A voz `pm_alex` é **baseline**, não voz definitivamente liberada. Os demais roteiros E02 e E03 não foram revisados nesta etapa.
 
-Próximo gate: aprovação editorial explícita do roteiro após revisão independente e validação de identidade/direitos do pack realmente utilizado. Uma aprovação de roteiro não significa aprovação de áudio, vídeo ou publicação.
+Próximo gate: revisão bíblica humana independente do roteiro exato, aprovação do proprietário e revisão de direitos/avisos aplicáveis à voz usada para produzir o WAV final. Uma aprovação de roteiro não significa aprovação de áudio, vídeo ou publicação.

@@ -137,7 +137,7 @@ class AudioPreflightTests(unittest.TestCase):
         self.assertEqual(combined["agents_executed"], 8)
         self.assertEqual(combined["audio_preflight"]["status"], "BLOCKED")
         self.assertFalse(combined["audio_preflight"]["voice_license_approved"])
-        self.assertIn("hosted_voice_pack_byte_identity_unverified",
+        self.assertIn("hosted_inference_voice_asset_consumption_unverified",
                       combined["audio_preflight"]["blockers"])
         self.assertEqual(combined["status"], "BLOCKED")
 
