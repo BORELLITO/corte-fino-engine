@@ -11,6 +11,7 @@
   "voice_license_status": "PENDING_EXACT_VOICE_PACK_AUDIT",
   "runtime_license_status": "PENDING_DEPENDENCY_NOTICE_REVIEW",
   "runtime_smoke_test_status": "PARTIAL_SIMPLIFIED_TEXT_ONLY",
+  "local_runtime_status": "BLOCKED_CONTAINER_MEMORY",
   "commercial_use_intent": true,
   "audio_generated": false,
   "publication_authorized": false,
@@ -31,5 +32,5 @@
       "url": "https://github.com/hexgrad/kokoro/blob/main/LICENSE"
     }
   ],
-  "next_gate": "test_local_official_runtime_with_canonical_diacritics_and_punctuation"
+  "next_gate": "use_lightweight_onnx_runtime_or_user_pc_benchmark_with_canonical_text"
 }

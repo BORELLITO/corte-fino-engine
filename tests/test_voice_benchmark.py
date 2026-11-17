@@ -22,6 +22,13 @@ class VoiceBenchmarkTests(unittest.TestCase):
         self.assertIn("silêncio", payload["canonical_text_sample"])
         self.assertIn("Você", payload["canonical_text_sample"])
 
+    def test_full_local_runtime_attempt_is_explicitly_blocked(self):
+        payload = json.loads(FIXTURE.read_text(encoding="utf-8"))
+        attempt = payload["local_runtime_attempt"]
+        self.assertEqual(attempt["status"], "BLOCKED_CONTAINER_RESOURCE")
+        self.assertEqual(attempt["exit_status"], 137)
+        self.assertFalse(attempt["audio_generated"])
+
 
 if __name__ == "__main__":
     unittest.main()

@@ -18,14 +18,19 @@ O navegador rejeitou o trecho canônico com acentos e pontuação, exibindo: “
 
 Isso é um bloqueio do runtime de navegador para produção, não uma autorização para remover acentos do roteiro. O texto bíblico e a narração canônica devem preservar ortografia, contexto e naturalidade.
 
+## Tentativa local
+
+A instalação isolada do runtime oficial PyTorch foi tentada fora do repositório. O processo foi encerrado pelo ambiente com status 137 por consumo de memória. Isso não comprova incompatibilidade no computador do canal; apenas impede o benchmark local neste ambiente.
+
 ## Próxima correção necessária
 
-1. Testar o runtime oficial local com o texto canônico.
-2. Se necessário, criar uma camada de pronúncia separada do texto exibido, preservando o roteiro original.
-3. Comparar novamente as três vozes com o mesmo trecho canônico.
-4. Escolher o voice ID definitivo somente após ouvir a pronúncia real.
-5. Confirmar a licença do pacote/voz e das dependências.
-6. Manter publicação bloqueada.
+1. Testar um runtime ONNX mais leve, sem instalar o PyTorch completo.
+2. Se necessário, executar o benchmark no PC do canal.
+3. Testar o texto canônico preservando acentos e pontuação.
+4. Se o motor exigir, criar uma camada de pronúncia separada do texto exibido.
+5. Comparar novamente as três vozes com o mesmo trecho canônico.
+6. Confirmar a licença do pacote/voz e das dependências.
+7. Manter publicação bloqueada.
 
 ## Estado atual
 
@@ -33,6 +38,7 @@ Isso é um bloqueio do runtime de navegador para produção, não uma autorizaç
 - candidato-base: **pm_alex**;
 - smoke test simplificado: **PASS nas três vozes**;
 - texto canônico no runtime de navegador: **BLOCKED**;
+- runtime PyTorch local neste ambiente: **BLOCKED POR MEMÓRIA**;
 - voice ID definitivo: **pendente**;
 - áudio de produção: **não gerado**;
 - publicação: **não autorizada**.

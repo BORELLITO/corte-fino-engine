@@ -18,11 +18,20 @@
     "message": "No readable Brazilian Portuguese · Português text was found.",
     "observed_on": "Kokoro Web browser runtime"
   },
+  "local_runtime_attempt": {
+    "status": "BLOCKED_CONTAINER_RESOURCE",
+    "package_attempted": "kokoro>=0.9.4",
+    "result": "process killed by environment",
+    "exit_status": 137,
+    "audio_generated": false,
+    "interpretation": "This is an environment memory limitation, not proof of incompatibility on the user's PC."
+  },
   "interpretation": [
     "As três vozes passaram no smoke test com texto simplificado.",
     "O mesmo runtime rejeitou o trecho canônico com diacríticos e pontuação.",
     "O roteiro canônico não será mutilado para contornar a falha.",
+    "A instalação PyTorch completa foi pesada demais para este ambiente.",
     "Amostras geradas são apenas de avaliação; não estão liberadas para publicação."
   ],
-  "next_action": "benchmark_official_local_runtime_or_safe_text_normalization_layer"
+  "next_action": "benchmark_lightweight_onnx_runtime_or_user_pc_with_canonical_text"
 }
