@@ -5,3 +5,8 @@ __pycache__/
 artifacts/
 media/
 secrets/
+# Generated review-only editorial materials, never commit by accident.
+operations/
+editorial-deliveries/
+agent-reports/
+agent-team-report.json

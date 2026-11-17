@@ -12,8 +12,30 @@ permissions:
   contents: read
 
 jobs:
+  editorial_production:
+    name: Produce editorial strategy and 90-day briefs
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Produce review-only strategy and content plan
+        run: python -m agents.content_production --root . --output-dir .
+      - name: Preserve actual editorial deliverables
+        uses: actions/upload-artifact@v4
+        with:
+          name: vnc-editorial-deliverables
+          path: |
+            operations/*.json
+            editorial-deliveries/*.md
+            editorial-deliveries/*.json
+          if-no-files-found: error
+          retention-days: 14
+
   specialists:
     name: Audit — ${{ matrix.agent }}
+    needs: editorial_production
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
@@ -32,6 +54,11 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: "3.12"
+      - name: Retrieve produced editorial evidence
+        uses: actions/download-artifact@v4
+        with:
+          name: vnc-editorial-deliverables
+          path: .
       - name: Execute independent specialist
         env:
           AGENT_ID: ${{ matrix.agent }}

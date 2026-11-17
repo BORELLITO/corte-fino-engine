@@ -50,9 +50,26 @@ def _audit_role(agent: str, root: Path, evidence: dict[str, str], blockers: list
             _require(strategy.get("project") == "verbo-no-chao", "strategy_project_invalid", blockers)
             for key in ("audience", "editorial_promise", "differentiator", "evidence_refs"):
                 _require(bool(strategy.get(key)), f"strategy_missing:{key}", blockers)
-        except ValueError:
-            blockers.append("niche_strategy_not_documented:operations/niche_strategy.json")
-        limitations.append("Governance is verifiable; full niche strategy requires documented evidence")
+            source = _read(root, "agents/editorial_seed.json", evidence)
+            _require(strategy.get("approval_status") == "DRAFT_REVIEW_REQUIRED",
+                     "strategy_must_remain_review_required", blockers)
+            _require(strategy.get("publication_authorized") is False and
+                     strategy.get("owner_approval") is False,
+                     "strategy_unapproved_publication_or_owner_claim", blockers)
+            _require(strategy.get("editorial_promise") ==
+                     source["approval_scope"]["editorial_promise"]["value"],
+                     "strategy_promise_differs_from_approved", blockers)
+            _require(strategy.get("audience", {}).get("primary") ==
+                     source["approval_scope"]["primary_audience"]["value"],
+                     "strategy_primary_audience_differs", blockers)
+            _require(strategy.get("evidence_sha256", {}).get("agents/editorial_seed.json") ==
+                     evidence["agents/editorial_seed.json"], "strategy_source_hash_mismatch", blockers)
+            _require(isinstance(strategy.get("content_pillars"), list) and
+                     len(strategy["content_pillars"]) >= 3,
+                     "strategy_pillars_missing", blockers)
+        except (ValueError, KeyError, TypeError):
+            blockers.append("niche_strategy_not_documented_or_invalid:operations/niche_strategy.json")
+        limitations.append("Strategy is a generated proposal based on approved positioning, not live market research or an approved content launch")
 
     elif agent == "growth_90d":
         try:
@@ -62,9 +79,40 @@ def _audit_role(agent: str, root: Path, evidence: dict[str, str], blockers: list
                 _require(bool(plan.get(key)), f"growth_missing:{key}", blockers)
             _require(isinstance(plan.get("milestones"), list) and len(plan["milestones"]) >= 3,
                      "growth_milestones_insufficient", blockers)
-        except ValueError:
-            blockers.append("growth_plan_not_documented:operations/growth_90d.json")
-        limitations.append("Goals are hypotheses, not promises of reach or growth")
+            source = _read(root, "agents/editorial_seed.json", evidence)
+            _require(plan.get("approval_status") == "DRAFT_REVIEW_REQUIRED" and
+                     plan.get("start_date") == "NOT_SCHEDULED",
+                     "growth_cannot_schedule_or_auto_approve", blockers)
+            _require(plan.get("publication_authorized") is False and
+                     plan.get("owner_approval") is False,
+                     "growth_unapproved_publication_or_owner_claim", blockers)
+            _require(plan.get("window_days") == 90 and
+                     plan.get("ideas_count") == 39,
+                     "growth_window_or_count_mismatch", blockers)
+            _require(plan.get("cadence", {}).get("status") == "HYPOTHESIS_NOT_APPROVED" and
+                     plan.get("cadence", {}).get("publish_automatically") is False,
+                     "growth_cadence_not_review_only", blockers)
+            episodes = plan.get("episodes")
+            _require(isinstance(episodes, list) and len(episodes) == 39,
+                     "growth_missing_39_episode_briefs", blockers)
+            if isinstance(episodes, list):
+                days = [e.get("relative_day") for e in episodes if isinstance(e, dict)]
+                ref_ids = [e.get("scripture_reference") for e in episodes if isinstance(e, dict)]
+                _require(len(days) == 39 and len(set(days)) == 39 and min(days, default=0) == 1 and
+                         max(days, default=0) == 90,
+                         "growth_invalid_relative_calendar", blockers)
+                _require(len(ref_ids) == 39 and len(set(ref_ids)) == 39 and
+                         "Salmo 13" not in ref_ids,
+                         "growth_duplicate_or_pilot_reference", blockers)
+                _require(all(e.get("publication_authorized") is False and
+                             e.get("script_status") == "IDEA_ONLY_REQUIRES_CONTEXT_AND_SCRIPT_REVIEW"
+                             for e in episodes if isinstance(e, dict)),
+                         "growth_episode_approval_inflation", blockers)
+            _require(plan.get("evidence_sha256", {}).get("agents/editorial_seed.json") ==
+                     evidence["agents/editorial_seed.json"], "growth_source_hash_mismatch", blockers)
+        except (ValueError, KeyError, TypeError):
+            blockers.append("growth_plan_not_documented_or_invalid:operations/growth_90d.json")
+        limitations.append("Cadence and all 39 ideas remain proposals; no verified views, audience analytics or publication dates")
 
     elif agent == "idea_research":
         decision = _read(root, "contracts/pilot_source_decision.json", evidence)

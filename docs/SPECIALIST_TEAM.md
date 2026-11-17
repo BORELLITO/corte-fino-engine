@@ -1,5 +1,7 @@
 # VERBO NO CHÃO — Equipe de oito especialistas (v1)
 
+> **Atualização em camada separada (PR dependente):** os agentes 01 (estratégia) e 02 (planejamento 90 dias) passam a executar produtores determinísticos antes das auditorias. Eles geram documentos de revisão reais, mas ainda não são modelos de IA autônomos. Consulte [EDITORIAL_PRODUCERS_V1.md](EDITORIAL_PRODUCERS_V1.md). Os demais agentes permanecem auditores, e a publicação segue bloqueada.
+
 ## Fonte canônica e status
 
 A arquitetura aprovada tem oito especialistas. Esta versão executa **oito auditorias independentes, reais e de leitura**, cada uma em um job isolado do GitHub Actions. O coordenador exige os oito relatórios distintos e integra seus bloqueios e provas. Não são oito modelos de linguagem permanentes; criatividade autônoma, prospecção de tendências e geração multimídia ainda dependem de executores e fontes autorizados.

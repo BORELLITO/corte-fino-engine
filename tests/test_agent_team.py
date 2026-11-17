@@ -26,7 +26,7 @@ class AgentTeamTests(unittest.TestCase):
     def test_strategy_does_not_claim_missing_evidence(self):
         result = run_agent("niche_strategy", ROOT)
         self.assertEqual(result["status"], "BLOCKED")
-        self.assertIn("niche_strategy_not_documented:operations/niche_strategy.json", result["blockers"])
+        self.assertTrue(any(item.startswith("niche_strategy_not_documented") for item in result["blockers"]))
 
     def test_growth_does_not_invent_plan(self):
         result = run_agent("growth_90d", ROOT)

@@ -1,7 +1,7 @@
 {
   "version": "1.0.0",
   "project": "verbo-no-chao",
-  "execution": "cloud_ci_read_only",
+  "execution": "cloud_ci_editorial_production_and_read_only_audits",
   "default_publication_authorized": false,
   "agents": [
     {"id": "niche_strategy", "title": "Estrategista de nicho", "scope": "Público, promessa editorial, diferenciação e fontes"},
