@@ -2,7 +2,9 @@
 
 ## Decisão
 
-Direção aprovada: **Kokoro-82M local, português brasileiro**.
+Direção aprovada: **Kokoro-82M em execução cloud pelo navegador gerenciado**, português brasileiro.
+
+O POCO X8 Pro Max será usado somente como interface de controle. Não haverá requisito de PC, instalação local, processamento local no telefone ou runtime local para operar o canal.
 
 Candidato-base selecionado para benchmark: **pm_alex**.
 
@@ -16,21 +18,31 @@ As três vozes pt-BR foram geradas com sucesso no smoke test usando o mesmo trec
 
 O navegador rejeitou o trecho canônico com acentos e pontuação, exibindo: “No readable Brazilian Portuguese · Português text was found.”
 
-Isso é um bloqueio do runtime de navegador para produção, não uma autorização para remover acentos do roteiro. O texto bíblico e a narração canônica devem preservar ortografia, contexto e naturalidade.
+Isso é um bloqueio do fluxo de entrada desse runtime de navegador, não uma autorização para remover acentos do roteiro. O texto bíblico e a narração canônica devem preservar ortografia, contexto e naturalidade.
 
-## Tentativa local
+## Arquitetura operacional cloud-only
 
-A instalação isolada do runtime oficial PyTorch foi tentada fora do repositório. O processo foi encerrado pelo ambiente com status 137 por consumo de memória. Isso não comprova incompatibilidade no computador do canal; apenas impede o benchmark local neste ambiente.
+1. O motor prepara e segmenta o roteiro canônico em blocos curtos, sem alterar o texto editorial.
+2. O navegador cloud gerenciado abre o gerador de voz.
+3. Cada bloco é enviado e gerado como WAV em sessão controlada.
+4. Os blocos são revisados e rastreados por segmento.
+5. A montagem do áudio ocorre na pipeline cloud do projeto.
+6. Somente depois dos gates de direitos, precisão e qualidade o material poderá seguir para vídeo e publicação.
+
+O telefone controla a sessão e a aprovação; não hospeda o motor nem precisa executar PyTorch, ONNX ou outro runtime local.
+
+## Tentativas e limites
+
+A instalação isolada do runtime oficial PyTorch foi tentada fora do repositório. O processo foi encerrado pelo ambiente com status 137 por consumo de memória. Esse resultado não altera a arquitetura: execução local não é requisito do canal e a tentativa histórica permanece apenas como evidência de que não devemos depender dela neste ambiente.
 
 ## Próxima correção necessária
 
-1. Testar um runtime ONNX mais leve, sem instalar o PyTorch completo.
-2. Se necessário, executar o benchmark no PC do canal.
-3. Testar o texto canônico preservando acentos e pontuação.
-4. Se o motor exigir, criar uma camada de pronúncia separada do texto exibido.
-5. Comparar novamente as três vozes com o mesmo trecho canônico.
-6. Confirmar a licença do pacote/voz e das dependências.
-7. Manter publicação bloqueada.
+1. Segmentar o texto canônico em blocos naturais curtos no navegador cloud.
+2. Gerar cada bloco preservando acentos, pontuação e texto exibido.
+3. Se um bloco continuar sendo recusado, registrar o erro e criar uma camada de pronúncia separada, sem substituir o roteiro visual/editorial.
+4. Comparar novamente as três vozes no mesmo conjunto de blocos.
+5. Confirmar a licença da voz, do runtime e das dependências antes de qualquer áudio de produção.
+6. Manter publicação bloqueada.
 
 ## Estado atual
 
@@ -38,7 +50,7 @@ A instalação isolada do runtime oficial PyTorch foi tentada fora do repositór
 - candidato-base: **pm_alex**;
 - smoke test simplificado: **PASS nas três vozes**;
 - texto canônico no runtime de navegador: **BLOCKED**;
-- runtime PyTorch local neste ambiente: **BLOCKED POR MEMÓRIA**;
+- processamento local no PC/telefone: **NÃO REQUERIDO**;
 - voice ID definitivo: **pendente**;
 - áudio de produção: **não gerado**;
 - publicação: **não autorizada**.
