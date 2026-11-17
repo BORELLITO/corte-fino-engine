@@ -9,6 +9,7 @@ from __future__ import annotations
 import hashlib
 import re
 from typing import Any
+from urllib.parse import urlsplit
 
 from agents.content_production import check, ProductionError
 from editorial.review import review_script
@@ -20,10 +21,9 @@ SCRIPT_PILLARS = (
     "originality_and_copyright", "narrative_and_retention",
     "language_and_tts", "research_evidence",
 )
-SOURCE_URLS = frozenset({
-    "https://bible.usccb.org/bible/habakkuk/1",
-    "https://bibleproject.com/guides/book-of-habakkuk/",
-    "https://classic.net.bible.org/passage.php?passage=hab+1%3A2-4",
+TRUSTED_SOURCE_HOSTS = frozenset({
+    "bible.usccb.org", "bibleproject.com", "classic.net.bible.org",
+    "www.workingpreacher.org", "new.bible.org",
 })
 
 
@@ -68,8 +68,11 @@ def verify_ai_editorial_review(policy: Any, review: Any, draft: Any) -> dict[str
           and rules.get("fail_closed_if_semantic_review_missing") is True,
           "ai_editorial:policy_gate_weak")
     check(isinstance(draft, dict)
-          and draft.get("episode_id") == "VNC-W01-E1"
-          and draft.get("reference") == "Habacuque 1:2-4"
+          and isinstance(draft.get("episode_id"), str)
+          and bool(re.fullmatch(r"VNC-W\d{2}-E\d{1,2}", draft["episode_id"]))
+          and isinstance(draft.get("reference"), str)
+          and len(draft["reference"]) >= 6
+          and draft["reference"] != "Salmo 13"
           and draft.get("status") == "DRAFT_REVIEW_REQUIRED"
           and draft.get("owner_approval") is False
           and draft.get("publication_authorized") is False
@@ -83,11 +86,17 @@ def verify_ai_editorial_review(policy: Any, review: Any, draft: Any) -> dict[str
           "ai_editorial:deterministic_script_gate_failed")
 
     digest = canonical_sha(draft)
+    episode_num = int(draft["episode_id"].rsplit("E", 1)[1])
+    review_date = review.get("review_date") if isinstance(review, dict) else None
+    expected_review_id = (
+        f"VNC-E{episode_num:02d}-INTERNAL-AI-REVIEW-{review_date}"
+    )
     check(isinstance(review, dict) and review.get("project") == "verbo-no-chao"
           and review.get("episode_id") == draft["episode_id"]
           and review.get("reference") == draft["reference"]
-          and review.get("review_id") == "VNC-E01-INTERNAL-AI-REVIEW-2026-11-17"
-          and review.get("review_date") == "2026-11-17"
+          and review.get("review_id") == expected_review_id
+          and isinstance(review_date, str)
+          and bool(re.fullmatch(r"20\d{2}-\d{2}-\d{2}", review_date))
           and review.get("review_model_context") == "CHATGPT_GPT6_IN_CONVERSATION_NOT_CI_MODEL"
           and review.get("review_method") ==
           "AI_SEMANTIC_SOURCE_CROSSCHECK_ONE_MODEL_WITH_DETERMINISTIC_VALIDATION"
@@ -97,8 +106,17 @@ def verify_ai_editorial_review(policy: Any, review: Any, draft: Any) -> dict[str
           "ai_editorial:untrusted_semantic_review_or_digest")
     sources = review.get("script_reviewed_sources")
     check(isinstance(sources, list)
-          and len(set(sources)) >= 2
-          and set(sources) == SOURCE_URLS,
+          and len(sources) >= 2
+          and all(isinstance(x, str) and len(x) <= 500 for x in sources),
+          "ai_editorial:source_evidence_missing")
+    source_set = set(sources)
+    check(len(source_set) == len(sources) and len(source_set) >= 2
+          and all(urlsplit(x).scheme == "https"
+                  and urlsplit(x).hostname in TRUSTED_SOURCE_HOSTS
+                  for x in source_set)
+          and isinstance(draft.get("research_sources"), list)
+          and {x.get("url") for x in draft["research_sources"]
+               if isinstance(x, dict)}.issubset(source_set),
           "ai_editorial:source_evidence_missing")
     check(review.get("result") == "PASS_WITH_DOCUMENTED_CAVEATS"
           and review.get("decision_status") == "AUTO_APPROVED_FOR_INTERNAL_PRODUCTION"
@@ -120,7 +138,7 @@ def verify_ai_editorial_review(policy: Any, review: Any, draft: Any) -> dict[str
               and isinstance(p.get("script_anchor"), str)
               and len(p["script_anchor"]) >= 18
               and p["script_anchor"] in texts[p["block"]]
-              and p.get("source_url") in SOURCE_URLS
+              and p.get("source_url") in source_set
               and isinstance(p.get("analysis"), str)
               and len(p["analysis"]) >= 55,
               "ai_editorial:unanchored_or_failed_pillar:" + str(p.get("id")))
@@ -136,6 +154,7 @@ def verify_ai_editorial_review(policy: Any, review: Any, draft: Any) -> dict[str
     return {
         "episode_id": draft["episode_id"],
         "script_sha256": digest,
+        "review_file_ref": f"contracts/e{episode_num:02d}_ai_editorial_review_v1.json",
         "status": "AUTO_APPROVED_FOR_INTERNAL_PRODUCTION",
         "reviewer_kind": "AI_ASSISTANT_NOT_HUMAN_NOT_REEXECUTED_BY_CI",
         "source_count": len(sources),
