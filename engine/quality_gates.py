@@ -98,6 +98,23 @@ def validate_manifest(manifest: dict[str, Any], artifact_root: Path | None = Non
             if start is not None and end is not None:
                 _add(errors, end > start, f"asset {index} interval must have out > in")
 
+        # A provider-backed run must prove that each declared source hash matches
+        # the actual materialized bytes. The historical pilot fixture deliberately
+        # omits local paths and is validated without artifact_root.
+        if artifact_root is not None:
+            for index, asset in enumerate(assets, start=1):
+                if not isinstance(asset, dict):
+                    continue
+                _add(errors, "path" in asset, f"asset {index} physical path is missing")
+                if "path" in asset:
+                    _verify_artifact(
+                        asset.get("path"),
+                        asset.get("source_hash"),
+                        artifact_root,
+                        f"asset {index}",
+                        errors,
+                    )
+
     audio = manifest.get("audio") or {}
     _add(errors, audio.get("engine") == "Kokoro-82M", "audio engine must remain Kokoro-82M")
     _add(errors, audio.get("language") == "pt-BR", "audio language must remain pt-BR")
