@@ -1,0 +1,17 @@
+{
+  "name": "verbo-no-chao-audiovisual-package",
+  "version": "0.1.0",
+  "required": ["video_id", "format", "resolution", "fps", "scenes", "audio", "captions"],
+  "properties": {
+    "video_id": {"type": "string", "minLength": 1},
+    "format": {"enum": ["vertical_short"]},
+    "resolution": {"enum": ["1080x1920"]},
+    "fps": {"enum": [30, 60]},
+    "scenes": {"type": "array", "minItems": 1},
+    "audio": {"type": "object"},
+    "captions": {"type": "object"},
+    "visual_principles": {
+      "required": ["coherent_with_narration", "cinematic_relevance", "non_generic_composition"]
+    }
+  }
+}

@@ -1,0 +1,11 @@
+{
+  "name": "verbo-no-chao-caption-track",
+  "version": "0.1.0",
+  "required": ["language", "max_lines", "no_overlap", "segments"],
+  "properties": {
+    "language": {"enum": ["pt-BR"]},
+    "max_lines": {"enum": [2]},
+    "no_overlap": {"enum": [true]},
+    "segments": {"type": "array", "minItems": 1}
+  }
+}

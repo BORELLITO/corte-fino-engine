@@ -1,0 +1,11 @@
+{
+  "name": "verbo-no-chao-audio-record",
+  "version": "0.1.0",
+  "required": ["voice", "music"],
+  "voice": {
+    "required": ["source", "language", "commercial_use", "evidence_ref", "intelligibility_status"]
+  },
+  "music": {
+    "required": ["source", "commercial_use", "evidence_ref", "voice_priority", "lyrics"]
+  }
+}
