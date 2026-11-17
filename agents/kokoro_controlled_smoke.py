@@ -257,8 +257,10 @@ def run(max_seconds: int = 180) -> dict[str, Any]:
                     result["pm_alex_selected"] = True
                     page.wait_for_timeout(1000)
 
-                # Never enter draft or user content. Require exact chosen voice.
-                if result["pt_br_selected"] and result["pm_alex_selected"]:
+                # Never enter draft or user content. Require the exact official
+                # origin plus both explicit selectors before entering the fixture.
+                if (result["site_visited"] and
+                        result["pt_br_selected"] and result["pm_alex_selected"]):
                     textarea = page.locator("textarea")
                     result["textarea_count"] = textarea.count()
                     if textarea.count() == 1:
