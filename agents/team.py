@@ -305,6 +305,8 @@ def aggregate(input_dir: Path, audio_preflight_path: Path | None = None) -> dict
             or preflight.get("stage") != "AUDIO_PREFLIGHT_ONLY"
             or preflight.get("status") != "BLOCKED"
             or preflight.get("voice_license_approved") is not False
+            or preflight.get("internal_context_crosscheck_completed") is not True
+            or preflight.get("human_theological_review_pending") is not True
             or preflight.get("audio_generated") is not False
             or preflight.get("publication_authorized") is not False
             or not isinstance(preflight.get("blockers"), list)
@@ -316,6 +318,8 @@ def aggregate(input_dir: Path, audio_preflight_path: Path | None = None) -> dict
             "report_sha256": hashlib.sha256(raw).hexdigest(),
             "blockers": preflight["blockers"],
             "voice_license_approved": False,
+            "internal_context_crosscheck_completed": True,
+            "human_theological_review_pending": True,
             "audio_generated": False,
         }
     return {
