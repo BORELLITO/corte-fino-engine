@@ -18,7 +18,7 @@
     "source_audit": "PARAPHRASE_ONLY_PENDING_LICENSE",
     "script_draft": "APPROVED_FOR_AUDIO",
     "script_approval": "APPROVED_BY_CHANNEL_OWNER",
-    "voice_direction": "APPROVED_KOKORO_PENDING_LICENSE_GATE",
+    "voice_direction": "APPROVED_KOKORO_PM_ALEX_PENDING_RUNTIME_GATE",
     "automated_editorial_review": "PASS_AUTOMATED_REVIEW"
   },
   "gates": [
