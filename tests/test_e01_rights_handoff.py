@@ -110,7 +110,8 @@ class E01RightsReviewTests(unittest.TestCase):
         self.assertIn(result["script_canonical_sha256"], md)
         for block in self.script["blocks"]:
             self.assertIn(block["text"], md)
-        self.assertIn("PENDENTE", md)
+        self.assertIn("NÃO AUTORIZADA", md)
+        self.assertIn("OPCIONAIS", md)
         self.assertIn("Apache-2.0", md)
         self.assertIn("Habacuque", md)
         self.assertNotIn("APROVADO PARA PUBLICAÇÃO", md)
