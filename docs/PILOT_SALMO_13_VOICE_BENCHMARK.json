@@ -22,19 +22,21 @@
     "message": "No readable Brazilian Portuguese · Português text was found.",
     "observed_on": "Kokoro Web browser runtime"
   },
-  "historical_local_attempt": {
-    "status": "NOT_APPLICABLE_TO_PROJECT",
+  "local_runtime_attempt": {
+    "status": "BLOCKED_CONTAINER_RESOURCE",
     "package_attempted": "kokoro>=0.9.4",
     "result": "process killed by environment",
     "exit_status": 137,
     "audio_generated": false,
-    "interpretation": "A tentativa local foi descartada como requisito arquitetural: o canal será operado em superfície cloud pelo navegador gerenciado, com o POCO X8 Pro Max apenas como controle."
+    "architecture_relevance": "NOT_APPLICABLE_TO_PROJECT",
+    "interpretation": "Registro histórico preservado para regressão: execução local não é requisito do canal, que será operado em superfície cloud pelo navegador gerenciado, com o POCO X8 Pro Max apenas como controle."
   },
   "interpretation": [
     "As três vozes passaram no smoke test com texto simplificado.",
     "O mesmo runtime rejeitou o trecho canônico com diacríticos e pontuação.",
     "O roteiro canônico não será mutilado para contornar a falha.",
     "Não há requisito de processamento local no PC ou no telefone.",
+    "O registro local é histórico e não deve virar dependência operacional.",
     "Amostras geradas são apenas de avaliação; não estão liberadas para publicação."
   ],
   "next_action": "segment_canonical_script_in_cloud_browser_and_generate_wav_chunks"
