@@ -1,0 +1,59 @@
+{
+  "engine_id": "verbo-no-chao",
+  "manifest_version": "1.0.0",
+  "pilot_id": "salmo-13",
+  "state": "PREVIEW_READY",
+  "execution": {"mode": "cloud_only", "device_role": "control_only", "legacy_projects_used": false},
+  "owner_approval": false,
+  "publication_authorized": false,
+  "assets": [
+    {"asset_id": "S13-V02", "source_url": "https://www.pexels.com/video/a-sunrise-over-a-field-with-trees-and-houses-18675414/", "source_hash": "2df5b56bd864ac24f4ea8999ff53dee4fb668d940fd712e52b6692abc0a2996d", "in": 0.0, "out": 3.05, "rights_status": "PENDING"},
+    {"asset_id": "S13-V03", "source_url": "https://www.pexels.com/video/the-sun-is-shining-through-the-trees-and-fog-18675419/", "source_hash": "3de4ccf81be8b035460a754d181587a78ef1a1673f9e08db5099b8b5038a5732", "in": 0.0, "out": 2.65, "rights_status": "PENDING"},
+    {"asset_id": "S13-V05", "source_url": "https://www.pexels.com/video/tranquil-water-surface-with-gentle-ripples-32241480/", "source_hash": "fda2189a525b593d452a70178340c98eaa2fae584f2b1608a07bff14c26e936d", "in": 0.0, "out": 1.30, "rights_status": "PENDING"},
+    {"asset_id": "S13-V07", "source_url": "https://www.pexels.com/video/serene-misty-forest-morning-38731245/", "source_hash": "b0a9a28fa9bd26f095478f07000e0c4f7ccc67b56b358681d9e1d5f5a1b5f6d9", "in": 0.0, "out": 8.30, "rights_status": "PENDING"},
+    {"asset_id": "S13-V08", "source_url": "https://www.pexels.com/video/morning-sunlight-shining-through-tree-branches-in-the-countryside-15365452/", "source_hash": "09e02289de47448d10335c48508a542d2683274ba60dabd9ba4bc7f99e0194d8", "in": 0.0, "out": 9.00, "rights_status": "PENDING"},
+    {"asset_id": "S13-V09", "source_url": "https://www.pexels.com/video/misty-forest-pathway-in-early-morning-light-31808103/", "source_hash": "4963af9c461d7226684ec04959e436d018c1bd9bd33d58990b9f33a53f02f418", "in": 0.0, "out": 13.75, "rights_status": "PENDING"},
+    {"asset_id": "S13-V10", "source_url": "https://www.pexels.com/video/foggy-forest-during-early-sunrise-5487156/", "source_hash": "756201f0ccd5d570a1eeeb5f26b0d6ccfa607ea28cbe83658cd3f6884606c388", "in": 0.0, "out": 13.55, "rights_status": "PENDING"},
+    {"asset_id": "S13-V11", "source_url": "https://www.pexels.com/video/forest-path-on-misty-morning-5518075/", "source_hash": "53c2a66751fd64e6ac9c22a2a9c330eae8f72bf090c7e83055ea399a3c80d3dc", "in": 0.0, "out": 8.65, "rights_status": "PENDING"}
+  ],
+  "audio": {
+    "engine": "Kokoro-82M",
+    "language": "pt-BR",
+    "format": "WAV 24 kHz mono float",
+    "persisted": true,
+    "segments": 8,
+    "duration_sec": 60.25,
+    "integrated_lufs": -22.8,
+    "sha256": "946ab6c5ea4acec6b1332161bfae444735e0574e576d260214ded1fdd7cd03e0"
+  },
+  "music": {
+    "present": true,
+    "origin": "original_procedural",
+    "external_samples": false,
+    "license_status": "CLEARED",
+    "hash": "906b26dc2bad2312e07c8a77c5e9d98ade7fa78d712d767f3106d32178a6eda9",
+    "ducking": true
+  },
+  "captions": {"present": true, "safe_area_pass": true, "synchronized": true, "file": "salmo13.srt"},
+  "rights": {
+    "visual_review": "PENDING",
+    "voice_review": "PENDING_EXACT_VOICE_PACK_AUDIT",
+    "music_review": "CLEARED",
+    "monetization": "BLOCKED_PENDING_RIGHTS"
+  },
+  "output": {
+    "file": "salmo13_pilot_master_v1.mp4",
+    "duration_sec": 60.25,
+    "width": 1080,
+    "height": 1920,
+    "sha256": "363283d1872738690abe19d388fdc489c3085bbb5584ce009812822a2170c43c"
+  },
+  "gates": {
+    "clip_repetition": "PASS",
+    "audio_integrity": "PASS",
+    "video_decode": "PASS",
+    "subtitle_safe_area": "PASS",
+    "rights": "PENDING",
+    "publication": "BLOCKED"
+  }
+}

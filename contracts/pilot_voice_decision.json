@@ -1,6 +1,6 @@
 {
   "decision_id": "vnc-salmo-13-voice-001",
-  "status": "APPROVED_VOICE_PENDING_RUNTIME_VALIDATION",
+  "status": "APPROVED_DIRECTION_PENDING_LICENSE_GATE",
   "engine": "Kokoro-82M",
   "language": "pt-BR",
   "deployment": "cloud_browser",
@@ -8,15 +8,18 @@
   "phone_role": "control_only",
   "local_device_compute_required": false,
   "selected_voice": "pm_alex",
-  "voice_selection_scope": "PROVISIONAL_BASELINE",
-  "alternatives_to_benchmark": ["pm_santa", "pf_dora"],
+  "voice_selection_scope": "PREVIEW_BASELINE",
+  "alternatives_to_benchmark": [
+    "pm_santa",
+    "pf_dora"
+  ],
   "model_license": "Apache-2.0",
   "voice_license_status": "PENDING_EXACT_VOICE_PACK_AUDIT",
   "runtime_license_status": "PENDING_DEPENDENCY_NOTICE_REVIEW",
   "runtime_smoke_test_status": "SEGMENTED_CANONICAL_PASS_WITH_PRONUNCIATION_LAYER",
   "local_runtime_status": "NOT_REQUIRED_CLOUD_ONLY",
   "commercial_use_intent": true,
-  "audio_generated": false,
+  "audio_generated": true,
   "publication_authorized": false,
   "approval_source": "chat_confirmation",
   "approval_text": "Aprovo",
@@ -37,7 +40,15 @@
     {
       "label": "segmented_canonical_cloud_smoke",
       "url": "https://kokoroweb.app/#demoContainer"
+    },
+    {
+      "label": "persistent_audio_sha256",
+      "value": "946ab6c5ea4acec6b1332161bfae444735e0574e576d260214ded1fdd7cd03e0"
+    },
+    {
+      "label": "master_preview_sha256",
+      "value": "363283d1872738690abe19d388fdc489c3085bbb5584ce009812822a2170c43c"
     }
   ],
-  "next_gate": "assemble_cloud_audio_chunks_and_complete_voice_rights_gate"
+  "next_gate": "complete_exact_voice_pack_and_runtime_rights_audit"
 }

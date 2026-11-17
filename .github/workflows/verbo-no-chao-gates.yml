@@ -1,0 +1,23 @@
+name: Verbo no Chão — Engine Gates
+
+on:
+  push:
+    branches:
+      - "verbo-no-chao/**"
+  pull_request:
+    branches:
+      - "verbo-no-chao/bootstrap"
+      - main
+
+jobs:
+  blocking-gates:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Run blocking unit tests
+        run: python -m unittest discover -s tests -p "test_verbo_no_chao_gates.py" -v
+      - name: Validate canonical pilot manifest
+        run: python -m engine.quality_gates contracts/pilot_salmo_13_master.json

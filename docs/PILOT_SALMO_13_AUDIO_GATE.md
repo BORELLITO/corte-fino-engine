@@ -1,6 +1,6 @@
 # Gate de áudio — piloto Salmo 13
 
-Estado: KOKORO_TTS_SEGMENTS_GENERATED_PENDING_PERSISTENCE_AND_ASSEMBLY
+Estado: PERSISTED_ASSEMBLED_MIXED_PREVIEW_READY_PENDING_EXACT_VOICE_RIGHTS
 Data: 2026-11-17 (America/Sao_Paulo)
 
 ## Decisão canônica
@@ -67,3 +67,11 @@ As pausas narrativas entre os blocos 2 e 3 representam visualmente a reticência
 3. Montar os segmentos na ordem canônica.
 4. Auditar duração total, transições, inteligibilidade e hash.
 5. Só então sincronizar imagens, trilha e legendas.
+
+
+## Evidência do master atual
+
+- Locução contínua: 60,25 s; SHA-256: 946ab6c5ea4acec6b1332161bfae444735e0574e576d260214ded1fdd7cd03e0.
+- Trilhas: trilha original procedural sem samples externos; SHA-256: 906b26dc2bad2312e07c8a77c5e9d98ade7fa78d712d767f3106d32178a6eda9.
+- Master: salmo13_pilot_master_v1.mp4; 1080x1920; SHA-256: 363283d1872738690abe19d388fdc489c3085bbb5584ce009812822a2170c43c.
+- Estado de publicação: BLOCKED.
