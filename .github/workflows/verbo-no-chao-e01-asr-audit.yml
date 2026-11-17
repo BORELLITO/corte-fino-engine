@@ -1,0 +1,72 @@
+name: Verbo no Chão — E01 Independent ASR Fidelity Audit (one-shot)
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - "verbo-no-chao/e01-independent-asr-audit-v1"
+    paths:
+      - ".github/workflows/verbo-no-chao-e01-asr-audit.yml"
+
+permissions:
+  contents: read
+  actions: read
+
+concurrency:
+  group: vnc-e01-asr-audit-once
+  cancel-in-progress: false
+
+jobs:
+  asr_fidelity:
+    name: Independently decode exact E01 WAV — no release
+    runs-on: ubuntu-24.04
+    timeout-minutes: 18
+    env:
+      HF_HUB_DISABLE_XET: "1"
+      OMP_NUM_THREADS: "4"
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Download EXACT existing E01 preview artifact (no regeneration)
+        uses: actions/download-artifact@v4
+        with:
+          name: vnc-e01-quarantined-voice-preview
+          repository: BORELLITO/corte-fino-engine
+          run-id: 44192226678
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          path: asr-source/
+
+      - name: Verify both original audio/report SHA256 and editorial script hash BEFORE downloading ASR model
+        run: |
+          python -m agents.e01_asr_qa \
+            --root . --input-dir asr-source \
+            --model-dir asr-model --output-dir asr-report \
+            --verify-input-only
+
+      - name: Install pinned offline inference dependency
+        run: |
+          python -m pip install --disable-pip-version-check "faster-whisper==1.2.1"
+          python -m pip show faster-whisper ctranslate2 huggingface-hub
+
+      - name: Execute all offline comparison/timing and hostile-fixture tests with numpy enabled
+        run: python -m unittest discover -s tests -p "test_e01_asr_qa.py" -v
+
+      # Third attempt: feed verified WAV as numpy float32 at 16 kHz, avoiding
+      # PyAV compatibility errors in audio path decoding. No WAV regeneration.
+      - name: Transcribe exact E01 via independent small multilingual Whisper CPU model
+        run: |
+          python -m agents.e01_asr_qa \
+            --root . --input-dir asr-source \
+            --model-dir asr-model --output-dir asr-report
+
+      - name: Retain only JSON transcript/timecodes; NEVER upload model files or release WAV
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: vnc-e01-independent-asr-report
+          path: asr-report/report.json
+          retention-days: 14
+          if-no-files-found: warn
