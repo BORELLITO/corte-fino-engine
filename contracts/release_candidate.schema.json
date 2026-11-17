@@ -1,0 +1,19 @@
+{
+  "name": "verbo-no-chao-release-candidate",
+  "version": "0.1.0",
+  "required": [
+    "release_candidate_id",
+    "fixture_mode",
+    "editorial",
+    "rights",
+    "audiovisual"
+  ],
+  "properties": {
+    "release_candidate_id": {"type": "string", "minLength": 1},
+    "fixture_mode": {"enum": [false]},
+    "publication_requested": {"enum": [false]},
+    "editorial": {"type": "object"},
+    "rights": {"type": "array", "minItems": 1},
+    "audiovisual": {"type": "object"}
+  }
+}
