@@ -1,0 +1,72 @@
+{
+  "policy_id": "VNC-AUTOMATED-VIDEO-WORKFLOW-001",
+  "version": "1.0.0",
+  "state": "APPROVED",
+  "project": "verbo-no-chao",
+  "execution_mode": "CLOUD_AUTOMATED_BUILD_FINAL_OWNER_APPROVAL",
+  "device_role": "POCO_X8_PRO_MAX_CONTROL_ONLY",
+  "automatic_execution": true,
+  "final_owner_approval_required": true,
+  "publication_authorized_by_default": false,
+  "cloud_only": true,
+  "workflow": [
+    {
+      "state": "REQUESTED",
+      "entry": "owner_requests_next_video",
+      "automatic": true,
+      "next": "SELECTING"
+    },
+    {
+      "state": "SELECTING",
+      "entry": "choose_best_script_source_visual_voice_music_caption_and_metadata",
+      "automatic": true,
+      "next": "BUILDING"
+    },
+    {
+      "state": "BUILDING",
+      "entry": "generate_and_assemble_video_in_cloud",
+      "automatic": true,
+      "next": "INTERNAL_QA"
+    },
+    {
+      "state": "INTERNAL_QA",
+      "entry": "run_editorial_biblical_visual_audio_caption_rights_and_monetization_gates",
+      "automatic": true,
+      "next": "READY_FOR_OWNER_APPROVAL"
+    },
+    {
+      "state": "READY_FOR_OWNER_APPROVAL",
+      "entry": "deliver_final_video_and_compact_review",
+      "automatic": false,
+      "next": "OWNER_APPROVED"
+    },
+    {
+      "state": "OWNER_APPROVED",
+      "entry": "explicit_owner_approval",
+      "automatic": false,
+      "next": "PUBLISHING_OR_ARCHIVE"
+    },
+    {
+      "state": "PUBLISHING_OR_ARCHIVE",
+      "entry": "separate_explicit_publication_authorization",
+      "automatic": false,
+      "next": "PUBLISHED"
+    }
+  ],
+  "blocking_rules": [
+    "Never deliver an unrendered or untested placeholder as final video.",
+    "Never publish without explicit owner approval for publication.",
+    "Never silently replace approved script, source, visual identity, voice, music, or captions.",
+    "If a required cloud tool, asset, license, or account is unavailable, stop at the earliest truthful blocked state.",
+    "The owner reviews the finished artifact, not a list of manual production steps."
+  ],
+  "required_final_delivery": [
+    "rendered_video",
+    "thumbnail_or_cover_when_applicable",
+    "title_description_and_tags_draft",
+    "compact_quality_report",
+    "rights_and_license_status",
+    "known_limitations",
+    "approval_prompt"
+  ]
+}
