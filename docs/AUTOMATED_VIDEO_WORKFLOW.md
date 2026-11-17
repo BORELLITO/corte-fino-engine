@@ -71,7 +71,7 @@ O proprietário aprova ou rejeita o resultado final. A aprovação do vídeo nã
 - `READY_FOR_OWNER_APPROVAL`: vídeo renderizado, QA interno concluído e direitos com status compatível.
 - `PUBLISHED`: publicação confirmada somente após autorização específica e evidência da plataforma.
 
-Um clipe isolado, uma prévia ou um arquivo transferido entre serviços não pode ser apresentado como vídeo final. Se qualquer gate essencial falhar, o estado permanece `BLOCKED` e a entrega deve declarar explicitamente o que foi comprovado e o que ainda foi comprovado.
+Um clipe isolado, uma prévia ou um arquivo transferido entre serviços não pode ser apresentado como vídeo final. Se qualquer gate essencial falhar, o estado permanece `BLOCKED` e a entrega deve declarar explicitamente o que foi comprovado e o que ainda não foi comprovado.
 
 ## Regra de autonomia
 
