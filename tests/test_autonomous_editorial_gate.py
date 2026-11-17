@@ -26,7 +26,9 @@ class AutonomousEditorialTests(unittest.TestCase):
         self.assertEqual(r["mandatory_pillars_passed"], 8)
         self.assertEqual(r["script_sha256"], canonical_sha(self.draft))
         self.assertFalse(r["owner_script_review_required"])
-        self.assertFalse(r["final_video_owner_approval_required"] is False)
+        self.assertFalse(r["final_video_owner_approval_required"])
+        self.assertTrue(r["internal_final_video_qa_required"])
+        self.assertTrue(r["owner_final_video_review_optional"])
         self.assertFalse(r["voice_audio_generation_authorized"])
         self.assertFalse(r["publication_authorized"])
 
@@ -100,7 +102,8 @@ class AutonomousEditorialTests(unittest.TestCase):
 
     def test_policy_cannot_auto_publish_or_retroactively_approve_pilot(self):
         for key, value in (("publication_authorized", True),
-                           ("owner_final_video_approval_required", False),
+                           ("owner_final_video_approval_required", True),
+                           ("internal_final_video_qa_required", False),
                            ("protected_pilot_can_be_retroactively_auto_approved", True)):
             bad = copy.deepcopy(self.policy)
             bad[key] = value
