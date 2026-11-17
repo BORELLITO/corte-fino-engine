@@ -49,6 +49,14 @@ Nenhum candidato foi tratado como liberado para publicação. O status só muda 
 - Os links acima são páginas de origem, não prova final de liberação do arquivo específico.
 - O ledger definitivo deve registrar URL, autor, licença, data, hash, riscos e estado.
 
+## Registro de aquisição
+
+- A página oficial do S13-V01 foi aberta e validada visualmente: Free, 1080×1920, proporção 9:16 e duração de 16 segundos.
+- Foram feitas duas tentativas de transferência cloud do arquivo oficial, uma com timeout de 30 segundos e outra com timeout de 120 segundos.
+- As duas tentativas expiraram sem produzir um arquivo durável acessível ao pipeline.
+- Nenhum hash foi gerado e nenhum candidato foi liberado para montagem ou publicação.
+- O bloqueio é operacional, não editorial: a seleção permanece válida, mas a origem precisa ser convertida em asset persistente antes do uso.
+
 ## Próximo gate
 
-Baixar os candidatos, inspecionar tecnicamente, registrar o ledger de direitos, eliminar os que quebram a harmonia e só então iniciar a montagem cloud.
+Obter os candidatos como arquivos persistentes por uma rota cloud compatível, inspecionar tecnicamente, registrar o ledger de direitos, eliminar os que quebram a harmonia e só então iniciar a montagem cloud.
