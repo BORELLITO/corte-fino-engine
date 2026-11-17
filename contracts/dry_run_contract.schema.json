@@ -1,0 +1,12 @@
+{
+  "name": "verbo-no-chao-dry-run",
+  "version": "0.1.0",
+  "required": ["run_id", "editorial", "rights", "audiovisual"],
+  "properties": {
+    "run_id": {"type": "string", "minLength": 1},
+    "editorial": {"type": "object"},
+    "rights": {"type": "array", "minItems": 1},
+    "audiovisual": {"type": "object"},
+    "publication_requested": {"enum": [false]}
+  }
+}
