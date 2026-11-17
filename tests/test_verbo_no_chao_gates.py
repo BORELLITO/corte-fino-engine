@@ -1,4 +1,5 @@
 import copy
+import hashlib
 import json
 import tempfile
 import unittest
@@ -78,6 +79,28 @@ class VerboNoChaoGateTests(unittest.TestCase):
             }
             errors = validate_manifest(broken, artifact_root=root)
         self.assertTrue(any("artifact.output sha256 does not match" in item for item in errors))
+
+    def test_materialized_asset_hash_must_match_bytes(self):
+        broken = copy.deepcopy(self.manifest)
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            asset = root / "asset.mp4"
+            asset.write_bytes(b"real asset")
+            broken["assets"][0]["path"] = "asset.mp4"
+            broken["assets"][0]["source_hash"] = "0" * 64
+            errors = validate_manifest(broken, artifact_root=root)
+        self.assertTrue(any("asset 1 sha256 does not match" in item for item in errors))
+
+    def test_materialized_asset_hash_passes_for_matching_bytes(self):
+        broken = copy.deepcopy(self.manifest)
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            asset = root / "asset.mp4"
+            asset.write_bytes(b"real asset")
+            broken["assets"][0]["path"] = "asset.mp4"
+            broken["assets"][0]["source_hash"] = hashlib.sha256(asset.read_bytes()).hexdigest()
+            errors = validate_manifest(broken, artifact_root=root)
+        self.assertFalse(any(item.startswith("asset 1 ") for item in errors))
 
     def test_runflow_blocks_without_provider_package(self):
         with tempfile.TemporaryDirectory() as directory:
