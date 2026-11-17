@@ -8,12 +8,19 @@ from pathlib import Path
 ALLOWED_ROOTS = {
     ".gitignore",
     "README.md",
+    "analytics",
     "contracts",
+    "delivery",
     "docs",
+    "editorial",
+    "media",
     "orchestrator",
     "qa",
+    "rights",
     "tests",
 }
+
+FORBIDDEN_PATH_PARTS = {"creator", "publisher", "radar", "assets", "secrets"}
 
 
 def violations(root: Path) -> list[str]:
@@ -27,7 +34,7 @@ def violations(root: Path) -> list[str]:
             result.append(f"outside-approved-root:{relative}")
         if path.name in {"main.py", "requirements.txt", "setup.py", "package.json"}:
             result.append(f"legacy-shaped-file:{relative}")
-        if any(part in {"creator", "publisher", "radar", "assets", "media", "secrets"} for part in relative.parts):
+        if any(part in FORBIDDEN_PATH_PARTS for part in relative.parts):
             result.append(f"legacy-shaped-path:{relative}")
     readme = root / "README.md"
     if not readme.exists() or "Verbo no Chão" not in readme.read_text(encoding="utf-8"):
