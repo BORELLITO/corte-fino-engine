@@ -36,6 +36,17 @@ A busca retornou 29 vozes compatíveis com português brasileiro. As duas melhor
 
 Amanda Kelly — Sweet, Warm and Clear foi mantida como alternativa feminina, não como escolha principal, para preservar uma assinatura sonora mais sóbria no primeiro piloto.
 
+## Pesquisa de rota gratuita e comercial
+
+A pesquisa oficial mostrou que “free” não é automaticamente compatível com monetização:
+
+- ElevenLabs Free permite uso não comercial com atribuição; direitos comerciais aparecem nos planos pagos. Portanto, não é aprovado como rota de publicação monetizada.
+- Google Cloud Text-to-Speech oferece cotas mensais sem custo em vários modelos, mas exige faturamento ativado e pode cobrar automaticamente após o limite. A própria documentação autoriza uso em aplicações/mídia conforme os termos do Google Cloud.
+- Azure Speech F0 oferece 0,5 milhão de caracteres neurais por mês; ainda exige conta/serviço Azure e verificação dos termos aplicáveis antes de publicação.
+- Amazon Polly informa ausência de restrições de armazenamento e reutilização do áudio e oferece nível gratuito para novos clientes, mas depende de conta AWS e da janela/condições do Free Tier.
+
+Conclusão operacional: nenhuma dessas rotas está conectada ao motor nesta sessão, e nenhuma conta de faturamento será criada ou usada sem autorização específica. A rota Creative Claw continua sendo a mais integrada, mas está bloqueada por saldo zero e por sua própria política de geração.
+
 ## Configuração técnica prevista
 
 Quando houver uma rota de geração autorizada e com saldo:
