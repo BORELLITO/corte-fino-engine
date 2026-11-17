@@ -1,59 +1,56 @@
-# VERBO NO CHÃO — Pré-voo de áudio E01 (v1)
+# VERBO NO CHÃO — Pré-voo de áudio E01 (evidência revisada em 17/11/2026)
 
-**Estado operacional: BLOCKED** • **Build automatizado do pré-voo: IMPLEMENTADO**  
-Data da verificação pública: 17/11/2026.
+**Estado: `BLOCKED`. A etapa executável produz documentos, NÃO áudios.**  
+Branch experimental empilhada sobre PR #29, sem alterar o piloto Salmo 13 nem liberar publicação.
 
-## Decisão
+## 1. Revisão bíblica do primeiro roteiro
 
-Não gerar narração definitiva nem publicar até existir revisão bíblica/autorais do roteiro e prova verificável da cadeia de uso comercial da voz **no runtime que será realmente usado**. Para reduzir custo e riscos, preparar o pacote de TTS em JSON/Markdown antes de iniciar serviços externos.
+Referência E01: **Habacuque 1:2–4**, "Quando você pergunta e nada muda".
 
-O primeiro candidato é `VNC-W01-E1` (Habacuque 1:2–4), roteiro ainda `DRAFT_REVIEW_REQUIRED`. Os episódios E2 e E3 permanecem intactos.
+Fontes de contexto consultadas:
 
-## Pesquisas oficiais verificadas
+- Texto e notas da NET Bible: https://classic.net.bible.org/passage.php?passage=hab+1%3A2-4
+- Estrutura do livro no BibleProject: https://bibleproject.com/guides/book-of-habakkuk/
+- Análise literária da Bible.org: https://new.bible.org/seriespage/2-habakkuk
 
-1. O proprietário upstream `hexgrad/Kokoro-82M` declara **Apache-2.0** no cartão do modelo e disponibiliza a voz brasileira `pm_alex`.
-   - https://huggingface.co/hexgrad/Kokoro-82M
-2. O catálogo `VOICES.md` da upstream identifica `pm_alex` como pt-BR masculino e indica o **prefixo de hash** `cf0ba8c5`. Um prefixo não substitui o SHA-256 integral dos bytes recebidos.
-   - https://huggingface.co/hexgrad/Kokoro-82M/blob/main/VOICES.md
-3. A página dos arquivos do modelo lista `voices/pm_alex.pt`. **Não foi baixado, hasheado nem validado um pack físico neste fluxo**, e não se presume que um serviço hospedado use exatamente esse pack.
-   - https://huggingface.co/hexgrad/Kokoro-82M/tree/main/voices
-4. O repositório oficial do runtime Kokoro publica texto de licença Apache, mas isso **não comprova os termos de serviço, dependências e os limites comerciais de um site hospedado por terceiros**.
-   - https://github.com/hexgrad/kokoro/blob/main/LICENSE
-5. A decisão anterior do piloto em `contracts/pilot_voice_decision.json` mantém `pm_alex` como **baseline de prévia**, com licenciamento exato do pack e runtime pendentes.
+O texto de 1:2–4 é um **lamento profético por violência, injustiça e perda da eficácia da lei**. A resposta divina aparece mais adiante no livro, seguida de novas perguntas. O roteiro E01 foi corrigido para incluir o aspecto da justiça distorcida e para não sugerir que o silêncio dure por todo o livro.
 
-O registro auditável está em `contracts/kokoro_voice_research_v1.json`. Ele **separa evidência upstream verificada de pontos legais e técnicos não demonstrados**, sem marcar comercialização como liberada. Licença Apache do modelo não garante, por si só, direitos sobre todos os elementos e serviços externos.
+`contracts/e01_editorial_crosscheck_v1.json` registra três afirmações de contexto, três fontes e SHA-256 de cada um dos seis blocos do texto revisado. `agents/e01_context_review.py` confere referências, vínculos, integridade e estados sem copiar textos das fontes. **Isto é cruzamento editorial interno, não revisão teológica independente por uma pessoa e não prova de originalidade absoluta.**
 
-## Pipeline real
+## 2. Pesquisa atual da voz pm_alex
 
-`editorial_production` → `script_production` → `audio_preflight` → 8 auditorias → `coordinator`.
+- **Modelo Kokoro-82M:** licença Apache-2.0 declarada pela upstream. https://huggingface.co/hexgrad/Kokoro-82M
+- **Voz `pm_alex`:** presente na lista oficial de pt-BR, hash abreviado `cf0ba8c5`. https://huggingface.co/hexgrad/Kokoro-82M/blob/main/VOICES.md
+- **Arquivo upstream:** a própria página do arquivo publica o SHA-256 integral `cf0ba8c573c2480fc54123683a35cf1e2ae130428e441eb91f9149bdb188a526`. https://huggingface.co/hexgrad/Kokoro-82M/blob/main/voices/pm_alex.pt
+- **Termos Kokoro Web:** atualizados em **30/10/2026**, permitem baixar WAV e usar narração em projetos pessoais ou comerciais **desde que todos os direitos e licenças necessários sejam respeitados**. https://kokoroweb.app/terms
+- **Execução:** o serviço informa que faz a síntese **dentro do navegador** usando recursos do dispositivo que está executando a página; não é uma API de sintetização no servidor. Em um navegador cloud, a computação pode ocorrer na sessão cloud, mas isso não foi testado nesta camada. https://kokoroweb.app/privacy
 
-O preflight produz o artefato de GitHub Actions `vnc-audio-preflight` com:
+A upstream do modelo e o site de TTS **são entidades independentes**. O hash publicado no Hugging Face é **metadado do arquivo upstream**, não a medição dos bytes realmente baixados ou usados pelo site. Não baixamos nem carregamos o `.pt`; formatos PyTorch com pickle não devem ser desserializados a partir de conteúdo não verificado.
 
-- `audio-preflight/preflight.json`: identidade do roteiro, hash da narração e de cada um dos seis blocos, voz candidata, fontes e bloqueios.
-- `audio-preflight/preflight.md`: roteiro E01 dividido em seis partes e a revisão necessária, sem reescrever nenhum texto.
-- `audio-preflight/report.json`: estado `BLOCKED`, lista de blockers e hashes dos dois arquivos produzidos.
+### Direitos ainda não comprovados
 
-O coordenador **não se limita a exibir oito jobs verdes**: incorpora a situação do áudio. Reportar licença liberada, áudio gerado ou autorização de publicação sem prova invalida o relatório.
+1. Identidade do arquivo de voz realmente carregado pelo site hospedado e sua correspondência com a upstream.
+2. Avisos e licenças das dependências realmente usadas, incluindo eventuais direitos de terceiros sobre o pack.
+3. Revisão teológica/editorial independente e aprovação explícita do roteiro pelo proprietário.
+4. Integridade, inteligibilidade, sincronização e duração do WAV que somente será produzido depois dos gates.
 
-Os arquivos ficam retidos por 14 dias em GitHub Actions. Os rascunhos já são públicos por estarem no repositório público; nunca inserir tokens, IDs privados ou dados sensíveis em relatórios públicos.
+O fato de os termos do site permitirem **uso comercial condicional** elimina a antiga pendência "termos do serviço não encontrados", mas **não** libera automaticamente um áudio ou publicação.
 
-## Critérios de aceitação desta camada
+## 3. O motor executa e verifica
 
-- `Engine Gates` verde no SHA final; regressões editoriais e do piloto continuam cobertas.
-- `Eight Specialist Audits` verde operacionalmente, com relatórios do preflight e do coordenador.
-- Áudio permanece `BLOCKED` com motivos explícitos, e **nenhum WAV é gerado**.
-- Rejeição automática de hash adulterado do roteiro, flag de aprovação ou publicação, falso direito comercial do pack, serviço não verificado e entradas incompletas.
-- Sem gastos, cadastro de serviço, download de modelos não auditados, publicação ou alteração de estado do Salmo 13.
+Fluxo: `editorial_production` → `script_production` → `audio_preflight` → 8 auditores → coordenador.
 
-## Gates futuros necessários
+Artefato de GitHub Actions: `vnc-audio-preflight`.
 
-- Revisão teológica e narrativa por leitura independente do texto bíblico e dos trechos autorais (a verificação automática atual não conclui exegese).
-- Aprovação explícita do roteiro do primeiro episódio pelo proprietário antes de geração definitiva.
-- SHA-256 integral do pack de voz realmente utilizado e documentação/licença aplicável ao seu uso comercial.
-- Termos do serviço de execução escolhido (não confundir licença do Kokoro open-source com contrato de serviço de terceiros).
-- Medição real de áudio WAV, pronúncia, pausas, sincronização, loudness e ducking; depois QA do master e direitos de cada asset.
-- Aprovação de vídeo e autorização de publicação permanecem decisões separadas.
+- `audio-preflight/preflight.json`: E01, hashes de entrada, seis segmentos, voz candidata, revisão interna, bloqueios e estados.
+- `audio-preflight/context_crosscheck.json`: resultado do cruzamento editorial interno com o mesmo fingerprint do roteiro.
+- `audio-preflight/preflight.md`: texto em seis segmentos, limitações e direitos pendentes.
+- `audio-preflight/report.json`: estado `BLOCKED`, arquivos e hashes para o coordenador.
 
-## Controle de dependências e rollback
+O coordenador impede qualquer falsa conclusão de que `internal_context_crosscheck_completed` seja uma revisão humana ou autorização de áudio. A CI pode passar tecnicamente enquanto a **produção de áudio permanece bloqueada com motivos reais**.
 
-Branch isolada deste PR sobre `verbo-no-chao/first-three-scripts-v1` (PR #28), que depende de #27 e #26. A PR #25 da integridade física é independente. **Nenhum PR foi mesclado na branch operacional** `verbo-no-chao/bootstrap` ou na `main` histórica. Reverter esta nova PR não afeta o piloto, plano editorial ou scripts anteriores.
+## 4. Escopo e rollback
+
+Sem gastos, publicação, WAV, upload, mudanças no piloto Salmo 13, alteração de `main` ou merge automático. A voz `pm_alex` é **baseline**, não voz definitivamente liberada. Os demais roteiros E02 e E03 não foram revisados nesta etapa.
+
+Próximo gate: aprovação editorial explícita do roteiro após revisão independente e validação de identidade/direitos do pack realmente utilizado. Uma aprovação de roteiro não significa aprovação de áudio, vídeo ou publicação.
