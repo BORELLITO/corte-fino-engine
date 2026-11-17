@@ -63,6 +63,20 @@ class SecondOpinionTests(unittest.TestCase):
             with self.assertRaisesRegex(ProductionError, "original_sentry_sha"):
                 load_first_sentry(path)
 
+    def test_pinned_real_second_asr_evidence_retains_release_block(self):
+        root = Path(__file__).resolve().parents[1]
+        j = json.loads((root / "contracts/e01_asr_second_opinion_evidence_v1.json")
+                       .read_text(encoding="utf-8"))
+        self.assertEqual(j["source_workflow_run_id"], 44202391104)
+        self.assertEqual(j["source_report_sha256"],
+                         "baecf5d97926aef655fbd00097d1eaa31ee7055e2da9d89ddae9472f47d89a05")
+        self.assertEqual(j["secondary_asr"]["repository"], SECOND_OPINION_REPO)
+        self.assertEqual(j["secondary_asr"]["wer"], 0.02747)
+        self.assertFalse(j["spoken_word_integrity_fully_verified"])
+        self.assertFalse(j["production_wav_master_approved"])
+        self.assertFalse(j["final_video_rendered"])
+        self.assertFalse(j["publication_authorized"])
+
     def test_first_sentry_hash_is_full_64_lower_hex(self):
         self.assertEqual(len(FIRST_SENTRY_SHA), 64)
         self.assertEqual(FIRST_SENTRY_SHA, FIRST_SENTRY_SHA.lower())
