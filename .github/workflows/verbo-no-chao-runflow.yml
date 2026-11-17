@@ -48,7 +48,8 @@ jobs:
           python -m orchestrator.runflow \
             --brief run-input/brief.json \
             --package-dir "$PACKAGE_DIR" \
-            --report-dir run-reports \\\n            --render
+            --report-dir run-reports \
+            --render
 
       - name: Upload validated run report
         if: always()
