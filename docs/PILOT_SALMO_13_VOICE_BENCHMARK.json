@@ -52,7 +52,8 @@
       }
     ],
     "audio_format": "WAV 24 kHz",
-    "downloads_saved_in_cloud_browser_session": 3
+    "download_controls_activated": 3,
+    "persistent_storage_verified": false
   },
   "local_runtime_attempt": {
     "status": "BLOCKED_CONTAINER_RESOURCE",
@@ -68,6 +69,7 @@
     "O texto canônico combinado com reticências foi recusado pelo runtime.",
     "A segmentação em blocos curtos preservou os acentos e gerou três WAVs com pm_alex.",
     "O texto editorial permanece intacto; a camada de pronúncia é exclusiva do TTS.",
+    "Os controles de download foram acionados, mas a persistência dos arquivos ainda não foi comprovada.",
     "Não há requisito de processamento local no PC ou no telefone.",
     "As amostras são apenas de avaliação; não estão liberadas para publicação."
   ],
