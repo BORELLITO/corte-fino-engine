@@ -205,53 +205,90 @@ def check_source(root: Path, folder: Path) -> tuple[Path, str]:
     return wav, text
 
 
+def safe_stage_error(stage: str, exc: Exception) -> ProductionError:
+    """Reveal only coarse public backend failure signatures; never tokens/URLs."""
+    message = str(exc).casefold()
+    if "unable to open file" in message or "no such file" in message:
+        category = "MODEL_FILE_UNAVAILABLE"
+    elif "invalid model" in message or "unsupported model" in message:
+        category = "MODEL_FORMAT_UNSUPPORTED"
+    elif "int8" in message or "compute type" in message:
+        category = "COMPUTE_BACKEND_UNSUPPORTED"
+    elif "memory" in message:
+        category = "MEMORY_RESOURCE"
+    elif "connection" in message or "timeout" in message:
+        category = "REMOTE_ACCESS"
+    elif "not implemented" in message or "missing feature" in message:
+        category = "BACKEND_FEATURE"
+    else:
+        category = "OTHER"
+    return ProductionError(f"asr:{stage}:{category}:{type(exc).__name__}")
+
+
 def run_independent_asr(wav: Path, model_root: Path) -> tuple[
         list[dict[str, Any]], dict[str, Any]]:
     # Download only public licensed ASR weights. Resolve their exact commit first
     # so a changing "main" cannot silently change the evaluated model mid-job.
     from huggingface_hub import HfApi, snapshot_download
     from faster_whisper import WhisperModel
-    info = HfApi().model_info(REPO)
+    try:
+        info = HfApi().model_info(REPO)
+    except Exception as exc:
+        raise safe_stage_error("hub_metadata", exc) from exc
     revision = info.sha
     check(isinstance(revision, str)
           and bool(re.fullmatch(r"[a-f0-9]{40}", revision)),
           "asr:model_revision_unpinned")
-    model_dir = snapshot_download(
-        repo_id=REPO, revision=revision,
-        allow_patterns=["*.bin", "*.json"],
-        local_dir=str(model_root),
-    )
+    try:
+        model_dir = snapshot_download(
+            repo_id=REPO, revision=revision,
+            allow_patterns=["*.bin", "*.json"],
+            local_dir=str(model_root),
+        )
+    except Exception as exc:
+        raise safe_stage_error("snapshot_download", exc) from exc
     binary = Path(model_dir)/"model.bin"
     check(binary.is_file()
           and 100_000_000 < binary.stat().st_size < 800_000_000,
           "asr:model_binary_missing_or_wrong_size")
     model_sha = sha256_file(binary)
-    model = WhisperModel(
-        str(model_dir), device="cpu", compute_type="int8",
-        cpu_threads=4, num_workers=1,
-    )
-    segments_iter, info = model.transcribe(
-        str(wav), language="pt", task="transcribe",
-        beam_size=5, temperature=0.0, word_timestamps=True,
-        vad_filter=False, condition_on_previous_text=False,
-    )
+    try:
+        model = WhisperModel(
+            str(model_dir), device="cpu", compute_type="int8",
+            cpu_threads=4, num_workers=1,
+        )
+    except Exception as exc:
+        raise safe_stage_error("model_load", exc) from exc
+    try:
+        segments_iter, info = model.transcribe(
+            str(wav), language="pt", task="transcribe",
+            beam_size=5, temperature=0.0, word_timestamps=True,
+            vad_filter=False, condition_on_previous_text=False,
+        )
+    except Exception as exc:
+        raise safe_stage_error("transcribe_call", exc) from exc
     segments: list[dict[str, Any]] = []
-    for seg in segments_iter:
-        check(len(segments) < MAX_SEGMENTS, "asr:too_many_segments")
-        words = [
-            {"start": round(float(w.start), 3),
-             "end": round(float(w.end), 3),
-             "word": w.word,
-             "probability": round(float(w.probability), 5)}
-            for w in (seg.words or [])
-        ]
-        segments.append({
-            "start": round(float(seg.start), 3),
-            "end": round(float(seg.end), 3),
-            "text": str(seg.text),
-            "avg_logprob": round(float(seg.avg_logprob), 5),
-            "words": words,
-        })
+    try:
+        for seg in segments_iter:
+            check(len(segments) < MAX_SEGMENTS, "asr:too_many_segments")
+            words = [
+                {"start": round(float(w.start), 3),
+                 "end": round(float(w.end), 3),
+                 "word": w.word,
+                 "probability": round(float(w.probability), 5)}
+                for w in (seg.words or [])
+            ]
+            segments.append({
+                "start": round(float(seg.start), 3),
+                "end": round(float(seg.end), 3),
+                "text": str(seg.text),
+                "avg_logprob": round(float(seg.avg_logprob), 5),
+                "words": words,
+            })
+    except ProductionError:
+        raise
+    except Exception as exc:
+        raise safe_stage_error("transcribe_stream", exc) from exc
     return segments, {
         "backend": ASR_BACKEND, "repository": REPO,
         "repository_revision": revision,
