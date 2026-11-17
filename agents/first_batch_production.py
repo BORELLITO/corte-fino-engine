@@ -177,7 +177,7 @@ def produce(root: Path, output: Path, *, upstream_root: Path | None = None) -> d
         "evidence_sha256": ev,
         "limitations": [
             "A source URL is not a license or theological endorsement",
-            "No modern Bible translation or commentary was copied",
+            "Drafted as original paraphrases; lack of copying is not algorithmically proven",
             "Automated regex/length checks cannot prove theological accuracy",
             "Duration uses a word-speed estimate, not generated speech",
             "No approval for audio generation, asset use, scheduling or publishing",
