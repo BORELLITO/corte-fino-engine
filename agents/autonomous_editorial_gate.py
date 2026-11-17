@@ -90,7 +90,11 @@ def verify_ai_editorial_review(policy: Any, review: Any, draft: Any) -> dict[str
     review_date = review.get("review_date") if isinstance(review, dict) else None
     # Legacy week-one file IDs are preserved. New weeks use full episode IDs,
     # preventing W02-E1 from ever claiming an older W01-E1 review receipt.
-    if draft["episode_id"].startswith("VNC-W01-"):
+    if (draft["episode_id"] == "VNC-W01-E1"
+            and draft.get("script_id") == "vnc-vnc-w01-e1-script-v2"):
+        expected_review_id = f"VNC-E01-INTERNAL-AI-REVIEW-{review_date}-V2"
+        review_file_ref = "contracts/e01_ai_editorial_review_v2.json"
+    elif draft["episode_id"].startswith("VNC-W01-"):
         expected_review_id = f"VNC-E{episode_num:02d}-INTERNAL-AI-REVIEW-{review_date}"
         review_file_ref = f"contracts/e{episode_num:02d}_ai_editorial_review_v1.json"
     else:
