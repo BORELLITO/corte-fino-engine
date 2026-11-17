@@ -1,0 +1,33 @@
+{
+  "schema_version": "1.0.0",
+  "project": "verbo-no-chao",
+  "audit_id": "VNC-ONNX-PM-ALEX-001",
+  "voice_id": "pm_alex",
+  "language": "pt-BR",
+  "format": "onnx_voice_bin",
+  "model_provider": "onnx-community",
+  "model_id": "Kokoro-82M-v1.0-ONNX",
+  "upstream_revision": "4685882",
+  "source_file": "voices/pm_alex.bin",
+  "source_url": "https://huggingface.co/onnx-community/Kokoro-82M-v1.0-ONNX/resolve/4685882/voices/pm_alex.bin",
+  "source_file_metadata_url": "https://huggingface.co/onnx-community/Kokoro-82M-v1.0-ONNX/blob/main/voices/pm_alex.bin",
+  "expected_sha256": "0175c753f59c54e7fd5a995bedef0c5ff2fb67e0043dd3dcb2ae74ec2acbeb2a",
+  "min_bytes": 450000,
+  "max_bytes": 1000000,
+  "upstream_license_declaration": "Apache-2.0",
+  "upstream_file_byte_verification": "PENDING_CI_DOWNLOAD_AND_SHA256",
+  "hosted_site": "https://kokoroweb.app/",
+  "hosted_site_asset_identity": "NOT_ESTABLISHED",
+  "hosted_site_asset_sha256": null,
+  "backend_source_relation": "NOT_ESTABLISHED",
+  "raw_voice_pack_execution_authorized": false,
+  "rights_approved": false,
+  "publication_authorized": false,
+  "notes": [
+    "ONNX Community publishes pm_alex.bin with a different SHA-256 from original hexgrad pm_alex.pt. Different formats cannot be treated as identical by filename.",
+    "Binary is downloaded only into bounded memory in CI, hashed, never deserialized, imported or executed, and never uploaded to GitHub artifacts.",
+    "Review of a CDN upstream file does not prove what Kokoro Web downloaded or cached in a browser session.",
+    "Repo revision 4685882 is a source commit prefix for ONNX voice upload; expected SHA256 is the ultimate content lock.",
+    "Apache-2.0 upstream model license and host terms require separate review for runtime dependencies, specific asset provenance and final publishing."
+  ]
+}
