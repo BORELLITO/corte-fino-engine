@@ -1,19 +1,19 @@
 # Candidatos visuais — piloto Salmo 13
 
-Estado: CANDIDATES_SELECTED_PENDING_DOWNLOAD_AND_RIGHTS_LEDGER
+Estado: S13_V01_DURABLE_PENDING_MULTI_SHOT_AND_RIGHTS_LEDGER
 Data: 2026-11-17 (America/Sao_Paulo)
 
 ## Critério
 
 Candidatos escolhidos após a aprovação do padrão de harmonia visual. A seleção privilegia amanhecer, névoa, caminho, árvores, luz progressiva e composição que aceite legenda em 9:16.
 
-Nenhum candidato foi tratado como liberado para publicação. O status só muda após download, inspeção visual, registro de licença e hash do arquivo.
+Nenhum candidato foi tratado como liberado para publicação. O status só muda após download/importação persistente, inspeção visual, registro de licença, identificação durável e hash quando disponível.
 
 ## Lote principal recomendado
 
 | ID | Fonte | Asset | Função narrativa | Situação |
 |---|---|---|---|---|
-| S13-V01 | Pexels | https://www.pexels.com/video/a-sunrise-over-a-city-with-fog-and-trees-18310302/ | abertura: solidão e espera; vídeo vertical 9:16 | candidato forte |
+| S13-V01 | Pexels | https://www.pexels.com/video/a-sunrise-over-a-city-with-fog-and-trees-18310302/ | abertura: solidão e espera; vídeo vertical 9:16 | persistido na biblioteca cloud; QA técnico inicial aprovado |
 | S13-V02 | Pexels | https://www.pexels.com/video/a-sunrise-over-a-field-with-trees-and-houses-18675414/ | transição: horizonte e busca; vídeo vertical 9:16 | candidato forte |
 | S13-V03 | Pexels | https://www.pexels.com/video/the-sun-is-shining-through-the-trees-and-fog-18675419/ | desenvolvimento: luz atravessando a incerteza; vídeo vertical 9:16 | candidato forte |
 | S13-V04 | Pexels | https://www.pexels.com/video/cinematic-timelapse-of-misty-morning-sunrise-34142319/ | virada: expansão e esperança; vídeo vertical 9:16 | revisar para não ficar literal |
@@ -51,12 +51,16 @@ Nenhum candidato foi tratado como liberado para publicação. O status só muda 
 
 ## Registro de aquisição
 
-- A página oficial do S13-V01 foi aberta e validada visualmente: Free, 1080×1920, proporção 9:16 e duração de 16 segundos.
-- Foram feitas duas tentativas de transferência cloud do arquivo oficial, uma com timeout de 30 segundos e outra com timeout de 120 segundos.
-- As duas tentativas expiraram sem produzir um arquivo durável acessível ao pipeline.
-- Nenhum hash foi gerado e nenhum candidato foi liberado para montagem ou publicação.
-- O bloqueio é operacional, não editorial: a seleção permanece válida, mas a origem precisa ser convertida em asset persistente antes do uso.
+- A página oficial do S13-V01 foi aberta e validada visualmente: Free, 1080×1920, proporção 9:16 e duração exibida de aproximadamente 16 segundos.
+- As duas tentativas de download direto pelo navegador cloud expiraram, uma com timeout de 30 segundos e outra de 120 segundos.
+- Foi aplicada uma rota cloud alternativa de importação direta do arquivo oficial.
+- A importação foi concluída com sucesso e o asset ficou persistido na biblioteca audiovisual.
+- A inspeção técnica da biblioteca confirmou: MIME `video/mp4`, largura 1080, altura 1920, duração exata de 17.045 ms, proporção 9:16.
+- Identificador durável: `e4f8059a-5773-487d-8fb5-a769bf1dbf22`.
+- URL persistente: https://cdn.creativeclaw.co/u/cfe41e70/videos/bda458db-8fe2-4f6f-bdeb-956db4dc48c9.mp4
+- Hash criptográfico ainda não foi calculado; o asset não está liberado para publicação até completar o ledger.
+- O S13-V01 está apto para integrar o lote de montagem, mas o piloto continua bloqueado até obter múltiplos planos duráveis.
 
 ## Próximo gate
 
-Obter os candidatos como arquivos persistentes por uma rota cloud compatível, inspecionar tecnicamente, registrar o ledger de direitos, eliminar os que quebram a harmonia e só então iniciar a montagem cloud.
+Importar e inspecionar pelo menos mais três candidatos compatíveis, registrar os respectivos direitos e identificadores duráveis, calcular hashes quando a rota permitir, e só então iniciar a montagem cloud.
