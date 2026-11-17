@@ -1,6 +1,6 @@
 # Revisão editorial automatizada — Salmo 13
 
-Resultado: PASS_AUTOMATED_REVIEW
+Resultado: PASS_AUTOMATED_REVIEW_OWNER_APPROVED_FOR_BUILD
 
 Indicadores:
 
@@ -10,8 +10,15 @@ Indicadores:
 - nenhuma citação literal;
 - nenhuma promessa religiosa proibida;
 - fonte tratada como referência e paráfrase;
-- aplicação sem garantia automática.
+- aplicação sem garantia automática;
+- aprovação editorial explícita do proprietário registrada em `PILOT_SALMO_13_SCRIPT_DRAFT.md`.
+
+Estado operacional:
+
+- liberado para construção do piloto;
+- não liberado para publicação;
+- QA audiovisual, direitos/licenças e aprovação final do vídeo continuam obrigatórios.
 
 Limite importante:
 
-A aprovação automatizada não substitui a revisão humana do roteiro. O texto continua em DRAFT_REVIEW_REQUIRED e ainda não está liberado para narração.
+A aprovação editorial do roteiro não substitui a revisão final do vídeo renderizado. A entrega só pode assumir o estado `READY_FOR_OWNER_APPROVAL` após os gates audiovisuais e de direitos serem concluídos.
