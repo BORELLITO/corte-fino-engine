@@ -1,6 +1,6 @@
 {
   "benchmark_id": "vnc-salmo-13-voice-benchmark-001",
-  "status": "PARTIAL_SMOKE_PASS_RUNTIME_BLOCKER",
+  "status": "SEGMENTED_CANONICAL_PASS_LICENSE_BLOCKER",
   "source": "browser_smoke_test",
   "tool": "Kokoro Web",
   "test_url": "https://kokoroweb.app/#demoContainer",
@@ -20,7 +20,39 @@
   "canonical_text_result": {
     "status": "NO_GO_BROWSER_RUNTIME",
     "message": "No readable Brazilian Portuguese · Português text was found.",
-    "observed_on": "Kokoro Web browser runtime"
+    "observed_on": "Kokoro Web browser runtime",
+    "scope": "combined_text_with_ellipsis"
+  },
+  "segmented_canonical_result": {
+    "status": "PASS_SEGMENTED",
+    "voice_id": "pm_alex",
+    "editorial_text_preserved": true,
+    "pronunciation_layer_required": true,
+    "segments": [
+      {
+        "segment_id": "salmo13-vnc-voice-01",
+        "editorial_text": "Tem dias em que o silêncio parece uma resposta.",
+        "tts_text": "Tem dias em que o silêncio parece uma resposta.",
+        "generated": true,
+        "result_index": 1
+      },
+      {
+        "segment_id": "salmo13-vnc-voice-02",
+        "editorial_text": "Você ora, espera, olha para o relógio... e nada muda.",
+        "tts_text": "Você ora, espera, olha para o relógio.",
+        "generated": true,
+        "result_index": 2
+      },
+      {
+        "segment_id": "salmo13-vnc-voice-03",
+        "editorial_text": "Você ora, espera, olha para o relógio... e nada muda.",
+        "tts_text": "E nada muda.",
+        "generated": true,
+        "result_index": 3
+      }
+    ],
+    "audio_format": "WAV 24 kHz",
+    "downloads_saved_in_cloud_browser_session": 3
   },
   "local_runtime_attempt": {
     "status": "BLOCKED_CONTAINER_RESOURCE",
@@ -33,11 +65,11 @@
   },
   "interpretation": [
     "As três vozes passaram no smoke test com texto simplificado.",
-    "O mesmo runtime rejeitou o trecho canônico com diacríticos e pontuação.",
-    "O roteiro canônico não será mutilado para contornar a falha.",
+    "O texto canônico combinado com reticências foi recusado pelo runtime.",
+    "A segmentação em blocos curtos preservou os acentos e gerou três WAVs com pm_alex.",
+    "O texto editorial permanece intacto; a camada de pronúncia é exclusiva do TTS.",
     "Não há requisito de processamento local no PC ou no telefone.",
-    "O registro local é histórico e não deve virar dependência operacional.",
-    "Amostras geradas são apenas de avaliação; não estão liberadas para publicação."
+    "As amostras são apenas de avaliação; não estão liberadas para publicação."
   ],
-  "next_action": "segment_canonical_script_in_cloud_browser_and_generate_wav_chunks"
+  "next_action": "assemble_cloud_audio_chunks_and_complete_voice_rights_gate"
 }
