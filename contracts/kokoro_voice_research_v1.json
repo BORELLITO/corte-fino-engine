@@ -34,7 +34,8 @@
     "Kokoro Web states speech synthesis occurs inside the executing browser (WebAssembly/WebGPU), not on their synthesis servers; when running in a cloud browser it can use cloud browser compute but no such session was run here.",
     "The hosted site's model/voice bytes, voice-pack provenance and dependency notices were NOT verified; hosted platform is independent from upstream author.",
     "No definitive voice-pack commercial rights, output clearance or use of a hosted execution session have been proven.",
-    "Salmo 13 pilot remains untouched and publication remains forbidden without separate authorization."
+    "Salmo 13 pilot remains untouched and publication remains forbidden without separate authorization.",
+    "A separate ONNX Community pm_alex.bin has a different SHA256 from upstream pm_alex.pt. This branch verifies the upstream ONNX bytes without deserializing; it does not identify the Kokoro Web hosted/cache asset."
   ],
   "official_voice_file_page": "https://huggingface.co/hexgrad/Kokoro-82M/blob/main/voices/pm_alex.pt",
   "upstream_voice_pack_sha256_provenance": "UPSTREAM_HF_FILE_PAGE_METADATA_NOT_INDEPENDENT_BYTE_HASH",
@@ -44,5 +45,10 @@
   "runtime_terms_last_updated": "2026-10-30",
   "runtime_terms_reviewed_on": "2026-11-17",
   "runtime_execution_type": "IN_BROWSER_CLIENT_SIDE_BROWSER_COMPUTE_NOT_REMOTE_API",
-  "hosted_service_independent_from_model_author": true
+  "hosted_service_independent_from_model_author": true,
+  "browser_onnx_candidate_asset_ref": "contracts/onnx_voice_asset_v1.json",
+  "browser_onnx_candidate_format": "pm_alex.bin",
+  "browser_onnx_candidate_upstream_sha256": "0175c753f59c54e7fd5a995bedef0c5ff2fb67e0043dd3dcb2ae74ec2acbeb2a",
+  "browser_onnx_candidate_source": "onnx-community/Kokoro-82M-v1.0-ONNX",
+  "hosted_site_actual_asset_format": "UNVERIFIED"
 }
