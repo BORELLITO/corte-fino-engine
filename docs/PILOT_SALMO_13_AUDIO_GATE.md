@@ -1,6 +1,6 @@
 # Gate de áudio — piloto Salmo 13
 
-Estado: KOKORO_TTS_CLOUD_ROUTE_ACTIVE_PENDING_AUDIO_PERSISTENCE
+Estado: KOKORO_TTS_SEGMENTS_GENERATED_PENDING_PERSISTENCE_AND_ASSEMBLY
 Data: 2026-11-17 (America/Sao_Paulo)
 
 ## Decisão canônica
@@ -22,14 +22,19 @@ O POCO X8 Pro Max serve apenas como interface de controle. O processamento ocorr
 
 Uma versão anterior deste documento apontou Creative Claw/ElevenLabs como rota principal. Isso foi corrigido porque o branch canônico já contém uma decisão de voz aprovada e um benchmark real do Kokoro Web. Creative Claw não é dependência do piloto e não deve ser usado para substituir silenciosamente a rota Kokoro.
 
-## Evidência já existente
+## Execução comprovada nesta etapa
 
-- As vozes `pm_alex`, `pm_santa` e `pf_dora` passaram no smoke test pt-BR.
-- `pm_alex` foi selecionada como baseline provisória.
-- O texto completo com reticência foi recusado pelo runtime.
-- A camada de pronúncia segmentada passou mantendo o texto editorial canônico intacto.
-- Três blocos curtos foram anteriormente gerados em WAV 24 kHz; a persistência desses downloads ainda não havia sido comprovada.
-- Nesta execução, a primeira amostra foi regenerada com Alex e está visível na sessão cloud; a persistência do arquivo ainda aguarda confirmação.
+- Idioma selecionado: Português (Brazil).
+- Voz selecionada: Alex, correspondente à baseline `pm_alex`.
+- Velocidade: 1.0x.
+- Formato observado: WAV 24 kHz.
+- Segmentos gerados na sessão: **8 de 8**.
+- Os oito controles “Download WAV” foram acionados.
+- A página exibiu os oito cards de áudio na ordem correta.
+- Nenhum crédito ou compra foi utilizado.
+- A sessão cloud foi preservada para revisão.
+
+Estado de persistência: **PENDENTE**. O navegador confirmou a geração e disponibilizou os links blob, mas ainda não foi comprovado que os oito arquivos foram recuperados como ativos persistentes da pipeline. Portanto, não há áudio de produção liberado.
 
 ## Roteiro e camada de pronúncia
 
@@ -57,8 +62,8 @@ As pausas narrativas entre os blocos 2 e 3 representam visualmente a reticência
 
 ## Próximo gate
 
-1. Gerar os oito segmentos na sessão Kokoro Web com `pm_alex`.
-2. Confirmar que cada WAV pode ser baixado e recuperado na superfície cloud.
+1. Recuperar e confirmar os oito WAVs na superfície cloud.
+2. Registrar duração, tamanho e SHA-256 de cada segmento.
 3. Montar os segmentos na ordem canônica.
-4. Auditar duração, transição, inteligibilidade e hash.
+4. Auditar duração total, transições, inteligibilidade e hash.
 5. Só então sincronizar imagens, trilha e legendas.
