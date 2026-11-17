@@ -1,0 +1,22 @@
+{
+  "name": "verbo-no-chao-script-package",
+  "version": "0.1.0",
+  "required": [
+    "script_id",
+    "status",
+    "source_decision_ref",
+    "source_mode",
+    "contains_verbatim_quote",
+    "duration_target_seconds",
+    "blocks"
+  ],
+  "properties": {
+    "script_id": {"type": "string", "minLength": 1},
+    "status": {"enum": ["DRAFT_REVIEW_REQUIRED", "APPROVED_FOR_AUDIO", "BLOCKED"]},
+    "source_decision_ref": {"type": "string", "minLength": 1},
+    "source_mode": {"enum": ["reference_and_paraphrase"]},
+    "contains_verbatim_quote": {"enum": [false]},
+    "duration_target_seconds": {"enum": [70, 75, 78]},
+    "blocks": {"type": "array", "minItems": 6}
+  }
+}

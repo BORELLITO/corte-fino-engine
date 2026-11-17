@@ -1,0 +1,34 @@
+{
+  "script_id": "vnc-salmo-13-script-001",
+  "status": "DRAFT_REVIEW_REQUIRED",
+  "source_decision_ref": "contracts/pilot_source_decision.json",
+  "source_mode": "reference_and_paraphrase",
+  "contains_verbatim_quote": false,
+  "duration_target_seconds": 75,
+  "blocks": [
+    {
+      "type": "opening",
+      "text": "Tem dias em que o silêncio parece uma resposta. Você ora, espera, olha para o relógio… e nada muda."
+    },
+    {
+      "type": "connection",
+      "text": "Talvez você esteja cansado de parecer forte. Cansado de explicar o que sente. Cansado de esperar uma mudança que não chega."
+    },
+    {
+      "type": "biblical_reference",
+      "text": "O Salmo 13 nasce exatamente nesse lugar: uma oração de lamento, feita por alguém que se sente esquecido, mas ainda decide falar com Deus."
+    },
+    {
+      "type": "reflection",
+      "text": "Davi não transforma a dor em aparência de vitória. Ele pergunta, insiste e apresenta sua angústia. A Bíblia não trata esse lamento como falta de fé. Ela mostra que a dor também pode ser levada à presença de Deus."
+    },
+    {
+      "type": "application",
+      "text": "Hoje, talvez a sua oração não precise ser bonita. Pode ser honesta. Diga o que está pesado. Procure apoio. Continue dando o próximo passo possível, sem inventar certezas que você ainda não tem."
+    },
+    {
+      "type": "conclusion",
+      "text": "A espera continua sendo difícil, mas o silêncio não precisa ser o fim da esperança. Você pode atravessar este momento um dia de cada vez."
+    }
+  ]
+}
