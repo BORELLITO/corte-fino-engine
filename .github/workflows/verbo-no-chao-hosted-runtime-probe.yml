@@ -1,0 +1,46 @@
+name: Verbo no Chão — Kokoro Hosted Browser Probe (read-only)
+
+on:
+  push:
+    branches:
+      - "verbo-no-chao/**"
+    paths:
+      - "agents/hosted_browser_probe.py"
+      - "tests/test_hosted_browser_probe.py"
+      - ".github/workflows/verbo-no-chao-hosted-runtime-probe.yml"
+  pull_request:
+    branches:
+      - "verbo-no-chao/**"
+    paths:
+      - "agents/hosted_browser_probe.py"
+      - "tests/test_hosted_browser_probe.py"
+      - ".github/workflows/verbo-no-chao-hosted-runtime-probe.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  passive_hosted_browser_probe:
+    name: Inspect public Kokoro Web without TTS
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Install pinned browser automation library (Chrome preinstalled)
+        run: |
+          python -m pip install --disable-pip-version-check "playwright==1.56.0"
+          google-chrome --version
+      - name: Test strict evidence rules before browser navigation
+        run: python -m unittest discover -s tests -p 'test_hosted_browser_probe.py' -v
+      - name: Navigate public site and observe network without clicking Generate
+        run: python -m agents.hosted_browser_probe --output voice-host-probe/report.json
+      - name: Upload JSON report only (never model, audio, screenshots or cookies)
+        uses: actions/upload-artifact@v4
+        with:
+          name: vnc-hosted-kokoro-passive-probe
+          path: voice-host-probe/report.json
+          retention-days: 14
+          if-no-files-found: error
