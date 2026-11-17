@@ -1,0 +1,49 @@
+name: Verbo no Chão — E01 Real Voice Preview (quarantined)
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - "verbo-no-chao/e01-voice-quarantine-preview-v1"
+    paths:
+      - ".github/workflows/verbo-no-chao-e01-voice-preview.yml"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: vnc-e01-voice-preview-one-shot
+  cancel-in-progress: false
+
+jobs:
+  e01_quarantined_preview:
+    name: Exact E01 pt-BR WAV candidate — no publication
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Install pinned Playwright (Chrome runner)
+        run: |
+          python -m pip install --disable-pip-version-check "playwright==1.56.0"
+          google-chrome --version
+      # WAV from the real browser can be IEEE float32 or WAVE_FORMAT_EXTENSIBLE.
+      # Safely normalize after RIFF bounds and sample validation, then inspect
+      # real normalized PCM16 bytes. This workflow change initiates one re-test.
+      - name: Run offline script and audio safety unit tests
+        run: python -m unittest discover -s tests -p "test_e01_voice_preview.py" -v
+      - name: Generate one quarantined E01 WAV in public browser (no upload)
+        run: |
+          python -m agents.e01_voice_preview \
+            --root . --output-dir voice-preview-e01 \
+            --max-seconds 480
+      - name: Upload preview and JSON metrics (no public release or binary voicepack)
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: vnc-e01-quarantined-voice-preview
+          path: voice-preview-e01/
+          if-no-files-found: error
+          retention-days: 7
