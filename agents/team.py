@@ -305,6 +305,8 @@ def aggregate(input_dir: Path, audio_preflight_path: Path | None = None) -> dict
             or preflight.get("stage") != "AUDIO_PREFLIGHT_ONLY"
             or preflight.get("status") != "BLOCKED"
             or preflight.get("voice_license_approved") is not False
+            or preflight.get("rights_review_handoff_generated") is not True
+            or preflight.get("rights_review_handoff_status") != "REVIEW_PACKET_READY_NOT_APPROVED"
             or preflight.get("historical_smoke_evidence_verified") is not True
             or preflight.get("historical_smoke_source_report_sha256") !=
                "1b83c7dcdcf11c18241d20c572b72db286b3c4a1a38cdae45dc8ffa5acf9af37"
@@ -321,6 +323,8 @@ def aggregate(input_dir: Path, audio_preflight_path: Path | None = None) -> dict
             "report_sha256": hashlib.sha256(raw).hexdigest(),
             "blockers": preflight["blockers"],
             "voice_license_approved": False,
+            "rights_review_handoff_generated": True,
+            "rights_review_handoff_status": "REVIEW_PACKET_READY_NOT_APPROVED",
             "historical_smoke_evidence_verified": True,
             "historical_smoke_source_report_sha256":
                 "1b83c7dcdcf11c18241d20c572b72db286b3c4a1a38cdae45dc8ffa5acf9af37",
