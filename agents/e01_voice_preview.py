@@ -99,6 +99,8 @@ def inspect_pcm_wav(raw: bytes) -> dict[str, Any]:
             check(MIN_DURATION <= duration <= MAX_DURATION,
                   "voice_preview:duration_out_of_range")
             data = f.readframes(frames)
+    except ProductionError:
+        raise
     except (wave.Error, EOFError, ValueError, OSError) as e:
         raise ProductionError("voice_preview:invalid_wav_container") from e
     check(len(data) == frames * channels * width,
