@@ -8,7 +8,20 @@ from unittest.mock import patch
 from agents.e01_v2_voice_preview import generate, OUTPUT_NAME
 from agents.e01_v2_candidate import V2_SHA, PARENT_SHA
 from agents.content_production import ProductionError
-from tests.test_wav_normalization import test_riff
+def test_riff(fmt_code: int = 3, seconds: int = 70,
+              sample: float = 0.16) -> bytes:
+    rate, channels = 24000, 1
+    width = 4 if fmt_code == 3 else 2
+    fmt = struct.pack("<HHIIHH", fmt_code, channels, rate,
+                      rate*channels*width, channels*width, width*8)
+    frames = (struct.pack("<f", sample) if fmt_code == 3 else
+              struct.pack("<h", 1600)) * (rate * seconds)
+    chunks = (
+        b"fmt " + struct.pack("<I", len(fmt)) + fmt +
+        b"data" + struct.pack("<I", len(frames)) + frames
+    )
+    return b"RIFF" + struct.pack("<I", len(chunks)+4) + b"WAVE" + chunks
+
 
 ROOT = Path(__file__).resolve().parents[1]
 
