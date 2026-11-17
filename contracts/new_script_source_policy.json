@@ -1,6 +1,6 @@
 {
   "policy_id": "VNC-NEW-EDITORIAL-SCRIPTS-SOURCES-001",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "project": "verbo-no-chao",
   "scope": "non-pilot-new-episode-scripts",
   "source_mode": "reference_and_paraphrase",
@@ -8,7 +8,7 @@
   "contains_verbatim_quote": false,
   "verbatim_quote_status": "BLOCKED_UNTIL_EDITION_LICENSE_VERIFIED",
   "biblical_review_required": true,
-  "owner_approval_required": true,
+  "owner_approval_required": false,
   "publication_authorized": false,
   "requirements": [
     "Reference each biblical passage accurately and preserve historical and literary context",
@@ -16,6 +16,12 @@
     "Use only original narration: never copy a modern copyrighted translation, commentary, or website text",
     "Document research sources with URL and contextual claims, but do not treat a URL as license evidence",
     "Cross-check justice, lament and hope without promising a timed supernatural outcome",
-    "Do not promote DRAFT_REVIEW_REQUIRED to APPROVED_FOR_AUDIO without independent editorial review"
-  ]
+    "Promote a new script to internal editorial approval only after a genuine AI semantic review of its exact hash and mandatory context/source pillars; do not treat this as human theological endorsement or voice-rights clearance"
+  ],
+  "script_review_mechanism": "AI_SEMANTIC_EDITORIAL_WITH_SOURCE_AND_HASH_EVIDENCE",
+  "independent_human_theological_review_required": false,
+  "human_theological_endorsement_implied": false,
+  "owner_final_video_approval_required": true,
+  "publication_requires_separate_explicit_authorization": true,
+  "autonomous_editorial_policy_ref": "contracts/autonomous_editorial_policy_v1.json"
 }
