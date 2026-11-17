@@ -1,0 +1,47 @@
+name: Verbo no Chão — E01 Critical Word Sentry (read-only)
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - "verbo-no-chao/e01-independent-asr-audit-v1"
+    paths:
+      - ".github/workflows/verbo-no-chao-e01-asr-semantic-sentry.yml"
+
+permissions:
+  contents: read
+  actions: read
+
+jobs:
+  lexical_and_sentence_gate:
+    name: Verify exact ASR report, inspect critical wording, preserve quarantine
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Download real original ASR report only
+        uses: actions/download-artifact@v4
+        with:
+          name: vnc-e01-independent-asr-report
+          repository: BORELLITO/corte-fino-engine
+          run-id: 44201071884
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          path: asr-original
+      - name: Reject false AI audio assurances via offline semantic regression
+        run: python -m unittest discover -s tests -p "test_e01_asr_semantic_sentry.py" -v
+      - name: Evaluate real transcript with critical word and sentence-boundary gates
+        run: |
+          python -m agents.e01_asr_semantic_sentry \
+            --root . --input-file asr-original/report.json \
+            --output asr-semantic-evidence/report.json
+      - name: Upload JSON evidence only (no model, WAV, credentials or media release)
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: vnc-e01-asr-critical-word-sentry
+          path: asr-semantic-evidence/report.json
+          retention-days: 14
+          if-no-files-found: warn
