@@ -77,6 +77,19 @@ class CriticalASRSemanticSentryTests(unittest.TestCase):
             with self.assertRaisesRegex(ProductionError, "source_report_digest"):
                 validate_original_asr(root, src)
 
+    def test_pinned_first_asr_provenance_cannot_claim_full_audio_qa(self):
+        root = Path(__file__).resolve().parents[1]
+        j = json.loads((root / "contracts/e01_asr_real_evidence_v1.json")
+                       .read_text(encoding="utf-8"))
+        self.assertEqual(j["source_workflow_run_id"], 44201071884)
+        self.assertEqual(j["source_report_sha256"], EXPECTED_REPORT_SHA)
+        self.assertEqual(j["source_report_bytes"], EXPECTED_REPORT_BYTES)
+        self.assertEqual(j["asr_model_repository"], "Systran/faster-whisper-small")
+        self.assertEqual(j["word_error_rate"], 0.02747)
+        self.assertFalse(j["critical_semantic_recheck_completed"])
+        self.assertFalse(j["production_audio_master_approved"])
+        self.assertFalse(j["publication_authorized"])
+
     def test_entrypoint_persists_truthful_blocked_report_on_missing_source(self):
         with tempfile.TemporaryDirectory() as d:
             out = Path(d) / "result.json"
