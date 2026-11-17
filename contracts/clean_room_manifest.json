@@ -6,11 +6,12 @@
   "legacy_operational_reuse": false,
   "external_publication": false,
   "secrets_configured": false,
-  "phase": 0,
+  "phase": "0.2",
   "validation": {
     "clean_room_gate": "PASS",
-    "unit_tests": {"passed": 6, "failed": 0},
+    "unit_tests": {"passed": 11, "failed": 0},
+    "contract_json_files": {"validated": 3, "invalid": 0},
     "runtime_dependencies": 0
   },
-  "gates": ["clean-room", "contracts", "security", "rollback"]
+  "gates": ["clean-room", "contracts", "biblical-safety", "rights", "security", "rollback"]
 }
