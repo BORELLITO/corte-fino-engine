@@ -1,11 +1,33 @@
 {
-  "name": "verbo-no-chao-audio-record",
-  "version": "0.1.0",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Verbo no Chão audio record",
+  "type": "object",
+  "additionalProperties": false,
   "required": ["voice", "music"],
-  "voice": {
-    "required": ["source", "language", "commercial_use", "evidence_ref", "intelligibility_status"]
-  },
-  "music": {
-    "required": ["source", "commercial_use", "evidence_ref", "voice_priority", "lyrics"]
+  "properties": {
+    "voice": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["source", "language", "commercial_use", "evidence_ref", "intelligibility_status"],
+      "properties": {
+        "source": {"type": "string", "minLength": 1},
+        "language": {"const": "pt-BR"},
+        "commercial_use": {"type": "boolean"},
+        "evidence_ref": {"type": "string", "minLength": 1},
+        "intelligibility_status": {"const": "PASSED"}
+      }
+    },
+    "music": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["source", "commercial_use", "evidence_ref", "voice_priority", "lyrics"],
+      "properties": {
+        "source": {"type": "string", "minLength": 1},
+        "commercial_use": {"type": "boolean"},
+        "evidence_ref": {"type": "string", "minLength": 1},
+        "voice_priority": {"const": true},
+        "lyrics": {"enum": ["none", "instrumental", "cleared"]}
+      }
+    }
   }
 }

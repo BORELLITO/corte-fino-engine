@@ -1,0 +1,60 @@
+name: Verbo no Chão — Runflow de Produção
+
+on:
+  workflow_dispatch:
+    inputs:
+      brief_json:
+        description: "Brief JSON do próximo vídeo"
+        required: true
+        type: string
+      provider_package_path:
+        description: "Diretório versionado com package.json e artefatos materializados pelo provedor cloud"
+        required: false
+        default: "run-input/package"
+        type: string
+
+permissions:
+  contents: read
+
+jobs:
+  runflow:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Write immutable run brief
+        env:
+          BRIEF_JSON: ${{ inputs.brief_json }}
+        run: |
+          mkdir -p run-input
+          printf '%s' "$BRIEF_JSON" > run-input/brief.json
+          python - <<'PY'
+          import json
+          with open("run-input/brief.json", encoding="utf-8") as handle:
+              value = json.load(handle)
+          if not isinstance(value, dict):
+              raise SystemExit("brief_json must be an object")
+          print("brief: PASS")
+          PY
+
+      - name: Execute cloud runflow and blocking gates
+        env:
+          PACKAGE_DIR: ${{ inputs.provider_package_path }}
+        run: |
+          python -m orchestrator.runflow \
+            --brief run-input/brief.json \
+            --package-dir "$PACKAGE_DIR" \
+            --report-dir run-reports
+
+      - name: Upload validated run report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: verbo-no-chao-runflow-${{ github.run_id }}
+          path: run-reports/
+          if-no-files-found: error
+          retention-days: 14

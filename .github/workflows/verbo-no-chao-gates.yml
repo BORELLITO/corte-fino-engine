@@ -9,6 +9,9 @@ on:
       - "verbo-no-chao/bootstrap"
       - main
 
+permissions:
+  contents: read
+
 jobs:
   blocking-gates:
     runs-on: ubuntu-latest
@@ -17,7 +20,18 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: "3.12"
-      - name: Run blocking unit tests
-        run: python -m unittest discover -s tests -p "test_verbo_no_chao_gates.py" -v
+      - name: Run complete test suite
+        run: python -m unittest discover -s tests -p "test_*.py" -v
+      - name: Lint every JSON contract
+        run: python tools/contract_lint.py
       - name: Validate canonical pilot manifest
         run: python -m engine.quality_gates contracts/pilot_salmo_13_master.json
+      - name: Validate runflow fails closed without provider package
+        run: |
+          printf '{"topic":"CI gate"}\n' > /tmp/brief.json
+          set +e
+          python -m orchestrator.runflow --brief /tmp/brief.json --package-dir /tmp/missing-provider --report-dir /tmp/run-reports
+          status=$?
+          set -e
+          test "$status" -eq 1
+          grep -R "provider_package:required" /tmp/run-reports
