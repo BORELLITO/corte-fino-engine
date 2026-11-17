@@ -19,7 +19,7 @@ class AudioPreflightTests(unittest.TestCase):
         cls.tmp = tempfile.TemporaryDirectory()
         cls.upstream = Path(cls.tmp.name)
         editorial(ROOT, cls.upstream)
-        scripts(ROOT, cls.upstream)
+        scripts(ROOT, cls.upstream, upstream_root=cls.upstream)
         cls.voice = json.loads((ROOT / "contracts/kokoro_voice_research_v1.json").read_text(encoding="utf-8"))
         cls.package = json.loads((cls.upstream / "operations/first_batch_scripts.json").read_text(encoding="utf-8"))
         cls.report = json.loads((cls.upstream / "editorial-deliveries/first_batch_report.json").read_text(encoding="utf-8"))
