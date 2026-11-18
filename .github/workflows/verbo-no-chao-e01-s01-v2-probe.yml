@@ -36,6 +36,8 @@ jobs:
           fi
       - name: Single public free provider attempt, bounded duration and no retries
         run: timeout -k 5s 175s python -u agents/e01_ltx23_s01_v2_render.py
+      - name: Verify actual temporal motion and prepare shot-reference frames (not approved)
+        run: python -m agents.e01_s01_video_anchor
       - name: Preserve physical proof and sample frames temporarily
         if: always()
         uses: actions/upload-artifact@v4
