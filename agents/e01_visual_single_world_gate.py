@@ -87,7 +87,8 @@ def validate(root:Path=ROOT,document:dict|None=None)->dict:
         require(s.get("preferred_acquisition")==mode,
              "single_world:wrong_acquisition_world")
         for key in ("camera_instruction","visual_action_pt"):
-            require(isinstance(s.get(key),str) and len(s[key])>=30,
+            floor = 16 if key == "camera_instruction" else 40
+            require(isinstance(s.get(key),str) and len(s[key])>=floor,
                 "single_world:missing_camera_or_visual_action")
         terms=s.get("verified_real_footage_search_en")
         blocked=s.get("hard_reject_if")
