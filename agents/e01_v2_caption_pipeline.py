@@ -191,6 +191,9 @@ def combine_alignments(script: list[dict[str, Any]],
 
 def cue_lines(words: list[dict[str, Any]]) -> list[str]:
     raw = [w["text"] for w in words]
+    joined = " ".join(raw)
+    if len(joined) <= MAX_LINE:
+        return [joined]
     # Split at a word boundary, balancing size and never exceeding two lines.
     candidates = []
     for split in range(1,len(raw)+1):
@@ -294,15 +297,17 @@ Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text
         # ASS karaoke is illustrative QA of ASR word timing, not approval of
         # final caption positions or frame-perfect narrator alignment.
         parts=[];prev=c["start"]
-        for w in c["words"]:
+        line_boundary = len(c["lines"][0].split())
+        for idx,w in enumerate(c["words"]):
+            if idx:
+                parts.append(r"\N" if len(c["lines"]) == 2 and idx == line_boundary else " ")
             t=max(0,w["start"]-prev)
             if t>0.08:
                 parts.append(r"{\k"+str(round(t*100))+"}")
             duration=max(0.05,w["end"]-w["start"])
             parts.append(r"{\k"+str(round(duration*100))+"}"+w["text"].replace("{","").replace("}",""))
             prev=w["end"]
-            parts.append(" ")
-        body="".join(parts).rstrip()
+        body="".join(parts)
         # SRT lines are wrap-checked. ASS may render differently due to font,
         # so final media geometry QA is still mandatory.
         out.append(f"Dialogue: 0,{ass_time(c['start'])},{ass_time(c['end'])},Caption,,0,0,0,,{body}")
