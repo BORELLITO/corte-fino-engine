@@ -1,0 +1,37 @@
+name: Verbo no Chão — S01 NO GPU full-provider end-to-end offline rehearsal
+
+on:
+  push:
+    branches:
+      - "verbo-no-chao/e01-stock-curation-gate-v1"
+    paths:
+      - "tests/test_e01_s01_gradio_end_to_end_offline.py"
+      - ".github/workflows/verbo-no-chao-e01-s01-offline-e2e.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  dry-run-physical-s01-provider-render-and-reference:
+    runs-on: ubuntu-latest
+    timeout-minutes: 11
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Require actual local codec encoder and decoder
+        run: |
+          if ! command -v ffmpeg >/dev/null || ! command -v ffprobe >/dev/null; then
+            sudo apt-get update -qq
+            sudo DEBIAN_FRONTEND=noninteractive apt-get install -y -qq ffmpeg
+          fi
+          ffmpeg -hide_banner -encoders 2>/dev/null | grep -q libx264
+      - name: Validate full production handoff against a synthetic moving video and blocked-provider outcomes
+        run: |
+          python -m unittest tests.test_e01_s01_gradio_end_to_end_offline -v
+      - name: Confirm no model credits or publication were consumed
+        run: |
+          echo "Only local synthetic FFmpeg fixtures and mocked Gradio Client."
+          echo "No outbound video POST, no login, no user media, no billing and no publishing."
