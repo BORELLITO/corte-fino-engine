@@ -13,3 +13,14 @@ References:
 Expect external constraints: anonymous ZeroGPU quota, shared queue, runtime reliability, and Gradio client compatibility. A failed action means **unavailable now**, not a failure of the existing E01 motor. Do not automatically resubmit, spend money, or replace source assets. A successful action proves only a short AI clip; it does not validate scene continuity, legibility, rights of third parties, commercial use or 1080x1920 native master.
 
 **State before CI:** configured, unexecuted. **No generation and no money spent yet**.
+
+## Resultado físico do experimento — 18/11/2026
+
+- Workflow executado: https://github.com/BORELLITO/corte-fino-engine/actions/runs/44279375769
+- Status: **FAILURE**, etapa de geração saiu com **código 124 (timeout externo)** depois de 500 segundos.
+- O teste escreveu apenas `TEST_IN_PROGRESS` na evidência inicial. Não houve retorno de arquivo MP4, SHA de mídia ou decodificação FFmpeg; logo, **0 clipes gerados/comprovados**.
+- Artifact temporário #14416114304 contém apenas relatório inicial `technical_proof.json`, não contém vídeo.
+- O CI principal não foi alterado pela falha do provedor externo; a integração continua experimental e isolada.
+- Não considerar o Wan ZeroGPU público como motor recorrente de vídeos ou contorno confiável a login de serviços comerciais.
+- Não repetir automaticamente o trabalho caro de 500 segundos sem mudança fundamentada de endpoint/contrato.
+- Google Flow exige sessão Google válida; Higgsfield exige plano Basic nos modelos testados; Creative Claw pede aprovação manual e saldo. **Nenhuma ferramenta conectada demonstrou geração cinematográfica repetível com custo financeiro zero e zero intervenção no estado atual.**
