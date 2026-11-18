@@ -1,0 +1,39 @@
+name: Verbo no Chão — S01 real FFmpeg anchor contract smoke (NO AI GENERATION)
+
+on:
+  push:
+    branches:
+      - "verbo-no-chao/e01-stock-curation-gate-v1"
+    paths:
+      - "tests/test_e01_s01_video_anchor.py"
+      - "agents/e01_s01_video_anchor.py"
+      - ".github/workflows/verbo-no-chao-e01-s01-anchor-physical-qa.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  physically-decode-moving-and-static-fixtures:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Install true offline encoder and decoder
+        run: |
+          if ! command -v ffmpeg >/dev/null || ! command -v ffprobe >/dev/null; then
+            sudo apt-get update -qq
+            sudo DEBIAN_FRONTEND=noninteractive apt-get install -y -qq ffmpeg
+          fi
+          ffmpeg -hide_banner -version | head -n 1
+          ffprobe -hide_banner -version | head -n 1
+          ffmpeg -hide_banner -encoders | grep libx264
+      - name: Physically run moving-fixture anchor extraction and static-fixture denial
+        run: |
+          python -m unittest             tests.test_e01_s01_video_anchor.TestE01S01PhysicalOfflineFixture             -v
+      - name: Independently validate zero-GPU operation and original reference blueprint
+        run: |
+          python -m agents.e01_s01_video_anchor --check-blueprint
