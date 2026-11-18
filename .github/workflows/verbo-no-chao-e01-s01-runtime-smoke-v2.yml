@@ -1,0 +1,52 @@
+name: Verbo no Chão — Master V2 S01 no-GPU FFmpeg+FFprobe physical smoke
+
+on:
+  push:
+    branches:
+      - "verbo-no-chao/master-v2-s01-runtime-hardening-20261118"
+    paths:
+      - ".github/workflows/verbo-no-chao-e01-s01-runtime-smoke-v2.yml"
+      - "agents/e01_s01_runtime_preflight.py"
+      - "tests/test_e01_s01_runtime_guards_v2.py"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: vnc-master-v2-s01-no-gpu-preflight
+  cancel-in-progress: false
+
+jobs:
+  pure-offline-physical-media-preflight:
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - name: Read only VNC candidate files, no writer token
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          persist-credentials: false
+      - name: Set Python runtime
+        uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065
+        with:
+          python-version: "3.12"
+      - name: Verify no-manual-replay and offline tests
+        run: python -m unittest tests.test_e01_ltx23_s01_v2_render tests.test_e01_s01_runtime_guards_v2 -v
+      - name: Install pinned media bootstrap without apt
+        run: |
+          set -euo pipefail
+          timeout -k 5s 120s python -m pip install --disable-pip-version-check --retries 0 --no-cache-dir "portable-ffmpeg==0.5.0"
+      - name: Physical encode, FFprobe and full decode of synthetic footage
+        run: |
+          set -euo pipefail
+          timeout -k 5s 175s python -m agents.e01_s01_runtime_preflight --synthetic-smoke --out artifacts/vnc_s01_no_gpu
+      - name: Save tiny proof report only; never source MP4
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: VNC-MASTER-V2-S01-NOGPU-FFMPEG-PROOF
+          path: artifacts/vnc_s01_no_gpu/S01_RUNTIME_PREFLIGHT.json
+          if-no-files-found: warn
+          retention-days: 1
+      - name: Prove no provider, no master, no publication
+        if: always()
+        run: echo "Synthetic media only. No LTX call, no video credit, no master, no publish."
