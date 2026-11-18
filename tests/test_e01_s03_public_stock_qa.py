@@ -9,7 +9,7 @@ from agents.e01_s03_public_stock_physical_qa import (
 class S03PreflightTests(unittest.TestCase):
     def test_pinned_non_rejected_source(self):
         self.assertEqual(SOURCE_ID, 19381590)
-        self.assertIn("/19381590/", SOURCE_URL)
+        self.assertTrue(SOURCE_URL.endswith("/carousel-19381590/"))
         self.assertIn("19381590-uhd_3840_2160_25fps.mp4", SOURCE_FILE_URL)
         self.assertEqual(SCENE_DURATION, 6.14)
 
