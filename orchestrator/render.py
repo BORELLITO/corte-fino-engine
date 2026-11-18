@@ -71,6 +71,7 @@ def render_package(package_dir: Path, package: dict[str, Any]) -> dict[str, Any]
 
     inputs: list[str] = []
     filters: list[str] = []
+    expected_duration = 0.0
     for index, asset in enumerate(assets):
         if not isinstance(asset, dict):
             raise RenderError(f"render:asset:{index}:not_object")
@@ -85,7 +86,22 @@ def render_package(package_dir: Path, package: dict[str, Any]) -> dict[str, Any]
         duration = end - start
         if not math.isfinite(start) or not math.isfinite(end) or start < 0 or duration <= 0:
             raise RenderError(f"render:asset:{index}:interval_invalid")
-        inputs.extend(["-stream_loop", "-1", "-i", str(path)])
+        try:
+            source_info = probe_media(path)
+            source_video = next((
+                stream for stream in source_info.get("streams", [])
+                if stream.get("codec_type") == "video"
+            ), None)
+            source_duration = float((source_info.get("format") or {}).get("duration") or 0)
+        except (ProbeError, TypeError, ValueError) as exc:
+            raise RenderError(f"render:asset:{index}:source_not_decodable") from exc
+        if source_video is None:
+            raise RenderError(f"render:asset:{index}:video_stream_missing")
+        if not math.isfinite(source_duration) or end > source_duration + 0.03:
+            raise RenderError(f"render:asset:{index}:source_too_short_no_loops")
+        # Never auto-loop footage to fake temporal coverage or clip uniqueness.
+        expected_duration += duration
+        inputs.extend(["-i", str(path)])
         filters.append(
             f"[{index}:v]scale=1080:1920:force_original_aspect_ratio=increase,"
             f"crop=1080:1920,setsar=1,fps=30,trim=start={start}:duration={duration},"
@@ -139,6 +155,8 @@ def render_package(package_dir: Path, package: dict[str, Any]) -> dict[str, Any]
         raise RenderError("render:physical_validation:" + "|".join(physical_errors))
     probe = probe_media(output)
     duration = float((probe.get("format") or {}).get("duration") or 0)
+    if not math.isfinite(duration) or abs(duration - expected_duration) > max(0.20, expected_duration * 0.005):
+        raise RenderError("render:timeline_duration_drift")
     return {
         "file": str(output.relative_to(package_dir)),
         "sha256": _hash(output),
