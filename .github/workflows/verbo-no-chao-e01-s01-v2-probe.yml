@@ -1,0 +1,43 @@
+name: Verbo no Chão — E01 S01 full-duration LTX23 one-shot prototype
+
+on:
+  push:
+    branches:
+      - "verbo-no-chao/e01-stock-curation-gate-v1"
+    paths:
+      - "agents/e01_ltx23_s01_v2_render.py"
+      - "tests/test_e01_ltx23_s01_v2_render.py"
+      - ".github/workflows/verbo-no-chao-e01-s01-v2-probe.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  scene01-full-duration:
+    runs-on: ubuntu-latest
+    timeout-minutes: 6
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Static safety and duration requirements
+        run: python -m unittest tests.test_e01_ltx23_s01_v2_render -v
+      - name: Media dependencies
+        run: |
+          python -m pip install --disable-pip-version-check "gradio_client>=2.0,<3.0"
+          if ! command -v ffmpeg >/dev/null || ! command -v ffprobe >/dev/null; then
+            sudo apt-get update -qq
+            sudo DEBIAN_FRONTEND=noninteractive apt-get install -y -qq ffmpeg
+          fi
+      - name: Single public free provider attempt, bounded duration and no retries
+        run: timeout -k 5s 175s python -u agents/e01_ltx23_s01_v2_render.py
+      - name: Preserve physical proof and sample frames temporarily
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: VNC-E01-S01-LTX23-6SEC-NOT-PUBLISH
+          path: artifacts/e01_ltx23_s01_v2/
+          retention-days: 1
+          if-no-files-found: warn
