@@ -54,7 +54,7 @@ class VisualRoughcutProofTests(unittest.TestCase):
         self.assertEqual(p["frames"],2113)
         self.assertTrue(p["pan_zoom_motion_simulated"])
         self.assertFalse(p["assets_are_actual_motion_video_clips"])
-        self.assertFalse(e["full_1080x1920_master_exists"])
+        self.assertFalse(e["final_1080x1920_master_exists"])
         self.assertFalse(e["publication_authorized"])
 
     def test_all_scene_originals_remain_below_native_master_quality(self):
