@@ -24,6 +24,8 @@ jobs:
         run: python -m unittest discover -s tests -p "test_*.py" -v
       - name: Enforce senior editorial director decisions before preview assembly
         run: python -m agents.e01_editorial_director_gate
+      - name: Reject previously failed source IDs and off-story footage before acquisition
+        run: python -m agents.e01_source_precision_gate
       - name: Lint every JSON contract
         run: python tools/contract_lint.py
       - name: Validate canonical pilot manifest

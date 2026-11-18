@@ -10,6 +10,7 @@ from agents.e01_stock_editorial_decision import review as first_batch_review
 from agents.e01_stock_alt_review_gate import verify as second_batch_review
 from agents.e01_editorial_director_gate import validate as director_review
 from agents.e01_s01_video_anchor import validate_blueprint as verify_room_references
+from agents.e01_source_precision_gate import verify as verify_source_precision
 
 CONTRACT=Path("contracts/e01_v2_visual_single_world_acquisition_v1.json")
 STORY=Path("contracts/e01_v2_12_scene_visual_plan_v1.json")
@@ -48,12 +49,15 @@ def validate(root:Path=ROOT,document:dict|None=None)->dict:
     r2=second_batch_review(root)
     director=director_review(root)
     room_reference=verify_room_references(root)
+    source_precision=verify_source_precision(root)
     require(r1["assets_approved_for_master"]==0 and
         r2["approved_for_master"]==0 and
         director["e01_clips_approved_for_cut"]==0 and
         director["publication_authorized"] is False and
         room_reference["scene_count"]==8 and
-        room_reference["publication_authorized"] is False,
+        room_reference["publication_authorized"] is False and
+        source_precision["scene_briefs"]==12 and
+        source_precision["publication_authorized"] is False,
         "single_world:prior_rejections_missing")
     require(document.get("prior_rejections")==[
         "contracts/e01_v2_stock_editorial_review_v1.json",

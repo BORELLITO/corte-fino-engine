@@ -1,0 +1,319 @@
+{
+  "schema_version": "1.0.0",
+  "project": "verbo-no-chao",
+  "episode_id": "VNC-W01-E1",
+  "source_storyboard": "contracts/e01_v2_12_scene_visual_plan_v1.json",
+  "source_world_blueprint": "contracts/e01_v2_visual_single_world_acquisition_v1.json",
+  "source_director_verdict": "contracts/e01_director_editorial_decisions_v1.json",
+  "script_sha256": "c64b57cb9d6529b60b9e80ab7607e5887f909dd00e14cd80ed9ec2b7474a5dc6",
+  "audio_sha256": "4f2ee1ff0171ddedb7c64e0dce2300c53a0ef105ef12d643a7af6b0a4621942e",
+  "state": "PRECISION_PREFLIGHT_ONLY_NOT_ASSET_APPROVAL",
+  "excluded_pexels_video_ids": [
+    4828603,
+    5904567,
+    6010698,
+    6381001,
+    6860448,
+    7350189,
+    8860242,
+    13017069,
+    32421244,
+    34479513,
+    37340388,
+    40417800
+  ],
+  "excluded_known_video_sha256": [],
+  "previously_rejected_source_ids_are_never_auto_reconsidered": true,
+  "unknown_published_stock_is_not_automatically_approved": true,
+  "source_page_metadata_only_allows_research_not_edit": true,
+  "director_visually_approves_clips_not_user": true,
+  "exact_scene_specific_query_required": true,
+  "thumbnail_does_not_count_as_video_evidence": true,
+  "room_a_independent_stock_forbidden": true,
+  "contextual_people_endorsement_not_assumed": true,
+  "unverifiable_rights_block_publishing": true,
+  "source_permissions_proof_required_before_release": true,
+  "auto_web_source_acquisition": false,
+  "selected_candidate_count": 0,
+  "selected_candidates": [],
+  "scenes": [
+    {
+      "scene_id": "VNC-E01V2-S01",
+      "continuity_group": "ROOM_A",
+      "duration_seconds": 5.74,
+      "narrative_action_pt": "A mesma pessoa anônima de casaco grafite permanece sentada de lado à janela escura. Caderno fechado e luz âmbar suave; rosto não identificável.",
+      "locked_search_queries_en": [
+        "unrecognizable person sitting beside rainy dark window notebook cinematic vertical video",
+        "faceless adult sitting at window dim room video"
+      ],
+      "hard_reject_conditions_pt": [
+        "ator diferente ou rosto frontal",
+        "luz artificial azul intensa"
+      ],
+      "allowed_acquisition_lane": "AI_FIRST_FRAME_SINGLE_WORLD",
+      "current_research_decision": "NO_NEW_CANDIDATE_EDITORIALLY_APPROVED",
+      "new_actor_independent_footage_forbidden": true,
+      "requires_approved_s01_actor_anchor": false,
+      "source_video_id": null,
+      "source_sha256": null,
+      "editorial_approved": false,
+      "rights_cleared": false,
+      "can_enter_master": false
+    },
+    {
+      "scene_id": "VNC-E01V2-S02",
+      "continuity_group": "ROOM_A",
+      "duration_seconds": 4.88,
+      "narrative_action_pt": "Mãos do mesmo personagem repousam sobre a mesa de madeira ao lado de relógio analógico; nenhuma tela ou logotipo.",
+      "locked_search_queries_en": [
+        "close up hands wooden table analog clock waiting warm lamp video",
+        "anonymous hands still on dark wood desk cinematic footage"
+      ],
+      "hard_reject_conditions_pt": [
+        "mesas de escritório corporativo",
+        "dedos e mangas incompatíveis com S01"
+      ],
+      "allowed_acquisition_lane": "AI_FIRST_FRAME_SINGLE_WORLD",
+      "current_research_decision": "NO_NEW_CANDIDATE_EDITORIALLY_APPROVED",
+      "new_actor_independent_footage_forbidden": true,
+      "requires_approved_s01_actor_anchor": true,
+      "source_video_id": null,
+      "source_sha256": null,
+      "editorial_approved": false,
+      "rights_cleared": false,
+      "can_enter_master": false
+    },
+    {
+      "scene_id": "VNC-E01V2-S03",
+      "continuity_group": "SOCIAL_CONTEXT_B",
+      "duration_seconds": 6.14,
+      "narrative_action_pt": "Rua residencial simples ao anoitecer após chuva; a câmera observa um espaço de convivência danificado ou negligenciado, sem expor vítimas ou culpar pessoas reais.",
+      "locked_search_queries_en": [
+        "quiet neglected public space street documentary dusk no faces free stock video",
+        "rainy neighborhood broken bench anonymous city documentary vertical"
+      ],
+      "hard_reject_conditions_pt": [
+        "paisagem bonita sem sentido social",
+        "pessoas reconhecíveis ligadas a acusações"
+      ],
+      "allowed_acquisition_lane": "LICENSED_STOCK_EDITORIAL",
+      "current_research_decision": "NO_NEW_CANDIDATE_EDITORIALLY_APPROVED",
+      "new_actor_independent_footage_forbidden": false,
+      "requires_approved_s01_actor_anchor": false,
+      "source_video_id": null,
+      "source_sha256": null,
+      "editorial_approved": false,
+      "rights_cleared": false,
+      "can_enter_master": false
+    },
+    {
+      "scene_id": "VNC-E01V2-S04",
+      "continuity_group": "BIBLICAL_SYMBOL_C",
+      "duration_seconds": 5.82,
+      "narrative_action_pt": "Pena antiga e suporte de papel vazio sob lâmpada discreta; recurso simbólico contemporâneo, sem fingir ser registro autêntico de Habacuque.",
+      "locked_search_queries_en": [
+        "blank parchment reed pen macro warm lamp close up video",
+        "old writing tools blank paper shadows historical symbolic footage"
+      ],
+      "hard_reject_conditions_pt": [
+        "trechos bíblicos modernos legíveis",
+        "personagem declarado como profeta histórico"
+      ],
+      "allowed_acquisition_lane": "LICENSED_STOCK_EDITORIAL",
+      "current_research_decision": "NO_NEW_CANDIDATE_EDITORIALLY_APPROVED",
+      "new_actor_independent_footage_forbidden": false,
+      "requires_approved_s01_actor_anchor": false,
+      "source_video_id": null,
+      "source_sha256": null,
+      "editorial_approved": false,
+      "rights_cleared": false,
+      "can_enter_master": false
+    },
+    {
+      "scene_id": "VNC-E01V2-S05",
+      "continuity_group": "BIBLICAL_SYMBOL_C",
+      "duration_seconds": 7.62,
+      "narrative_action_pt": "Corredor com pedra neutra e saída em sombra; não indicar localização, época histórica específica ou justiça literal. Stock anterior S05 apenas condicionado.",
+      "locked_search_queries_en": [
+        "dim old stone hallway empty warm tungsten slow dolly vertical video",
+        "moody stone arch empty corridor warm light stock video"
+      ],
+      "hard_reject_conditions_pt": [
+        "afirmar que é arquitetura de Judá",
+        "escrita e logotipos no corredor"
+      ],
+      "allowed_acquisition_lane": "LICENSED_STOCK_EDITORIAL",
+      "current_research_decision": "NO_NEW_CANDIDATE_EDITORIALLY_APPROVED",
+      "new_actor_independent_footage_forbidden": false,
+      "requires_approved_s01_actor_anchor": false,
+      "source_video_id": null,
+      "source_sha256": null,
+      "editorial_approved": false,
+      "rights_cleared": false,
+      "can_enter_master": false
+    },
+    {
+      "scene_id": "VNC-E01V2-S06",
+      "continuity_group": "ROOM_A",
+      "duration_seconds": 5.8,
+      "narrative_action_pt": "O mesmo caderno agora aberto sobre a mesma mesa, página branca, mão fora do quadro e cadeira vazia.",
+      "locked_search_queries_en": [
+        "empty notebook warm wooden desk shadow cinematic closeup footage",
+        "open blank journal dark room warm lighting vertical video"
+      ],
+      "hard_reject_conditions_pt": [
+        "letras legíveis",
+        "outros cadernos ou mesas"
+      ],
+      "allowed_acquisition_lane": "AI_FIRST_FRAME_SINGLE_WORLD",
+      "current_research_decision": "NO_NEW_CANDIDATE_EDITORIALLY_APPROVED",
+      "new_actor_independent_footage_forbidden": true,
+      "requires_approved_s01_actor_anchor": true,
+      "source_video_id": null,
+      "source_sha256": null,
+      "editorial_approved": false,
+      "rights_cleared": false,
+      "can_enter_master": false
+    },
+    {
+      "scene_id": "VNC-E01V2-S07",
+      "continuity_group": "ROOM_A",
+      "duration_seconds": 7.16,
+      "narrative_action_pt": "A mesma pessoa se levanta de cadeira e observa a rua através da mesma janela, vista de costas, ombros em casaco grafite.",
+      "locked_search_queries_en": [
+        "back silhouette same dark room looking through rain window evening video",
+        "faceless person standing by window cinematic moody stock footage"
+      ],
+      "hard_reject_conditions_pt": [
+        "troca do protagonista",
+        "pose heroica ou suposto milagre"
+      ],
+      "allowed_acquisition_lane": "AI_FIRST_FRAME_SINGLE_WORLD",
+      "current_research_decision": "NO_NEW_CANDIDATE_EDITORIALLY_APPROVED",
+      "new_actor_independent_footage_forbidden": true,
+      "requires_approved_s01_actor_anchor": true,
+      "source_video_id": null,
+      "source_sha256": null,
+      "editorial_approved": false,
+      "rights_cleared": false,
+      "can_enter_master": false
+    },
+    {
+      "scene_id": "VNC-E01V2-S08",
+      "continuity_group": "ROOM_A",
+      "duration_seconds": 6.64,
+      "narrative_action_pt": "Mãos abertas em oração simples sobre a mesma mesa e ao lado do mesmo caderno, roupa grafite preservada.",
+      "locked_search_queries_en": [
+        "close up anonymous open hands praying at desk low warm light video",
+        "hands open quiet prayer dark room notebook no face video"
+      ],
+      "hard_reject_conditions_pt": [
+        "rosários e símbolos alheios à cena",
+        "rostos e gestos teatrais"
+      ],
+      "allowed_acquisition_lane": "AI_FIRST_FRAME_SINGLE_WORLD",
+      "current_research_decision": "NO_NEW_CANDIDATE_EDITORIALLY_APPROVED",
+      "new_actor_independent_footage_forbidden": true,
+      "requires_approved_s01_actor_anchor": true,
+      "source_video_id": null,
+      "source_sha256": null,
+      "editorial_approved": false,
+      "rights_cleared": false,
+      "can_enter_master": false
+    },
+    {
+      "scene_id": "VNC-E01V2-S09",
+      "continuity_group": "ROOM_A",
+      "duration_seconds": 5.76,
+      "narrative_action_pt": "As mesmas mãos anotam em caderno; a escrita permanece de fato ilegível em quadro, sem usar blur para mascarar fonte licenciada.",
+      "locked_search_queries_en": [
+        "hands writing private journal low tungsten light shallow depth of field footage",
+        "anonymous hands writing notebook soft focus dark room video"
+      ],
+      "hard_reject_conditions_pt": [
+        "teclado ou tela de computador",
+        "texto escrito legível ou acessórios divergentes"
+      ],
+      "allowed_acquisition_lane": "AI_FIRST_FRAME_SINGLE_WORLD",
+      "current_research_decision": "NO_NEW_CANDIDATE_EDITORIALLY_APPROVED",
+      "new_actor_independent_footage_forbidden": true,
+      "requires_approved_s01_actor_anchor": true,
+      "source_video_id": null,
+      "source_sha256": null,
+      "editorial_approved": false,
+      "rights_cleared": false,
+      "can_enter_master": false
+    },
+    {
+      "scene_id": "VNC-E01V2-S10",
+      "continuity_group": "COMMUNITY_D",
+      "duration_seconds": 6.6,
+      "narrative_action_pt": "Duas pessoas anônimas conversam em mesa simples; mãos e postura revelam escuta e apoio, sem encenar cura ou promessa imediata.",
+      "locked_search_queries_en": [
+        "two anonymous people supportive conversation hands at table modest room video",
+        "faceless two people listening indoors emotional documentary shot"
+      ],
+      "hard_reject_conditions_pt": [
+        "depoimento sugerido como real",
+        "contato invasivo ou protagonista diferente visível"
+      ],
+      "allowed_acquisition_lane": "LICENSED_STOCK_EDITORIAL",
+      "current_research_decision": "NO_NEW_CANDIDATE_EDITORIALLY_APPROVED",
+      "new_actor_independent_footage_forbidden": false,
+      "requires_approved_s01_actor_anchor": false,
+      "source_video_id": null,
+      "source_sha256": null,
+      "editorial_approved": false,
+      "rights_cleared": false,
+      "can_enter_master": false
+    },
+    {
+      "scene_id": "VNC-E01V2-S11",
+      "continuity_group": "ROOM_A",
+      "duration_seconds": 5.04,
+      "narrative_action_pt": "Retorno verificável ao mesmo cômodo, câmera na posição de abertura, caderno fechado ao amanhecer ainda discreto, sem mudança milagrosa.",
+      "locked_search_queries_en": [
+        "quiet dim room desk notebook dawn window natural warm video",
+        "still closed journal on desk early morning dark room film"
+      ],
+      "hard_reject_conditions_pt": [
+        "cenário diferente da abertura",
+        "mudança de cor brusca ou sol exagerado"
+      ],
+      "allowed_acquisition_lane": "AI_FIRST_FRAME_SINGLE_WORLD",
+      "current_research_decision": "NO_NEW_CANDIDATE_EDITORIALLY_APPROVED",
+      "new_actor_independent_footage_forbidden": true,
+      "requires_approved_s01_actor_anchor": true,
+      "source_video_id": null,
+      "source_sha256": null,
+      "editorial_approved": false,
+      "rights_cleared": false,
+      "can_enter_master": false
+    },
+    {
+      "scene_id": "VNC-E01V2-S12",
+      "continuity_group": "ROOM_A",
+      "duration_seconds": 3.225,
+      "narrative_action_pt": "Mesmo enquadramento e objetos do primeiro plano; a mão do protagonista começa a abrir o caderno sem virar página, preparando loop ao início.",
+      "locked_search_queries_en": [
+        "hands opening notebook dark table near window close shot video",
+        "journal opening hands subdued warm room portrait footage"
+      ],
+      "hard_reject_conditions_pt": [
+        "reutilizar o mesmo arquivo da S01",
+        "fecho emocional inventado ou título no vídeo"
+      ],
+      "allowed_acquisition_lane": "AI_FIRST_FRAME_SINGLE_WORLD",
+      "current_research_decision": "NO_NEW_CANDIDATE_EDITORIALLY_APPROVED",
+      "new_actor_independent_footage_forbidden": true,
+      "requires_approved_s01_actor_anchor": true,
+      "source_video_id": null,
+      "source_sha256": null,
+      "editorial_approved": false,
+      "rights_cleared": false,
+      "can_enter_master": false
+    }
+  ],
+  "publication_authorized": false,
+  "master_rendered": false
+}

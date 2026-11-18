@@ -8,6 +8,7 @@ import subprocess
 from pathlib import Path
 from agents.e01_stock_candidates import ROOT, StockIntakeError, require
 from agents.e01_visual_single_world_gate import validate as verify_world
+from agents.e01_source_precision_gate import rejected_sha
 
 POLICY=Path("contracts/e01_v2_media_intake_policy_v1.json")
 STORY=Path("contracts/e01_v2_12_scene_visual_plan_v1.json")
@@ -97,6 +98,9 @@ def inspect(video:Path,scene_id:str,origin:str,root=ROOT,
         for chunk in iter(lambda:stream.read(1048576),b""):
             digest.update(chunk)
     assert_unchanged()
+    # A past editor-rejected source can pass FFmpeg but must never reenter E01.
+    require(not rejected_sha(digest.hexdigest()),
+            "media_intake:previously_rejected_sha256")
     sc=scenes[0]
     length=round(sc["end_seconds"]-sc["start_seconds"],4)
     duration_ok=meta["duration_seconds"]+0.025>=length
