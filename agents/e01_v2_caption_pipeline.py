@@ -295,11 +295,15 @@ ScaledBorderAndShadow: yes
 [V4+ Styles]
 Format: Name, Fontname, Fontsize, PrimaryColour, SecondaryColour, OutlineColour, BackColour, Bold, Italic, Underline, StrikeOut, ScaleX, ScaleY, Spacing, Angle, BorderStyle, Outline, Shadow, Alignment, MarginL, MarginR, MarginV, Encoding
 Style: Caption,DejaVu Sans,66,&H00F2F1EE,&H005BA7E6,&H0012100E,&H80000000,1,0,0,0,100,100,0,0,1,5,1,2,100,100,380,1
+Style: QA,DejaVu Sans,34,&H00E6E6E6,&H00E6E6E6,&H0012100E,&H80000000,1,0,0,0,100,100,0,0,1,2,0,8,90,90,118,1
 
 [Events]
 Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text
 """
-    out=[]
+    out=[
+        "Dialogue: 1,0:00:00.00,"+ass_time(VOICE_DURATION)
+        +",QA,,0,0,0,,PRÉVIA TÉCNICA - NÃO PUBLICAR"
+    ]
     for c in cues:
         # ASS karaoke is illustrative QA of ASR word timing, not approval of
         # final caption positions or frame-perfect narrator alignment.
