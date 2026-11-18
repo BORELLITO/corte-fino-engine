@@ -14,7 +14,7 @@ permissions:
 
 concurrency:
   group: vnc-e01-v2-caption-timestamp-qa
-  cancel-in-progress: false
+  cancel-in-progress: true
 
 jobs:
   physical_caption_package:
@@ -75,41 +75,62 @@ jobs:
           print("PASS: real v2 WAV bytes, duration and release locks verified")
           PY
 
-      - name: Install open-source FFmpeg and libre fonts on minimal runner
+      - name: Install version-pinned portable FFmpeg from PyPI — no apt or system toolchain
         run: |
-          sudo apt-get update -qq
-          sudo apt-get install -y -qq ffmpeg fonts-dejavu-core
-          ffmpeg -hide_banner -filters 2>/dev/null | grep -E ' ass | drawtext '
-          ffmpeg -version | head -1
+          python -m pip install --disable-pip-version-check "imageio-ffmpeg==0.6.0"
+          python - <<'PY'
+          import imageio_ffmpeg,subprocess
+          exe=imageio_ffmpeg.get_ffmpeg_exe()
+          p=subprocess.run([exe,"-hide_banner","-filters"],capture_output=True,text=True,check=True)
+          assert " ass " in p.stdout and "libass" in p.stdout
+          print("PASS: portable FFmpeg with libass available", exe.rsplit("/",1)[-1])
+          PY
 
-      - name: Render actual diagnostic subtitle video — neutral background, never final master
+      - name: Render actual diagnostic subtitle video — built-in QA watermark, no release master
         run: |
-          ffmpeg -hide_banner -y -loglevel warning \
+          FFMPEG="$(python -c 'import imageio_ffmpeg; print(imageio_ffmpeg.get_ffmpeg_exe())')"
+          "$FFMPEG" -hide_banner -y -loglevel warning \
             -f lavfi -i "color=c=0x15191b:s=540x960:r=30" \
             -i wav-source/e01-v2-preview-only.wav \
-            -filter_complex "[0:v]ass=captions-qa/e01-v2-karaoke-qa.ass:original_size=1080x1920,drawtext=fontfile=/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf:text='PREVIA DE LEGENDAS - NAO PUBLICAR':fontcolor=white@0.75:fontsize=17:x=(w-text_w)/2:y=75,drawtext=fontfile=/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf:text='VERBO NO CHAO - QA E01 v2':fontcolor=white@0.52:fontsize=16:x=(w-text_w)/2:y=180[v]" \
-            -map "[v]" -map 1:a \
+            -vf "ass=captions-qa/e01-v2-karaoke-qa.ass:original_size=1080x1920" \
+            -map 0:v -map 1:a \
             -c:v libx264 -preset ultrafast -crf 31 \
             -pix_fmt yuv420p -c:a aac -b:a 128k \
             -t 70.425 -movflags +faststart \
             captions-qa/e01-v2-karaoke-diagnostic-NOT-FINAL.mp4
 
-      - name: Probe video bytes, streams, dimensions and nonrelease status
+      - name: Decode physical video frame and inspect actual H264/AAC streams
         run: |
-          ffprobe -v error -show_entries format=duration,size -show_entries stream=codec_name,width,height,r_frame_rate -of json captions-qa/e01-v2-karaoke-diagnostic-NOT-FINAL.mp4 > captions-qa/ffprobe.json
           python - <<'PY'
-          import json,pathlib
+          import json,pathlib,subprocess
+          import imageio_ffmpeg
           root=pathlib.Path("captions-qa")
+          path=root/"e01-v2-karaoke-diagnostic-NOT-FINAL.mp4"
           r=json.loads((root/"qa-report.json").read_text(encoding="utf-8"))
-          v=json.loads((root/"ffprobe.json").read_text(encoding="utf-8"))
           assert r["status"]=="TIMED_CAPTIONS_PROVISIONAL_NOT_MASTER"
           assert r["final_video_caption_sync_approved"] is False
           assert r["publication_authorized"] is False
-          streams=v["streams"]
-          assert any(s.get("codec_name")=="h264" and s.get("width")==540 and s.get("height")==960 for s in streams)
-          assert any(s.get("codec_name")=="aac" for s in streams)
-          assert 70<=float(v["format"]["duration"])<=71
-          print("PASS: physically decoded diagnostic H264/AAC QA video is NOT a release master")
+          assert path.is_file() and path.stat().st_size > 250000
+          exe=imageio_ffmpeg.get_ffmpeg_exe()
+          probe=subprocess.run([exe,"-hide_banner","-i",str(path)],
+                               capture_output=True,text=True)
+          text=probe.stderr
+          assert "Video: h264" in text and "Audio: aac" in text, text[-2000:]
+          assert "540x960" in text, text[-2000:]
+          decoder=imageio_ffmpeg.read_frames(str(path))
+          metadata=next(decoder)
+          frame=next(decoder)
+          assert tuple(metadata["size"]) == (540,960)
+          assert 70.0<=metadata["duration"]<=71.0
+          assert len(frame)==540*960*3
+          decoder.close()
+          (root/"decoded-frame-qc.json").write_text(
+            json.dumps({"physical_frame_decoded":True,
+              "width":540,"height":960,"duration_seconds":metadata["duration"],
+              "video_codec":"h264","audio_codec":"aac",
+              "not_final_master":True,"publication_authorized":False},
+              ensure_ascii=False,indent=2)+"\n",encoding="utf-8")
+          print("PASS: real H264/AAC video decoded; QA ONLY, final master and publication blocked")
           PY
 
       - name: Save finished diagnostic assets and evidence (private temporary QA)
