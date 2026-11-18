@@ -52,7 +52,11 @@ def _read_json(path: Path, label: str) -> tuple[dict[str, Any] | None, list[str]
 
 
 def _artifact_hash(path: Path) -> str:
-    return hashlib.sha256(path.read_bytes()).hexdigest()
+    digest = hashlib.sha256()
+    with path.open("rb") as source:
+        for chunk in iter(lambda: source.read(1048576), b""):
+            digest.update(chunk)
+    return digest.hexdigest()
 
 
 def _materialize_manifest(package_dir: Path, package: dict[str, Any], run_id: str) -> dict[str, Any]:
@@ -89,16 +93,17 @@ def _preflight_untrusted_media(package_dir: Path, package: dict[str, Any]) -> li
         ):
             errors.append(f"{label}:missing_sha256")
             return
-        target = (root / path).resolve()
         try:
+            target = (root / path).resolve()
             target.relative_to(root)
-        except ValueError:
-            errors.append(f"{label}:path_escape")
+            if not target.is_file():
+                errors.append(f"{label}:missing_file")
+                return
+            actual = _artifact_hash(target)
+        except (ValueError, OSError):
+            errors.append(f"{label}:invalid_or_escaping_path")
             return
-        if not target.is_file():
-            errors.append(f"{label}:missing_file")
-            return
-        if _artifact_hash(target) != expected:
+        if actual != expected:
             errors.append(f"{label}:sha256_mismatch")
 
     assets = package.get("assets")
