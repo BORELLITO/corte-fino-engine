@@ -69,7 +69,7 @@ class TestS01GradioOfflineEndToEnd(unittest.TestCase):
             self.assertIsNone(args[0])
             self.assertEqual(args[1],render.PROMPT)
             self.assertEqual(args[2],5.8)
-            self.assertEqual(args[-2:],[render.HEIGHT,render.WIDTH])
+            self.assertEqual(args[-2:],(render.HEIGHT,render.WIDTH))
             self.assertEqual(kwargs,{"api_name":"/generate_video"})
             metadata=json.loads(report_file.read_text(encoding="utf-8"))
             self.assertEqual(metadata["status"],
