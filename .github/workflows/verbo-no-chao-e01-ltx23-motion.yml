@@ -1,0 +1,43 @@
+name: Verbo no Chão — LTX-2.3 free ZeroGPU short AI motion smoke
+
+on:
+  push:
+    branches:
+      - "verbo-no-chao/e01-stock-curation-gate-v1"
+    paths:
+      - "agents/e01_ltx23_public_probe.py"
+      - "tests/test_e01_ltx23_public_probe.py"
+      - ".github/workflows/verbo-no-chao-e01-ltx23-motion.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  ltx23-anonymous-motion:
+    runs-on: ubuntu-latest
+    timeout-minutes: 6
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Test fail-closed provider preflight without any network generation
+        run: python -m unittest tests.test_e01_ltx23_public_probe -v
+      - name: Install media tools
+        run: |
+          python -m pip install --disable-pip-version-check "gradio_client>=2.0,<3.0"
+          if ! command -v ffprobe >/dev/null || ! command -v ffmpeg >/dev/null; then
+            sudo apt-get update -qq
+            sudo DEBIAN_FRONTEND=noninteractive apt-get install -y -qq ffmpeg
+          fi
+      - name: Bounded anonymous public GPU motion test (one only, never a master)
+        run: timeout -k 5s 155s python -u agents/e01_ltx23_public_probe.py
+      - name: Short-lived preview and evidence (not for publication)
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: VNC-E01-LTX23-physical-proof-NOT-MASTER
+          path: artifacts/e01_ltx23_zero_probe
+          retention-days: 1
+          if-no-files-found: warn
