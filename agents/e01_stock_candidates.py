@@ -188,12 +188,17 @@ def probe_item(item: dict, temp: Path, ffprobe: str, ffmpeg: str) -> dict:
 def run_probe(root: Path, ffprobe: str, ffmpeg: str) -> dict:
     result = validate(root)
     data = json.loads((root / CONTRACT).read_text(encoding="utf-8"))
+    # Reuse is not allowed unless the bytes match the successful pinned CI baseline.
+    from agents.e01_stock_probe_evidence import EXPECTED_HASHES, verify
+    verify(root)
     result.update(status="PROBE_IN_PROGRESS_NOT_RELEASED", observations=[])
     with tempfile.TemporaryDirectory(prefix="vnc_stock_provisional_") as folder:
         for item in data["candidates"]:
             try:
-                result["observations"].append(probe_item(item, Path(folder),
-                                                        ffprobe, ffmpeg))
+                observation = probe_item(item, Path(folder), ffprobe, ffmpeg)
+                require(observation["sha256"] == EXPECTED_HASHES[item["id"]],
+                        "probe:cdn_bytes_changed_from_pinned_baseline")
+                result["observations"].append(observation)
             except (OSError, ValueError, TimeoutError, subprocess.TimeoutExpired,
                     urllib.error.URLError) as error:
                 result.update(status="BLOCKED_PROBE_INCOMPLETE",
