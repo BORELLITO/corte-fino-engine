@@ -1,0 +1,42 @@
+name: Verbo no Chão — camera stock real S01 no-key 4K alternative (one shot)
+
+on:
+  push:
+    branches:
+      - "verbo-no-chao/e01-stock-curation-gate-v1"
+    paths:
+      - "agents/e01_pexels_no_key_s01_probe.py"
+      - "tests/test_e01_pexels_no_key_s01_probe.py"
+      - ".github/workflows/verbo-no-chao-e01-pexels-camera-proof.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  public-no-key-stock-video:
+    runs-on: ubuntu-latest
+    timeout-minutes: 9
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Prove safe source allowlist and no copyright release by default
+        run: python -m unittest tests.test_e01_pexels_no_key_s01_probe -v
+      - name: Prepare free video decoder
+        run: |
+          if ! command -v ffmpeg >/dev/null || ! command -v ffprobe >/dev/null; then
+            sudo apt-get update -qq
+            sudo DEBIAN_FRONTEND=noninteractive apt-get install -y -qq ffmpeg
+          fi
+      - name: ONE bounded download and 3 authentic camera motion crops
+        run: timeout -k 5s 380s python -u agents/e01_pexels_no_key_s01_probe.py
+      - name: QA preview evidence only — short retention
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: VNC-E01-S01-real-pexels-camera-candidates-NOT-PUBLISH
+          path: artifacts/vnc_e01_pexels_no_key_s01_probe/
+          retention-days: 1
+          if-no-files-found: warn
