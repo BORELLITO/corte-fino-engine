@@ -16,7 +16,7 @@ concurrency:
 
 jobs:
   bounded-physical-candidate-review:
-    if: ${{ github.event_name == 'push' && github.event.head_commit.message == 'vnc-e01-s03-one-shot-real-footage-review-20261118' }}
+    if: ${{ github.event_name == 'push' && github.event.head_commit.message == 'vnc-e01-s03-one-time-repair-shallow-checkout-20261118' }}
     runs-on: ubuntu-latest
     timeout-minutes: 8
     steps:
@@ -24,6 +24,7 @@ jobs:
         uses: actions/checkout@v4
         with:
           persist-credentials: false
+          fetch-depth: 2
       - name: Confirm exact one-off trigger; do not repeat
         shell: bash
         run: |
