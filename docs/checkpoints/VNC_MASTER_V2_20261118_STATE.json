@@ -1,0 +1,105 @@
+{
+  "schema_version": "1.0.0",
+  "project_id": "VERBO_NO_CHAO_EXCLUSIVO",
+  "status": "CANDIDATE_TESTED_NO_MERGE",
+  "timestamp_iso_tz": "2026-11-18T20:48:00-03:00",
+  "source_snapshot": {
+    "operational_prompt_filename": "05_PROMPT_MASTER_VERBO_NO_CHAO_V2.txt",
+    "operational_prompt_sha256": "28cba0f640cad30d30e194304bd0963b8761158b4200a7d29efe8cf7e032632e",
+    "github_read_at": "2026-11-18T20:48:00-03:00",
+    "project_isolation": "VERBO_NO_CHAO_ONLY",
+    "history_full_text_read": false
+  },
+  "repository": {
+    "full_name": "BORELLITO/corte-fino-engine",
+    "visibility": "public",
+    "base_branch": "verbo-no-chao/e01-stock-curation-gate-v1",
+    "base_sha": "097baca265b995120c002c6aa9ea102369a53e4e",
+    "candidate_branch": "verbo-no-chao/master-v2-s01-runtime-hardening-20261118",
+    "baseline_main_sha": "b59bbbec9aef843bb7118f1328fab37e01b098b3",
+    "expected_branch_head": "AFTER_CHECKPOINT_WRITE_RECORD_REMOTE_SHA_SEPARATELY"
+  },
+  "current_phase": "S01_NOGPU_PREP_VALIDATED_REQUIRES_EDITORIAL_AND_MEDIA_SOURCE",
+  "last_verified_output": {
+    "type": "SYNTHETIC_TEST_VIDEO_ONLY",
+    "duration_seconds": 0.833333,
+    "full_decode": true,
+    "real_scene": false,
+    "s01_ai_mp4_confirmed": false,
+    "provider_requests": 0,
+    "github_action_run": 44423770033,
+    "artifact_id": 14482623593,
+    "proof_json_sha256": "49229744a42a48323759305e522b5dba8558f0ff7aa0afad6206f315d894f43a"
+  },
+  "approved_artifacts_sha": {
+    "e01_script": "c64b57cb9d6529b60b9e80ab7607e5887f909dd00e14cd80ed9ec2b7474a5dc6",
+    "e01_wav": "4f2ee1ff0171ddedb7c64e0dce2300c53a0ef105ef12d643a7af6b0a4621942e",
+    "e01_ass": "0b8171a473cbc247eb48ed822bb006a04c74510b8c4cd1b30e409c226f1bb98a"
+  },
+  "blocked_items": [
+    "S01_5_74S_REAL_MOVING_CLIP",
+    "S02_S12_SCENE_VISUAL_RIGHTS_AND_CONTINUITY",
+    "VOICE_RUNTIME_AND_MUSIC_LICENSE_EVIDENCE",
+    "FULL_MASTER_1080x1920",
+    "PUBLICATION_AUTHORIZATION",
+    "GUARD_MERGE_INTO_OPERATIONAL_BRANCH",
+    "PRIVATE_BINARY_CLOUD_TRANSFER"
+  ],
+  "issues_p0_p1": [
+    "VNC-P1-001",
+    "VNC-P0-002",
+    "VNC-P1-003",
+    "VNC-P1-004",
+    "VNC-P1-005",
+    "VNC-P0-006"
+  ],
+  "changes_committed": [
+    "agents/e01_s01_runtime_preflight.py",
+    ".github/workflows/verbo-no-chao-e01-s01-v2-probe.yml",
+    "tests/test_e01_ltx23_s01_v2_render.py",
+    "tests/test_e01_s01_runtime_guards_v2.py",
+    ".github/workflows/verbo-no-chao-e01-s01-runtime-smoke-v2.yml",
+    "docs/VERBO_NO_CHAO_MASTER_V2_AUDIT_20261118.md"
+  ],
+  "tests_with_evidence": [
+    {
+      "run": 44423769964,
+      "type": "ENGINE_GATES",
+      "result": "success",
+      "tests": 451,
+      "skipped": 13,
+      "exact_head": "6d505853ff4c72c0bf5f27220a9671dd8a23635e"
+    },
+    {
+      "run": 44423769839,
+      "type": "EIGHT_SPECIALIST_JOBS",
+      "result": "success",
+      "exact_head": "6d505853ff4c72c0bf5f27220a9671dd8a23635e"
+    },
+    {
+      "run": 44423770033,
+      "type": "PHYSICAL_NO_GPU_FFMPEG_FFPROBE",
+      "result": "success",
+      "exact_head": "6d505853ff4c72c0bf5f27220a9671dd8a23635e"
+    }
+  ],
+  "external_effects_confirmed": {
+    "github_branch_created": true,
+    "files_committed_in_candidate_branch": true,
+    "provider_generation_calls": 0,
+    "new_billable_services": false,
+    "main_modified": false,
+    "pr41_modified": false,
+    "video_uploaded_publicly": false,
+    "published": false
+  },
+  "permissions": {
+    "repository_writable": true,
+    "publisher_authorization": false,
+    "new_spending_authorization": false,
+    "repo_protection_change_approved": false
+  },
+  "next_single_action": "VERIFY_FINAL_PR_DIFF_AND_CI_THEN_SAFELY_SEAL_ORIGINAL_SPENT_ONE_SHOT_WORKFLOW_WITHOUT_GPU",
+  "master_blocked": true,
+  "publish_blocked": true
+}
