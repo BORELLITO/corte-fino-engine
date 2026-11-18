@@ -8,6 +8,12 @@ from agents.e01_stock_candidates import ROOT, CONTRACT, StockIntakeError, valida
 EVIDENCE = Path("contracts/e01_v2_stock_physical_probe_evidence_v1.json")
 EXPECTED_RUN = 44219643779
 EXPECTED_COMMIT = "9b8d2a481995a9fb084195a068a0f8db6dca6889"
+EXPECTED_HASHES = {
+    "E01V2-STOCK-S03-A": "7cc0d7691ff862ff416fddf446c89b6d2b457bb6bc8b812dcf53a07ef5fb326f",
+    "E01V2-STOCK-S05-A": "788b087763625e67e9abe6102eced6d541a6c850be1d03bc213ebc0f6e919f43",
+    "E01V2-STOCK-S08-A": "70b69f800d6bb1ec8386afee61e8ae07e5e2d4f0ce97d4851b19ce37dc7d2cba",
+    "E01V2-STOCK-S09-A": "40c6d291f47e607d3d9fbf6d9952803a9e6e630040a88515b729a2dd2657bd78",
+}
 
 def verify(root: Path = ROOT, proof: dict | None = None) -> dict:
     validate(root)
@@ -55,7 +61,7 @@ def verify(root: Path = ROOT, proof: dict | None = None) -> dict:
         sha = o.get("sha256")
         require(isinstance(sha, str)
                 and re.fullmatch(r"[0-9a-f]{64}", sha)
-                and sha not in hashes,
+                and sha not in hashes and sha == EXPECTED_HASHES[ident],
                 "probe_evidence:invalid_or_repeated_sha")
         hashes.add(sha)
         require(isinstance(o.get("size_bytes"), int)
