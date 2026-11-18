@@ -13,10 +13,10 @@ class TestE01DirectorEditorialGate(unittest.TestCase):
   mutate(data)
   with self.assertRaises((StockIntakeError,ValueError,KeyError,TypeError)):
    validate(ROOT,data)
- def test_real_director_rejected_five_sources_and_no_publication(self):
+ def test_real_director_rejected_seven_sources_and_no_publication(self):
   result=validate(ROOT)
-  self.assertEqual(result["reviewed_sources"],5)
-  self.assertEqual(result["rejected_for_canonical_e01"],5)
+  self.assertEqual(result["reviewed_sources"],7)
+  self.assertEqual(result["rejected_for_canonical_e01"],7)
   self.assertEqual(result["e01_clips_approved_for_cut"],0)
   self.assertFalse(result["publication_authorized"])
  def test_prior_conditional_is_not_approval(self):
@@ -27,6 +27,17 @@ class TestE01DirectorEditorialGate(unittest.TestCase):
   self.fail(lambda d:d["decisions"][-1].update(verdict="APPROVED"))
   self.fail(lambda d:d["decisions"][-1].update(can_enter_e01_edit=True))
   self.fail(lambda d:d["decisions"][-1].update(prior_conditional_superseded=False))
+ def test_historic_conditional_s05_and_s08_explicitly_rejected(self):
+  d={x["asset_id"]:x for x in self.original["decisions"]}
+  self.assertEqual(len(d),7)
+  for asset in ("E01-S05-PEXELS-6010698","E01-S08-PEXELS-6860448"):
+   with self.subTest(asset=asset):
+    self.assertTrue(d[asset]["prior_conditional_superseded"])
+    self.assertFalse(d[asset]["can_enter_e01_edit"])
+    self.assertEqual(d[asset]["verdict"],"REJECTED_FOR_E01_CANONICAL_SHOT")
+  self.fail(lambda m:m["decisions"][4].update(can_enter_e01_edit=True))
+  self.fail(lambda m:m["decisions"][5].update(prior_conditional_superseded=False))
+  self.fail(lambda m:m.update(predecessor_second_stock_review=""))
  def test_no_rights_or_master_promotion(self):
   for key in ("ready_for_full_12_scene_master","soundtrack_license_cleared",
       "voice_runtime_license_cleared","commercial_publication_authorized",

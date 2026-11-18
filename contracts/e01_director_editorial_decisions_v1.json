@@ -116,6 +116,50 @@
       "approved_for_master": false
     },
     {
+      "asset_id": "E01-S05-PEXELS-6010698",
+      "scene_id": "VNC-E01V2-S05",
+      "source_sha256": "788b087763625e67e9abe6102eced6d541a6c850be1d03bc213ebc0f6e919f43",
+      "source_type": "REAL_CAMERA_STOCK",
+      "evidence_run_url": "https://github.com/BORELLITO/corte-fino-engine/actions/runs/44219643779",
+      "exact_video_reviewed_end_to_end": false,
+      "reviewed_frame_samples": true,
+      "physical_source_verified": true,
+      "editorial_scores_0_5": {
+        "story": 2,
+        "continuity": 2,
+        "visual": 3,
+        "authenticity": 5
+      },
+      "verdict": "REJECTED_FOR_E01_CANONICAL_SHOT",
+      "rationale": "Prior conditionally allowed dim corridor is a recognisably contemporary structured warehouse or retail walkway, not the quiet ancient-looking stone passage and worn doorway required by S05; generic amber darkness cannot justify an invented biblical location.",
+      "can_enter_e01_edit": false,
+      "prior_conditional_superseded": true,
+      "separate_stock_licensing_and_contextual_rights_cleared": false,
+      "approved_for_master": false
+    },
+    {
+      "asset_id": "E01-S08-PEXELS-6860448",
+      "scene_id": "VNC-E01V2-S08",
+      "source_sha256": "9a07d5142c6cdf460185433e34abf8785cbe3ff98737c88165eedd64de5a10fd",
+      "source_type": "REAL_CAMERA_STOCK",
+      "evidence_run_url": "https://github.com/BORELLITO/corte-fino-engine/actions/runs/44264731877",
+      "exact_video_reviewed_end_to_end": false,
+      "reviewed_frame_samples": true,
+      "physical_source_verified": true,
+      "editorial_scores_0_5": {
+        "story": 2,
+        "continuity": 1,
+        "visual": 3,
+        "authenticity": 5
+      },
+      "verdict": "REJECTED_FOR_E01_CANONICAL_SHOT",
+      "rationale": "Hands turn an open Bible printed with readable scripture in bright daylight and light-colored jacket. S08 requires the same anonymous charcoal-clothed protagonist with relaxed open hands in prayer beside the same notebook, so prayer and continuity are absent.",
+      "can_enter_e01_edit": false,
+      "prior_conditional_superseded": true,
+      "separate_stock_licensing_and_contextual_rights_cleared": false,
+      "approved_for_master": false
+    },
+    {
       "asset_id": "E01-S10-PEXELS-6381001",
       "scene_id": "VNC-E01V2-S10",
       "source_sha256": "46b4219d2f563cb48ffb18c24c1987f9512ac80862fbd0b778ba2cfd6385b926",
@@ -147,5 +191,7 @@
   "commercial_publication_authorized": false,
   "publishing_action_authorized": false,
   "production_cost_authorized": false,
-  "status": "FIVE_SOURCES_REJECTED_FOR_CANONICAL_E01_ALL_RELEASE_BLOCKED"
+  "status": "SEVEN_SOURCES_REJECTED_FOR_CANONICAL_E01_ALL_RELEASE_BLOCKED",
+  "predecessor_first_stock_review": "contracts/e01_v2_stock_editorial_review_v1.json",
+  "predecessor_second_stock_review": "contracts/e01_v2_stock_alternatives_physical_editorial_v1.json"
 }
