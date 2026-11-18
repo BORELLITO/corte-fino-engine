@@ -4,6 +4,9 @@ from __future__ import annotations
 import argparse
 import hashlib
 import json
+import math
+import shutil
+import subprocess
 import sys
 from pathlib import Path
 from typing import Any
@@ -33,8 +36,8 @@ def _number(value: Any, label: str, errors: list[str]) -> float | None:
     except (TypeError, ValueError):
         errors.append(f"{label} must be numeric")
         return None
-    if result != result:
-        errors.append(f"{label} cannot be NaN")
+    if not math.isfinite(result):
+        errors.append(f"{label} must be finite")
         return None
     return result
 
@@ -118,10 +121,10 @@ def validate_manifest(manifest: dict[str, Any], artifact_root: Path | None = Non
     audio = manifest.get("audio") or {}
     _add(errors, audio.get("engine") == "Kokoro-82M", "audio engine must remain Kokoro-82M")
     _add(errors, audio.get("language") == "pt-BR", "audio language must remain pt-BR")
-    _add(errors, audio.get("format") == "WAV 24 kHz mono float", "audio format contract failed")
+    _add(errors, audio.get("format") in {"WAV 24 kHz mono float", "WAV 24 kHz mono PCM16"}, "audio format contract failed")
     _add(errors, audio.get("persisted") is True, "audio persistence is not proven")
-    _add(errors, isinstance(audio.get("segments"), int) and audio["segments"] > 0, "audio segment count is invalid")
-    _add(errors, isinstance(audio.get("duration_sec"), (int, float)) and audio["duration_sec"] > 0, "audio duration is invalid")
+    _add(errors, type(audio.get("segments")) is int and audio["segments"] > 0, "audio segment count is invalid")
+    _add(errors, type(audio.get("duration_sec")) in (int, float) and math.isfinite(audio["duration_sec"]) and audio["duration_sec"] > 0, "audio duration is invalid")
     _add(errors, _is_sha256(audio.get("sha256")), "audio sha256 is missing or invalid")
 
     music = manifest.get("music") or {}
@@ -176,12 +179,58 @@ def validate_manifest(manifest: dict[str, Any], artifact_root: Path | None = Non
         _add(errors, manifest.get("owner_approval") is True, "PUBLISHED requires owner approval")
         _add(errors, manifest.get("publication_authorized") is True, "PUBLISHED requires publication authorization")
 
+    # A cloud package is NOT physically validated just because its JSON says
+    # "PASS". All four required media inputs must exist and match locked SHAs.
     if artifact_root is not None:
-        artifacts = manifest.get("artifacts") or {}
+        artifacts = manifest.get("artifacts")
+        expected_hashes = {
+            "audio": audio.get("sha256"),
+            "music": music.get("hash"),
+            "output": output.get("sha256"),
+        }
+        source_paths = {
+            "audio": audio.get("path"),
+            "music": music.get("path"),
+            "captions": captions.get("path"),
+            "output": output.get("file"),
+        }
         for key in ("audio", "music", "captions", "output"):
             item = artifacts.get(key) if isinstance(artifacts, dict) else None
-            if isinstance(item, dict):
-                _verify_artifact(item.get("path"), item.get("sha256"), artifact_root, f"artifact.{key}", errors)
+            if not isinstance(item, dict):
+                errors.append(f"artifact.{key} is required for physical cloud runs")
+                continue
+            _verify_artifact(item.get("path"), item.get("sha256"), artifact_root, f"artifact.{key}", errors)
+            if key in expected_hashes and item.get("sha256") != expected_hashes[key]:
+                errors.append(f"artifact.{key} SHA conflicts with declared source manifest")
+            if not isinstance(source_paths[key], str) or source_paths[key] != item.get("path"):
+                errors.append(f"artifact.{key} path conflicts with rendering source")
+
+        # Ready-to-release media requires a real physical probe and whole-file
+        # decode, not a self-declared video_decode: PASS string.
+        if manifest.get("state") in PUBLISHABLE_STATES:
+            output_item = artifacts.get("output") if isinstance(artifacts, dict) else None
+            if isinstance(output_item, dict) and isinstance(output_item.get("path"), str):
+                video_path = (artifact_root / output_item["path"]).resolve()
+                try:
+                    video_path.relative_to(artifact_root.resolve())
+                    from media.probe import validate_rendered_video
+                    errors.extend(validate_rendered_video(video_path))
+                    decoder = shutil.which("ffmpeg")
+                    if decoder is None:
+                        errors.append("release:ffmpeg_decoder_unavailable")
+                    elif video_path.is_file():
+                        decoded = subprocess.run(
+                            [decoder, "-nostdin", "-v", "error", "-xerror",
+                             "-i", str(video_path), "-map", "0", "-f", "null", "-"],
+                            stdout=subprocess.DEVNULL, stderr=subprocess.PIPE,
+                            timeout=240, check=False,
+                        )
+                        if decoded.returncode != 0:
+                            errors.append("release:full_media_decode_failed")
+                except (ValueError, OSError, subprocess.TimeoutExpired):
+                    errors.append("release:full_media_decode_failed")
+    elif manifest.get("state") in PUBLISHABLE_STATES:
+        errors.append("release:physical_media_root_required")
 
     return sorted(set(errors))
 
