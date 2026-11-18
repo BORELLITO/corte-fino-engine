@@ -1,0 +1,111 @@
+name: Verbo no Chão — E01 v2 Real Timecoded Captions QA
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - "verbo-no-chao/e01-v2-captions-timing-qa-v1"
+    paths:
+      - ".github/workflows/verbo-no-chao-e01-v2-captions.yml"
+
+permissions:
+  contents: read
+  actions: read
+
+concurrency:
+  group: vnc-e01-v2-caption-timestamp-qa
+  cancel-in-progress: false
+
+jobs:
+  physical_caption_package:
+    name: Exact-source ASR -> canonical text SRT/VTT/ASS + diagnostic video only
+    runs-on: ubuntu-24.04
+    timeout-minutes: 14
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Retrieve real v2 two-model word timecodes
+        uses: actions/download-artifact@v4
+        with:
+          name: vnc-e01-v2-dual-asr-results
+          repository: BORELLITO/corte-fino-engine
+          run-id: 44204868327
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          path: asr-source/
+
+      - name: Retrieve SHA pinned real E01 v2 audio — no re-generation
+        uses: actions/download-artifact@v4
+        with:
+          name: vnc-e01-v2-pronunciation-safe-preview
+          repository: BORELLITO/corte-fino-engine
+          run-id: 44204100486
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          path: wav-source/
+
+      - name: Test layout, exact script, timestamp alignment and forged-source protections
+        run: python -m unittest discover -s tests -p "test_e01_v2_caption_pipeline.py" -v
+
+      - name: Create real two-line SRT/VTT and sample-accurate-timed karaoke QA subtitles
+        run: |
+          python -m agents.e01_v2_caption_pipeline \
+            --root . \
+            --asr-report asr-source/report.json \
+            --output-dir captions-qa/
+
+      - name: Verify input audio SHA/size against immutable v2 manifest
+        run: |
+          python - <<'PY'
+          import hashlib,json,pathlib,wave
+          p=pathlib.Path("wav-source/e01-v2-preview-only.wav")
+          e=json.loads(pathlib.Path("contracts/e01_v2_voice_preview_evidence_v1.json").read_text(encoding="utf-8"))
+          assert p.stat().st_size==e["wav_bytes"]
+          assert hashlib.sha256(p.read_bytes()).hexdigest()==e["wav_sha256"]
+          with wave.open(str(p),"rb") as f:
+              assert f.getnchannels()==1 and f.getsampwidth()==2 and f.getframerate()==24000
+              assert abs(f.getnframes()/f.getframerate()-70.425)<0.001
+          assert e["production_audio_master_approved"] is False
+          assert e["publication_authorized"] is False
+          print("PASS: real v2 WAV bytes, duration and release locks verified")
+          PY
+
+      - name: Render actual diagnostic subtitle video — neutral background, never final master
+        run: |
+          ffmpeg -hide_banner -y -loglevel warning \
+            -f lavfi -i "color=c=0x15191b:s=540x960:r=30" \
+            -i wav-source/e01-v2-preview-only.wav \
+            -filter_complex "[0:v]ass=captions-qa/e01-v2-karaoke-qa.ass:original_size=1080x1920,drawtext=fontfile=/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf:text='PREVIA DE LEGENDAS - NAO PUBLICAR':fontcolor=white@0.75:fontsize=17:x=(w-text_w)/2:y=75,drawtext=fontfile=/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf:text='VERBO NO CHAO - QA E01 v2':fontcolor=white@0.52:fontsize=16:x=(w-text_w)/2:y=180[v]" \
+            -map "[v]" -map 1:a \
+            -c:v libx264 -preset ultrafast -crf 31 \
+            -pix_fmt yuv420p -c:a aac -b:a 128k \
+            -t 70.425 -movflags +faststart \
+            captions-qa/e01-v2-karaoke-diagnostic-NOT-FINAL.mp4
+
+      - name: Probe video bytes, streams, dimensions and nonrelease status
+        run: |
+          ffprobe -v error -show_entries format=duration,size -show_entries stream=codec_name,width,height,r_frame_rate -of json captions-qa/e01-v2-karaoke-diagnostic-NOT-FINAL.mp4 > captions-qa/ffprobe.json
+          python - <<'PY'
+          import json,pathlib
+          root=pathlib.Path("captions-qa")
+          r=json.loads((root/"qa-report.json").read_text(encoding="utf-8"))
+          v=json.loads((root/"ffprobe.json").read_text(encoding="utf-8"))
+          assert r["status"]=="TIMED_CAPTIONS_PROVISIONAL_NOT_MASTER"
+          assert r["final_video_caption_sync_approved"] is False
+          assert r["publication_authorized"] is False
+          streams=v["streams"]
+          assert any(s.get("codec_name")=="h264" and s.get("width")==540 and s.get("height")==960 for s in streams)
+          assert any(s.get("codec_name")=="aac" for s in streams)
+          assert 70<=float(v["format"]["duration"])<=71
+          print("PASS: physically decoded diagnostic H264/AAC QA video is NOT a release master")
+          PY
+
+      - name: Save finished diagnostic assets and evidence (private temporary QA)
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: vnc-e01-v2-captions-timecoded-qa-only
+          path: captions-qa/
+          if-no-files-found: warn
+          retention-days: 14
