@@ -72,6 +72,26 @@ class E01CaptionQATests(unittest.TestCase):
         with self.assertRaisesRegex(ProductionError,"more_than_two_lines"):
             cue_lines([{"text":"responsabilizacaointernacionalizada"}])
 
+    def test_real_canonical_words_are_split_before_unbreakable_two_line_crossings(self):
+        draft=json.loads((ROOT / "contracts/e01_script_v2_candidate.json")
+                         .read_text(encoding="utf-8"))["episode"]
+        tokens=canonical_words(draft)
+        for i,w in enumerate(tokens):
+            w["index"]=i
+            w["start"]=round(i*0.385,3)
+            w["end"]=round(i*0.385+0.30,3)
+            w["alignment"]="SIMULATED_TEST_ONLY"
+            w["asr_confidence"]=0.9
+        cues=make_cues(tokens)
+        self.assertGreater(len(cues),20)
+        self.assertTrue(all(len(c["lines"])<=2 for c in cues))
+        self.assertTrue(all(all(len(line)<=28 for line in c["lines"]) for c in cues))
+        self.assertEqual(
+            " ".join(w["text"] for c in cues for w in c["words"]),
+            " ".join(w["text"] for w in tokens))
+        self.assertFalse(any(cues[i]["start"] < cues[i-1]["end"]
+                             for i in range(1,len(cues))))
+
     def test_srt_vtt_time_format_is_stable(self):
         self.assertEqual(clock(70.425),"00:01:10,425")
         self.assertEqual(clock(70.425,"."),"00:01:10.425")
