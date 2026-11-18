@@ -39,3 +39,14 @@ Foi identificado um segundo risco de **falso sucesso**: o fluxo antigo dizia `PH
 ### Licença de modelo — atualização de fonte primária
 
 O [Help Center oficial LTX](https://help.ltx.io/hc/en-us/articles/37290270398610-Who-owns-the-content-I-create-with-LTX) esclarece que o uso de pesos abertos sob a licença Community **é gratuito para entidades com receita anual inferior a US$ 10 milhões**; acima disso, ou para revenda de modelo/produto concorrente, é necessário contrato comercial. A Lightricks não reivindica titularidade do output, mas permanecem restrições de uso, propriedade de terceiros e política de conteúdo; ver [texto vinculante do modelo LTX-2.x](https://github.com/Lightricks/LTX-2/blob/main/LICENSE-2_x). Esta análise identifica um caminho possivelmente compatível com criadores independentes, **sem declarar a situação contratual individual verificada**. O gate `rights_cleared=false` continua.
+
+## Real execution trigger for the single deferred retest
+
+The workflow is `workflow_dispatch` **or** a precisely filtered push to `contracts/e01_ltx23_s01_one_shot_trigger_20261118.json` **with exact commit message** `vnc-e01-s01-one-shot-free-retest-20261118`. Any incidental code/doc commit does not invoke the video generator. Concurrency protects against simultaneous jobs. The trigger file is intentionally **absent** until the existing once-only automation's scheduled time.
+
+At the scheduled check, the automation should:
+1. Verify it has not executed or already produced the full S01 (checks GitHub Actions run list, SHA and Drive backup);
+2. Verify previous quota-reset window elapsed;
+3. **Create, exactly once**, that absent trigger JSON through GitHub create_file on branch `verbo-no-chao/e01-stock-curation-gate-v1` with the exact commit message. This uses current HEAD code, unlike rerunning a prior workflow at an old commit. Do **not** use outdated `rerun_failed_workflow_run_jobs`;
+4. Read generated GitHub Actions status and physical proof. A BLOCKED/FAILURE is not a video. If success with MP4, evaluate FFprobe, duration, SHA, and sample frames; preserve private Drive, never publish.
+No recurring task or automatic credit retry was enabled. The existing one-off task remains the only scheduled execution.

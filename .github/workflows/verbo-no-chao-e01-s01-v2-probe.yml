@@ -1,13 +1,23 @@
 name: Verbo no Chão — E01 S01 full-duration LTX23 one-shot prototype
 
 on:
+  push:
+    branches:
+      - "verbo-no-chao/e01-stock-curation-gate-v1"
+    paths:
+      - "contracts/e01_ltx23_s01_one_shot_trigger_20261118.json"
   workflow_dispatch:
+
+concurrency:
+  group: verbo-no-chao-e01-one-shot-${{ github.ref }}
+  cancel-in-progress: false
 
 permissions:
   contents: read
 
 jobs:
   scene01-full-duration:
+    if: ${{ github.event_name == 'workflow_dispatch' || (github.event_name == 'push' && github.event.head_commit.message == 'vnc-e01-s01-one-shot-free-retest-20261118') }}
     runs-on: ubuntu-latest
     timeout-minutes: 6
     steps:

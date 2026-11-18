@@ -28,6 +28,16 @@ class TestE01Ltx23S01V2(unittest.TestCase):
                   "approved_for_master","publication_authorized",
                   "paid_service_used","human_login_performed"):
             self.assertIs(STATUS_BASE[k],False,k)
+    def test_one_shot_trigger_only_and_no_cron(self):
+        from pathlib import Path
+        yaml=(Path(".github/workflows/verbo-no-chao-e01-s01-v2-probe.yml")
+              .read_text(encoding="utf-8"))
+        self.assertIn("e01_ltx23_s01_one_shot_trigger_20261118.json",yaml)
+        self.assertIn("vnc-e01-s01-one-shot-free-retest-20261118",yaml)
+        self.assertIn("workflow_dispatch:",yaml)
+        self.assertNotIn("schedule:",yaml)
+        self.assertNotIn("pull_request:",yaml)
+        self.assertIn("cancel-in-progress: false",yaml)
     def test_physical_qa_rejects_partial_or_wrong_video(self):
         valid={
             "full_stream_decoded":True,"covers_requested_scene":True,
