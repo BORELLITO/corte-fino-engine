@@ -30,3 +30,12 @@ A candidata S08 pode não servir: o enquadramento mostra um homem em oração em
 **Não confundir:** PASS em CI ou hash de stock jamais transforma um roughcut de 720×1280 em master 1080×1920 nem autoriza uso comercial de voz/trilha. Os outros bloqueios preexistentes continuam ativos.
 
 Próximo gate: observar o relatório físico de bytes do Actions; comparar a real qualidade dos 4 clipes, substituir *somente* os planos que melhorarem E01 e avançar a montagem final depois do parecer de direitos e QA.
+
+
+## Evidência física real posterior (18/11/2026, 01:58 UTC)
+
+**GitHub Actions:** https://github.com/BORELLITO/corte-fino-engine/actions/runs/44219643779 — SUCCESS. O runner instalou FFmpeg/FFprobe, baixou os **4 MP4 reais para disco temporário**, mediu duração, dimensões e codec H.264, calculou SHA-256 e decodificou integralmente os quatro arquivos sem erro. O relatório foi preservado em artifact GitHub ID `14389892333` (retenção: sete dias). Nenhum vídeo bruto foi enviado como artifact nem inserido no repositório.
+
+As medidas e hashes registrados em `contracts/e01_v2_stock_physical_probe_evidence_v1.json` permitem comparar futuramente a mesma origem CDN (re-download obrigatório e SHA idêntico). O guardião `agents/e01_stock_probe_evidence.py` rejeita evidências incompletas, mudança de origem ou falsas aprovações e tem testes adversariais.
+
+**Limite explícito:** os MP4 foram destruídos com o diretório temporário do runner. Não existe biblioteca de stock durável nem 1080×1920 master gerado. Sem inspeção de quadros/pessoas/logos e sem documentação adicional dos direitos, seguem como `PENDING_FRAME_REVIEW` / `PENDING_REVIEW`, e a publicação continua proibida.
