@@ -30,6 +30,8 @@ jobs:
           run-id: 44204868327
           github-token: ${{ secrets.GITHUB_TOKEN }}
           path: original-v2-asr/
+      # Evidence JSON names report_sha256; this stage verifies the corrected
+      # contract key and the original immutable report bytes without new ASR.
       - name: Test immutable evidence and nonrelease gates
         run: python -m unittest discover -s tests -p "test_e01_v2_asr_attestation.py" -v
       - name: Validate exact report SHA and classify weak-model segmentation
