@@ -72,7 +72,7 @@ def verify(root:Path=ROOT, data:dict|None=None)->dict:
  director=read_json(root,DIRECTOR)
  require(isinstance(data,dict) and data.get("schema_version")=="1.0.0"
      and data.get("project")=="verbo-no-chao"
-     and data.get("episode_id")==story.get("episode_id")=="VNC-W01-E1"
+     and data.get("episode_id")==storyboard.get("episode_id")=="VNC-W01-E1"
      and data.get("source_storyboard")==str(STORY)
      and data.get("source_world_blueprint")==str(WORLD)
      and data.get("source_director_verdict")==str(DIRECTOR)
@@ -94,6 +94,7 @@ def verify(root:Path=ROOT, data:dict|None=None)->dict:
  } | {8860242,4828603,37340388,6381001}
  require(historical==EXCLUDED_PEXELS
     and data.get("excluded_pexels_video_ids")==sorted(EXCLUDED_PEXELS)
+    and data.get("excluded_known_video_sha256")==sorted(EXCLUDED_SHA)
     and len(EXCLUDED_SHA)==13 and all(
       re.fullmatch(r"[0-9a-f]{64}",s) for s in EXCLUDED_SHA),
     "source_precision:rejected_source_registry_changed")

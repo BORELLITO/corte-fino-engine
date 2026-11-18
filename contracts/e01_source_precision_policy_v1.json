@@ -22,7 +22,21 @@
     37340388,
     40417800
   ],
-  "excluded_known_video_sha256": [],
+  "excluded_known_video_sha256": [
+    "315821882a9ed9d0dcaa74b2b111043ea6cbb27681d292a2ace7da38db15d3a7",
+    "40c6d291f47e607d3d9fbf6d9952803a9e6e630040a88515b729a2dd2657bd78",
+    "46b4219d2f563cb48ffb18c24c1987f9512ac80862fbd0b778ba2cfd6385b926",
+    "575423922f4c026cb06e5213d5a4ff4facafbdfe131b795d3ef8ea90680366e1",
+    "60073bc4a45f816ca4a4e6cce3b7039299ca6ff8824f222aa98ef923dde267e5",
+    "70b69f800d6bb1ec8386afee61e8ae07e5e2d4f0ce97d4851b19ce37dc7d2cba",
+    "788b087763625e67e9abe6102eced6d541a6c850be1d03bc213ebc0f6e919f43",
+    "7cc0d7691ff862ff416fddf446c89b6d2b457bb6bc8b812dcf53a07ef5fb326f",
+    "9a07d5142c6cdf460185433e34abf8785cbe3ff98737c88165eedd64de5a10fd",
+    "9c4a5d939a05af05f4d742c5054ee55f520f58ef1de9e73d57b3d87f54b7199f",
+    "a05fda2c40d250fd4d93bd65126cccfb370983d967f4f3d5b84acbdb8056ec90",
+    "d497186c118041aecb457938e6337f20744b20a7042f24aecbe50e7aee103a34",
+    "d682edd7c783ac0c527e05548b83e654437cdfbff0d7b641478e1bf3bd895738"
+  ],
   "previously_rejected_source_ids_are_never_auto_reconsidered": true,
   "unknown_published_stock_is_not_automatically_approved": true,
   "source_page_metadata_only_allows_research_not_edit": true,
