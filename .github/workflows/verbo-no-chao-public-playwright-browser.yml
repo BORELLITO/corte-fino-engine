@@ -15,7 +15,7 @@ permissions:
 
 concurrency:
   group: vnc-playwright-public-proof-${{ github.ref }}
-  cancel-in-progress: false
+  cancel-in-progress: true
 
 jobs:
   chromium-public-document-proof:
@@ -26,10 +26,14 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: "3.12"
-      - name: Install public browser library and Chromium without account
+      - name: Install Playwright and reuse official runner Google Chrome
         run: |
           python -m pip install --disable-pip-version-check "playwright>=1.55,<2"
-          python -m playwright install --with-deps chromium
+          if command -v google-chrome >/dev/null; then
+            google-chrome --version
+          else
+            python -m playwright install --with-deps chromium
+          fi
       - name: Validate exact allowed public pages and no credential actions
         run: python -m unittest tests.test_e01_public_browser_playwright -v
       - name: Actually launch Chromium and inspect public pages, never log in

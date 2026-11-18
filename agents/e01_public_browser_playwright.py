@@ -8,6 +8,7 @@ from __future__ import annotations
 import json
 import os
 import re
+import shutil
 from datetime import datetime,timezone
 from pathlib import Path
 from urllib.parse import urlparse
@@ -55,7 +56,9 @@ def run():
  }
  try:
   with sync_playwright() as playwright:
-   browser=playwright.chromium.launch(headless=True)
+   browser=(playwright.chromium.launch(channel="chrome",headless=True)
+            if shutil.which("google-chrome")
+            else playwright.chromium.launch(headless=True))
    context=browser.new_context(
      viewport={"width":1024,"height":768},
      locale="pt-BR",accept_downloads=False,
