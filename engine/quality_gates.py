@@ -36,7 +36,7 @@ def _number(value: Any, label: str, errors: list[str]) -> float | None:
         return None
     try:
         result = float(value)
-    except (TypeError, ValueError):
+    except (TypeError, ValueError, OverflowError):
         errors.append(f"{label} must be numeric")
         return None
     if not math.isfinite(result):
@@ -64,17 +64,20 @@ def _verify_artifact(path_value: Any, expected: Any, root: Path, label: str, err
     _add(errors, _is_sha256(expected), f"{label} sha256 is missing or invalid")
     if not isinstance(path_value, str) or not path_value.strip() or not _is_sha256(expected):
         return
-    path = (root / path_value).resolve()
     try:
+        path = (root / path_value).resolve()
         path.relative_to(root.resolve())
-    except ValueError:
-        errors.append(f"{label} path escapes artifact root")
+        if not path.is_file():
+            errors.append(f"{label} file does not exist: {path_value}")
+            return
+        digest = hashlib.sha256()
+        with path.open("rb") as source:
+            for chunk in iter(lambda: source.read(1048576), b""):
+                digest.update(chunk)
+    except (ValueError, OSError):
+        errors.append(f"{label} path is invalid, inaccessible or escapes artifact root")
         return
-    if not path.is_file():
-        errors.append(f"{label} file does not exist: {path_value}")
-        return
-    actual = hashlib.sha256(path.read_bytes()).hexdigest()
-    _add(errors, actual == expected, f"{label} sha256 does not match the file")
+    _add(errors, digest.hexdigest() == expected, f"{label} sha256 does not match the file")
 
 
 def validate_manifest(manifest: dict[str, Any], artifact_root: Path | None = None) -> list[str]:
@@ -139,7 +142,7 @@ def validate_manifest(manifest: dict[str, Any], artifact_root: Path | None = Non
     audio = _object(manifest.get("audio"), "audio", errors)
     _add(errors, audio.get("engine") == "Kokoro-82M", "audio engine must remain Kokoro-82M")
     _add(errors, audio.get("language") == "pt-BR", "audio language must remain pt-BR")
-    _add(errors, audio.get("format") in {"WAV 24 kHz mono float", "WAV 24 kHz mono PCM16"}, "audio format contract failed")
+    _add(errors, isinstance(audio.get("format"), str) and audio.get("format") in {"WAV 24 kHz mono float", "WAV 24 kHz mono PCM16"}, "audio format contract failed")
     _add(errors, audio.get("persisted") is True, "audio persistence is not proven")
     _add(errors, type(audio.get("segments")) is int and audio["segments"] > 0, "audio segment count is invalid")
     _add(errors, type(audio.get("duration_sec")) in (int, float) and math.isfinite(audio["duration_sec"]) and audio["duration_sec"] > 0, "audio duration is invalid")
@@ -149,7 +152,7 @@ def validate_manifest(manifest: dict[str, Any], artifact_root: Path | None = Non
     _add(errors, music.get("present") is True, "music gate failed: music is absent")
     _add(errors, music.get("ducking") is True, "music gate failed: voice ducking is not proven")
     _add(errors, _is_sha256(music.get("hash")), "music hash is missing or invalid")
-    _add(errors, music.get("license_status") in {"CLEARED", "PASS"}, "music license status is not cleared")
+    _add(errors, isinstance(music.get("license_status"), str) and music.get("license_status") in {"CLEARED", "PASS"}, "music license status is not cleared")
     if music.get("origin") == "original_procedural":
         _add(errors, music.get("external_samples") is False, "original procedural music cannot declare external samples")
     elif music.get("origin") == "licensed":
@@ -172,7 +175,7 @@ def validate_manifest(manifest: dict[str, Any], artifact_root: Path | None = Non
 
     rights = _object(manifest.get("rights"), "rights", errors)
     rights_clear = all(
-        rights.get(k) in PASS_RIGHTS
+        isinstance(rights.get(k), str) and rights.get(k) in PASS_RIGHTS
         for k in ("visual_review", "voice_review", "music_review", "monetization")
     )
     if isinstance(state, str) and state in PUBLISHABLE_STATES:
@@ -182,7 +185,7 @@ def validate_manifest(manifest: dict[str, Any], artifact_root: Path | None = Non
                 if isinstance(asset, dict):
                     _add(
                         errors,
-                        asset.get("rights_status") in PASS_RIGHTS,
+                        isinstance(asset.get("rights_status"), str) and asset.get("rights_status") in PASS_RIGHTS,
                         f"publishable state requires asset {index} rights cleared",
                     )
         _add(
