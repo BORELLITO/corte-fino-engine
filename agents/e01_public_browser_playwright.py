@@ -33,7 +33,7 @@ def validate_public_url(name,url):
 
 def classify_view(name,title,status):
  if status is None:return "BLOCKED_NO_HTTP_STATUS"
- if status<200 or status>=400:return "BLOCKED_HTTP_STATUS"
+ if status<200 or status>=300:return "BLOCKED_HTTP_STATUS"
  if not isinstance(title,str) or not title.strip():return "BLOCKED_EMPTY_TITLE"
  if name=="browser_canary" and "Example Domain" not in title:
   return "BLOCKED_UNEXPECTED_CANARY"
