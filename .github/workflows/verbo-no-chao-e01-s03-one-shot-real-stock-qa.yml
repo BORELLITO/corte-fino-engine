@@ -1,4 +1,4 @@
-name: Verbo no Chão — E01 S03 real public footage physical QA (one-shot; NO AI)
+name: Verbo no Chão — S03 rainy playground REAL footage QA (NO AI, ONE SHOT)
 
 on:
   push:
@@ -11,64 +11,68 @@ permissions:
   contents: read
 
 concurrency:
-  group: vnc-e01-s03-once-20261118
+  group: vnc-s03-rainy-playground-20261118
   cancel-in-progress: false
 
 jobs:
-  bounded-physical-candidate-review:
-    if: ${{ github.event_name == 'push' && github.event.head_commit.message == 'vnc-e01-s03-one-time-repair-ffmpeg-runtime-20261118' }}
+  real-footage-frame-qa:
+    if: ${{ github.event_name == 'push' && github.event.head_commit.message == 'vnc-e01-s03-rainy-night-physical-qa-20261118' }}
     runs-on: ubuntu-latest
-    timeout-minutes: 8
+    timeout-minutes: 9
     steps:
-      - name: Read isolated source code without writer credentials
+      - name: Checkout without persistent writer token
         uses: actions/checkout@v4
         with:
-          persist-credentials: false
           fetch-depth: 2
-      - name: Confirm exact one-off trigger; do not repeat
+          persist-credentials: false
+      - name: Confirm exact no-replay commit payload
         shell: bash
         run: |
           set -euo pipefail
           test "$GITHUB_REF_NAME" = "verbo-no-chao/e01-s03-real-footage-qa-20261118-v1"
           test "$(git show --pretty= --name-only "$GITHUB_SHA" | sed '/^$/d')" = ".github/workflows/verbo-no-chao-e01-s03-one-shot-real-stock-qa.yml"
-      - name: Prepare free FFmpeg runtime and public downloader
+      - name: Python 3.12
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Preflight scene and zero-rights contract
+        run: python -m unittest tests.test_e01_s03_public_stock_qa -v
+      - name: Install pinned wheel with FFmpeg binary, WITHOUT apt
         shell: bash
         run: |
           set -euo pipefail
-          if ! command -v ffmpeg >/dev/null || ! command -v ffprobe >/dev/null; then
-            sudo apt-get update -qq
-            sudo DEBIAN_FRONTEND=noninteractive apt-get install -y -qq ffmpeg
-          fi
-          command -v ffmpeg
-          command -v ffprobe
-          command -v curl
-      - name: Single bounded public download (no login, no retries)
-        id: download
-        continue-on-error: true
+          timeout -k 5s 100s python -m pip install --disable-pip-version-check --no-cache-dir "imageio-ffmpeg==0.8.1"
+          python - <<'PY'
+          import imageio_ffmpeg
+          print("Pinned FFmpeg:", imageio_ffmpeg.get_ffmpeg_exe())
+          PY
+      - name: Download exactly ONE public source (no login and no retry)
         shell: bash
         run: |
           set -euo pipefail
-          mkdir -p ./s03-research
+          mkdir -p ./s03-real-source
           curl --fail --location --silent --show-error \
-            --connect-timeout 20 --max-time 115 --retry 0 \
-            --max-filesize 50000000 \
-            --output ./s03-research/pexels_40316686_source.mp4 \
-            'https://videos.pexels.com/video-files/40316686/17221948_1080_1920_60fps.mp4'
-      - name: One physical probe and no-master QA frames
+            --connect-timeout 15 --max-time 110 --retry 0 \
+            --max-filesize 125000000 \
+            --output ./s03-real-source/Pexels_19381590_ORIGINAL.mp4 \
+            "https://videos.pexels.com/video-files/19381590/19381590-uhd_3840_2160_25fps.mp4"
+      - name: Decode physical source and sample actual narrative crop
         shell: bash
         run: |
           set -euo pipefail
-          python -m agents.e01_s03_public_stock_physical_qa \
-            ./s03-research/pexels_40316686_source.mp4 \
-            ./s03-research/evidence
-      - name: Publish time-limited audit proof, never media master
+          timeout -k 5s 280s python -m agents.e01_s03_public_stock_physical_qa \
+            ./s03-real-source/Pexels_19381590_ORIGINAL.mp4 \
+            ./s03-real-source/qa
+      - name: Short-lived visual samples and JSON only — NO raw MP4 / NO proxy
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: VNC-E01-S03-public-stock-frame-qa-NOT-MASTER
-          path: ./s03-research/evidence/
-          retention-days: 1
+          name: VNC-E01-S03-19381590-SIXFRAMES-RESEARCH-ONLY
+          path: |
+            ./s03-real-source/qa/S03_QA_PHYSICAL_REPORT.json
+            ./s03-real-source/qa/S03_6_REAL_SOURCE_FRAMES_CONTACT.jpg
           if-no-files-found: warn
-      - name: Confirm publication not enabled
+          retention-days: 1
+      - name: Confirm master and publication NEVER released
         if: always()
-        run: echo "Only technical QA of public stock. License, scene approval and publication remain BLOCKED."
+        run: echo "Research frames only; no license attribution from SHA; no master, no rights clearance, no publication."
