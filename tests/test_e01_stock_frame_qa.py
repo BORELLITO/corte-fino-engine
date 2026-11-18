@@ -3,11 +3,15 @@ import tempfile
 import unittest
 from pathlib import Path
 from unittest.mock import patch
-from PIL import Image
+try:
+    from PIL import Image
+except ImportError:
+    Image = None
 from agents.e01_stock_frame_qa import (
     THUMB_W, THUMB_H, image_metrics, contact_sheet, sample_frame, StockIntakeError
 )
 
+@unittest.skipUnless(Image is not None, "Pillow is tested in the dedicated stock frame QA workflow")
 class TestE01StockFrameQa(unittest.TestCase):
     def test_metrics_do_not_claim_semantic_approval(self):
         images=[Image.new("RGB", (THUMB_W, THUMB_H), color)

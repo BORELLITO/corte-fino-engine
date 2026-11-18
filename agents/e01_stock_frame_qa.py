@@ -12,7 +12,10 @@ import math
 import subprocess
 import tempfile
 from pathlib import Path
-from PIL import Image, ImageChops, ImageDraw, ImageFont, ImageStat
+try:
+    from PIL import Image, ImageChops, ImageDraw, ImageFont, ImageStat
+except ImportError:  # Primary engine gates do not install imaging packages.
+    Image = ImageChops = ImageDraw = ImageFont = ImageStat = None
 from agents.e01_stock_candidates import ROOT, CONTRACT, StockIntakeError, require, probe_item, validate
 from agents.e01_stock_probe_evidence import EXPECTED_HASHES, verify
 
@@ -96,6 +99,7 @@ def contact_sheet(rows: list[tuple[str, list[Image.Image]]], target: Path) -> di
             "type": "derived_contact_sheet_low_resolution_qa_only"}
 
 def run(root: Path, out: Path, ffmpeg: str, ffprobe: str) -> dict:
+    require(Image is not None, "frame_qa:pillow_required")
     validate(root)
     verify(root)
     contract = json.loads((root / CONTRACT).read_text(encoding="utf-8"))
