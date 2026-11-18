@@ -1,0 +1,143 @@
+name: Verbo no Chão — E01 v2 Real Timecoded Captions QA
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - "verbo-no-chao/e01-v2-captions-timing-qa-v1"
+    paths:
+      - ".github/workflows/verbo-no-chao-e01-v2-captions.yml"
+
+permissions:
+  contents: read
+  actions: read
+
+concurrency:
+  group: vnc-e01-v2-caption-timestamp-qa
+  cancel-in-progress: true
+
+jobs:
+  physical_caption_package:
+    name: Exact-source ASR -> canonical text SRT/VTT/ASS + diagnostic video only
+    runs-on: ubuntu-24.04
+    timeout-minutes: 14
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Retrieve real v2 two-model word timecodes
+        uses: actions/download-artifact@v4
+        with:
+          name: vnc-e01-v2-dual-asr-results
+          repository: BORELLITO/corte-fino-engine
+          run-id: 44204868327
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          path: asr-source/
+
+      - name: Retrieve SHA pinned real E01 v2 audio — no re-generation
+        uses: actions/download-artifact@v4
+        with:
+          name: vnc-e01-v2-pronunciation-safe-preview
+          repository: BORELLITO/corte-fino-engine
+          run-id: 44204100486
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          path: wav-source/
+
+      # Fixed an intentionally overlong fixture: the production rule still
+      # rejects any cue that cannot fit exactly two lines of 28 characters.
+      - name: Test layout, exact script, timestamp alignment and forged-source protections
+        run: python -m unittest discover -s tests -p "test_e01_v2_caption_pipeline.py" -v
+
+      # Fix: cues now stop before any added word makes the two-line
+      # 28-character split geometrically impossible; no overflow allowed.
+      - name: Create real two-line SRT/VTT and sample-accurate-timed karaoke QA subtitles
+        run: |
+          python -m agents.e01_v2_caption_pipeline \
+            --root . \
+            --asr-report asr-source/report.json \
+            --output-dir captions-qa/
+
+      - name: Verify input audio SHA/size against immutable v2 manifest
+        run: |
+          python - <<'PY'
+          import hashlib,json,pathlib,wave
+          p=pathlib.Path("wav-source/e01-v2-preview-only.wav")
+          e=json.loads(pathlib.Path("contracts/e01_v2_voice_preview_evidence_v1.json").read_text(encoding="utf-8"))
+          assert p.stat().st_size==e["wav_bytes"]
+          assert hashlib.sha256(p.read_bytes()).hexdigest()==e["wav_sha256"]
+          with wave.open(str(p),"rb") as f:
+              assert f.getnchannels()==1 and f.getsampwidth()==2 and f.getframerate()==24000
+              assert abs(f.getnframes()/f.getframerate()-70.425)<0.001
+          assert e["production_audio_master_approved"] is False
+          assert e["publication_authorized"] is False
+          print("PASS: real v2 WAV bytes, duration and release locks verified")
+          PY
+
+      - name: Install version-pinned portable FFmpeg from PyPI — no apt or system toolchain
+        run: |
+          python -m pip install --disable-pip-version-check "imageio-ffmpeg==0.6.0"
+          python - <<'PY'
+          import imageio_ffmpeg,subprocess
+          exe=imageio_ffmpeg.get_ffmpeg_exe()
+          p=subprocess.run([exe,"-hide_banner","-filters"],capture_output=True,text=True,check=True)
+          assert " ass " in p.stdout and "libass" in p.stdout
+          print("PASS: portable FFmpeg with libass available", exe.rsplit("/",1)[-1])
+          PY
+
+      - name: Render actual diagnostic subtitle video — built-in QA watermark, no release master
+        run: |
+          FFMPEG="$(python -c 'import imageio_ffmpeg; print(imageio_ffmpeg.get_ffmpeg_exe())')"
+          "$FFMPEG" -hide_banner -y -loglevel warning \
+            -f lavfi -i "color=c=0x15191b:s=540x960:r=30" \
+            -i wav-source/e01-v2-preview-only.wav \
+            -vf "ass=captions-qa/e01-v2-karaoke-qa.ass:original_size=1080x1920" \
+            -map 0:v -map 1:a \
+            -c:v libx264 -preset ultrafast -crf 31 \
+            -pix_fmt yuv420p -c:a aac -b:a 128k \
+            -t 70.425 -movflags +faststart \
+            captions-qa/e01-v2-karaoke-diagnostic-NOT-FINAL.mp4
+
+      - name: Decode physical video frame and inspect actual H264/AAC streams
+        run: |
+          python - <<'PY'
+          import json,pathlib,subprocess
+          import imageio_ffmpeg
+          root=pathlib.Path("captions-qa")
+          path=root/"e01-v2-karaoke-diagnostic-NOT-FINAL.mp4"
+          r=json.loads((root/"qa-report.json").read_text(encoding="utf-8"))
+          assert r["status"]=="TIMED_CAPTIONS_PROVISIONAL_NOT_MASTER"
+          assert r["final_video_caption_sync_approved"] is False
+          assert r["publication_authorized"] is False
+          assert path.is_file() and path.stat().st_size > 250000
+          exe=imageio_ffmpeg.get_ffmpeg_exe()
+          probe=subprocess.run([exe,"-hide_banner","-i",str(path)],
+                               capture_output=True,text=True)
+          text=probe.stderr
+          assert "Video: h264" in text and "Audio: aac" in text, text[-2000:]
+          assert "540x960" in text, text[-2000:]
+          decoder=imageio_ffmpeg.read_frames(str(path))
+          metadata=next(decoder)
+          frame=next(decoder)
+          assert tuple(metadata["size"]) == (540,960)
+          assert 70.0<=metadata["duration"]<=71.0
+          assert len(frame)==540*960*3
+          decoder.close()
+          (root/"decoded-frame-qc.json").write_text(
+            json.dumps({"physical_frame_decoded":True,
+              "width":540,"height":960,"duration_seconds":metadata["duration"],
+              "video_codec":"h264","audio_codec":"aac",
+              "not_final_master":True,"publication_authorized":False},
+              ensure_ascii=False,indent=2)+"\n",encoding="utf-8")
+          print("PASS: real H264/AAC video decoded; QA ONLY, final master and publication blocked")
+          PY
+
+      - name: Save finished diagnostic assets and evidence (private temporary QA)
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: vnc-e01-v2-captions-timecoded-qa-only
+          path: captions-qa/
+          if-no-files-found: warn
+          retention-days: 14
