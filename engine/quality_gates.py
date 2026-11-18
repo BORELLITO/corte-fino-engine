@@ -102,9 +102,9 @@ def validate_manifest(manifest: dict[str, Any], artifact_root: Path | None = Non
         asset_ids = [a.get("asset_id") for a in assets if isinstance(a, dict)]
         source_hashes = [a.get("source_hash") for a in assets if isinstance(a, dict)]
         source_urls = [a.get("source_url") for a in assets if isinstance(a, dict)]
-        _add(errors, _unique(asset_ids), "duplicate or invalid asset_id detected; clip repetition gate failed")
-        _add(errors, _unique(source_hashes), "duplicate or invalid source_hash detected; source repetition gate failed")
-        _add(errors, _unique(source_urls), "duplicate or invalid source_url detected; source repetition gate failed")
+        _add(errors, _unique(asset_ids), "duplicate asset_id or invalid asset_id detected; clip repetition gate failed")
+        _add(errors, _unique(source_hashes), "duplicate source_hash or invalid source_hash detected; source repetition gate failed")
+        _add(errors, _unique(source_urls), "duplicate source_url or invalid source_url detected; source repetition gate failed")
         for index, asset in enumerate(assets, start=1):
             if not isinstance(asset, dict):
                 errors.append(f"asset {index} is not an object")
@@ -232,7 +232,7 @@ def validate_manifest(manifest: dict[str, Any], artifact_root: Path | None = Non
                 try:
                     video_path.relative_to(artifact_root.resolve())
                     from media.probe import validate_rendered_video
-                    errors.extend(validate_rendered_video(video_path))
+                    errors.extend(x if x.startswith("media:") else "media:" + x for x in validate_rendered_video(video_path))
                     decoder = shutil.which("ffmpeg")
                     if decoder is None:
                         errors.append("release:ffmpeg_decoder_unavailable")
