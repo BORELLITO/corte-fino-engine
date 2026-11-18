@@ -226,6 +226,32 @@ def validate_manifest(manifest: dict[str, Any], artifact_root: Path | None = Non
             if not isinstance(source_paths[key], str) or source_paths[key] != item.get("path"):
                 errors.append(f"artifact.{key} path conflicts with rendering source")
 
+        # Upscaling a low-res preview to 1080x1920 does NOT create a
+        # native high-quality master. Validate source media bytes directly.
+        if isinstance(state, str) and state in PUBLISHABLE_STATES and isinstance(assets, list):
+            from media.probe import ProbeError, probe_media
+            for index, asset in enumerate(assets, 1):
+                if not isinstance(asset, dict) or not isinstance(asset.get("path"), str):
+                    continue
+                try:
+                    source_path = (artifact_root / asset["path"]).resolve()
+                    source_path.relative_to(artifact_root.resolve())
+                    media = probe_media(source_path)
+                    video = next((x for x in media.get("streams", [])
+                                  if x.get("codec_type") == "video"), None)
+                    if not isinstance(video, dict):
+                        errors.append(f"release:asset:{index}:no_video_stream")
+                        continue
+                    width, height = video.get("width"), video.get("height")
+                    if type(width) is not int or type(height) is not int or width < 1080 or height < 1920:
+                        errors.append(f"release:asset:{index}:source_below_native_master_resolution")
+                    source_duration = float((media.get("format") or {}).get("duration") or 0)
+                    source_end = _number(asset.get("out"), f"asset {index} out", errors)
+                    if source_end is None or not math.isfinite(source_duration) or source_end > source_duration + 0.03:
+                        errors.append(f"release:asset:{index}:insufficient_real_temporal_coverage")
+                except (ProbeError, ValueError, TypeError, OSError):
+                    errors.append(f"release:asset:{index}:source_probe_failed")
+
         # Any advertised preview or release must be an actual decodable
         # audiovisual file; self-declared video_decode PASS never suffices.
         if state in {"PREVIEW_READY", "READY_FOR_OWNER_APPROVAL", "PUBLISHED"}:
