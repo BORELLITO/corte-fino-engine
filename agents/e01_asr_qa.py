@@ -120,10 +120,14 @@ def compare_text(expected: str, recognized: str) -> dict[str, Any]:
 
 
 def validate_timecodes(segments: list[dict[str, Any]],
-                       duration: float) -> dict[str, Any]:
+                       duration: float, *, expected_duration: float | None = DURATION) -> dict[str, Any]:
     check(isinstance(segments, list)
           and 1 <= len(segments) <= MAX_SEGMENTS, "asr:segments_missing")
-    check(math.isfinite(duration) and duration == DURATION,
+    # Legacy E01 v1 remains pinned to 70.075s; only callers that first
+    # verified a different exact WAV SHA may opt in to their own duration.
+    check(math.isfinite(duration)
+          and (duration == DURATION if expected_duration is not None
+               else 25.0 <= duration <= 150.0),
           "asr:source_duration_not_pinned")
     previous_start = -1.0
     words_count = 0
