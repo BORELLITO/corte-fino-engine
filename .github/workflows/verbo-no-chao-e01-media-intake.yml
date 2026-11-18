@@ -1,0 +1,37 @@
+name: Verbo no Chão — E01 physical media intake smoke (not a master)
+
+on:
+  push:
+    branches:
+      - "verbo-no-chao/e01-stock-curation-gate-v1"
+    paths:
+      - "agents/e01_candidate_media_intake.py"
+      - "contracts/e01_v2_media_intake_policy_v1.json"
+      - "tests/test_e01_candidate_media_intake.py"
+      - ".github/workflows/verbo-no-chao-e01-media-intake.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  synthetic-codec-integration:
+    name: Verify real ffprobe and full FFmpeg decode with synthetic source
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Install media test dependencies when missing
+        run: |
+          if ! command -v ffprobe >/dev/null || ! command -v ffmpeg >/dev/null; then
+            sudo apt-get update -qq
+            sudo DEBIAN_FRONTEND=noninteractive apt-get install -y -qq ffmpeg
+          fi
+          command -v ffprobe
+          command -v ffmpeg
+          ffmpeg -hide_banner -encoders | grep -E "libx264 "
+      - name: Exercise actual local test MP4 in decoder, keep release blocked
+        run: python -m unittest tests.test_e01_candidate_media_intake -v
