@@ -1,0 +1,25 @@
+{
+  "schema_version": "1.0.0",
+  "project": "verbo-no-chao",
+  "episode_id": "VNC-W01-E1",
+  "candidate_version": 2,
+  "source_storyboard": "contracts/e01_v2_12_scene_visual_plan_v1.json",
+  "source_continuity_blueprint": "contracts/e01_v2_visual_single_world_acquisition_v1.json",
+  "state": "TECHNICAL_INPUT_ONLY_NOT_RELEASE",
+  "origins": [
+    "camera_original",
+    "ai_generated_video",
+    "stock_licensed_candidate"
+  ],
+  "max_bytes": 314572800,
+  "expected_vertical_ratio": "9:16",
+  "target_native_resolution": [
+    1080,
+    1920
+  ],
+  "rights_review_completed": false,
+  "continuity_review_completed": false,
+  "user_publication_approval": false,
+  "persist_video_in_public_github": false,
+  "reusable_license_assumed": false
+}
