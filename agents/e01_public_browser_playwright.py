@@ -72,14 +72,23 @@ def run():
      rec.update(status=status,title=title,navigated=True,
                 result=classify_view(name,title,status))
      if name=="browser_canary" and rec["result"]=="PUBLIC_DOCUMENT_READ_ONLY":
-      heading=page.locator("h1").first.inner_text(timeout=5000)
-      if heading.strip()!="Example Domain":
-       rec["result"]="BLOCKED_UNEXPECTED_CANARY_HEADING"
+      if page.locator("h1").count()>0:
+       heading=page.locator("h1").first.inner_text(timeout=3000)
+       if heading.strip()=="Example Domain":
+        rec["public_heading_verified"]=True
+       else:
+        rec["result"]="BLOCKED_UNEXPECTED_CANARY_HEADING"
       else:
-       rec["screenshot"]="public_browser_canary.png"
+       rec["result"]="BLOCKED_CANARY_HEADING_ABSENT"
+     if name=="playwright_docs" and rec["result"]=="PUBLIC_DOCUMENT_READ_ONLY":
+      if "Playwright" in title and page.locator("body").count()>0:
+       rec["official_document_title_verified"]=True
+       rec["screenshot"]="official_playwright_public_page.png"
        page.screenshot(path=str(OUT/rec["screenshot"]),
                        full_page=False,animations="disabled")
        report["browser_capability_confirmed"]=True
+      else:
+       rec["result"]="BLOCKED_OFFICIAL_DOC_NOT_VERIFIED"
     except (PlaywrightError,ValueError) as e:
      rec.update(result="BLOCKED_PUBLIC_SITE_OR_BROWSER",
                 reason=type(e).__name__,navigated=False)
