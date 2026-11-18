@@ -4,7 +4,7 @@ import json
 import tempfile
 import unittest
 from pathlib import Path
-from agents.e01_stock_candidates import CONTRACT, ROOT, StockIntakeError, validate, main
+from agents.e01_stock_candidates import CONTRACT, ROOT, StockIntakeError, validate, main, run_probe
 
 class TestE01StockCandidates(unittest.TestCase):
     @classmethod
@@ -72,6 +72,16 @@ class TestE01StockCandidates(unittest.TestCase):
             d["candidates"][1].update(scene_id="VNC-E01V2-S03"))
         with self.assertRaises(StockIntakeError):
             validate(ROOT, data)
+
+    def test_cdn_replacement_cannot_pass_with_same_valid_metadata(self):
+        from unittest.mock import patch
+        def forged(item, temp, ffprobe, ffmpeg):
+            return {"id": item["id"], "sha256": "f"*64}
+        with patch("agents.e01_stock_candidates.probe_item", side_effect=forged):
+            report = run_probe(ROOT, "ffprobe", "ffmpeg")
+        self.assertEqual(report["status"], "BLOCKED_PROBE_INCOMPLETE")
+        self.assertEqual(report["source_media_bytes_verified"], 0)
+        self.assertFalse(report["publication_authorized"])
 
     def test_no_real_download_claim_in_metadata_cli_report(self):
         with tempfile.TemporaryDirectory() as td:
