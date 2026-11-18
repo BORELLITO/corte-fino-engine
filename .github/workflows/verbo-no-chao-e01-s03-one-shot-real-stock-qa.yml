@@ -1,0 +1,67 @@
+name: Verbo no Chão — E01 S03 real public footage physical QA (one-shot; NO AI)
+
+on:
+  push:
+    branches:
+      - "verbo-no-chao/e01-s03-real-footage-qa-20261118-v1"
+    paths:
+      - ".github/workflows/verbo-no-chao-e01-s03-one-shot-real-stock-qa.yml"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: vnc-e01-s03-once-20261118
+  cancel-in-progress: false
+
+jobs:
+  bounded-physical-candidate-review:
+    if: ${{ github.event_name == 'push' && github.event.head_commit.message == 'vnc-e01-s03-one-shot-real-footage-review-20261118' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - name: Read isolated source code without writer credentials
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - name: Confirm exact one-off trigger; do not repeat
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$GITHUB_REF_NAME" = "verbo-no-chao/e01-s03-real-footage-qa-20261118-v1"
+          test "$(git show --pretty= --name-only "$GITHUB_SHA" | sed '/^$/d')" = ".github/workflows/verbo-no-chao-e01-s03-one-shot-real-stock-qa.yml"
+      - name: Confirm local no-cost FFmpeg and public downloader
+        run: |
+          command -v ffmpeg
+          command -v ffprobe
+          command -v curl
+      - name: Single bounded public download (no login, no retries)
+        id: download
+        continue-on-error: true
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p ./s03-research
+          curl --fail --location --silent --show-error \
+            --connect-timeout 20 --max-time 115 --retry 0 \
+            --max-filesize 50000000 \
+            --output ./s03-research/pexels_40316686_source.mp4 \
+            'https://videos.pexels.com/video-files/40316686/17221948_1080_1920_60fps.mp4'
+      - name: One physical probe and no-master QA frames
+        shell: bash
+        run: |
+          set -euo pipefail
+          python -m agents.e01_s03_public_stock_physical_qa \
+            ./s03-research/pexels_40316686_source.mp4 \
+            ./s03-research/evidence
+      - name: Publish time-limited audit proof, never media master
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: VNC-E01-S03-public-stock-frame-qa-NOT-MASTER
+          path: ./s03-research/evidence/
+          retention-days: 1
+          if-no-files-found: warn
+      - name: Confirm publication not enabled
+        if: always()
+        run: echo "Only technical QA of public stock. License, scene approval and publication remain BLOCKED."
