@@ -2,7 +2,7 @@
   "schema_version": "1.0.0",
   "project_id": "VERBO_NO_CHAO_EXCLUSIVO",
   "status": "CANDIDATE_TESTED_NO_MERGE",
-  "timestamp_iso_tz": "2026-11-18T20:48:00-03:00",
+  "timestamp_iso_tz": "2026-11-18T20:56:00-03:00",
   "source_snapshot": {
     "operational_prompt_filename": "05_PROMPT_MASTER_VERBO_NO_CHAO_V2.txt",
     "operational_prompt_sha256": "28cba0f640cad30d30e194304bd0963b8761158b4200a7d29efe8cf7e032632e",
@@ -17,7 +17,8 @@
     "base_sha": "097baca265b995120c002c6aa9ea102369a53e4e",
     "candidate_branch": "verbo-no-chao/master-v2-s01-runtime-hardening-20261118",
     "baseline_main_sha": "b59bbbec9aef843bb7118f1328fab37e01b098b3",
-    "expected_branch_head": "AFTER_CHECKPOINT_WRITE_RECORD_REMOTE_SHA_SEPARATELY"
+    "last_observed_parent_head": "ee69dcd8b443a2a200752858f98eb6e2e8b97768",
+    "snapshot_explanation": "O SHA observado é o último HEAD anterior ao commit deste checkpoint; o HEAD atual deve sempre ser lido da API antes de agir."
   },
   "current_phase": "S01_NOGPU_PREP_VALIDATED_REQUIRES_EDITORIAL_AND_MEDIA_SOURCE",
   "last_verified_output": {
@@ -29,7 +30,9 @@
     "provider_requests": 0,
     "github_action_run": 44423770033,
     "artifact_id": 14482623593,
-    "proof_json_sha256": "49229744a42a48323759305e522b5dba8558f0ff7aa0afad6206f315d894f43a"
+    "proof_json_sha256": "49229744a42a48323759305e522b5dba8558f0ff7aa0afad6206f315d894f43a",
+    "last_no_gpu_smoke_run": 44424761892,
+    "nonce_history_verified_by_git": true
   },
   "approved_artifacts_sha": {
     "e01_script": "c64b57cb9d6529b60b9e80ab7607e5887f909dd00e14cd80ed9ec2b7474a5dc6",
@@ -59,7 +62,8 @@
     "tests/test_e01_ltx23_s01_v2_render.py",
     "tests/test_e01_s01_runtime_guards_v2.py",
     ".github/workflows/verbo-no-chao-e01-s01-runtime-smoke-v2.yml",
-    "docs/VERBO_NO_CHAO_MASTER_V2_AUDIT_20261118.md"
+    "docs/VERBO_NO_CHAO_MASTER_V2_AUDIT_20261118.md",
+    "docs/checkpoints/VNC_MASTER_V2_20261118_STATE.json"
   ],
   "tests_with_evidence": [
     {
@@ -81,6 +85,14 @@
       "type": "PHYSICAL_NO_GPU_FFMPEG_FFPROBE",
       "result": "success",
       "exact_head": "6d505853ff4c72c0bf5f27220a9671dd8a23635e"
+    },
+    {
+      "run": 44424761892,
+      "type": "NONCE_HISTORY_PLUS_FFMPEG_FFPROBE_PHYSICAL_NOGPU",
+      "result": "success",
+      "exact_head": "b089a1f1e091d364b9aa85aea447357f0ce0ee5c",
+      "nonce_added_once": true,
+      "gpu_requests": 0
     }
   ],
   "external_effects_confirmed": {
