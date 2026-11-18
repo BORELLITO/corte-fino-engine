@@ -1,0 +1,49 @@
+name: Verbo no Chão — E01 v2 Pronunciation-Safe Voice Candidate
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - "verbo-no-chao/e01-pronunciation-v2-candidate"
+    paths:
+      - ".github/workflows/verbo-no-chao-e01-v2-voice.yml"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: vnc-e01-v2-quarantined-voice-once
+  cancel-in-progress: false
+
+jobs:
+  e01_v2_quarantined_voice:
+    name: Generate exact v2 AI-reviewed E01 and audit actual WAV — NOT MASTER
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Validate exact one-line v2 rewrite and both AI editorial hashes
+        run: python -m unittest discover -s tests -p "test_e01_v2_candidate.py" -v
+      - name: Validate v2 browser WAV generator safety, sample decoding and release locks
+        run: python -m unittest discover -s tests -p "test_e01_v2_voice_preview.py" -v
+      - name: Install pinned Playwright, Chrome is native in the runner
+        run: |
+          python -m pip install --disable-pip-version-check "playwright==1.56.0"
+          google-chrome --version
+      - name: Synthesise v2 using Kokoro Web once — do not touch v1
+        run: |
+          python -m agents.e01_v2_voice_preview \
+            --root . \
+            --output-dir e01-v2-quarantine \
+            --max-seconds 475
+      - name: Upload only quarantined v2 candidate and JSON, never public release
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: vnc-e01-v2-pronunciation-safe-preview
+          path: e01-v2-quarantine/
+          retention-days: 7
+          if-no-files-found: error

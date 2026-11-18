@@ -1,0 +1,83 @@
+{
+  "schema_version": "1.0.0",
+  "project": "verbo-no-chao",
+  "candidate_status": "SCRIPT_V2_PENDING_NEW_AUDIO_QA",
+  "episode": {
+    "script_id": "vnc-vnc-w01-e1-script-v2",
+    "episode_id": "VNC-W01-E1",
+    "week": 1,
+    "status": "DRAFT_REVIEW_REQUIRED",
+    "source_decision_ref": "contracts/new_script_source_policy.json",
+    "source_mode": "reference_and_paraphrase",
+    "contains_verbatim_quote": false,
+    "duration_target_seconds": 75,
+    "reference": "Habacuque 1:2-4",
+    "title_proposal": "Quando você pergunta e nada muda",
+    "biblical_context": {
+      "literary_genre": "Lamento profético dirigido a Deus",
+      "historical_setting": "Denúncia da violência, da corrupção e da injustiça social em Judá, não apenas da demora pessoal",
+      "central_reading": "O profeta apresenta perguntas sinceras diante do mal que observa; não recebe nesse trecho uma explicação confortável",
+      "application_limit": "Relacionar a espera à oração honesta, preservando a denúncia da injustiça coletiva",
+      "misreading_to_avoid": "Prometer solução em data próxima ou justificar violência e injustiça",
+      "theological_status": "CONTEXT_REVIEW_REQUIRED"
+    },
+    "research_sources": [
+      {
+        "url": "https://bibleproject.com/guides/book-of-habakkuk/",
+        "kind": "BOOK_OVERVIEW",
+        "note": "Lamento profético diante de violência e injustiça social"
+      },
+      {
+        "url": "https://classic.net.bible.org/passage.php?passage=hab+1%3A2-4",
+        "kind": "PASSAGE_NOTES",
+        "note": "Explicação contextual da queixa sobre injustiça"
+      }
+    ],
+    "biblical_review_status": "PENDING_INDEPENDENT_REVIEW",
+    "owner_approval": false,
+    "publication_authorized": false,
+    "blocks": [
+      {
+        "type": "opening",
+        "text": "Você já repetiu a mesma pergunta tantas vezes que começou a acreditar que ninguém estava ouvindo?"
+      },
+      {
+        "type": "connection",
+        "text": "Às vezes, esperar machuca. Dói ainda mais ver injustiças repetidas e pessoas feridas, enquanto parece que nada muda. E admitir essa revolta pode trazer vergonha."
+      },
+      {
+        "type": "biblical_reference",
+        "text": "Em Habacuque, capítulo um, o profeta denuncia violência, injustiça e uma lei que perdeu a força. Ele leva essa indignação a Deus. Não está buscando uma conquista pessoal: sofre diante de uma sociedade ferida."
+      },
+      {
+        "type": "reflection",
+        "text": "Os primeiros versos não entregam uma explicação confortável. Mostram um homem que se recusa a chamar o mal de normal e não esconde suas perguntas. O diálogo continua ao longo do livro, com respostas difíceis. A fé não precisa fingir que a injustiça é paz. É possível orar e reconhecer o que precisa ser enfrentado."
+      },
+      {
+        "type": "application",
+        "text": "Talvez hoje você precise nomear o que está errado, procurar apoio confiável ou dar um passo responsável em favor de alguém. E pode levar suas perguntas à oração, sem inventar respostas."
+      },
+      {
+        "type": "conclusion",
+        "text": "Nem toda espera tem explicação pronta. Mas o silêncio não obriga você a abandonar a verdade, a responsabilidade ou a esperança."
+      }
+    ],
+    "pronunciation_rewrite": {
+      "version": 2,
+      "parent_script_id": "vnc-vnc-w01-e1-script-v1",
+      "parent_narration_sha256": "67052ec614f3beaca25cbac40414eecb7f197be0b73b7c1af4fd6579c0cf6990",
+      "canonical_narration_sha256": "c64b57cb9d6529b60b9e80ab7607e5887f909dd00e14cd80ed9ec2b7474a5dc6",
+      "old_phrase": "Às vezes, dói esperar.",
+      "replacement_phrase": "Às vezes, esperar machuca.",
+      "scope": "EXACTLY_ONE_SENTENCE_REPLACED_ALL_OTHER_BLOCKS_UNCHANGED",
+      "reason": "Both independent ASR decoders flagged the first occurrence of dói as do/dou; alternate natural Portuguese expression retains meaning and avoids ambiguity.",
+      "prior_asr_evidence_ref": "contracts/e01_asr_second_opinion_evidence_v1.json",
+      "old_audio_retained": true,
+      "master_approved": false,
+      "publication_authorized": false
+    }
+  },
+  "voice_rights_cleared": false,
+  "production_wav_master_approved": false,
+  "publication_authorized": false
+}

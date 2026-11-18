@@ -1,0 +1,120 @@
+{
+  "schema_version": "1.0.0",
+  "project": "verbo-no-chao",
+  "episode_id": "VNC-W01-E1",
+  "review_id": "VNC-E01-INTERNAL-AI-REVIEW-2026-11-17-V2",
+  "review_date": "2026-11-17",
+  "review_model_context": "CHATGPT_GPT6_IN_CONVERSATION_NOT_CI_MODEL",
+  "review_method": "AI_SEMANTIC_SOURCE_CROSSCHECK_ONE_MODEL_WITH_DETERMINISTIC_VALIDATION",
+  "review_independent_human": false,
+  "review_externally_reexecuted_in_ci": false,
+  "reviewed_canonical_script_sha256": "c64b57cb9d6529b60b9e80ab7607e5887f909dd00e14cd80ed9ec2b7474a5dc6",
+  "reference": "Habacuque 1:2-4",
+  "result": "PASS_WITH_DOCUMENTED_CAVEATS",
+  "decision_status": "AUTO_APPROVED_FOR_INTERNAL_PRODUCTION",
+  "approval_scope": "SCRIPT_TEXT_ONLY",
+  "owner_script_review_required": false,
+  "owner_script_approval": false,
+  "human_theological_endorsement": false,
+  "critical_findings": [],
+  "fix_required_before_script_approval": [],
+  "script_reviewed_sources": [
+    "https://bible.usccb.org/bible/habakkuk/1",
+    "https://bibleproject.com/guides/book-of-habakkuk/",
+    "https://classic.net.bible.org/passage.php?passage=hab+1%3A2-4"
+  ],
+  "pillars": [
+    {
+      "id": "biblical_primary_context",
+      "status": "PASS_WITH_CAVEATS",
+      "block": "biblical_reference",
+      "script_anchor": "violência, injustiça e uma lei que perdeu a força",
+      "source_url": "https://bible.usccb.org/bible/habakkuk/1",
+      "analysis": "Habacuque 1:2–4 denuncia violência, injustiça e lei enfraquecida; a mudança na frase de espera não transforma esse lamento coletivo em problema de conquista individual."
+    },
+    {
+      "id": "claims_and_interpretation",
+      "status": "PASS_WITH_CAVEATS",
+      "block": "reflection",
+      "script_anchor": "O diálogo continua ao longo do livro, com respostas difíceis",
+      "source_url": "https://bibleproject.com/guides/book-of-habakkuk/",
+      "analysis": "A frase revisada é aplicação contemporânea, não fala atribuída a Deus; o texto continua deixando claro que o diálogo prossegue no livro com respostas difíceis."
+    },
+    {
+      "id": "christian_integrity",
+      "status": "PASS_WITH_CAVEATS",
+      "block": "reflection",
+      "script_anchor": "A fé não precisa fingir que a injustiça é paz",
+      "source_url": "https://bibleproject.com/guides/book-of-habakkuk/",
+      "analysis": "Mantém lamento sincero, oração e coragem ética sem antecipar livramento; Deus não recebe promessa de resposta instantânea atribuída pelo narrador."
+    },
+    {
+      "id": "emotional_safety",
+      "status": "PASS_WITH_CAVEATS",
+      "block": "application",
+      "script_anchor": "sem inventar respostas",
+      "source_url": "https://bible.usccb.org/bible/habakkuk/1",
+      "analysis": "A dor da espera é reconhecida sem culpar o espectador, usar medo espiritual ou prometer cura; apoio confiável e passos responsáveis permanecem na aplicação."
+    },
+    {
+      "id": "originality_and_copyright",
+      "status": "PASS_WITH_CAVEATS",
+      "block": "biblical_reference",
+      "script_anchor": "Ele leva essa indignação a Deus",
+      "source_url": "https://bibleproject.com/guides/book-of-habakkuk/",
+      "analysis": "V2 substitui somente uma frase original de aplicação por outra original, sem inserir tradução bíblica protegida, testemunho fabricado ou cópia de comentário."
+    },
+    {
+      "id": "narrative_and_retention",
+      "status": "PASS_WITH_CAVEATS",
+      "block": "opening",
+      "script_anchor": "Você já repetiu a mesma pergunta",
+      "source_url": "https://bibleproject.com/guides/book-of-habakkuk/",
+      "analysis": "O gancho de dúvida conduz à dor da espera, à injustiça social descrita na passagem, à reflexão e ao fechamento sóbrio. A reescrita preserva ritmo e começo-meio-fim."
+    },
+    {
+      "id": "language_and_tts",
+      "status": "PASS_WITH_CAVEATS",
+      "block": "connection",
+      "script_anchor": "Às vezes, esperar machuca",
+      "source_url": "https://bible.usccb.org/bible/habakkuk/1",
+      "analysis": "A formulação 'esperar machuca' evita a ambiguidade inicial de 'dói' sinalizada por dois ASRs. Isto é hipótese preventiva: o áudio v2 precisa ser gerado e comparado, sem falsa aprovação acústica."
+    },
+    {
+      "id": "research_evidence",
+      "status": "PASS_WITH_CAVEATS",
+      "block": "conclusion",
+      "script_anchor": "Nem toda espera tem explicação pronta",
+      "source_url": "https://bibleproject.com/guides/book-of-habakkuk/",
+      "analysis": "USCCB, BibleProject e NET Bible sustentam o contexto de violência, injustiça e lei ineficaz; a ideia de espera machucar é aplicação pastoral, não uma citação bíblica."
+    }
+  ],
+  "caveats": [
+    "Revisão semântica por IA, não por um teólogo humano independente nem segundo modelo; as oito análises documentam argumentos textuais e contexto.",
+    "A troca 'Às vezes, esperar machuca' é uma hipótese de melhor dicção, não prova de que a voz vai pronunciar corretamente antes de novo WAV e ASR.",
+    "A segunda ocorrência de 'Dói' foi preservada intencionalmente porque não provocou alerta nos dois ASRs históricos; verificar novamente na v2.",
+    "A ênfase primária de Habacuque continua denúncia de violência e justiça social; a analogia à espera do espectador é secundária.",
+    "Não há certificado de originalidade universal, licença integral do runtime de voz ou garantia jurídica para publicar.",
+    "A v1 do roteiro e o WAV de 70,075s devem permanecer intocados para rollback; a aprovação da v2 vale só para texto, não para a master ou publicação."
+  ],
+  "production_wav_rights_cleared": false,
+  "visual_assets_cleared": false,
+  "music_license_cleared": false,
+  "captions_synced": false,
+  "physical_master_verified": false,
+  "monetization_cleared": false,
+  "final_video_owner_approval": false,
+  "publication_authorized": false,
+  "parent_review_ref": "contracts/e01_ai_editorial_review_v1.json",
+  "parent_script_sha256": "67052ec614f3beaca25cbac40414eecb7f197be0b73b7c1af4fd6579c0cf6990",
+  "scope_of_change": "ONLY_FIRST_SENTENCE_OF_CONNECTION_BLOCK",
+  "critique_scope": "FULL_EIGHT_PILLARS_REEVALUATED_AFTER_EXACT_ONE_SENTENCE_REWRITE",
+  "review_notes": [
+    "Bibliografia: USCCB e NET Bible confirmam em Habacuque 1:2-4 denúncia de violência, perversão da justiça e fragilidade da lei; a revisão não desloca o núcleo para sucesso individual.",
+    "O livro prossegue com respostas divinas e nova queixa; a narração conserva essa continuidade e não promete intervenção imediata nem elimina a tensão.",
+    "Reescrita de uma frase para melhorar dicção por TTS: 'Às vezes, esperar machuca' é uma aplicação emocional, não uma frase atribuída ao texto bíblico.",
+    "Frase 'Dói ainda mais ver injustiças...' é mantida porque ambos ASRs anteriores reconheceram esta segunda ocorrência; exigir nova validação física no áudio v2.",
+    "O risco original foi confirmado somente como divergência ASR compartilhada, não como erro humano de dicção definitivamente comprovado.",
+    "As seis unidades retóricas preservam gancho, conflito social, fonte primária, reflexão, aplicação prática responsável e final sem promessa de milagre."
+  ]
+}

@@ -1,0 +1,58 @@
+name: Verbo no Chão — E01 v2 Dual-ASR Evidence Reconciliation
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - "verbo-no-chao/e01-pronunciation-v2-candidate"
+    paths:
+      - ".github/workflows/verbo-no-chao-e01-v2-asr-attestation.yml"
+
+permissions:
+  contents: read
+  actions: read
+
+jobs:
+  pinned_report_attestation:
+    name: SHA-verify real dual ASR report and preserve pronunciation caveat
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Download previous real Whisper-small/base report only
+        uses: actions/download-artifact@v4
+        with:
+          name: vnc-e01-v2-dual-asr-results
+          repository: BORELLITO/corte-fino-engine
+          run-id: 44204868327
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          path: original-v2-asr/
+      # Evidence JSON names report_sha256; this stage verifies the corrected
+      # contract key and the original immutable report bytes without new ASR.
+      - name: Test immutable evidence and nonrelease gates
+        run: python -m unittest discover -s tests -p "test_e01_v2_asr_attestation.py" -v
+      - name: Validate exact report SHA and classify weak-model segmentation
+        run: |
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          from agents.e01_v2_asr_attestation import verify_report
+          out=verify_report(Path('.').resolve(),Path('original-v2-asr/report.json').resolve())
+          dst=Path('reconciled-v2-asr')
+          dst.mkdir(exist_ok=True)
+          (dst/'report.json').write_text(json.dumps(out,ensure_ascii=False,indent=2)+'\n',encoding='utf-8')
+          print(json.dumps({k:out[k] for k in
+            ('status','source_report_sha256_verified','small_model_exact_new_phrase',
+             'base_model_word_boundary_warning','audio_master_approved',
+             'publication_authorized')},ensure_ascii=False))
+          PY
+      - name: Save only read-only evidence JSON
+        uses: actions/upload-artifact@v4
+        with:
+          name: vnc-e01-v2-asr-evidence-reconciled
+          path: reconciled-v2-asr/report.json
+          if-no-files-found: error
+          retention-days: 14

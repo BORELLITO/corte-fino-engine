@@ -1,0 +1,76 @@
+{
+  "schema_version": "1.0.0",
+  "project": "verbo-no-chao",
+  "episode_id": "VNC-W01-E1",
+  "candidate_version": 2,
+  "evidence_id": "VNC-E01-V2-TWO-ASR-REAL-2026-11-17-001",
+  "source_workflow_run_id": 44204868327,
+  "source_workflow_url": "https://github.com/BORELLITO/corte-fino-engine/actions/runs/44204868327",
+  "source_workflow_head_sha": "f979403eaedeefaeb0b4c89a877512fe840be0dc",
+  "source_artifact_id": 14381989278,
+  "source_artifact_name": "vnc-e01-v2-dual-asr-results",
+  "report_filename": "report.json",
+  "report_bytes": 72475,
+  "report_sha256": "377063ff846ddef641b9288656ea867ede965a73991abe6b4c203dec3a919a8b",
+  "source_wav_sha256": "4f2ee1ff0171ddedb7c64e0dce2300c53a0ef105ef12d643a7af6b0a4621942e",
+  "source_script_sha256": "c64b57cb9d6529b60b9e80ab7607e5887f909dd00e14cd80ed9ec2b7474a5dc6",
+  "duration_seconds": 70.425,
+  "models": [
+    {
+      "repository": "Systran/faster-whisper-small",
+      "revision": "536b0662742c02347bc0e980a01041f333bce120",
+      "model_sha256": "3e305921506d8872816023e4c273e75d2419fb89b24da97b4fe7bce14170d671",
+      "wer": 0.01648,
+      "cer": 0.00467,
+      "aggregate_pass": true,
+      "replacement_phrase_exact_match": true,
+      "first_phrase_transcription": "Às vezes, esperar machuca.",
+      "boundary_warnings": 1,
+      "critical_word_warnings": 0
+    },
+    {
+      "repository": "Systran/faster-whisper-base",
+      "revision": "ebe41f70d5b6dfa9166e2c581c45c9c0cfc57b66",
+      "model_sha256": "d01c3014881c9c6f3133c182f3d2887eb6ca1c789a7538c5c007196857a0a6a9",
+      "wer": 0.02747,
+      "cer": 0.01027,
+      "aggregate_pass": true,
+      "replacement_phrase_exact_match": false,
+      "first_phrase_transcription": "Às vezes, esperar uma chuca.",
+      "boundary_warnings": 0,
+      "critical_word_warnings": 0
+    }
+  ],
+  "reconciled_findings": [
+    {
+      "id": "pronunciation_safe_phrase",
+      "category": "SINGLE_MODEL_WORD_BOUNDARY_DISAGREEMENT",
+      "detail": "Whisper-small recognized esperar machuca exactly. Whisper-base split into esperar uma chuca. This is plausible ASR segmentation, not proven defective TTS and not proof of perfect pronun.",
+      "remediation": "Do not rewrite a third time based only on weaker-model segmentation; preserve a caution flag and consider independent acoustic evidence before final audio master."
+    },
+    {
+      "id": "old_doi_issue",
+      "category": "PRIOR_ISSUE_REMOVED_FROM_FIRST_SENTENCE",
+      "detail": "Neither ASR reported the original first expression doi esperar, now absent from v2. The later Dói ainda mais remains recognized and no critical-word omissions are flagged.",
+      "remediation": "Keep second use; do not change more of the script unnecessarily."
+    },
+    {
+      "id": "punctuation",
+      "category": "SINGLE_MODEL_ASR_PUNCTUATION_AMBIGUITY",
+      "detail": "The strange sentence break em favor de. Alguém appeared in small model only; base model had no such boundary alert.",
+      "remediation": "Do not rewrite the original final application sentence on one-model punctuation alone."
+    }
+  ],
+  "both_models_pass_aggregate_wer_cer": true,
+  "both_models_exact_phrase_agreement": false,
+  "shared_critical_word_alerts": [],
+  "audio_technically_decodable": true,
+  "semantic_spoken_word_fidelity_fully_approved": false,
+  "human_listening_completed": false,
+  "voice_rights_cleared": false,
+  "audio_master_approved": false,
+  "caption_sync_completed": false,
+  "video_rendered": false,
+  "publication_authorized": false,
+  "status": "V2_TEXT_HIGH_SIMILARITY_SINGLE_MODEL_PHONETIC_BOUNDARY_WARNING_REMAINS_QUARANTINED"
+}
