@@ -11,7 +11,6 @@ import re
 from datetime import datetime,timezone
 from pathlib import Path
 from urllib.parse import urlparse
-from playwright.sync_api import sync_playwright, Error as PlaywrightError
 
 OUT=Path("artifacts/e01_public_browser_playwright")
 URLS={
@@ -41,6 +40,7 @@ def classify_view(name,title,status):
  return "PUBLIC_DOCUMENT_READ_ONLY"
 
 def run():
+ from playwright.sync_api import sync_playwright, Error as PlaywrightError
  OUT.mkdir(parents=True,exist_ok=True)
  report={
    "schema_version":"1.0.0",
