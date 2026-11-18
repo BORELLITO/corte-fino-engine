@@ -103,16 +103,20 @@ def run(root:Path,bundle:Path,wav:Path,ass:Path,out:Path) -> dict:
                             "-f","concat","-safe","0","-i",str(concat),
                             "-c","copy",str(joined)],
                            check=True,capture_output=True,timeout=90)
+            safe_ass=tmp/"captions.ass"
+            safe_ass.write_bytes(ass.read_bytes())
+            check(sha256(safe_ass)==EXACT_ASR_ASS_SHA,
+                  "visual_render:subtitle_copy_modified")
             subprocess.run([ffmpeg,"-hide_banner","-nostdin","-loglevel","error","-y",
                             "-i",str(joined),"-i",str(wav),
-                            "-vf",f"ass={ass}:original_size=1080x1920",
+                            "-vf","ass=captions.ass:original_size=1080x1920",
                             "-map","0:v:0","-map","1:a:0",
                             "-t",str(EXPECTED_DURATION),"-c:v","libx264",
                             "-preset","ultrafast","-crf","24",
                             "-pix_fmt","yuv420p","-r","30",
                             "-c:a","aac","-b:a","128k",
                             "-movflags","+faststart",str(dest)],
-                           check=True,capture_output=True,timeout=130)
+                           check=True,capture_output=True,timeout=130,cwd=tmp)
         check(dest.is_file() and dest.stat().st_size>=250000,
               "visual_render:mp4_not_created")
         # Full-stream physical decode; the output is still a temporary roughcut.
