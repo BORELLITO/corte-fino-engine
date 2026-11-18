@@ -45,6 +45,8 @@ jobs:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           path: wav-source/
 
+      # Fixed an intentionally overlong fixture: the production rule still
+      # rejects any cue that cannot fit exactly two lines of 28 characters.
       - name: Test layout, exact script, timestamp alignment and forged-source protections
         run: python -m unittest discover -s tests -p "test_e01_v2_caption_pipeline.py" -v
 
