@@ -218,6 +218,13 @@ def make_cues(words: list[dict[str, Any]]) -> list[dict[str, Any]]:
             if (len(group)>MAX_CUE_WORDS or end-start>MAX_CUE_DURATION
                     or len(joined)>MAX_LINES*MAX_LINE):
                 break
+            # A total length <= 56 is NOT sufficient: word boundaries can
+            # still make a legal two-line (28 chars each) split impossible.
+            # End the cue BEFORE adding an unbreakable extra word.
+            try:
+                cue_lines(group)
+            except ProductionError:
+                break
             if j+1<len(words) and group[-1]["block"] != words[j+1]["block"]:
                 j += 1;break
             j += 1
