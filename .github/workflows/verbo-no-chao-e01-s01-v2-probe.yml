@@ -1,13 +1,6 @@
 name: Verbo no Chão — E01 S01 full-duration LTX23 one-shot prototype
 
 on:
-  push:
-    branches:
-      - "verbo-no-chao/e01-stock-curation-gate-v1"
-    paths:
-      - "agents/e01_ltx23_s01_v2_render.py"
-      - "tests/test_e01_ltx23_s01_v2_render.py"
-      - ".github/workflows/verbo-no-chao-e01-s01-v2-probe.yml"
   workflow_dispatch:
 
 permissions:
