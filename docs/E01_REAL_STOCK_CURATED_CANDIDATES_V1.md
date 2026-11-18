@@ -44,3 +44,23 @@ As medidas e hashes registrados em `contracts/e01_v2_stock_physical_probe_eviden
 O arquivo `agents/e01_stock_frame_qa.py` recaptura os quatro filmes sob hash fixado, decodifica integralmente com FFmpeg, extrai três quadros de cada clipe (15%, 50%, 85% do tempo), mede brilho/contraste/diferença visual e monta **somente uma folha de contato reduzida** de QA interno. A folha identifica as cenas e tem aviso "NÃO PUBLICAR". MP4s permanecem no diretório temporário e são descartados. O artefato de QA tem retenção de dois dias e não contém originais.
 
 O workflow roda as verificações baratas em commits usuais. O download e extração completos só serão executados em commit explicitamente marcado `[stock-frame-qa]` ou disparo manual, evitando repetir consumo de CPU, rede e minutos de Actions em cada ajuste editorial. A validação computacional não reconhece confiavelmente logotipos, identidades, texto embutido, contexto bíblico ou direitos. A leitura de quadros por um revisor e a conferência de termos continuam necessárias. Não promover a `READY_FOR_PUBLICATION_AUTHORIZATION` com essa auditoria.
+## Resultado editorial do contato real de 12 frames
+
+**Fontes da decisão:** arquivo `contracts/e01_v2_stock_editorial_review_v1.json`, prova visual SHA-256 `54e3f9b9ba891565b1fae13146cda41804c68269b564551b574abcd709bb367b`, run https://github.com/BORELLITO/corte-fino-engine/actions/runs/44222503550. Três fotogramas por clipe, nas posições de 15%, 50% e 85%; **não representa assistir aos vídeos inteiros**. Prova de sincronismo de legenda e direitos continua bloqueada.
+
+| Cena | Decisão | Motivo |
+|---|---|---|
+| S03 | REJECTED_HARMONY | Rua chuvosa mostra atividade urbana comum, sem comunicar a injustiça da frase; gera preenchimento visual sem função |
+| S05 | CONDITIONAL_METAPHOR | Corredor escuro e quente combina com a tensão, desde que seja tratado apenas como metáfora, não arquitetura bíblica factual |
+| S08 | REJECTED_HARMONY | Close-up inclui rosto/óculos de ator diferente, contradiz o protagonista anônimo estabelecido |
+| S09 | REJECTED_HARMONY | Escrita em escritório iluminado com laptop/pessoa exposta destoa de quarto íntimo escuro |
+
+Apenas S05 continua como **candidato condicional, ainda não habilitado para master**. Portanto nenhum dos quatro está liberado para montagem definitiva. O validador `agents/e01_stock_editorial_decision.py` impede reintrodução acidental dos três rejeitados ou falsa promoção do condicional.
+
+### Substituições em pesquisa (não baixadas, não aprovadas)
+
+- S03: buscar sinais de tensão humana e abandono sem estereotipar pobreza; monitorar `https://www.pexels.com/video/park-bench-reflection-after-rainfall-34479513/` como alternativa simbólica (4K vertical), mas só após assistir e provar adequação.
+- S08: preferir **mãos anônimas** em quarto escuro, sem rosto, rosário ou outras identidades religiosas; a pesquisa por oração tende a retornar figuras não compatíveis, portanto não forçar imagens.
+- S09: candidato `https://www.pexels.com/video/hand-writing-near-wax-candle-13017069/` com luz de vela e mão em escrita (4K vertical) precisa de QA físico e verificação de texto/escultura identificável. Alternativa `https://www.pexels.com/video/close-up-view-of-a-man-writing-on-a-notebook-6037432/` é quase vertical, requer crop e QA.
+
+Esses links são somente **referências pesquisadas**, sem downloads ou hashes, e não participam do catálogo de mídia aprovado. Não criar novos direitos por suposição.
