@@ -31,6 +31,9 @@ def _add(errors: list[str], condition: bool, message: str) -> None:
 
 
 def _number(value: Any, label: str, errors: list[str]) -> float | None:
+    if isinstance(value, bool):
+        errors.append(f"{label} must be numeric")
+        return None
     try:
         result = float(value)
     except (TypeError, ValueError):
@@ -40,6 +43,20 @@ def _number(value: Any, label: str, errors: list[str]) -> float | None:
         errors.append(f"{label} must be finite")
         return None
     return result
+
+
+def _object(value: Any, label: str, errors: list[str]) -> dict[str, Any]:
+    if isinstance(value, dict):
+        return value
+    errors.append(f"{label} must be an object")
+    return {}
+
+
+def _unique(values: list[Any]) -> bool:
+    try:
+        return len(values) == len(set(values))
+    except TypeError:
+        return False
 
 
 def _verify_artifact(path_value: Any, expected: Any, root: Path, label: str, errors: list[str]) -> None:
@@ -66,14 +83,15 @@ def validate_manifest(manifest: dict[str, Any], artifact_root: Path | None = Non
         return ["manifest must be an object"]
 
     _add(errors, manifest.get("engine_id") == "verbo-no-chao", "engine_id must be verbo-no-chao")
-    _add(errors, manifest.get("state") in ALLOWED_STATES, "state is not an allowed engine state")
+    state = manifest.get("state")
+    _add(errors, isinstance(state, str) and state in ALLOWED_STATES, "state is not an allowed engine state")
     _add(
         errors,
         manifest.get("owner_approval") is False or manifest.get("state") == "PUBLISHED",
         "owner_approval cannot be true before PUBLISHED",
     )
 
-    execution = manifest.get("execution") or {}
+    execution = _object(manifest.get("execution"), "execution", errors)
     _add(errors, execution.get("mode") == "cloud_only", "execution.mode must be cloud_only")
     _add(errors, execution.get("device_role") == "control_only", "execution.device_role must be control_only")
     _add(errors, execution.get("legacy_projects_used") is False, "legacy project usage is forbidden")
@@ -84,9 +102,9 @@ def validate_manifest(manifest: dict[str, Any], artifact_root: Path | None = Non
         asset_ids = [a.get("asset_id") for a in assets if isinstance(a, dict)]
         source_hashes = [a.get("source_hash") for a in assets if isinstance(a, dict)]
         source_urls = [a.get("source_url") for a in assets if isinstance(a, dict)]
-        _add(errors, len(asset_ids) == len(set(asset_ids)), "duplicate asset_id detected; clip repetition gate failed")
-        _add(errors, len(source_hashes) == len(set(source_hashes)), "duplicate source_hash detected; source repetition gate failed")
-        _add(errors, len(source_urls) == len(set(source_urls)), "duplicate source_url detected; source repetition gate failed")
+        _add(errors, _unique(asset_ids), "duplicate or invalid asset_id detected; clip repetition gate failed")
+        _add(errors, _unique(source_hashes), "duplicate or invalid source_hash detected; source repetition gate failed")
+        _add(errors, _unique(source_urls), "duplicate or invalid source_url detected; source repetition gate failed")
         for index, asset in enumerate(assets, start=1):
             if not isinstance(asset, dict):
                 errors.append(f"asset {index} is not an object")
@@ -118,7 +136,7 @@ def validate_manifest(manifest: dict[str, Any], artifact_root: Path | None = Non
                         errors,
                     )
 
-    audio = manifest.get("audio") or {}
+    audio = _object(manifest.get("audio"), "audio", errors)
     _add(errors, audio.get("engine") == "Kokoro-82M", "audio engine must remain Kokoro-82M")
     _add(errors, audio.get("language") == "pt-BR", "audio language must remain pt-BR")
     _add(errors, audio.get("format") in {"WAV 24 kHz mono float", "WAV 24 kHz mono PCM16"}, "audio format contract failed")
@@ -127,7 +145,7 @@ def validate_manifest(manifest: dict[str, Any], artifact_root: Path | None = Non
     _add(errors, type(audio.get("duration_sec")) in (int, float) and math.isfinite(audio["duration_sec"]) and audio["duration_sec"] > 0, "audio duration is invalid")
     _add(errors, _is_sha256(audio.get("sha256")), "audio sha256 is missing or invalid")
 
-    music = manifest.get("music") or {}
+    music = _object(manifest.get("music"), "music", errors)
     _add(errors, music.get("present") is True, "music gate failed: music is absent")
     _add(errors, music.get("ducking") is True, "music gate failed: voice ducking is not proven")
     _add(errors, _is_sha256(music.get("hash")), "music hash is missing or invalid")
@@ -139,25 +157,25 @@ def validate_manifest(manifest: dict[str, Any], artifact_root: Path | None = Non
     else:
         errors.append("music origin is not supported")
 
-    captions = manifest.get("captions") or {}
+    captions = _object(manifest.get("captions"), "captions", errors)
     _add(errors, captions.get("present") is True, "caption gate failed: captions are absent")
     _add(errors, captions.get("safe_area_pass") is True, "caption safe-area gate failed")
     _add(errors, captions.get("synchronized") is True, "caption synchronization gate failed")
 
-    output = manifest.get("output") or {}
+    output = _object(manifest.get("output"), "output", errors)
     _add(errors, output.get("width") == 1080 and output.get("height") == 1920, "output must be 1080x1920")
     _add(errors, _is_sha256(output.get("sha256")), "output sha256 is missing or invalid")
 
-    gates = manifest.get("gates") or {}
+    gates = _object(manifest.get("gates"), "gates", errors)
     for key in CORE_GATES:
         _add(errors, gates.get(key) == "PASS", f"{key} gate did not pass")
 
-    rights = manifest.get("rights") or {}
+    rights = _object(manifest.get("rights"), "rights", errors)
     rights_clear = all(
         rights.get(k) in PASS_RIGHTS
         for k in ("visual_review", "voice_review", "music_review", "monetization")
     )
-    if manifest.get("state") in PUBLISHABLE_STATES:
+    if isinstance(state, str) and state in PUBLISHABLE_STATES:
         _add(errors, rights_clear, "publishable state requires all summary rights gates cleared")
         if isinstance(assets, list):
             for index, asset in enumerate(assets, start=1):
@@ -175,7 +193,7 @@ def validate_manifest(manifest: dict[str, Any], artifact_root: Path | None = Non
     else:
         _add(errors, manifest.get("publication_authorized") is False, "publication must remain false before publication")
 
-    if manifest.get("state") == "PUBLISHED":
+    if state == "PUBLISHED":
         _add(errors, manifest.get("owner_approval") is True, "PUBLISHED requires owner approval")
         _add(errors, manifest.get("publication_authorized") is True, "PUBLISHED requires publication authorization")
 
@@ -205,9 +223,9 @@ def validate_manifest(manifest: dict[str, Any], artifact_root: Path | None = Non
             if not isinstance(source_paths[key], str) or source_paths[key] != item.get("path"):
                 errors.append(f"artifact.{key} path conflicts with rendering source")
 
-        # Ready-to-release media requires a real physical probe and whole-file
-        # decode, not a self-declared video_decode: PASS string.
-        if manifest.get("state") in PUBLISHABLE_STATES:
+        # Any advertised preview or release must be an actual decodable
+        # audiovisual file; self-declared video_decode PASS never suffices.
+        if state in {"PREVIEW_READY", "READY_FOR_OWNER_APPROVAL", "PUBLISHED"}:
             output_item = artifacts.get("output") if isinstance(artifacts, dict) else None
             if isinstance(output_item, dict) and isinstance(output_item.get("path"), str):
                 video_path = (artifact_root / output_item["path"]).resolve()
@@ -229,7 +247,7 @@ def validate_manifest(manifest: dict[str, Any], artifact_root: Path | None = Non
                             errors.append("release:full_media_decode_failed")
                 except (ValueError, OSError, subprocess.TimeoutExpired):
                     errors.append("release:full_media_decode_failed")
-    elif manifest.get("state") in PUBLISHABLE_STATES:
+    elif isinstance(state, str) and state in PUBLISHABLE_STATES:
         errors.append("release:physical_media_root_required")
 
     return sorted(set(errors))
