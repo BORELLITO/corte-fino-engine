@@ -3,7 +3,7 @@ import math
 import unittest
 from agents.e01_ltx23_s01_v2_render import (
     FRAME_RATE,EXPECTED_FRAMES,REQUEST_SECONDS,SCENE_SECONDS,
-    SEED,WIDTH,HEIGHT,STATUS_BASE,provider_running
+    SEED,WIDTH,HEIGHT,STATUS_BASE,provider_running,classify_public_gpu_quota
 )
 
 class TestE01Ltx23S01V2(unittest.TestCase):
@@ -28,6 +28,16 @@ class TestE01Ltx23S01V2(unittest.TestCase):
                   "approved_for_master","publication_authorized",
                   "paid_service_used","human_login_performed"):
             self.assertIs(STATUS_BASE[k],False,k)
+    def test_provider_quota_report_is_explicit_and_without_urls(self):
+        text=("You have exceeded your ZeroGPU quota (112s requested vs. 9s left). "
+              "Try again in 7:21:22. Authenticate with a token URL.")
+        q=classify_public_gpu_quota(text)
+        self.assertEqual(q["requested_gpu_seconds"],112)
+        self.assertEqual(q["available_gpu_seconds"],9)
+        self.assertEqual(q["provider_reset_hint_seconds"],26482)
+        self.assertFalse(q["retry_without_approval"])
+        self.assertNotIn("http",str(q))
+        self.assertIsNone(classify_public_gpu_quota("Some unrelated error"))
     def test_provider_not_running_is_no_op(self):
         self.assertTrue(provider_running({"runtime":{"stage":"RUNNING"}}))
         for obj in [{},{"runtime":{"stage":"SLEEPING"}},
