@@ -50,6 +50,8 @@ jobs:
       - name: Test layout, exact script, timestamp alignment and forged-source protections
         run: python -m unittest discover -s tests -p "test_e01_v2_caption_pipeline.py" -v
 
+      # Fix: cues now stop before any added word makes the two-line
+      # 28-character split geometrically impossible; no overflow allowed.
       - name: Create real two-line SRT/VTT and sample-accurate-timed karaoke QA subtitles
         run: |
           python -m agents.e01_v2_caption_pipeline \
