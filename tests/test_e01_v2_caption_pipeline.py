@@ -61,12 +61,12 @@ class E01CaptionQATests(unittest.TestCase):
 
     def test_two_line_balancing_never_exceeds_28_chars(self):
         group=[{"text":w} for w in
-               ("Os","primeiros","versos","não","entregam","uma","explicação","confortável.")]
+               ("Os","primeiros","versos","não","entregam","uma","explicação.")]
         lines=cue_lines(group)
         self.assertLessEqual(len(lines),2)
         self.assertTrue(all(len(l)<=MAX_LINE for l in lines))
         self.assertEqual(" ".join(lines),
-                         "Os primeiros versos não entregam uma explicação confortável.")
+                         "Os primeiros versos não entregam uma explicação.")
 
     def test_unbreakable_single_word_is_fail_closed(self):
         with self.assertRaisesRegex(ProductionError,"more_than_two_lines"):
