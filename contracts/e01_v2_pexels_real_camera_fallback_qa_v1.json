@@ -1,0 +1,94 @@
+{
+  "schema_version": "1.0.0",
+  "project": "verbo-no-chao",
+  "episode_id": "VNC-W01-E1",
+  "scene_id": "VNC-E01V2-S01",
+  "source": {
+    "provider": "Pexels",
+    "page": "https://www.pexels.com/video/a-silhouette-of-a-man-sitting-alone-beside-a-window-8860242/",
+    "creator": "cottonbro studio",
+    "license_url": "https://www.pexels.com/license/",
+    "original_sha256": "60073bc4a45f816ca4a4e6cce3b7039299ca6ff8824f222aa98ef923dde267e5",
+    "source_bytes": 39535791,
+    "native_width": 4096,
+    "native_height": 2160,
+    "duration_seconds": 36.08,
+    "native_fps": "25/1",
+    "provider_origin": "CAMERA_RECORDED_STOCK_CLAIMED",
+    "rights_conditions_review_required": true
+  },
+  "proof": {
+    "github_run": 44296778066,
+    "artifact": 14424360892,
+    "downloaded_source_mp4_verified": true,
+    "sha_checked_local_against_report": true,
+    "private_drive_backup_metadata_verified": true,
+    "temporary_artifact_expires": true,
+    "spending_reais_confirmed": 0
+  },
+  "candidate_previews": [
+    {
+      "name": "left",
+      "file": "S01_real_footage_left_NOT_MASTER.mp4",
+      "sha256": "63bdd2bf5683a190d3febb3a9f4dff1a1623db2c4966ba6dd328318a9a06fec9",
+      "width": 720,
+      "height": 1280,
+      "fps": "25/1",
+      "duration_seconds": 6.12,
+      "actor_visible": true,
+      "editorial_violation": [
+        "BRIGHT_DAYLIGHT_NOT_NIGHT",
+        "NO_VISIBLE_RAIN",
+        "CLOSED_NOTEBOOK_NOT_PRESENT",
+        "PROTAGONIST_CONTINUITY_NOT_VERIFIED"
+      ]
+    },
+    {
+      "name": "center",
+      "file": "S01_real_footage_center_NOT_MASTER.mp4",
+      "sha256": "7c2a17113defbc58ff739f098d659bcd6eca3ad56996aa6afa34d2810cd71a2c",
+      "width": 720,
+      "height": 1280,
+      "fps": "25/1",
+      "duration_seconds": 6.12,
+      "actor_visible": false,
+      "editorial_violation": [
+        "PROTAGONIST_CROPPED_OFF",
+        "BRIGHT_DAYLIGHT_NOT_NIGHT",
+        "NO_VISIBLE_RAIN",
+        "CLOSED_NOTEBOOK_NOT_PRESENT"
+      ]
+    },
+    {
+      "name": "right",
+      "file": "S01_real_footage_right_NOT_MASTER.mp4",
+      "sha256": "0bf3ed1d18a0f2c0d51394f4469a2535f309e75196e8ef41f7ffd7cef6b68821",
+      "width": 720,
+      "height": 1280,
+      "fps": "25/1",
+      "duration_seconds": 6.12,
+      "actor_visible": false,
+      "editorial_violation": [
+        "PROTAGONIST_NOT_VISIBLE",
+        "BRIGHT_DAYLIGHT_NOT_NIGHT",
+        "NO_VISIBLE_RAIN",
+        "CLOSED_NOTEBOOK_NOT_PRESENT"
+      ]
+    }
+  ],
+  "frames_spot_checked_at_seconds": [
+    0.6,
+    2.6,
+    5.4
+  ],
+  "original_e01_scene_duration_seconds": 5.74,
+  "recommendation": "RETAIN_SOURCE_ONLY_AS_NO_KEY_TECHNICAL_PROOF_NOT_AS_E01_S01",
+  "classification": "TECHNICAL_DOWNLOAD_AND_DECODE_SUCCEEDED_EDITORIAL_REJECTED",
+  "title_provenance_cleared": false,
+  "individual_rights_cleared": false,
+  "source_can_be_implied_to_endorse_faith": false,
+  "accepted_as_character_continuity": false,
+  "accepted_for_e01_s01": false,
+  "master_1080x1920_30fps": false,
+  "publication_authorized": false
+}
