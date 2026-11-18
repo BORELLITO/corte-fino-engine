@@ -16,7 +16,7 @@ concurrency:
 
 jobs:
   bounded-physical-candidate-review:
-    if: ${{ github.event_name == 'push' && github.event.head_commit.message == 'vnc-e01-s03-one-time-repair-shallow-checkout-20261118' }}
+    if: ${{ github.event_name == 'push' && github.event.head_commit.message == 'vnc-e01-s03-one-time-repair-ffmpeg-runtime-20261118' }}
     runs-on: ubuntu-latest
     timeout-minutes: 8
     steps:
@@ -31,8 +31,14 @@ jobs:
           set -euo pipefail
           test "$GITHUB_REF_NAME" = "verbo-no-chao/e01-s03-real-footage-qa-20261118-v1"
           test "$(git show --pretty= --name-only "$GITHUB_SHA" | sed '/^$/d')" = ".github/workflows/verbo-no-chao-e01-s03-one-shot-real-stock-qa.yml"
-      - name: Confirm local no-cost FFmpeg and public downloader
+      - name: Prepare free FFmpeg runtime and public downloader
+        shell: bash
         run: |
+          set -euo pipefail
+          if ! command -v ffmpeg >/dev/null || ! command -v ffprobe >/dev/null; then
+            sudo apt-get update -qq
+            sudo DEBIAN_FRONTEND=noninteractive apt-get install -y -qq ffmpeg
+          fi
           command -v ffmpeg
           command -v ffprobe
           command -v curl
