@@ -1,126 +1,167 @@
-"""One-shot S03 public-footage QA. No browser/login/provider/production approvals.
-
-Designed for a temporary GitHub Actions runner; never writes video into the repo.
+"""One candidate, one real-public-footage physical QA; never mark release approval.
+Only FFmpeg from a pinned pip wheel. No ffprobe, apt, model API or credentials.
 """
 from __future__ import annotations
+
 import argparse
 import hashlib
 import json
 import math
+import re
 import subprocess
 from pathlib import Path
 
-SCENE="VNC-E01V2-S03"
-SOURCE_ID=40316686
-SOURCE_URL="https://www.pexels.com/video/quiet-residential-street-at-dusk-40316686/"
-SOURCE_FILE_URL="https://videos.pexels.com/video-files/40316686/17221948_1080_1920_60fps.mp4"
-SCENE_DURATION=6.14
-ALLOWED_BYTES=50_000_000
+SOURCE_ID = 19381590
+SOURCE_URL = "https://www.pexels.com/video/carousel-19381590/"
+SOURCE_FILE_URL = "https://videos.pexels.com/video-files/19381590/19381590-uhd_3840_2160_25fps.mp4"
+SCENE_ID = "VNC-E01V2-S03"
+SCENE_DURATION = 6.14
+MAX_BYTES = 125_000_000
 
 
-def sha256(path: Path) -> str:
-    h=hashlib.sha256()
-    with path.open("rb") as input_file:
-        for block in iter(lambda: input_file.read(1024*1024), b""):
-            h.update(block)
+def hash_file(path: Path) -> str:
+    h = hashlib.sha256()
+    with path.open("rb") as stream:
+        for chunk in iter(lambda: stream.read(1 << 20), b""):
+            h.update(chunk)
     return h.hexdigest()
 
 
-def tool(*args: str, timeout: int=60) -> subprocess.CompletedProcess:
-    return subprocess.run(args,capture_output=True,text=True,timeout=timeout,check=False)
+def run_binary(command: list[str], timeout: int = 120) -> subprocess.CompletedProcess:
+    return subprocess.run(command, capture_output=True, text=True, timeout=timeout, check=False)
 
 
-def run(video: Path, output: Path) -> dict:
-    output.mkdir(parents=True,exist_ok=True)
-    report={
-        "project":"verbo-no-chao",
-        "episode_id":"VNC-W01-E1",
-        "scene_id":SCENE,
-        "scene_duration_seconds":SCENE_DURATION,
-        "source_platform":"Pexels",
-        "source_id":SOURCE_ID,
-        "source_page":SOURCE_URL,
-        "source_download_url":SOURCE_FILE_URL,
-        "origin":"PUBLIC_THIRD_PARTY_STOCK_CANDIDATE",
-        "editorial_brief":"Neglected residential public space after rain; no identifiable victims or allegations",
-        "technical_status":"BLOCKED_NOT_TESTED",
-        "visual_edit_review":"PENDING",
-        "source_license_terms_review":"PENDING_PER_ASSET_AND_CONTEXT",
-        "commercial_rights_cleared":False,
-        "editorial_approved":False,
-        "can_enter_master":False,
-        "publication_authorized":False,
-        "external_model_calls":0,
-        "note":"Physical probe and source hash cannot establish story fidelity or third-party rights.",
+def probe_with_ffmpeg(binary: str, path: Path) -> dict:
+    """A single bundled FFmpeg executable can inspect headers and decode frames."""
+    result = run_binary([binary, "-nostdin", "-hide_banner", "-i", str(path)], timeout=20)
+    output = result.stderr
+    dur = re.search(r"Duration:\s*(\d\d):(\d\d):(\d\d(?:\.\d+)?)", output)
+    line = next((x for x in output.splitlines() if "Video:" in x and "Stream #" in x), "")
+    dim = re.search(r"(\d{3,5})x(\d{3,5})", line)
+    fps = re.search(r"(\d+(?:\.\d+)?)\s+fps", line)
+    if not (dur and dim and fps):
+        raise ValueError("missing_or_unreadable_video_stream_headers")
+    duration = 3600 * int(dur[1]) + 60 * int(dur[2]) + float(dur[3])
+    width, height, framerate = int(dim[1]), int(dim[2]), float(fps[1])
+    if not all(math.isfinite(x) for x in (duration, framerate)):
+        raise ValueError("nonfinite_video_duration_or_fps")
+    return {"duration_seconds": duration, "width": width, "height": height, "source_fps": framerate}
+
+
+def source_to_vertical_crop(width: int, height: int) -> dict:
+    """A center crop to 9:16, with no upscaling of inadequate source pixels."""
+    proposed = int((height * 9 / 16) // 2 * 2)
+    if proposed < 1080 or height < 1920 or proposed > width:
+        raise ValueError("source_cannot_native_crop_9x16_at_1080x1920")
+    return {
+        "crop_width": proposed,
+        "crop_height": height,
+        "crop_left": (width - proposed) // 2,
+        "crop_top": 0,
+        "vertical_source_resolution_ok": True,
+    }
+
+
+def run(source: Path, out_dir: Path, ffmpeg_bin: str) -> dict:
+    out_dir.mkdir(parents=True, exist_ok=True)
+    report = {
+        "project": "verbo-no-chao",
+        "episode": "VNC-W01-E1",
+        "scene": SCENE_ID,
+        "required_scene_seconds": SCENE_DURATION,
+        "source_provider": "Pexels",
+        "source_video_id": SOURCE_ID,
+        "source_page_url": SOURCE_URL,
+        "source_original_url": SOURCE_FILE_URL,
+        "source_description_at_research": "Deserted playground seesaw on a rainy night, evoking nostalgia",
+        "physical_status": "BLOCKED",
+        "editorial_visual_review": "PENDING_ACTUAL_FRAME_INSPECTION",
+        "rights_review": "PENDING_PER_ASSET_AND_CONTEXT",
+        "is_real_footage": None,
+        "source_copyright_license_cleared": False,
+        "editorial_approved": False,
+        "commercial_use_approved": False,
+        "allowed_in_master": False,
+        "publication_authorized": False,
+        "master_created": False,
+        "ai_generation_requests": 0,
+        "notes": "Video hash and technical decode do not establish historical truth, actor rights or biblical scene fitness.",
     }
     try:
-        if not video.is_file() or video.stat().st_size<100000 or video.stat().st_size>ALLOWED_BYTES:
-            raise ValueError("missing_or_out_of_bounds_source_bytes")
-        report["source_file_bytes"]=video.stat().st_size
-        report["source_sha256"]=sha256(video)
-        probe=tool("ffprobe","-v","error","-show_entries",
-                   "format=duration,size:stream=index,codec_type,codec_name,width,height,avg_frame_rate",
-                   "-of","json",str(video),timeout=30)
-        if probe.returncode:
-            raise ValueError("ffprobe_failed:"+probe.stderr[-160:])
-        media=json.loads(probe.stdout)
-        stream=next((s for s in media.get("streams",[]) if s.get("codec_type")=="video"),None)
-        if not stream: raise ValueError("no_video_stream")
-        duration=float(media["format"]["duration"])
-        fpsstring=stream.get("avg_frame_rate","0/1")
-        num,den=(float(x) for x in fpsstring.split("/"))
-        fps=num/den if den else 0
-        report["physical"]={"duration_seconds":duration,"width":stream.get("width"),
-            "height":stream.get("height"),"fps":fps,"codec":stream.get("codec_name"),
-            "seconds_required":SCENE_DURATION,"full_stream_decode":False}
-        if not math.isfinite(duration) or duration<SCENE_DURATION:
-            raise ValueError("real_clip_too_short")
-        if (stream.get("width"),stream.get("height"))!=(1080,1920):
-            raise ValueError("wrong_native_resolution")
-        if not math.isfinite(fps) or fps<29.9:
-            raise ValueError("source_fps_too_low")
-        decode=tool("ffmpeg","-nostdin","-v","error","-xerror",
-                    "-i",str(video),"-map","0:v:0","-f","null","-",timeout=150)
-        if decode.returncode:
-            raise ValueError("full_video_decode_failed:"+decode.stderr[-160:])
-        report["physical"]["full_stream_decode"]=True
-        sheet=output/"S03_SIX_FRAME_CONTACT_SHEET.jpg"
-        montage=tool("ffmpeg","-nostdin","-y","-v","error","-xerror","-i",str(video),
-                     "-t","6.14","-vf","fps=1,scale=270:480:flags=lanczos,tile=3x2",
-                     "-frames:v","1",str(sheet),timeout=70)
-        if montage.returncode or not sheet.is_file(): raise ValueError("contact_sheet_failed")
-        preview=output/"S03_540x960_30FPS_QA_ONLY.mp4"
-        proxy=tool("ffmpeg","-nostdin","-y","-v","error","-xerror","-i",str(video),
-                   "-t","6.14","-an","-vf","fps=30,scale=540:960:flags=lanczos",
-                   "-c:v","libx264","-preset","veryfast","-crf","25",
-                   "-pix_fmt","yuv420p","-movflags","+faststart",str(preview),timeout=150)
-        if proxy.returncode or not preview.is_file(): raise ValueError("qa_proxy_failed")
-        report["qa_assets"]={
-            "contact_sheet":{"file":sheet.name,"sha256":sha256(sheet)},
-            "low_res_technical_proxy":{"file":preview.name,"sha256":sha256(preview),
-                                       "is_master":False}
+        if not source.is_file():
+            raise ValueError("source_file_missing_after_one_download")
+        length = source.stat().st_size
+        if length < 100000 or length > MAX_BYTES:
+            raise ValueError("unexpected_source_size")
+        report["source_bytes"] = length
+        report["sha256"] = hash_file(source)
+        meta = probe_with_ffmpeg(ffmpeg_bin, source)
+        report["source_physical"] = meta
+        if meta["duration_seconds"] < SCENE_DURATION:
+            raise ValueError("source_video_shorter_than_scene")
+        if meta["source_fps"] < 24:
+            raise ValueError("source_fps_below_24")
+        crop = source_to_vertical_crop(meta["width"], meta["height"])
+        report["vertical_crop"] = crop
+        # Full real-source video decode: exit-code only, not proof of semantic meaning.
+        decoded = run_binary(
+            [ffmpeg_bin, "-nostdin", "-hide_banner", "-v", "error", "-xerror",
+             "-i", str(source), "-map", "0:v:0", "-f", "null", "-"], timeout=200,
+        )
+        if decoded.returncode:
+            raise ValueError("whole_source_video_decode_failed:" + decoded.stderr[-120:])
+        report["full_source_decoded"] = True
+
+        vf = ("crop={crop_width}:{crop_height}:{crop_left}:{crop_top},"
+              "fps=1,scale=270:480:flags=lanczos,tile=3x2").format(**crop)
+        contact = out_dir / "S03_6_REAL_SOURCE_FRAMES_CONTACT.jpg"
+        sampled = run_binary(
+            [ffmpeg_bin, "-nostdin", "-y", "-hide_banner", "-v", "error",
+             "-ss", "0", "-i", str(source), "-t", str(SCENE_DURATION),
+             "-vf", vf, "-frames:v", "1", str(contact)], timeout=75,
+        )
+        if sampled.returncode or not contact.is_file():
+            raise ValueError("contact_sheet_assembly_failed:" + sampled.stderr[-120:])
+        preview = out_dir / "S03_VERTICAL_540x960_30FPS_QA_ONLY.mp4"
+        proxy_vf = ("crop={crop_width}:{crop_height}:{crop_left}:{crop_top},"
+                    "fps=30,scale=540:960:flags=lanczos").format(**crop)
+        proxy = run_binary(
+            [ffmpeg_bin, "-nostdin", "-y", "-hide_banner", "-v", "error",
+             "-i", str(source), "-t", str(SCENE_DURATION), "-an",
+             "-vf", proxy_vf, "-c:v", "libx264", "-preset", "veryfast",
+             "-crf", "26", "-pix_fmt", "yuv420p", "-movflags", "+faststart",
+             str(preview)], timeout=160,
+        )
+        if proxy.returncode or not preview.is_file():
+            raise ValueError("technical_review_proxy_failed:" + proxy.stderr[-120:])
+        report["review_assets"] = {
+            "contact_sheet": {"name": contact.name, "sha256": hash_file(contact)},
+            "proxy": {"name": preview.name, "sha256": hash_file(preview),
+                      "is_master": False, "native_source_not_claimed_for_output": True},
         }
-        report["technical_status"]="PHYSICAL_STOCK_SOURCE_VALID_FOR_EDITORIAL_VISUAL_REVIEW_ONLY"
-    except (OSError,ValueError,KeyError,TypeError,json.JSONDecodeError,subprocess.TimeoutExpired) as exc:
-        report["technical_status"]="BLOCKED_SOURCE_PHYSICAL_OR_DOWNLOAD"
-        report["failure_type"]=type(exc).__name__
-        report["failure_reason"]=str(exc)[:220]
-    (output/"S03_PHYSICAL_SOURCE_QA_REPORT.json").write_text(
-        json.dumps(report,indent=2,ensure_ascii=False)+"\n",encoding="utf-8")
+        report["physical_status"] = "PASS_PHYSICAL_SOURCE_NEEDS_DIRECTOR_FRAME_REVIEW"
+        report["is_real_footage"] = True
+    except (ValueError, OSError, KeyError, TypeError, subprocess.TimeoutExpired) as exc:
+        report["physical_status"] = "BLOCKED"
+        report["error"] = {"type": type(exc).__name__, "description": str(exc)[:300]}
+    (out_dir / "S03_QA_PHYSICAL_REPORT.json").write_text(
+        json.dumps(report, ensure_ascii=False, indent=2) + "\n", encoding="utf-8",
+    )
     return report
 
 
 def main() -> int:
-    p=argparse.ArgumentParser()
-    p.add_argument("video",type=Path)
-    p.add_argument("output",type=Path)
-    a=p.parse_args()
-    report=run(a.video,a.output)
-    print(json.dumps({k:report[k] for k in ("technical_status","editorial_approved",
-          "commercial_rights_cleared","can_enter_master","publication_authorized")},
-          ensure_ascii=False))
-    return 0 if report["technical_status"].startswith("PHYSICAL_STOCK_SOURCE_VALID") else 2
+    parser = argparse.ArgumentParser()
+    parser.add_argument("source", type=Path)
+    parser.add_argument("out", type=Path)
+    args = parser.parse_args()
+    import imageio_ffmpeg
+    result = run(args.source, args.out, imageio_ffmpeg.get_ffmpeg_exe())
+    print(json.dumps({"status": result["physical_status"],
+                      "rights": result["source_copyright_license_cleared"],
+                      "master": result["master_created"]}))
+    return 0 if result["physical_status"].startswith("PASS_PHYSICAL") else 2
 
 
-if __name__=="__main__":
+if __name__ == "__main__":
     raise SystemExit(main())
