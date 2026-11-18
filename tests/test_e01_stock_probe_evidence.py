@@ -50,13 +50,8 @@ class TestE01StockProbeEvidence(unittest.TestCase):
         for i, change in enumerate(cases):
             with self.subTest(case=i):
                 p = self.changed(change)
-                # syntactically well-formed altered hashes alone would pass
-                # this format checker; only a future byte-hash check can reject them
-                if i == 1:
-                    self.assertEqual(verify(ROOT, p)["assets"], 4)
-                else:
-                    with self.assertRaises(StockIntakeError):
-                        verify(ROOT, p)
+                with self.assertRaises(StockIntakeError):
+                    verify(ROOT, p)
 
 if __name__ == "__main__":
     unittest.main()
