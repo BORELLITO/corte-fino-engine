@@ -29,7 +29,7 @@ def verify_report(root: Path, report_file: Path) -> dict[str, Any]:
     check(evidence.get("project") == "verbo-no-chao"
           and evidence.get("episode_id") == "VNC-W01-E1"
           and evidence.get("source_workflow_run_id") == 44204868327
-          and evidence.get("source_report_sha256") == REPORT_SHA
+          and evidence.get("report_sha256") == REPORT_SHA
           and evidence.get("report_bytes") == REPORT_BYTES
           and evidence.get("source_script_sha256") == V2_SHA
           and evidence.get("both_models_pass_aggregate_wer_cer") is True
