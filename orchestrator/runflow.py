@@ -58,29 +58,77 @@ def _artifact_hash(path: Path) -> str:
 def _materialize_manifest(package_dir: Path, package: dict[str, Any], run_id: str) -> dict[str, Any]:
     manifest = json.loads(json.dumps(package))
     manifest["run_id"] = run_id
-    manifest["execution"] = {
-        **(manifest.get("execution") or {}),
+    # Defaults are allowed, but NEVER overwrite explicit adverse flags.
+    # Earlier code silently changed legacy_projects_used=True to False.
+    manifest.setdefault("execution", {
         "mode": "cloud_only",
         "device_role": "control_only",
         "legacy_projects_used": False,
-    }
+    })
     manifest.setdefault("owner_approval", False)
     manifest.setdefault("publication_authorized", False)
 
-    artifacts = manifest.get("artifacts") or {}
-    if not isinstance(artifacts, dict):
-        artifacts = {}
-    for key in ("audio", "music", "captions", "output"):
-        item = artifacts.get(key)
-        if not isinstance(item, dict):
-            continue
-        relative = item.get("path")
-        if isinstance(relative, str):
-            target = (package_dir / relative).resolve()
-            if target.is_file():
-                item["sha256"] = _artifact_hash(target)
-    manifest["artifacts"] = artifacts
+    # The provider's claimed digests are untrusted evidence. Keep them as-is
+    # so validate_manifest can compare them against actual physical bytes.
+    # Rehashing into the same declaration would hide tampering.
+    manifest.setdefault("artifacts", {})
     return manifest
+
+
+def _preflight_untrusted_media(package_dir: Path, package: dict[str, Any]) -> list[str]:
+    """Check source bytes before invoking FFmpeg; never trust self-certified hashes."""
+    errors: list[str] = []
+    root = package_dir.resolve()
+
+    def check(path: Any, expected: Any, label: str) -> None:
+        if not isinstance(path, str) or not path.strip():
+            errors.append(f"{label}:missing_path")
+            return
+        if not isinstance(expected, str) or len(expected) != 64 or any(
+            c not in "0123456789abcdef" for c in expected
+        ):
+            errors.append(f"{label}:missing_sha256")
+            return
+        target = (root / path).resolve()
+        try:
+            target.relative_to(root)
+        except ValueError:
+            errors.append(f"{label}:path_escape")
+            return
+        if not target.is_file():
+            errors.append(f"{label}:missing_file")
+            return
+        if _artifact_hash(target) != expected:
+            errors.append(f"{label}:sha256_mismatch")
+
+    assets = package.get("assets")
+    if not isinstance(assets, list) or not assets:
+        return []  # Preserve render:assets_missing diagnostic.
+    for i, asset in enumerate(assets, 1):
+        if not isinstance(asset, dict):
+            errors.append(f"asset:{i}:not_object")
+            continue
+        check(asset.get("path"), asset.get("source_hash"), f"asset:{i}")
+
+    artifacts = package.get("artifacts")
+    for label, hash_field in (("audio", "sha256"), ("music", "hash")):
+        media = package.get(label)
+        if not isinstance(media, dict):
+            errors.append(f"{label}:not_object")
+            continue
+        media_item = artifacts.get(label) if isinstance(artifacts, dict) else None
+        if not isinstance(media_item, dict) or media_item.get("path") != media.get("path"):
+            errors.append(f"{label}:artifact_binding_missing")
+        check(media.get("path"), media.get(hash_field), label)
+    captions = package.get("captions")
+    subtitle = artifacts.get("captions") if isinstance(artifacts, dict) else None
+    if not isinstance(captions, dict) or not isinstance(subtitle, dict) or (
+        subtitle.get("path") != captions.get("path")
+    ):
+        errors.append("captions:artifact_binding_missing")
+    else:
+        check(subtitle.get("path"), subtitle.get("sha256"), "captions")
+    return sorted(set(errors))
 
 
 def _write_blocked(
@@ -128,7 +176,32 @@ def run_flow(
         return _write_blocked(result, report_path)
 
     provider_status = "MATERIALIZED"
-    if render or (isinstance(package.get("render"), dict) and package["render"].get("enabled") is True):
+    # This runflow has NO publisher integration. The provider cannot certify a
+    # PUBLISHED state merely by writing JSON or setting owner_approval=True.
+    if package.get("state") == "PUBLISHED":
+        errors.append("runflow:publication_requires_separate_authorized_publisher")
+    for key in ("execution", "artifacts", "output"):
+        if key in package and not isinstance(package[key], dict):
+            errors.append(f"provider_package:{key}:not_object")
+    if errors:
+        result = RunResult(
+            run_id, "BLOCKED", "BLOCKED", str(manifest_path),
+            tuple(sorted(set(errors))), provider_status,
+        )
+        return _write_blocked(result, report_path)
+
+    should_render = render or (
+        isinstance(package.get("render"), dict) and package["render"].get("enabled") is True
+    )
+    if should_render:
+        errors.extend(_preflight_untrusted_media(package_dir, package))
+        if errors:
+            result = RunResult(
+                run_id, "BLOCKED", "BLOCKED", str(manifest_path),
+                tuple(sorted(set(errors))), provider_status,
+            )
+            return _write_blocked(result, report_path)
+    if should_render:
         try:
             rendered = render_package(package_dir, package)
         except RenderError as exc:
