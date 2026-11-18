@@ -4,6 +4,7 @@ from __future__ import annotations
 import hashlib
 import json
 import math
+import re
 import shlex
 import shutil
 import subprocess
@@ -27,11 +28,11 @@ def _binary(name: str) -> str:
 def _safe_path(root: Path, relative: Any, label: str) -> Path:
     if not isinstance(relative, str) or not relative.strip():
         raise RenderError(f"{label}:path_missing")
-    target = (root / relative).resolve()
     try:
+        target = (root / relative).resolve()
         target.relative_to(root.resolve())
-    except ValueError as exc:
-        raise RenderError(f"{label}:path_escape") from exc
+    except (ValueError, OSError) as exc:
+        raise RenderError(f"{label}:path_escape_or_invalid") from exc
     if not target.is_file():
         raise RenderError(f"{label}:missing:{relative}")
     return target
@@ -113,7 +114,12 @@ def render_package(package_dir: Path, package: dict[str, Any]) -> dict[str, Any]
     captions = package.get("captions") or {}
     voice_path = _safe_path(package_dir, audio.get("path"), "audio")
     music_path = _safe_path(package_dir, music.get("path"), "music")
-    caption_path = _safe_path(package_dir, captions.get("path"), "captions")
+    # Subtitle filenames enter an FFmpeg filtergraph, unlike normal -i paths.
+    # Restrict them to a safe, non-interpretable character set.
+    subtitle_name = captions.get("path")
+    if not isinstance(subtitle_name, str) or not re.fullmatch(r"[A-Za-z0-9_./ -]+\\.(ass|srt|vtt)", subtitle_name):
+        raise RenderError("render:unsafe_subtitle_filename")
+    caption_path = _safe_path(package_dir, subtitle_name, "captions")
     if output in (voice_path, music_path, caption_path):
         raise RenderError("render:output_collides_with_audio_or_caption")
 
