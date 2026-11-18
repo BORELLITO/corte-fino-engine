@@ -88,10 +88,10 @@ def classify_public_gpu_quota(message):
  """Extract shortage/reset without exposing vendor links or tokens in the report."""
  if not isinstance(message,str): return None
  m=re.search(
-    r"exceeded your ZeroGPU quota \\((\\d+)s requested vs\\. (\\d+)s left\\)",
+    r"exceeded your ZeroGPU quota \((\d+)s requested vs\. (\d+)s left\)",
     message,re.IGNORECASE)
  if m is None: return None
- reset=re.search(r"Try again in (\\d+):(\\d+):(\\d+)",message)
+ reset=re.search(r"Try again in (\d+):(\d+):(\d+)",message)
  return {
     "requested_gpu_seconds":int(m.group(1)),
     "available_gpu_seconds":int(m.group(2)),
