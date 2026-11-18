@@ -150,5 +150,32 @@ class TestCloudIntegrityHardening(unittest.TestCase):
             self.assertFalse((root / "rendered.mp4").exists())
 
 
+    def test_unhashable_nested_fields_fail_closed_without_crash(self):
+        for field, value in (
+            ("audio", "format"), ("music", "license_status"),
+        ):
+            with self.subTest(field=field, value=value):
+                doc = copy.deepcopy(BASE)
+                doc[field][value] = ["invalid nested object"]
+                self.assertTrue(validate_manifest(doc))
+        ready = copy.deepcopy(BASE)
+        ready["state"] = "READY_FOR_OWNER_APPROVAL"
+        ready["rights"]["visual_review"] = {"forged": True}
+        ready["assets"][0]["rights_status"] = ["CLEARED"]
+        self.assertTrue(validate_manifest(ready))
+
+    def test_null_byte_path_denied_without_stack_trace(self):
+        with tempfile.TemporaryDirectory() as temp:
+            root = Path(temp)
+            package = fixture_with_physical_bytes(root)
+            package["assets"][0]["path"] = "\\u0000bad.mp4"
+            errors = validate_manifest(package, artifact_root=root)
+            self.assertTrue(any("asset 1 path is invalid" in e for e in errors))
+            (root / "package.json").write_text(json.dumps(package), encoding="utf-8")
+            result = run_flow({"topic": "null byte"}, root, root / "reports", render=True)
+            self.assertEqual(result.status, "BLOCKED")
+            self.assertTrue(any("asset:1:invalid_or_escaping_path" in e for e in result.errors))
+
+
 if __name__ == "__main__":
     unittest.main()
