@@ -31,7 +31,7 @@ jobs:
             sudo DEBIAN_FRONTEND=noninteractive apt-get install -y -qq ffmpeg
           fi
       - name: Download one no-key source, decode, sample 3 frames
-        run: timeout -k 5s 355s python -u agents/e01_s10_support_v2.py
+        run: timeout -k 5s 355s python -u -m agents.e01_s10_support_v2
       - name: Preserve physical editorial material temporarily
         if: always()
         uses: actions/upload-artifact@v4
