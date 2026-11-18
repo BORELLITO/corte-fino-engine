@@ -117,7 +117,7 @@ def render_package(package_dir: Path, package: dict[str, Any]) -> dict[str, Any]
     # Subtitle filenames enter an FFmpeg filtergraph, unlike normal -i paths.
     # Restrict them to a safe, non-interpretable character set.
     subtitle_name = captions.get("path")
-    if not isinstance(subtitle_name, str) or not re.fullmatch(r"[A-Za-z0-9_./ -]+\\.(ass|srt|vtt)", subtitle_name):
+    if not isinstance(subtitle_name, str) or not re.fullmatch(r"[A-Za-z0-9_./ -]+\.(ass|srt|vtt)", subtitle_name):
         raise RenderError("render:unsafe_subtitle_filename")
     caption_path = _safe_path(package_dir, subtitle_name, "captions")
     if output in (voice_path, music_path, caption_path):
