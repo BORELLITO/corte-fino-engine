@@ -27,6 +27,14 @@ jobs:
         run: python -m unittest tests.test_e01_stock_candidates -v
       - name: Verify public metadata without downloads
         run: python -m agents.e01_stock_candidates --report stock-probe/metadata.json
+      - name: Ensure ffmpeg and ffprobe binaries exist
+        run: |
+          if ! command -v ffmpeg >/dev/null || ! command -v ffprobe >/dev/null; then
+            sudo apt-get update -qq
+            sudo DEBIAN_FRONTEND=noninteractive apt-get install -y -qq ffmpeg
+          fi
+          command -v ffmpeg
+          command -v ffprobe
       - name: Probe temporary Pexels MP4 bytes in hosted runner
         run: python -m agents.e01_stock_candidates --probe --report stock-probe/physical-qa.json
       - name: Upload report only (never raw media)
