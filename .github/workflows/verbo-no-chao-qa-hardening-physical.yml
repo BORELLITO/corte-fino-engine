@@ -1,0 +1,35 @@
+name: Verbo no Chão — Integrity hardening physical FFmpeg smoke (NO PROVIDER)
+
+on:
+  push:
+    branches:
+      - "verbo-no-chao/audit-integrity-hardening-20261118-v1"
+    paths:
+      - "tests/test_vnc_audio_ducking_physical.py"
+      - "orchestrator/render.py"
+      - ".github/workflows/verbo-no-chao-qa-hardening-physical.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  audit-physical-audio:
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Install actual local FFmpeg only
+        run: |
+          if ! command -v ffmpeg >/dev/null; then
+            sudo apt-get update -qq
+            sudo DEBIAN_FRONTEND=noninteractive apt-get install -y -qq ffmpeg
+          fi
+          ffmpeg -hide_banner -filters | grep -q sidechaincompress
+      - name: Prove filter grammar, output safety and finite timing
+        run: python -m unittest tests.test_vnc_audio_ducking_physical -v
+      - name: Confirm no external model call or publication
+        run: echo "Only local synthetic audio; zero provider generation and no upload."
