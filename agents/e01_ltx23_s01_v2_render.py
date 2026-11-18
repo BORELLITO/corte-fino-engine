@@ -8,6 +8,7 @@ from __future__ import annotations
 import hashlib
 import json
 import math
+import re
 import shutil
 import subprocess
 import urllib.request
@@ -83,6 +84,23 @@ def provider_running(data):
  return isinstance(data,dict) and isinstance(data.get("runtime"),dict) and (
       str(data["runtime"].get("stage","")).upper()=="RUNNING")
 
+def classify_public_gpu_quota(message):
+ """Extract shortage/reset without exposing vendor links or tokens in the report."""
+ if not isinstance(message,str): return None
+ m=re.search(
+    r"exceeded your ZeroGPU quota \\((\\d+)s requested vs\\. (\\d+)s left\\)",
+    message,re.IGNORECASE)
+ if m is None: return None
+ reset=re.search(r"Try again in (\\d+):(\\d+):(\\d+)",message)
+ return {
+    "requested_gpu_seconds":int(m.group(1)),
+    "available_gpu_seconds":int(m.group(2)),
+    "provider_reset_hint_seconds": (
+       int(reset.group(1))*3600+int(reset.group(2))*60+
+       int(reset.group(3)) if reset else None),
+    "retry_without_approval":False
+ }
+
 def preflight():
  req=urllib.request.Request(SPACE_API,headers={"User-Agent":"VNC-E01-S01-one-shot-probe/1.0"})
  with urllib.request.urlopen(req,timeout=15) as resp:
@@ -129,7 +147,7 @@ def run():
   running,stage=preflight()
   if not running:
    report("BLOCKED_PUBLIC_SPACE_NOT_RUNNING",runtime_stage=stage,media_obtained=False)
-   return 0
+   return 2
   report("REQUEST_READY_PROVIDER_RUNNING",runtime_stage=stage,media_obtained=False)
   from gradio_client import Client
   client=Client(SPACE,verbose=False)
@@ -164,12 +182,18 @@ def run():
          editorial_decision="AWAITING_MANUAL_FRAME_AUDIT")
   return 0
  except Exception as error:
-  report("BLOCKED_PROVIDER_OR_TECHNICAL_RUNTIME",
-         error_type=type(error).__name__,
-         error_reason=str(error)[:180].replace("\n"," "),
-         no_automatic_retry=True,
-         approved_for_master=False)
-  return 0
+  quota=classify_public_gpu_quota(str(error))
+  if quota is not None:
+   report("BLOCKED_ZEROGPU_QUOTA_INSUFFICIENT",
+          error_type=type(error).__name__,**quota,
+          video_file_returned=False,no_automatic_retry=True)
+  else:
+   report("BLOCKED_PROVIDER_OR_TECHNICAL_RUNTIME",
+          error_type=type(error).__name__,
+          error_reason=str(error)[:180].replace("\\n"," "),
+          video_file_returned=False,no_automatic_retry=True)
+  # CI must fail red if no generated MP4 exists, even if a JSON report exists.
+  return 2
 
 if __name__=="__main__":
  raise SystemExit(run())
