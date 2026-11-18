@@ -75,6 +75,13 @@ jobs:
           print("PASS: real v2 WAV bytes, duration and release locks verified")
           PY
 
+      - name: Install open-source FFmpeg and libre fonts on minimal runner
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq ffmpeg fonts-dejavu-core
+          ffmpeg -hide_banner -filters 2>/dev/null | grep -E ' ass | drawtext '
+          ffmpeg -version | head -1
+
       - name: Render actual diagnostic subtitle video — neutral background, never final master
         run: |
           ffmpeg -hide_banner -y -loglevel warning \
