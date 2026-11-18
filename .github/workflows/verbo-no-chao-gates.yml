@@ -22,6 +22,8 @@ jobs:
           python-version: "3.12"
       - name: Run complete test suite
         run: python -m unittest discover -s tests -p "test_*.py" -v
+      - name: Enforce senior editorial director decisions before preview assembly
+        run: python -m agents.e01_editorial_director_gate
       - name: Lint every JSON contract
         run: python tools/contract_lint.py
       - name: Validate canonical pilot manifest

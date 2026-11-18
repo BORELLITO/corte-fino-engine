@@ -8,6 +8,7 @@ from pathlib import Path
 from agents.e01_stock_candidates import ROOT, StockIntakeError, require
 from agents.e01_stock_editorial_decision import review as first_batch_review
 from agents.e01_stock_alt_review_gate import verify as second_batch_review
+from agents.e01_editorial_director_gate import validate as director_review
 
 CONTRACT=Path("contracts/e01_v2_visual_single_world_acquisition_v1.json")
 STORY=Path("contracts/e01_v2_12_scene_visual_plan_v1.json")
@@ -44,8 +45,11 @@ def validate(root:Path=ROOT,document:dict|None=None)->dict:
     # Earlier Pexels rejections cannot be overwritten by this new plan.
     r1=first_batch_review(root)
     r2=second_batch_review(root)
+    director=director_review(root)
     require(r1["assets_approved_for_master"]==0 and
-        r2["approved_for_master"]==0,
+        r2["approved_for_master"]==0 and
+        director["e01_clips_approved_for_cut"]==0 and
+        director["publication_authorized"] is False,
         "single_world:prior_rejections_missing")
     require(document.get("prior_rejections")==[
         "contracts/e01_v2_stock_editorial_review_v1.json",
