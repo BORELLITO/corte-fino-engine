@@ -1,0 +1,78 @@
+name: Verbo no Chão — S03 rainy playground REAL footage QA (NO AI, ONE SHOT)
+
+on:
+  push:
+    branches:
+      - "verbo-no-chao/e01-s03-real-footage-qa-20261118-v1"
+    paths:
+      - ".github/workflows/verbo-no-chao-e01-s03-one-shot-real-stock-qa.yml"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: vnc-s03-rainy-playground-20261118
+  cancel-in-progress: false
+
+jobs:
+  real-footage-frame-qa:
+    if: ${{ github.event_name == 'push' && github.event.head_commit.message == 'vnc-e01-s03-rainy-night-qa-after-preflight-fix-20261118' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 9
+    steps:
+      - name: Checkout without persistent writer token
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 2
+          persist-credentials: false
+      - name: Confirm exact no-replay commit payload
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$GITHUB_REF_NAME" = "verbo-no-chao/e01-s03-real-footage-qa-20261118-v1"
+          test "$(git show --pretty= --name-only "$GITHUB_SHA" | sed '/^$/d')" = ".github/workflows/verbo-no-chao-e01-s03-one-shot-real-stock-qa.yml"
+      - name: Python 3.12
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Preflight scene and zero-rights contract
+        run: python -m unittest tests.test_e01_s03_public_stock_qa -v
+      - name: Install pinned wheel with FFmpeg binary, WITHOUT apt
+        shell: bash
+        run: |
+          set -euo pipefail
+          timeout -k 5s 100s python -m pip install --disable-pip-version-check --no-cache-dir "imageio-ffmpeg==0.8.1"
+          python - <<'PY'
+          import imageio_ffmpeg
+          print("Pinned FFmpeg:", imageio_ffmpeg.get_ffmpeg_exe())
+          PY
+      - name: Download exactly ONE public source (no login and no retry)
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p ./s03-real-source
+          curl --fail --location --silent --show-error \
+            --connect-timeout 15 --max-time 110 --retry 0 \
+            --max-filesize 125000000 \
+            --output ./s03-real-source/Pexels_19381590_ORIGINAL.mp4 \
+            "https://videos.pexels.com/video-files/19381590/19381590-uhd_3840_2160_25fps.mp4"
+      - name: Decode physical source and sample actual narrative crop
+        shell: bash
+        run: |
+          set -euo pipefail
+          timeout -k 5s 280s python -m agents.e01_s03_public_stock_physical_qa \
+            ./s03-real-source/Pexels_19381590_ORIGINAL.mp4 \
+            ./s03-real-source/qa
+      - name: Short-lived visual samples and JSON only — NO raw MP4 / NO proxy
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: VNC-E01-S03-19381590-SIXFRAMES-RESEARCH-ONLY
+          path: |
+            ./s03-real-source/qa/S03_QA_PHYSICAL_REPORT.json
+            ./s03-real-source/qa/S03_6_REAL_SOURCE_FRAMES_CONTACT.jpg
+          if-no-files-found: warn
+          retention-days: 1
+      - name: Confirm master and publication NEVER released
+        if: always()
+        run: echo "Research frames only; no license attribution from SHA; no master, no rights clearance, no publication."

@@ -17,6 +17,7 @@ WORLD = Path("contracts/e01_v2_visual_single_world_acquisition_v1.json")
 CATALOG1 = Path("contracts/e01_v2_stock_candidates_v1.json")
 CATALOG2 = Path("contracts/e01_v2_stock_alternatives_v1.json")
 DIRECTOR = Path("contracts/e01_director_editorial_decisions_v1.json")
+S03_LOCAL_REJECTS = Path("contracts/e01_s03_editorial_rejections_20261118.json")
 SCRIPT = "c64b57cb9d6529b60b9e80ab7607e5887f909dd00e14cd80ed9ec2b7474a5dc6"
 AUDIO = "4f2ee1ff0171ddedb7c64e0dce2300c53a0ef105ef12d643a7af6b0a4621942e"
 EXCLUDED_PEXELS = frozenset((
@@ -149,6 +150,27 @@ def verify(root:Path=ROOT, data:dict|None=None)->dict:
 def rejected_sha(sha:str)->bool:
  return isinstance(sha,str) and sha.lower() in EXCLUDED_SHA
 
+def _rejected_for_scene(root:Path,scene_id:str,video_id:int)->bool:
+ """Read separately versioned S03 rejects without rewriting the frozen history."""
+ evidence=read_json(root,S03_LOCAL_REJECTS)
+ require(evidence.get("project")=="verbo-no-chao"
+         and evidence.get("episode_id")=="VNC-W01-E1"
+         and evidence.get("scene_id")=="VNC-E01V2-S03"
+         and evidence.get("master_approved") is False
+         and evidence.get("publication_authorized") is False,
+         "source_precision:s03_rejection_ledger_invalid")
+ records=evidence.get("decisions")
+ require(isinstance(records,list) and len(records)==2
+         and {x.get("source_video_id") for x in records}=={40316686,19381590}
+         and all(x.get("allowed_for_s03_master") is False
+                 and x.get("commercial_rights_cleared") is False
+                 and x.get("decision","").startswith("REJECTED")
+                 for x in records),
+         "source_precision:s03_rejection_ledger_invalid")
+ return scene_id=="VNC-E01V2-S03" and any(
+     x.get("source_video_id")==video_id for x in records)
+
+
 def preflight_stock(scene_id:str,video_id:int,page_url:str,query:str,
                     root:Path=ROOT)->dict:
  """Select a new public stock page for inspection, NEVER for scene admission.
@@ -164,6 +186,8 @@ def preflight_stock(scene_id:str,video_id:int,page_url:str,query:str,
          "source_precision:recurring_actor_must_use_approved_actor_reference")
  require(type(video_id) is int and video_id>0 and video_id not in EXCLUDED_PEXELS,
          "source_precision:rejected_reused_or_invalid_video_id")
+ require(not _rejected_for_scene(root,scene_id,video_id),
+         "source_precision:s03_editorially_rejected")
  require(isinstance(query,str)
          and query in scene["locked_search_queries_en"],
          "source_precision:generic_or_cross_scene_query")

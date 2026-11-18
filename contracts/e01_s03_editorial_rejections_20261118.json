@@ -1,0 +1,45 @@
+{
+  "schema_version": "1.0.0",
+  "project": "verbo-no-chao",
+  "episode_id": "VNC-W01-E1",
+  "scene_id": "VNC-E01V2-S03",
+  "review_date": "2026-11-18",
+  "scope": "S03_ONLY_CANDIDATE_NOT_FULL_LIBRARY_BLACKLIST",
+  "source_contract": "contracts/e01_v2_visual_single_world_acquisition_v1.json",
+  "master_approved": false,
+  "publication_authorized": false,
+  "decisions": [
+    {
+      "source_video_id": 40316686,
+      "source_page": "https://www.pexels.com/video/quiet-residential-street-at-dusk-40316686/",
+      "decision": "REJECTED_PRESELECTION_METADATA_SCENE_MISMATCH",
+      "review_scope": "OFFICIAL_PEXELS_DESCRIPTION_NOT_VIDEO_FRAMES",
+      "rationale": "Quiet twilight street with van does not support neglected communal space after rain, thus no reason to download for E01 S03.",
+      "source_sha256": null,
+      "commercial_rights_cleared": false,
+      "allowed_for_s03_master": false
+    },
+    {
+      "source_video_id": 19381590,
+      "source_page": "https://www.pexels.com/video/carousel-19381590/",
+      "decision": "REJECTED_PHYSICAL_SIX_FRAME_EDITORIAL_REVIEW",
+      "review_scope": "SIX_ACTUAL_DECODED_FRAMES_FROM_VERTICAL_CENTER_CROP_FIRST_6_14_SECONDS",
+      "rationale": "Real rainy-night playground video is physically good but center crop is dominated by large bright yellow/red seesaw, with no legible broader neglected public-space context or evidence supporting injustice. Reject filler.",
+      "source_sha256": "c41fcc7e8309a30e9e82c349fb46cfd485c9a4ecf0e59fe7f4ba9c800197fa5d",
+      "source_size_bytes": 54420582,
+      "source_duration_seconds": 20.46,
+      "source_dimensions": [
+        3840,
+        2160
+      ],
+      "source_fps": 25,
+      "actual_frames_reviewed": 6,
+      "contact_sheet_sha256": "b00bfe7483bb31beea53593a1d0ef5648a0cd0200d747b80bea126c5265706cd",
+      "github_physical_run": "https://github.com/BORELLITO/corte-fino-engine/actions/runs/44367069538",
+      "full_video_physically_decoded": true,
+      "full_video_editorially_reviewed": false,
+      "commercial_rights_cleared": false,
+      "allowed_for_s03_master": false
+    }
+  ]
+}
