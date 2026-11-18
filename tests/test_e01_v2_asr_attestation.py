@@ -29,7 +29,7 @@ class E01V2ASRAttestationTests(unittest.TestCase):
     def test_source_contract_always_preserves_nonrelease(self):
         root=Path(__file__).resolve().parents[1]
         val=json.loads((root/EVIDENCE).read_text(encoding="utf-8"))
-        self.assertEqual(val["source_report_sha256"], REPORT_SHA)
+        self.assertEqual(val["report_sha256"], REPORT_SHA)
         self.assertEqual(val["models"][0]["replacement_phrase_exact_match"], True)
         self.assertEqual(val["models"][1]["replacement_phrase_exact_match"], False)
         self.assertTrue(val["both_models_pass_aggregate_wer_cer"])
