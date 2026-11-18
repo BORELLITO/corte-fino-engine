@@ -17,7 +17,7 @@ class TestRenderHardening(unittest.TestCase):
             output = root / "existing.mp4"
             output.write_bytes(b"protected baseline")
             with self.assertRaisesRegex(RenderError, "refuse_overwrite_existing_output"):
-                render_package(root, {"assets": [], "output": {"file": "existing.mp4"}})
+                render_package(root, {"assets": [{"path": "unread.mp4"}], "output": {"file": "existing.mp4"}})
             self.assertEqual(output.read_bytes(), b"protected baseline")
 
     def test_nonfinite_asset_timing_cannot_enter_ffmpeg(self):
