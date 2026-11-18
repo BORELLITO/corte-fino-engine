@@ -16,7 +16,7 @@ concurrency:
 
 jobs:
   real-footage-frame-qa:
-    if: ${{ github.event_name == 'push' && github.event.head_commit.message == 'vnc-e01-s03-rainy-night-physical-qa-20261118' }}
+    if: ${{ github.event_name == 'push' && github.event.head_commit.message == 'vnc-e01-s03-rainy-night-qa-after-preflight-fix-20261118' }}
     runs-on: ubuntu-latest
     timeout-minutes: 9
     steps:
