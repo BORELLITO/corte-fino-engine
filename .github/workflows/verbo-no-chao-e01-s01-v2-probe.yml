@@ -32,7 +32,7 @@ jobs:
         run: |
           set -euo pipefail
           nonce=contracts/e01_ltx23_s01_one_shot_trigger_20261118.json
-          test "$(git diff-tree --no-commit-id --name-status -r "$GITHUB_SHA")" = "$(printf 'A\\t%s' "$nonce")"
+          test "$(git diff-tree --no-commit-id --name-status -r "$GITHUB_SHA")" = "$(printf 'A\t%s' "$nonce")"
           test "$(git rev-list --count "$GITHUB_SHA" -- "$nonce")" -eq 1
           python - <<'PY'
           import json
