@@ -1,4 +1,4 @@
-name: Verbo no Chão — E01 stock video physical probe (not a master)
+name: Verbo no Chão — E01 stock real-media QA (not a master)
 
 on:
   push:
@@ -6,8 +6,13 @@ on:
       - "verbo-no-chao/e01-stock-curation-gate-v1"
     paths:
       - "agents/e01_stock_candidates.py"
+      - "agents/e01_stock_probe_evidence.py"
+      - "agents/e01_stock_frame_qa.py"
       - "contracts/e01_v2_stock_candidates_v1.json"
+      - "contracts/e01_v2_stock_physical_probe_evidence_v1.json"
       - "tests/test_e01_stock_candidates.py"
+      - "tests/test_e01_stock_probe_evidence.py"
+      - "tests/test_e01_stock_frame_qa.py"
       - ".github/workflows/verbo-no-chao-e01-stock-probe.yml"
   workflow_dispatch:
 
@@ -15,19 +20,22 @@ permissions:
   contents: read
 
 jobs:
-  stock-metadata-and-physical-probe:
+  stock-metadata-and-frame-qa:
     runs-on: ubuntu-latest
-    timeout-minutes: 14
+    timeout-minutes: 18
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
         with:
           python-version: "3.12"
-      - name: Local contract unit tests
-        run: python -m unittest tests.test_e01_stock_candidates -v
-      - name: Verify public metadata without downloads
-        run: python -m agents.e01_stock_candidates --report stock-probe/metadata.json
-      - name: Ensure ffmpeg and ffprobe binaries exist
+      - name: Install minimal QA dependency
+        run: python -m pip install "Pillow>=11.3,<13"
+      - name: Run stock preflight and adversarial unit tests
+        run: |
+          python -m unittest tests.test_e01_stock_candidates tests.test_e01_stock_probe_evidence tests.test_e01_stock_frame_qa -v
+          python -m agents.e01_stock_candidates --report stock-probe/metadata.json
+      - name: Install FFmpeg and FFprobe only for explicit physical QA
+        if: contains(github.event.head_commit.message, '[stock-frame-qa]') || github.event_name == 'workflow_dispatch'
         run: |
           if ! command -v ffmpeg >/dev/null || ! command -v ffprobe >/dev/null; then
             sudo apt-get update -qq
@@ -35,13 +43,16 @@ jobs:
           fi
           command -v ffmpeg
           command -v ffprobe
-      - name: Probe temporary Pexels MP4 bytes in hosted runner
-        run: python -m agents.e01_stock_candidates --probe --report stock-probe/physical-qa.json
-      - name: Upload report only (never raw media)
+      - name: One physical download per source, pinned hashes and 12 real frames
+        if: contains(github.event.head_commit.message, '[stock-frame-qa]') || github.event_name == 'workflow_dispatch'
+        run: python -m agents.e01_stock_frame_qa --out-dir stock-probe
+      - name: Preserve short-lived technical QA evidence, never raw MP4
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: verbo-no-chao-e01-stock-probe-${{ github.run_id }}
-          path: stock-probe/*.json
+          name: verbo-no-chao-e01-stock-frame-qa-${{ github.run_id }}
+          path: |
+            stock-probe/*.json
+            stock-probe/*contact-sheet-qa-only.jpg
           if-no-files-found: warn
-          retention-days: 7
+          retention-days: 2
