@@ -83,7 +83,7 @@ def manifest(root: Path) -> dict[str, Any]:
           and vid.get("whole_video_playback_verified") is False,
           "visual:fake_clip_or_invalid_video_metrics")
     for field in ("commercial_voice_rights_cleared","music_included",
-                  "music_license_verified","full_1080x1920_master_exists",
+                  "music_license_verified","final_1080x1920_master_exists",
                   "visual_identity_full_qa_passed",
                   "continuity_and_loop_final_qa_passed",
                   "publication_authorized"):
