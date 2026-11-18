@@ -58,6 +58,14 @@ class TestE01CandidateMediaIntake(unittest.TestCase):
             self.assertFalse(result["publication_authorized"])
             self.assertFalse(result["filmed_in_real_world_claimed"])
             self.assertEqual(len(result["sha256"]),64)
+            # The same physically decodable file must be denied when the
+            # historical rejection registry marks its SHA as disallowed.
+            with patch("agents.e01_candidate_media_intake.rejected_sha",
+                       return_value=True) as rejected:
+                with self.assertRaisesRegex(
+                    StockIntakeError,"previously_rejected_sha256"):
+                    inspect(f,"VNC-E01V2-S01","stock_licensed_candidate")
+                rejected.assert_called_once_with(result["sha256"])
 
 if __name__=="__main__":
     unittest.main()
