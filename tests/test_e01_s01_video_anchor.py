@@ -3,10 +3,15 @@ from __future__ import annotations
 import copy
 import json
 import unittest
+import shutil
+import subprocess
+import tempfile
+from pathlib import Path
 
 from agents.e01_s01_video_anchor import (
     ROOT,BLUEPRINT,SAMPLE_FPS,TIMES,SCENE_SECONDS,
-    validate_blueprint,validate_source_report,byte_motion_stats
+    validate_blueprint,validate_source_report,byte_motion_stats,
+    make_candidate_frames,inspect,assess_video_eligibility
 )
 from agents.e01_stock_candidates import StockIntakeError
 
@@ -95,6 +100,95 @@ class TestE01S01VideoAnchor(unittest.TestCase):
         altered=media.copy();altered["sha256"]="f"*64
         with self.assertRaises(StockIntakeError):
             validate_source_report(report,altered,"scene.mp4")
+
+
+class TestE01S01PhysicalOfflineFixture(unittest.TestCase):
+    """Use synthetic throwaway moving/color video, NEVER cinematic source media."""
+
+    @unittest.skipUnless(shutil.which("ffmpeg") and shutil.which("ffprobe"),
+                         "FFmpeg optional in local developer environment")
+    def test_real_mp4_frame_extraction_and_anchor_hashes(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root=Path(tmp)
+            video=root/"testsrc_only_NOT_E01_FOOTAGE.mp4"
+            cmd=[
+                "ffmpeg","-nostdin","-y","-v","error",
+                "-f","lavfi","-i","testsrc2=size=480x848:rate=24",
+                "-t","5.85","-an","-threads","2",
+                "-c:v","libx264","-preset","ultrafast","-crf","38",
+                "-pix_fmt","yuv420p",str(video)]
+            subprocess.run(cmd,check=True,timeout=70,capture_output=True)
+            media=inspect(video)
+            self.assertEqual(
+                assess_video_eligibility(media),
+                "PHYSICAL_AI_PREVIEW_ELIGIBLE_FOR_EDITORIAL_REVIEW_ONLY")
+            report={
+                "episode_id":"VNC-W01-E1",
+                "scene_id":"VNC-E01V2-S01",
+                "media_origin":"AI_GENERATED_FICTIONAL_VIDEO",
+                "video_file":video.name,
+                "status":"PHYSICAL_AI_PREVIEW_ELIGIBLE_FOR_EDITORIAL_REVIEW_ONLY",
+                "technically_eligible_for_editorial":True,
+                "media":media,
+                "rights_cleared":False,
+                "approved_for_master":False,
+                "publication_authorized":False,
+                "origin_and_usage_license_review_complete":False,
+                "visual_continuity_verified":False,
+                "closed_notebook_and_rain_visually_verified":False,
+            }
+            source=root/"synthetic_fixture_report.json"
+            source.write_text(json.dumps(report),encoding="utf-8")
+            evidence=make_candidate_frames(video,source,root/"test_reference_review")
+            self.assertEqual(len(evidence["samples"]),5)
+            self.assertTrue(evidence["motion_check"]["motion_signal_detected"])
+            self.assertFalse(evidence["reference_for_other_scenes_approved"])
+            self.assertFalse(evidence["reference_promoted_to_i2v"])
+            self.assertFalse(evidence["publication_authorized"])
+            self.assertEqual(evidence["source_sha256"],media["sha256"])
+            for x in evidence["samples"]:
+                self.assertTrue((root/"test_reference_review"/x["name"]).is_file())
+                self.assertEqual(len(x["sha256"]),64)
+            self.assertTrue((root/"test_reference_review"/evidence["contact_sheet_file"]).is_file())
+            self.assertTrue((root/"test_reference_review"/"continuity_reference_evidence.json").is_file())
+
+    @unittest.skipUnless(shutil.which("ffmpeg") and shutil.which("ffprobe"),
+                         "FFmpeg optional in local developer environment")
+    def test_static_mp4_cannot_produce_anchor_even_with_valid_codec(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root=Path(tmp)
+            video=root/"static_only_NOT_E01_FOOTAGE.mp4"
+            cmd=[
+                "ffmpeg","-nostdin","-y","-v","error",
+                "-f","lavfi","-i","color=c=black:s=480x848:r=24",
+                "-t","5.85","-an","-threads","2",
+                "-c:v","libx264","-preset","ultrafast","-crf","38",
+                "-pix_fmt","yuv420p",str(video)]
+            subprocess.run(cmd,check=True,timeout=70,capture_output=True)
+            media=inspect(video)
+            self.assertEqual(
+                assess_video_eligibility(media),
+                "PHYSICAL_AI_PREVIEW_ELIGIBLE_FOR_EDITORIAL_REVIEW_ONLY")
+            report={
+                "episode_id":"VNC-W01-E1",
+                "scene_id":"VNC-E01V2-S01",
+                "media_origin":"AI_GENERATED_FICTIONAL_VIDEO",
+                "video_file":video.name,
+                "status":"PHYSICAL_AI_PREVIEW_ELIGIBLE_FOR_EDITORIAL_REVIEW_ONLY",
+                "technically_eligible_for_editorial":True,
+                "media":media,
+                "rights_cleared":False,
+                "approved_for_master":False,
+                "publication_authorized":False,
+                "origin_and_usage_license_review_complete":False,
+                "visual_continuity_verified":False,
+                "closed_notebook_and_rain_visually_verified":False,
+            }
+            source=root/"synthetic_fixture_report.json"
+            source.write_text(json.dumps(report),encoding="utf-8")
+            with self.assertRaises(StockIntakeError):
+                make_candidate_frames(video,source,root/"never_publish")
+            self.assertFalse((root/"never_publish"/"continuity_reference_evidence.json").exists())
 
 if __name__=="__main__":
     unittest.main()
