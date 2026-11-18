@@ -76,8 +76,8 @@ def verify(root:Path=ROOT, data:dict|None=None)->dict:
      and data.get("source_storyboard")==str(STORY)
      and data.get("source_world_blueprint")==str(WORLD)
      and data.get("source_director_verdict")==str(DIRECTOR)
-     and data.get("script_sha256")==story.get("script_sha256")==SCRIPT
-     and data.get("audio_sha256")==story.get("audio_sha256")==AUDIO
+     and data.get("script_sha256")==storyboard.get("script_sha256")==SCRIPT
+     and data.get("audio_sha256")==storyboard.get("audio_sha256")==AUDIO
      and data.get("state")=="PRECISION_PREFLIGHT_ONLY_NOT_ASSET_APPROVAL",
      "source_precision:wrong_episode_or_contract")
  require(all(data.get(k) is True for k in REQUIRED_FLAGS)
@@ -105,11 +105,11 @@ def verify(root:Path=ROOT, data:dict|None=None)->dict:
    for r in director["decisions"]), "source_precision:director_history_missing")
  scenes=data.get("scenes")
  require(isinstance(scenes,list) and len(scenes)==12
-     and len(story.get("scenes",[]))==12
+     and len(storyboard.get("scenes",[]))==12
      and len(world.get("scenes",[]))==12,
      "source_precision:incomplete_twelve_scene_plan")
  for i,(candidate,canonical,world_scene) in enumerate(zip(
-      scenes,story["scenes"],world["scenes"])):
+      scenes,storyboard["scenes"],world["scenes"])):
   ident=EXPECTED_SCENE_IDS[i]
   group=world_scene["continuity_group"]
   require(isinstance(candidate,dict)
