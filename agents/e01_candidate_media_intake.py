@@ -41,7 +41,10 @@ def _ffprobe(path:Path,binary="ffprobe"):
     command=[binary,"-v","error","-select_streams","v:0",
       "-show_entries","stream=codec_name,codec_type,width,height,avg_frame_rate,duration:format=duration",
       "-of","json",str(path)]
-    result=subprocess.run(command,capture_output=True,text=True,timeout=45,check=False)
+    try:
+        result=subprocess.run(command,capture_output=True,text=True,timeout=45,check=False)
+    except OSError as error:
+        raise StockIntakeError("media_intake:ffprobe_unavailable") from error
     require(result.returncode==0,"media_intake:ffprobe_error")
     payload=json.loads(result.stdout)
     streams=payload.get("streams",[])
@@ -77,9 +80,12 @@ def inspect(video:Path,scene_id:str,origin:str,root=ROOT,
             "media_intake:file_absent_or_invalid")
     before=path.stat()
     meta=_ffprobe(path,ffprobe)
-    outcome=subprocess.run([ffmpeg,"-nostdin","-v","error","-xerror",
-       "-i",str(path),"-map","0:v:0","-an","-f","null","-"],
-       capture_output=True,text=True,timeout=240,check=False)
+    try:
+        outcome=subprocess.run([ffmpeg,"-nostdin","-v","error","-xerror",
+           "-i",str(path),"-map","0:v:0","-an","-f","null","-"],
+           capture_output=True,text=True,timeout=240,check=False)
+    except OSError as error:
+        raise StockIntakeError("media_intake:ffmpeg_unavailable") from error
     require(outcome.returncode==0,"media_intake:video_decode_failed")
     assert_unchanged=lambda: require(
         path.stat().st_size==before.st_size and
