@@ -1,0 +1,73 @@
+name: Verbo no Chão — E01 v2 Dual ASR Real Voice Quality Audit
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - "verbo-no-chao/e01-pronunciation-v2-candidate"
+    paths:
+      - ".github/workflows/verbo-no-chao-e01-v2-dual-asr.yml"
+
+permissions:
+  contents: read
+  actions: read
+
+concurrency:
+  group: vnc-e01-v2-dual-asr-once
+  cancel-in-progress: false
+
+jobs:
+  asr_both_models:
+    name: Compare exact 70.425s v2 WAV to new script via multilingual small+base
+    runs-on: ubuntu-24.04
+    timeout-minutes: 18
+    env:
+      HF_HUB_DISABLE_XET: "1"
+      OMP_NUM_THREADS: "4"
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Download original v2 source WAV and producer report (no regeneration)
+        uses: actions/download-artifact@v4
+        with:
+          name: vnc-e01-v2-pronunciation-safe-preview
+          repository: BORELLITO/corte-fino-engine
+          run-id: 44204100486
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          path: e01-v2-source/
+
+      - name: Verify real WAV and report bytes against versioned hashes before inference
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          from agents.e01_v2_dual_asr import source_check
+          f, text, duration, evidence = source_check(Path('.').resolve(), Path('e01-v2-source').resolve())
+          print({'source_sha256_verified': True, 'duration_seconds': round(duration,3),
+                 'text_sha256': evidence['candidate_script_sha256'],
+                 'report_sha256': evidence['report_sha256']})
+          PY
+
+      - name: Run adversarial dual-model ASR QA tests (no models needed)
+        run: python -m unittest discover -s tests -p "test_e01_v2_dual_asr.py" -v
+
+      - name: Install version-pinned CPU multilingual ASR inference
+        run: python -m pip install --disable-pip-version-check "faster-whisper==1.2.1"
+
+      - name: Transcribe original v2 WAV with two separate pinned ASR weights
+        run: |
+          python -m agents.e01_v2_dual_asr \
+            --root . --audio-dir e01-v2-source \
+            --model-dir independent-asr-models \
+            --output e01-v2-asr-evidence/report.json
+
+      - name: Retain only ASR JSON with full models provenance, no WAV/models
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: vnc-e01-v2-dual-asr-results
+          path: e01-v2-asr-evidence/report.json
+          if-no-files-found: warn
+          retention-days: 14
