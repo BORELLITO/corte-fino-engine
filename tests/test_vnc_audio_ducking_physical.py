@@ -34,6 +34,27 @@ class TestRenderHardening(unittest.TestCase):
                         })
                     self.assertFalse((root / "never-created.mp4").exists())
 
+    @unittest.skipUnless(shutil.which("ffmpeg") and shutil.which("ffprobe"),
+                         "FFmpeg and FFprobe required for real source duration QA")
+    def test_short_real_footage_cannot_be_auto_looped(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            source = root / "short_source.mp4"
+            command = [
+                "ffmpeg", "-nostdin", "-y", "-v", "error",
+                "-f", "lavfi", "-i", "testsrc2=size=160x284:rate=24",
+                "-t", "0.55", "-an", "-c:v", "mpeg4", str(source),
+            ]
+            build = subprocess.run(command, capture_output=True, text=True,
+                                   timeout=30, check=False)
+            self.assertEqual(build.returncode, 0, build.stderr[:300])
+            with self.assertRaisesRegex(RenderError, "source_too_short_no_loops"):
+                render_package(root, {
+                    "assets": [{"path": source.name, "in": 0, "out": 2.0}],
+                    "output": {"file": "should_not_exist.mp4"},
+                })
+            self.assertFalse((root / "should_not_exist.mp4").exists())
+
     def test_audio_engine_does_not_call_fixed_volume_ducking(self):
         source = inspect.getsource(render_package)
         self.assertIn("sidechaincompress=threshold", source)
