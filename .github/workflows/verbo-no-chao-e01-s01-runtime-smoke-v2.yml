@@ -25,6 +25,22 @@ jobs:
         uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
         with:
           persist-credentials: false
+          fetch-depth: 0
+      - name: Physically verify consumed one-shot nonce history (no provider)
+        shell: bash
+        run: |
+          set -euo pipefail
+          nonce=contracts/e01_ltx23_s01_one_shot_trigger_20261118.json
+          trigger=097baca265b995120c002c6aa9ea102369a53e4e
+          test "$(git diff-tree --no-commit-id --name-status -r "$trigger")" = "$(printf 'A\\t%s' "$nonce")"
+          test "$(git rev-list --count HEAD -- "$nonce")" -eq 1
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          content=json.loads(Path("contracts/e01_ltx23_s01_one_shot_trigger_20261118.json").read_text(encoding="utf-8"))
+          assert content == {"episode_id":"VNC-W01-E1","scene_id":"VNC-E01V2-S01",
+                             "reason":"one-time post-quota free LTX23 retest","publication_authorized":False}
+          PY
       - name: Set Python runtime
         uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065
         with:
