@@ -67,7 +67,7 @@ def validate(root: Path = ROOT, data: dict | None = None) -> dict:
         ident = item.get("id")
         scene_id = item.get("scene_id")
         video_id = item.get("video_id")
-        require(isinstance(ident, str) and re.fullmatch(r"E01V2-STOCK-S\\d{2}-[A-Z]", ident),
+        require(isinstance(ident, str) and re.fullmatch(r"E01V2-STOCK-S\d{2}-[A-Z]", ident),
                 "candidate:invalid_asset_id")
         require(ident not in seen_assets and scene_id in scenes
                 and scene_id not in seen_scenes,
@@ -87,7 +87,7 @@ def validate(root: Path = ROOT, data: dict | None = None) -> dict:
         require(isinstance(file_url, str)
                 and _https_url(file_url, "videos.pexels.com")
                 and re.fullmatch(r"/video-files/" + str(video_id)
-                                 + r"/[0-9a-zA-Z_-]+\\.mp4",
+                                 + r"/[0-9a-zA-Z_-]+\.mp4",
                                  urlparse(file_url).path),
                 "candidate:untrusted_download_host_or_id")
         require(item.get("page_metadata_verified") is True
