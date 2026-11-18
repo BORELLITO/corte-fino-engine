@@ -141,6 +141,36 @@ def inspect(path:Path):
    "native_master_resolution":w>=1080 and h>=1920
  }
 
+def assess_video_eligibility(media):
+ """Pass only *technical* editorial-input criteria; never approve a master."""
+ if not isinstance(media,dict) or media.get("full_stream_decoded") is not True:
+  return "BLOCKED_VIDEO_NOT_FULLY_DECODED"
+ if media.get("covers_requested_scene") is not True:
+  return "BLOCKED_VIDEO_SHORTER_THAN_SCENE"
+ if media.get("portrait_within_2pct") is not True:
+  return "BLOCKED_VIDEO_WRONG_ASPECT"
+ if media.get("codec") not in {"h264","hevc","av1","vp9","prores"}:
+  return "BLOCKED_VIDEO_UNSUPPORTED_CODEC"
+ width=media.get("width")
+ height=media.get("height")
+ if not isinstance(width,int) or not isinstance(height,int) or width<WIDTH or height<HEIGHT:
+  return "BLOCKED_VIDEO_BELOW_PREVIEW_RESOLUTION"
+ rate=media.get("frame_rate")
+ try:
+  if not isinstance(rate,str) or "/" not in rate:
+   return "BLOCKED_VIDEO_INVALID_FPS"
+  numerator,denominator=(int(s) for s in rate.split("/"))
+  if denominator<=0 or abs(numerator/denominator-FRAME_RATE)>0.15:
+   return "BLOCKED_VIDEO_INVALID_FPS"
+  frames=media.get("reported_frames")
+  if frames is not None and frames!="N/A" and int(frames)<math.ceil(SCENE_SECONDS*FRAME_RATE):
+   return "BLOCKED_VIDEO_TOO_FEW_FRAMES"
+ except (TypeError,ValueError,ZeroDivisionError):
+  return "BLOCKED_VIDEO_INVALID_FPS"
+ if media.get("sha256") is None or not re.fullmatch(r"[0-9a-f]{64}",media["sha256"]):
+  return "BLOCKED_VIDEO_MISSING_SHA256"
+ return "PHYSICAL_AI_PREVIEW_ELIGIBLE_FOR_EDITORIAL_REVIEW_ONLY"
+
 def run():
  report("STARTED_NO_MEDIA")
  try:
@@ -174,13 +204,19 @@ def run():
        str(frames/"sample_%02d.jpg")],
        capture_output=True,text=True,timeout=30,check=False)
   jpg=list(sorted(frames.glob("*.jpg"))) if extract.returncode==0 else []
-  report("PHYSICAL_AI_VIDEO_VERIFIED_SCENE_DURATION_CHECKED",
-         video_file=dest.name,media=media,
+  assessment=assess_video_eligibility(media)
+  if not jpg:
+   assessment="BLOCKED_VIDEO_FRAME_SAMPLING_FAILED"
+  report(assessment,video_file=dest.name,media=media,
          sampled_jpeg_count=len(jpg),
+         technically_eligible_for_editorial=(assessment==
+           "PHYSICAL_AI_PREVIEW_ELIGIBLE_FOR_EDITORIAL_REVIEW_ONLY"),
          storyboard_closed_notebook_visual_review_pending=True,
          storyboard_rain_visible_visual_review_pending=True,
-         editorial_decision="AWAITING_MANUAL_FRAME_AUDIT")
-  return 0
+         model_usage_terms_review_pending=True,
+         editorial_decision="AWAITING_MANUAL_FRAME_AUDIT",
+         no_automatic_publication=True)
+  return 0 if assessment=="PHYSICAL_AI_PREVIEW_ELIGIBLE_FOR_EDITORIAL_REVIEW_ONLY" else 2
  except Exception as error:
   quota=classify_public_gpu_quota(str(error))
   if quota is not None:

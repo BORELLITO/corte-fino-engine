@@ -29,3 +29,13 @@ Um reteste de integração [44286817587](https://github.com/BORELLITO/corte-fino
 Licenciamento: o repositório do modelo identifica a **LTX-2 Community License**, que exige uma análise do direito de uso conforme as condições e eventual patamar de receita; isso **não concede aprovação comercial automática**. Fonte: https://huggingface.co/Lightricks/LTX-2.3 e https://github.com/Lightricks/LTX-2/blob/main/LICENSE-2
 
 **Entrega atual:** prova anterior de 2 segundos e testes do motor preservados; **cena completa 5.74s não gerada**, retake sem aprovação editorial, publicação bloqueada.
+
+## Gate físico adicional (18/11/2026)
+
+Foi identificado um segundo risco de **falso sucesso**: o fluxo antigo dizia `PHYSICAL_AI_VIDEO_VERIFIED_SCENE_DURATION_CHECKED` para qualquer MP4 decodificável, mesmo quando `covers_requested_scene=false`, codec inadequado, vídeo horizontal ou FPS errado. Isso permitiria um novo preview de 2 segundos aparecer como sucesso de 5,74 segundos.
+
+**Correção:** `assess_video_eligibility()` exige simultaneamente decodificação integral, duração mínima S01, geometria retrato, tamanho nativo de preview >=480×848, 24fps com tolerância de 0,15, número mínimo de quadros quando informado, codec aceito, SHA-256 e JPGs de inspeção. Se qualquer condição falha, o workflow sai **2**, mantém o MP4 e JSON como evidência temporária e NÃO promove ao editor. Um sucesso técnico de vídeo continua marcado como `EDITORIAL_REVIEW_ONLY`, não como master nem direitos aprovados. Testes adversariais cobrem vídeos encurtados, FPS 0/0, geometria horizontal e SHA inválido.
+
+### Licença de modelo — atualização de fonte primária
+
+O [Help Center oficial LTX](https://help.ltx.io/hc/en-us/articles/37290270398610-Who-owns-the-content-I-create-with-LTX) esclarece que o uso de pesos abertos sob a licença Community **é gratuito para entidades com receita anual inferior a US$ 10 milhões**; acima disso, ou para revenda de modelo/produto concorrente, é necessário contrato comercial. A Lightricks não reivindica titularidade do output, mas permanecem restrições de uso, propriedade de terceiros e política de conteúdo; ver [texto vinculante do modelo LTX-2.x](https://github.com/Lightricks/LTX-2/blob/main/LICENSE-2_x). Esta análise identifica um caminho possivelmente compatível com criadores independentes, **sem declarar a situação contratual individual verificada**. O gate `rights_cleared=false` continua.

@@ -3,7 +3,7 @@ import math
 import unittest
 from agents.e01_ltx23_s01_v2_render import (
     FRAME_RATE,EXPECTED_FRAMES,REQUEST_SECONDS,SCENE_SECONDS,
-    SEED,WIDTH,HEIGHT,STATUS_BASE,provider_running,classify_public_gpu_quota
+    SEED,WIDTH,HEIGHT,STATUS_BASE,provider_running,classify_public_gpu_quota,assess_video_eligibility
 )
 
 class TestE01Ltx23S01V2(unittest.TestCase):
@@ -28,6 +28,32 @@ class TestE01Ltx23S01V2(unittest.TestCase):
                   "approved_for_master","publication_authorized",
                   "paid_service_used","human_login_performed"):
             self.assertIs(STATUS_BASE[k],False,k)
+    def test_physical_qa_rejects_partial_or_wrong_video(self):
+        valid={
+            "full_stream_decoded":True,"covers_requested_scene":True,
+            "portrait_within_2pct":True,"codec":"h264",
+            "width":480,"height":848,"frame_rate":"24/1",
+            "reported_frames":"145","sha256":"a"*64
+        }
+        self.assertEqual(assess_video_eligibility(valid),
+            "PHYSICAL_AI_PREVIEW_ELIGIBLE_FOR_EDITORIAL_REVIEW_ONLY")
+        failures=[
+            ("covers_requested_scene",False,"BLOCKED_VIDEO_SHORTER_THAN_SCENE"),
+            ("portrait_within_2pct",False,"BLOCKED_VIDEO_WRONG_ASPECT"),
+            ("width",320,"BLOCKED_VIDEO_BELOW_PREVIEW_RESOLUTION"),
+            ("height",480,"BLOCKED_VIDEO_BELOW_PREVIEW_RESOLUTION"),
+            ("frame_rate","0/0","BLOCKED_VIDEO_INVALID_FPS"),
+            ("frame_rate","1/1","BLOCKED_VIDEO_INVALID_FPS"),
+            ("reported_frames","30","BLOCKED_VIDEO_TOO_FEW_FRAMES"),
+            ("codec","mpeg4","BLOCKED_VIDEO_UNSUPPORTED_CODEC"),
+            ("full_stream_decoded",False,"BLOCKED_VIDEO_NOT_FULLY_DECODED"),
+            ("sha256","bad","BLOCKED_VIDEO_MISSING_SHA256"),
+        ]
+        for key,value,expect in failures:
+            with self.subTest(key=key,value=value):
+                mutated=dict(valid)
+                mutated[key]=value
+                self.assertEqual(assess_video_eligibility(mutated),expect)
     def test_provider_quota_report_is_explicit_and_without_urls(self):
         text=("You have exceeded your ZeroGPU quota (112s requested vs. 9s left). "
               "Try again in 7:21:22. Authenticate with a token URL.")
