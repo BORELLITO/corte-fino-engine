@@ -3,6 +3,7 @@ from __future__ import annotations
 
 import hashlib
 import json
+import math
 import shlex
 import shutil
 import subprocess
@@ -51,11 +52,21 @@ def render_package(package_dir: Path, package: dict[str, Any]) -> dict[str, Any]
         raise RenderError("render:assets_missing")
 
     output_spec = package.get("output") or {}
-    output = (package_dir / output_spec.get("file", "output.mp4")).resolve()
+    if not isinstance(output_spec, dict):
+        raise RenderError("render:output_spec_not_object")
+    output_file = output_spec.get("file", "output.mp4")
+    if not isinstance(output_file, str) or not output_file.strip():
+        raise RenderError("render:output_path_invalid")
+    try:
+        output = (package_dir / output_file).resolve()
+    except (OSError, ValueError) as exc:
+        raise RenderError("render:output_path_invalid") from exc
     try:
         output.relative_to(package_dir.resolve())
     except ValueError as exc:
         raise RenderError("render:output_path_escape") from exc
+    if output.exists():
+        raise RenderError("render:refuse_overwrite_existing_output")
     output.parent.mkdir(parents=True, exist_ok=True)
 
     inputs: list[str] = []
@@ -64,13 +75,15 @@ def render_package(package_dir: Path, package: dict[str, Any]) -> dict[str, Any]
         if not isinstance(asset, dict):
             raise RenderError(f"render:asset:{index}:not_object")
         path = _safe_path(package_dir, asset.get("path"), f"asset:{index}")
+        if path == output:
+            raise RenderError("render:output_collides_with_visual_source")
         try:
             start = float(asset.get("in", 0))
             end = float(asset["out"])
         except (KeyError, TypeError, ValueError) as exc:
             raise RenderError(f"render:asset:{index}:interval_invalid") from exc
         duration = end - start
-        if start < 0 or duration <= 0:
+        if not math.isfinite(start) or not math.isfinite(end) or start < 0 or duration <= 0:
             raise RenderError(f"render:asset:{index}:interval_invalid")
         inputs.extend(["-stream_loop", "-1", "-i", str(path)])
         filters.append(
@@ -85,15 +98,20 @@ def render_package(package_dir: Path, package: dict[str, Any]) -> dict[str, Any]
     voice_path = _safe_path(package_dir, audio.get("path"), "audio")
     music_path = _safe_path(package_dir, music.get("path"), "music")
     caption_path = _safe_path(package_dir, captions.get("path"), "captions")
+    if output in (voice_path, music_path, caption_path):
+        raise RenderError("render:output_collides_with_audio_or_caption")
 
     concat_inputs = "".join(f"[v{i}]" for i in range(len(assets)))
     filters.append(f"{concat_inputs}concat=n={len(assets)}:v=1:a=0[vbase]")
     filters.append(f"[vbase]subtitles='{_escape_subtitle_path(caption_path)}':force_style='Alignment=2,MarginV=220,FontSize=42,Outline=2,Shadow=1'[vout]")
     voice_index = len(assets)
     music_index = len(assets) + 1
-    filters.append(f"[{voice_index}:a]aresample=24000,volume=1.0[voice]")
+    # Sidechain compression is genuine, voice-driven music ducking; a fixed
+    # music volume alone cannot truthfully satisfy the ducking requirement.
+    filters.append(f"[{voice_index}:a]aresample=24000,volume=1.0,asplit=2[voice][duckkey]")
     filters.append(f"[{music_index}:a]aresample=24000,volume=0.12[music]")
-    filters.append("[voice][music]amix=inputs=2:duration=first:dropout_transition=2[aout]")
+    filters.append("[music][duckkey]sidechaincompress=threshold=0.035:ratio=8:attack=20:release=250[ducked]")
+    filters.append("[voice][ducked]amix=inputs=2:duration=first:dropout_transition=2,alimiter=limit=0.96[aout]")
 
     command = [
         _binary("ffmpeg"), "-y",
