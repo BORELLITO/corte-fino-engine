@@ -17,11 +17,31 @@ permissions:
 
 jobs:
   scene01-full-duration:
-    if: ${{ github.event_name == 'workflow_dispatch' || (github.event_name == 'push' && github.event.head_commit.message == 'vnc-e01-s01-one-shot-free-retest-20261118') }}
+    if: ${{ github.event_name == 'push' && github.event.head_commit.message == 'vnc-e01-s01-one-shot-free-retest-20261118' }}
     runs-on: ubuntu-latest
     timeout-minutes: 6
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Enforce ADD-only one-time nonce and its exact payload
+        run: |
+          set -euo pipefail
+          nonce=contracts/e01_ltx23_s01_one_shot_trigger_20261118.json
+          git diff-tree --no-commit-id --name-status -r "$GITHUB_SHA" | grep -Fx "$(printf 'A\\t%s' "$nonce")"
+          test "$(git rev-list --count "$GITHUB_SHA" -- "$nonce")" -eq 1
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          path=Path("contracts/e01_ltx23_s01_one_shot_trigger_20261118.json")
+          required={
+            "episode_id":"VNC-W01-E1",
+            "scene_id":"VNC-E01V2-S01",
+            "reason":"one-time post-quota free LTX23 retest",
+            "publication_authorized":False,
+          }
+          assert json.loads(path.read_text(encoding="utf-8"))==required, "nonce content mismatch"
+          PY
       - uses: actions/setup-python@v5
         with:
           python-version: "3.12"
