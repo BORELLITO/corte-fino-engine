@@ -168,7 +168,7 @@ class TestCloudIntegrityHardening(unittest.TestCase):
         with tempfile.TemporaryDirectory() as temp:
             root = Path(temp)
             package = fixture_with_physical_bytes(root)
-            package["assets"][0]["path"] = "\\u0000bad.mp4"
+            package["assets"][0]["path"] = chr(0) + "bad.mp4"
             errors = validate_manifest(package, artifact_root=root)
             self.assertTrue(any("asset 1 path is invalid" in e for e in errors))
             (root / "package.json").write_text(json.dumps(package), encoding="utf-8")
