@@ -1,0 +1,111 @@
+{
+  "schema_version": "1.0.0",
+  "project": "verbo-no-chao",
+  "episode_id": "VNC-W01-E1",
+  "candidate_version": 2,
+  "stage": "FOUR_REAL_SOURCE_DECODES_AND_TWELVE_FRAME_EDITORIAL_REVIEW_NOT_MASTER",
+  "source_manifest": "contracts/e01_v2_stock_alternatives_v1.json",
+  "source_run_id": 44264731877,
+  "source_run_url": "https://github.com/BORELLITO/corte-fino-engine/actions/runs/44264731877",
+  "source_artifact_id": 14409886173,
+  "source_contact_sha256": "19946e5fe18529d8222f76a7bf0867128308a94e7f42e4412f18e57f6263b955",
+  "source_contact_bytes": 151988,
+  "source_samples": 12,
+  "reviewed_full_video_playback": false,
+  "visual_editorial_authorized_for_master": false,
+  "third_party_rights_cleared": false,
+  "narration_license_cleared": false,
+  "music_license_cleared": false,
+  "master_rendered": false,
+  "publication_authorized": false,
+  "review_decisions": [
+    {
+      "asset_id": "E01V2-ALT-S03-B",
+      "scene_id": "VNC-E01V2-S03",
+      "video_id": 34479513,
+      "sha256": "315821882a9ed9d0dcaa74b2b111043ea6cbb27681d292a2ace7da38db15d3a7",
+      "bytes": 54688332,
+      "width": 2160,
+      "height": 3840,
+      "codec": "h264",
+      "duration_seconds": 26.026,
+      "decision": "REJECTED_EDITORIAL",
+      "reason": "Banco molhado, rio, montanha e luz diurna. A imagem não comunica de modo suficiente a violência/injustiça narrada; seria preenchimento genérico de paisagem.",
+      "full_stream_decoded": true,
+      "visual_samples_at_percent": [
+        15,
+        50,
+        85
+      ],
+      "rights_cleared": false,
+      "allowed_for_master": false,
+      "full_visual_review_complete": false
+    },
+    {
+      "asset_id": "E01V2-ALT-S08-B",
+      "scene_id": "VNC-E01V2-S08",
+      "video_id": 6860448,
+      "sha256": "9a07d5142c6cdf460185433e34abf8785cbe3ff98737c88165eedd64de5a10fd",
+      "bytes": 13979506,
+      "width": 2160,
+      "height": 3840,
+      "codec": "h264",
+      "duration_seconds": 14.12,
+      "decision": "CONDITIONAL_CONTEXT_ONLY",
+      "reason": "As mãos e o livro reforçam fé pessoal e evitam mostrar o rosto, mas há iluminação clara, vestuário branco e texto da Bíblia; não equivale a gesto de oração e precisa de revisão de legibilidade e continuidade.",
+      "full_stream_decoded": true,
+      "visual_samples_at_percent": [
+        15,
+        50,
+        85
+      ],
+      "rights_cleared": false,
+      "allowed_for_master": false,
+      "full_visual_review_complete": false
+    },
+    {
+      "asset_id": "E01V2-ALT-S09-B",
+      "scene_id": "VNC-E01V2-S09",
+      "video_id": 13017069,
+      "sha256": "a05fda2c40d250fd4d93bd65126cccfb370983d967f4f3d5b84acbdb8056ec90",
+      "bytes": 38961178,
+      "width": 2160,
+      "height": 3840,
+      "codec": "h264",
+      "duration_seconds": 17.086667,
+      "decision": "REJECTED_EDITORIAL",
+      "reason": "Busto escultórico domina o terço superior; composição decorativa estilizada e texto manuscrito parcialmente legível contrastam com o caderno íntimo contemporâneo da narrativa.",
+      "full_stream_decoded": true,
+      "visual_samples_at_percent": [
+        15,
+        50,
+        85
+      ],
+      "rights_cleared": false,
+      "allowed_for_master": false,
+      "full_visual_review_complete": false
+    },
+    {
+      "asset_id": "E01V2-ALT-S09-C",
+      "scene_id": "VNC-E01V2-S09",
+      "video_id": 32421244,
+      "sha256": "9c4a5d939a05af05f4d742c5054ee55f520f58ef1de9e73d57b3d87f54b7199f",
+      "bytes": 4813325,
+      "width": 1080,
+      "height": 1920,
+      "codec": "h264",
+      "duration_seconds": 19.12,
+      "decision": "REJECTED_EDITORIAL",
+      "reason": "Teclado branco, cenário de escritório e pontos luminosos azul/verde sugerem produtividade e tecnologia, não conflito espiritual íntimo; há texto no caderno.",
+      "full_stream_decoded": true,
+      "visual_samples_at_percent": [
+        15,
+        50,
+        85
+      ],
+      "rights_cleared": false,
+      "allowed_for_master": false,
+      "full_visual_review_complete": false
+    }
+  ]
+}
