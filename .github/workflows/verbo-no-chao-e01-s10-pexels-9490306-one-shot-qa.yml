@@ -1,0 +1,71 @@
+name: Verbo no Chão — E01 S10 4K REAL stock one-shot QA (no AI)
+
+on:
+  push:
+    branches:
+      - "verbo-no-chao/e01-s10-real-footage-qa-20261119-v1"
+    paths:
+      - ".github/workflows/verbo-no-chao-e01-s10-pexels-9490306-one-shot-qa.yml"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: vnc-e01-s10-9490306-only-once
+  cancel-in-progress: false
+
+jobs:
+  inspect-public-film-only:
+    if: ${{ github.event_name == 'push' && github.run_attempt == 1 && github.event.head_commit.message == 'vnc-e01-s10-9490306-real-qa-once-20261119' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - name: Checkout only VNC code and deny persistent write token
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 2
+          persist-credentials: false
+      - name: Verify exact workflow-only commit
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$GITHUB_REF_NAME" = "verbo-no-chao/e01-s10-real-footage-qa-20261119-v1"
+          test "$(git show --pretty= --name-only "$GITHUB_SHA" | sed '/^$/d')" = ".github/workflows/verbo-no-chao-e01-s10-pexels-9490306-one-shot-qa.yml"
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Run no-GPU canonical guardrails
+        run: python -m unittest tests.test_e01_s10_pexels_9490306_physical_qa -v
+      - name: Obtain pinned FFmpeg and FFprobe wheel without apt
+        shell: bash
+        run: |
+          set -euo pipefail
+          timeout -k 5s 100s python -m pip install --disable-pip-version-check --no-cache-dir --retries 0 "portable-ffmpeg==0.5.0"
+      - name: ONE public Pexels source download, no retries or login
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/vnc_s10_public_research
+          curl --fail --location --silent --show-error \
+            --connect-timeout 15 --max-time 155 --retry 0 \
+            --max-filesize 230000000 \
+            --output /tmp/vnc_s10_public_research/Pexels_9490306_ORIGINAL.mp4 \
+            "https://videos.pexels.com/video-files/9490306/9490306-uhd_2160_3840_25fps.mp4"
+      - name: Decode full real source and produce 3 contact sheets for editorial review
+        shell: bash
+        run: |
+          set -euo pipefail
+          timeout -k 5s 265s python -m agents.e01_s10_pexels_9490306_physical_qa \
+            /tmp/vnc_s10_public_research/Pexels_9490306_ORIGINAL.mp4 \
+            artifacts/vnc_s10_9490306_research
+      - name: Upload small physical evidence only — no MP4 or master
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: VNC-E01-S10-9490306-REAL-FRAMES-RESEARCH-ONLY
+          path: artifacts/vnc_s10_9490306_research/
+          if-no-files-found: warn
+          retention-days: 1
+      - name: Verify no generation, publishing or commercial clearance
+        if: always()
+        run: echo "Real stock research only. No model calls, no media master, no publication, no rights approval."
