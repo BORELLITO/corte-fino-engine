@@ -102,9 +102,9 @@ def frame_at(movie: Path, t: float, width: int, height: int):
 
 def build_contact(rows, dest: Path) -> dict:
     from PIL import Image, ImageDraw, ImageStat, ImageChops
-    if len(rows) != len(ALLOWED):
+    if not 1 <= len(rows) <= len(ALLOWED):
         raise SingleTakeProbeError("candidate_rows_missing")
-    sheet = Image.new("RGB", (WIDTH * 3, 2 * (HEIGHT + 46)), (18, 18, 18))
+    sheet = Image.new("RGB", (WIDTH * 3, len(rows) * (HEIGHT + 46)), (18, 18, 18))
     draw = ImageDraw.Draw(sheet)
     measurements = {}
     for rowno, (ident, frames) in enumerate(rows):
@@ -145,12 +145,14 @@ def run(root: Path, output: Path) -> tuple[int, dict]:
               "editorial_approved":False,"master_allowed":False,
               "publication_authorized":False,"preview_only":True,
               "new_master_created":False,"clips":[]}
+    rows=[]
+    current_video_id=None
     try:
         candidates=validate_plan(root)
-        rows=[]
         with tempfile.TemporaryDirectory(prefix="vnc_s01_single_take_") as folder:
             work = Path(folder)
             for item in candidates:
+                current_video_id=item["video_id"]
                 movie, meta = download_source({
                     "id":item["video_id"],"page":item["page_url"]
                 }, work)
@@ -173,11 +175,30 @@ def run(root: Path, output: Path) -> tuple[int, dict]:
                 movie.unlink(missing_ok=True)
             report["contact_sheet"]=build_contact(rows,output/"S01_SINGLE_TAKE_CANDIDATES_QA.jpg")
             report["status"]="PHYSICAL_SINGLE_TAKE_CANDIDATES_READY_FOR_HUMAN_FRAME_REVIEW_ONLY"
-    except (Exception,) as exc:
-        # Exception is intentionally fail-closed; sanitize provider messages.
+    except Exception as exc:
+        # Fail closed even if one source is unavailable; retain verified frames
+        # for internal review without ever promoting a partial source set.
         report["error_type"]=type(exc).__name__
-        report["status"]="BLOCKED_NO_NEW_MEDIA_QA"
-        (output/"S01_SINGLE_TAKE_CANDIDATES_QA.jpg").unlink(missing_ok=True)
+        if current_video_id is not None:
+            report["failed_source_video_id"]=current_video_id
+        detail=str(exc)
+        report["error_code"]=(
+            detail if detail and len(detail) <= 85 and all(
+                c.isalnum() or c in "_- :." for c in detail
+            ) else "provider_or_decode_error"
+        )
+        if rows:
+            try:
+                report["contact_sheet"]=build_contact(
+                    rows,output/"S01_SINGLE_TAKE_CANDIDATES_QA.jpg"
+                )
+                report["status"]="BLOCKED_PARTIAL_PHYSICAL_QA_EDITORIAL_RIGHTS_PENDING"
+            except Exception:
+                report["status"]="BLOCKED_NO_NEW_MEDIA_QA"
+                (output/"S01_SINGLE_TAKE_CANDIDATES_QA.jpg").unlink(missing_ok=True)
+        else:
+            report["status"]="BLOCKED_NO_NEW_MEDIA_QA"
+            (output/"S01_SINGLE_TAKE_CANDIDATES_QA.jpg").unlink(missing_ok=True)
     (output/"S01_SINGLE_TAKE_REPORT.json").write_text(
         json.dumps(report,indent=2,ensure_ascii=False)+"\n",encoding="utf-8")
     print(json.dumps({"status":report["status"],"candidates_checked":len(report["clips"]),
