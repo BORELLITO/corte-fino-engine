@@ -15,6 +15,10 @@ permissions:
 
 jobs:
   ltx23-anonymous-motion:
+    # QUARANTINED: legacy external free-GPU experiment. An accidental push or
+    # manual dispatch must NEVER issue a new provider request or consume quota.
+    # A separately reviewed one-shot workflow may supersede this frozen job.
+    if: ${{ false }}
     runs-on: ubuntu-latest
     timeout-minutes: 6
     steps:
