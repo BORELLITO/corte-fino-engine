@@ -1,13 +1,15 @@
 {
   "schema_version": "1.0.0",
   "project_id": "VERBO_NO_CHAO_EXCLUSIVO",
-  "timestamp_iso_tz": "2026-11-19T09:25:55.698Z",
+  "timestamp_iso_tz": "2026-11-19T09:29:30.604Z",
   "source_snapshot": {
     "operational_prompt": "05_PROMPT_MASTER_VERBO_NO_CHAO_V2.txt",
     "operational_prompt_sha256": "28cba0f640cad30d30e194304bd0963b8761158b4200a7d29efe8cf7e032632e",
     "read_in_full": true,
     "public_repository": "BORELLITO/corte-fino-engine",
-    "operational_head": "097baca265b995120c002c6aa9ea102369a53e4e"
+    "operational_head": "097baca265b995120c002c6aa9ea102369a53e4e",
+    "main_head_verified": "b59bbbec9aef843bb7118f1328fab37e01b098b3",
+    "main_repo_has_vnc_engine_modules": false
   },
   "repository_branch": "verbo-no-chao/integration-candidate-e01-20261119-v1",
   "parent_sha": "005902c2604348b48883a18b289d8cd5ec59401b",
@@ -49,7 +51,35 @@
   ],
   "tests_with_evidence": [
     {
-      "status": "NOT_RUN_AT_CHECKPOINT_CREATION"
+      "run_id": 44496379393,
+      "head_sha": "5be8964ba96be2aa2071428cc24b18aa217b0cd3",
+      "type": "ENGINE_GATES",
+      "status": "SUCCESS",
+      "total_tests": 482,
+      "skipped": 15,
+      "failures": 0
+    },
+    {
+      "run_id": 44496379395,
+      "head_sha": "5be8964ba96be2aa2071428cc24b18aa217b0cd3",
+      "type": "EIGHT_SPECIALIST_DETERMINISTIC_JOBS_PLUS_COORDINATOR",
+      "status": "SUCCESS"
+    },
+    {
+      "run_id": 44496379540,
+      "head_sha": "5be8964ba96be2aa2071428cc24b18aa217b0cd3",
+      "type": "PHYSICAL_NO_GPU_FFMPEG_DUCKING_NO_LOOP_SYNTHETIC",
+      "status": "SUCCESS",
+      "tests_cross_pr": 14,
+      "tests_audio_and_integrity": 17,
+      "physical_audio_sidechain_passed": true,
+      "source_loop_denied": true,
+      "synthetic_video_encoded_and_decoded": true,
+      "generated_e01_clip": false,
+      "provider_requests": 0,
+      "artifact_id": 14514064239,
+      "report_sha256": "49229744a42a48323759305e522b5dba8558f0ff7aa0afad6206f315d894f43a",
+      "proof_zip_sha256": "0ef49f344c10b8d717435f1236b03be3c8806d467506e7f551d084010b07eaa1"
     }
   ],
   "external_effects_confirmed": {
@@ -57,7 +87,10 @@
     "main_modified": false,
     "operational_modified": false,
     "paid_generation": false,
-    "publication": false
+    "publication": false,
+    "github_actions_tests_run": true,
+    "s01_nonce_replayed": false,
+    "no_other_project_code_touched": true
   },
   "permissions": {
     "candidate_edits": true,
@@ -65,6 +98,7 @@
     "publish": false,
     "new_spending": false
   },
-  "next_single_action": "WAIT_FOR_CI_EVIDENCE_AND_RECONCILE_SHA_BEFORE_ANY_RELEASE",
-  "rollback": "Discard integration candidate PR; never force-update main or operational branch."
+  "next_single_action": "KEEP_PR49_DRAFT_AND_COMPLETE_INTEGRATION_REVIEW_PRIOR_TO_ANY_APPROVED_MERGE; S01_REAL_VIDEO_ACQUISITION_REMAINS_BLOCKED",
+  "rollback": "Discard integration candidate PR; never force-update main or operational branch.",
+  "last_reconciled_candidate_head": "5be8964ba96be2aa2071428cc24b18aa217b0cd3"
 }
