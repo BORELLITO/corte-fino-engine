@@ -1,0 +1,56 @@
+name: Verbo no Chão — E01 S01 LTX Fast one-shot moving video proof
+
+on:
+  push:
+    branches:
+      - "verbo-no-chao/e01-ltx-video-fast-free-proof-20261119-v1"
+    paths:
+      - ".github/workflows/verbo-no-chao-e01-ltxfast-one-shot-20261119.yml"
+
+permissions:
+  contents: write
+
+concurrency:
+  group: vnc-e01-s01-ltxfast-20261119-no-replays
+  cancel-in-progress: false
+
+jobs:
+  single-free-official-provider-attempt:
+    if: github.event_name == 'push' && github.run_attempt == 1
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - name: Checkout only the VNC branch, no credential persistence
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - name: Python 3.12
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Offline fail-closed unit tests
+        run: |
+          python -m unittest tests.test_e01_ltx_video_fast_free_proof_v1 -v
+      - name: Prepare FFmpeg and public Gradio client
+        run: |
+          set -euo pipefail
+          command -v ffprobe && command -v ffmpeg
+          timeout -k 5s 90s python -m pip install --disable-pip-version-check --no-cache-dir --retries 0 gradio_client==2.7.2
+      - name: One anonymous request, immutable GitHub lock, 6s real video proof
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          timeout -k 5s 250s python -u -m agents.e01_ltx_video_fast_free_proof_v1
+      - name: Upload ONLY fictional unapproved short-lived preview and report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: VNC-E01-S01-LTXFAST-REAL-MOTION-CANDIDATE-NOT-PUBLISH
+          path: artifacts/vnc_e01_s01_ltxfast/
+          retention-days: 1
+          if-no-files-found: warn
+
+# No workflow_dispatch, schedule, external credentials, user media or paid fallback.
+# A durable repository lock is written BEFORE the single provider generation.
+# No media is approved or published by this workflow. Never rerun to spend quota.

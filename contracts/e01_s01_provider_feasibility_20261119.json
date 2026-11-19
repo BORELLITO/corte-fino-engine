@@ -1,0 +1,93 @@
+{
+  "schema_version": "1.0.0",
+  "project": "VERBO_NO_CHAO_EXCLUSIVO",
+  "episode": "VNC-W01-E1",
+  "scene_id": "VNC-E01V2-S01",
+  "assessment_date": "2026-11-19",
+  "objective": {
+    "min_scene_seconds": 5.74,
+    "requested_seconds": 6,
+    "aspect_ratio": "9:16",
+    "photoreal_motion_required": true,
+    "monetary_spend_ceiling_usd": 0
+  },
+  "authorized_production_state": "BLOCKED_NO_ELIGIBLE_VERIFIED_FULL_SCENE",
+  "actual_full_scene_mp4_verified": false,
+  "media_approved": false,
+  "master_approved": false,
+  "publication_authorized": false,
+  "providers": [
+    {
+      "name": "Agnes Video 2.5 Flash",
+      "model": "agnes-video-2.5-flash",
+      "integration": "github_own_key",
+      "monetary_price_official": "limited_promo_0_USD",
+      "last_run": "https://github.com/BORELLITO/verbo-no-chao-engine/actions/runs/44583046047",
+      "result": "ONE_POST_REJECTED_QUOTA_OR_QUEUE_HTTP_429_OR_503",
+      "single_attempt_consumed": true,
+      "video_returned": false,
+      "automatic_retry_allowed": false
+    },
+    {
+      "name": "Lightricks official ZeroGPU LTX Video Fast",
+      "model": "LTX-Video-0.9.8-13B-distilled",
+      "integration": "github_anonymous_gradio",
+      "last_run": "https://github.com/BORELLITO/verbo-no-chao-engine/actions/runs/44588195761",
+      "diagnostic_run": "https://github.com/BORELLITO/verbo-no-chao-engine/actions/runs/44588577219",
+      "metadata_run": "https://github.com/BORELLITO/verbo-no-chao-engine/actions/runs/44588769153",
+      "result": "ONE_EXTERNAL_PREDICT_CALL_NO_MEDIA_FILE_FileNotFoundError",
+      "single_attempt_consumed": true,
+      "video_returned": false,
+      "automatic_retry_allowed": false
+    },
+    {
+      "name": "Higgsfield",
+      "model": "seedance_2_0_mini",
+      "integration": "connected_plugin",
+      "quoted_cost_credits": 6,
+      "quote_duration_seconds": 6,
+      "quote_resolution": "720p",
+      "actual_account_plan": "free",
+      "balance_credits_before": 10,
+      "balance_credits_after": 10,
+      "result": "START_REFUSED_REQUIRES_BASIC_PLAN_OR_HIGHER",
+      "video_returned": false,
+      "credits_deducted": 0,
+      "automatic_retry_allowed": false
+    },
+    {
+      "name": "Higgsfield",
+      "model": "grok_video_v15_lite",
+      "integration": "connected_plugin",
+      "quoted_cost_credits": 6,
+      "quote_duration_seconds": 6,
+      "quote_resolution": "720p",
+      "actual_account_plan": "free",
+      "balance_credits_after": 10,
+      "result": "START_REFUSED_REQUIRES_BASIC_PLAN_OR_HIGHER",
+      "video_returned": false,
+      "credits_deducted": 0,
+      "automatic_retry_allowed": false
+    },
+    {
+      "name": "Creative Claw",
+      "integration": "connected_plugin",
+      "current_credit_balance": 0,
+      "result": "NO_CURRENT_CREDIT_BUDGET",
+      "video_returned": false,
+      "automatic_retry_allowed": false
+    },
+    {
+      "name": "Pexels real-camera footage",
+      "integration": "public_download_no_login",
+      "result": "PHYSICALLY_DECODED_MULTIPLE_CLIPS_BUT_NO_ROOM_A_MATCH_APPROVED",
+      "video_returned": true,
+      "editorial_master_approved": false,
+      "details": "docs/E01_REAL_STOCK_CURATED_CANDIDATES_V1.md",
+      "automatic_retry_allowed": false
+    }
+  ],
+  "licensing": "No accepted generation proves commercial output rights. Legal/music/voice/licence review remains pending.",
+  "follow_up_policy": "No provider retries, subscriptions, trials, card, payment, publication or main-branch merges without separate scope-specific approval and evidence.",
+  "notes": "Higgsfield pricing quotations did not imply plan eligibility. Lack of media is not equivalent to completed video. Existing 2.04s LTX2.3 preview is not full S01."
+}
