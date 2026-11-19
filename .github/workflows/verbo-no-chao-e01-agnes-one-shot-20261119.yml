@@ -1,0 +1,48 @@
+name: Verbo no Chão — E01 S01 Agnes one-shot free authorized attempt
+
+on:
+  push:
+    branches:
+      - "verbo-no-chao/agnes-flash-transport-gated-20261119-v1"
+    paths:
+      - ".github/workflows/verbo-no-chao-e01-agnes-one-shot-20261119.yml"
+
+permissions:
+  contents: write
+
+concurrency:
+  group: vnc-e01-s01-agnes-one-sole-attempt-20261119
+  cancel-in-progress: false
+
+jobs:
+  single-attempt:
+    if: github.event_name == 'push' && github.run_attempt == 1
+    environment: verbo-no-chao-agnes-readonly
+    runs-on: ubuntu-latest
+    timeout-minutes: 7
+    steps:
+      - name: Checkout exact authorized branch commit
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - name: Python 3.12
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Offline price, replay and canonical gate tests
+        run: |
+          python -m unittest tests.test_e01_agnes_flash_transport_v1 tests.test_e01_agnes_s01_single_attempt_v1 -v
+      - name: One approved 6s Flash S01 attempt; 0 USD official pricing required
+        env:
+          AGNES_API_KEY: ${{ secrets.VNC_AGNES_API_KEY }}
+          GITHUB_TOKEN: ${{ github.token }}
+          VNC_S01_AUTHORIZATION: VNC-E01V2-S01
+        run: |
+          set -euo pipefail
+          python -m agents.e01_agnes_s01_single_attempt_v1
+
+# This file has no workflow_dispatch: it is intentionally one-shot.
+# An immutable lock is created in the repository BEFORE a provider POST.
+# Reruns, failed queues, timeouts and ambiguous provider responses never retry.
+# No media or provider private output URL is uploaded to public GitHub artifacts.
+# Neither rights clearance nor publication is authorized.
