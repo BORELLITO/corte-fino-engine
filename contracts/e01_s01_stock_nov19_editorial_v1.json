@@ -1,0 +1,59 @@
+{
+  "schema_version": "1.0.0",
+  "project": "VERBO_NO_CHAO_EXCLUSIVO",
+  "episode_id": "VNC-W01-E1",
+  "scene_id": "VNC-E01V2-S01",
+  "date": "2026-11-19",
+  "source_storyboard": "contracts/e01_v2_12_scene_visual_plan_v1.json",
+  "script_sha256": "c64b57cb9d6529b60b9e80ab7607e5887f909dd00e14cd80ed9ec2b7474a5dc6",
+  "audio_sha256": "4f2ee1ff0171ddedb7c64e0dce2300c53a0ef105ef12d643a7af6b0a4621942e",
+  "action_run_url": "https://github.com/BORELLITO/verbo-no-chao-engine/actions/runs/44592239132",
+  "action_artifact_id": 14563604068,
+  "selection_method": "Native Pexels actual MP4 download -> SHA256 -> ffprobe -> complete FFmpeg decode -> 15/50/85 percent source frames + left/center/right 50 percent cropped samples -> vision-based editorial review of derived stills only, not full playback",
+  "full_video_playback_reviewed": false,
+  "stills_reviewed": 18,
+  "footage_approved_for_s01": 0,
+  "source_rights_cleared": false,
+  "identifiable_people_negative_portrayal_cleared": false,
+  "publication_authorized": false,
+  "mastered_1080x1920": false,
+  "decisions": [
+    {
+      "video_id": 16835716,
+      "source_mp4_sha256": "5052434451984e22fc4c098f73d9a1eb902a9830cf35403aa39918e56f45d2e4",
+      "qa_contact_sheet_sha256": "974e3ff1cf34f026efa29aa778bb86e7cf44ab082739b0767711a4bad23496e1",
+      "mean_gray_motion_difference": 0.518,
+      "physical_full_decode_verified": true,
+      "editorial_decision": "REJECTED_FOR_S01",
+      "rationale": "Frame samples show frontal recognisable actor reading through a window with an open book and very little sampled motion; lacks back-facing anonymous charcoal-jacket subject, visible rain and CLOSED notebook",
+      "scene_approved": false,
+      "rights_cleared": false,
+      "can_publish": false
+    },
+    {
+      "video_id": 32788087,
+      "source_mp4_sha256": "1d2b0773699ad984730d7c1d4ff0930cebea136bfd6aefc062da8f664117c767",
+      "qa_contact_sheet_sha256": "ca473ad2fecd5f25b6ef9f65ba64a2b9f75e9c6928a3ff80fc90cef1e9898165",
+      "mean_gray_motion_difference": 4.362,
+      "physical_full_decode_verified": true,
+      "editorial_decision": "STYLE_REFERENCE_ONLY_NOT_S01",
+      "rationale": "Frame samples show suitable back-facing seated dark-clad adult at wood desk with lamp and physical motion, but no visible rain window; small closed notebook is not proven and crop may lose subject",
+      "scene_approved": false,
+      "rights_cleared": false,
+      "can_publish": false
+    },
+    {
+      "video_id": 6944291,
+      "source_mp4_sha256": "206a172759ff982dd80b75ac43da2c0e25d2f3c9c89e8707e29479073f75718a",
+      "qa_contact_sheet_sha256": "c25cef7a8fe7c657f215366a7707eba94ec52bfc01339937ed524df1c8ea8f3b",
+      "mean_gray_motion_difference": 5.045,
+      "physical_full_decode_verified": true,
+      "editorial_decision": "REJECTED_FOR_S01",
+      "rationale": "Frame samples show front/side-facing identifiable actor in light short-sleeved shirt under strong yellow light, without a window, rain, closed notebook or matching ROOM_A continuity",
+      "scene_approved": false,
+      "rights_cleared": false,
+      "can_publish": false
+    }
+  ],
+  "recommendation": "Retain Pexels 32788087 only as a non-media photographic composition reference of back-facing protagonist. Do not splice any tested MP4 into the S01 video. Obtain a wholly coherent long-take with rain window plus closed notebook before full editorial and rights review."
+}
