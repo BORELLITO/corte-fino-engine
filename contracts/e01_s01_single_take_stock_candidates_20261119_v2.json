@@ -1,0 +1,64 @@
+{
+  "schema_version": "1.0.0",
+  "project_id": "VERBO_NO_CHAO_EXCLUSIVO",
+  "episode_id": "VNC-W01-E1",
+  "scene_id": "VNC-E01V2-S01",
+  "requested_s01_seconds": 5.74,
+  "purpose": "RESEARCH_SINGLE_TAKE_S01_ALTERNATIVE_V2_ONLY",
+  "mode": "REAL_CAMERA_STOCK_NO_GENERATIVE_VIDEO",
+  "commercial_rights": "PENDING_ITEM_REVIEW",
+  "editorial_approval": false,
+  "full_master_authorized": false,
+  "publication_authorized": false,
+  "no_cost_trial_only": true,
+  "candidates": [
+    {
+      "video_id": 7026683,
+      "page_url": "https://www.pexels.com/video/a-woman-writing-on-the-notebook-7026683/",
+      "creator": "George Milton",
+      "web_page_dimensions": [
+        2160,
+        3840
+      ],
+      "web_page_duration_seconds": 10,
+      "web_page_fps": 23.98,
+      "search_reason": "A solitary person journaling by candlelight; a warm dark-room single take with real motion",
+      "known_conflict": "Notebook is open and being written in; rainy window is not evidenced and actor identity is unknown",
+      "page_license": "Free / Pexels",
+      "downloaded": false,
+      "editorial_status": "PENDING_PHYSICAL_AND_FRAME_QA",
+      "rights_cleared": false
+    }
+  ],
+  "source_urls": [
+    "https://www.pexels.com/license/"
+  ],
+  "historical_attempts": [
+    {
+      "phase": "V1",
+      "source_video_ids": [
+        4510748,
+        28174743
+      ],
+      "run_id": 44630205186,
+      "status": "FAILED_SECOND_SOURCE_INGEST"
+    },
+    {
+      "phase": "V1_DIAGNOSTIC",
+      "source_video_ids": [
+        4510748,
+        28174743
+      ],
+      "run_id": 44630728010,
+      "status": "PARTIAL_QA_4510748_REJECTED_ART;_28174743_OVERSIZED"
+    }
+  ],
+  "previous_page_source_ids": [
+    4510748,
+    28174743
+  ],
+  "rejected_preview_shas": [
+    "3653dd73575446533b1f47512b3c236b9184bba150fec5116c5526ba0ee1013e",
+    "2c099db52b219cb901977d98fac29f91579a4be1d9a2126f4ff6ba0cbcc7c1e5"
+  ]
+}

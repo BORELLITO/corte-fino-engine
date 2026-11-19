@@ -1,0 +1,70 @@
+name: Verbo no Chão — E01 S01 real single-take stock QA (one-shot, no release)
+
+on:
+  push:
+    branches:
+      - "verbo-no-chao/e01-s01-single-take-research-20261119-v1"
+    paths:
+      - ".github/workflows/verbo-no-chao-e01-s01-single-take-stock-qa-20261119.yml"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: vnc-e01-s01-single-take-stock-research-20261119
+  cancel-in-progress: false
+
+jobs:
+  physical-stock-review-only:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Checkout no retained write token
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Install pinned portable FFmpeg and Pillow for frame contact sheet
+        run: |
+          set -euo pipefail
+          python -m pip install --disable-pip-version-check --no-cache-dir --retries 0 portable-ffmpeg==0.5.0 Pillow==11.3.0
+          python - <<'PY'
+          import os
+          from pathlib import Path
+          from portable_ffmpeg import get_ffmpeg
+          ffmpeg, ffprobe = get_ffmpeg()
+          root = Path(os.environ["RUNNER_TEMP"])/"vnc-s01-ffmpeg"
+          root.mkdir(parents=True, exist_ok=True)
+          for name, source in (("ffmpeg",ffmpeg),("ffprobe",ffprobe)):
+              link=root/name
+              if link.exists() or link.is_symlink():
+                  link.unlink()
+              link.symlink_to(Path(source))
+          with open(os.environ["GITHUB_PATH"],"a") as out:
+              out.write(str(root)+"\n")
+          PY
+      - name: Adversarial offline source and rights contract tests
+        run: python -m unittest tests.test_e01_s01_single_take_stock_qa -v
+      - name: Physically inspect only two exact Pexels source candidates, no master
+        run: |
+          set -euo pipefail
+          timeout -k 5s 420s python -u -m agents.e01_s01_single_take_stock_qa --out artifacts/vnc_s01_single_take
+      - name: Preserve only contact sheet and JSON proof (never raw MP4)
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: VNC-E01-S01-SINGLE-TAKE-PHYSICAL-QA-NOT-APPROVED
+          path: artifacts/vnc_s01_single_take/
+          retention-days: 1
+          if-no-files-found: warn
+
+# No dispatch, cron, generated visuals, paid providers, publication or branch merge.
+# Temporary downloaded source MP4s are deleted with the runner working directory.
+
+# 2026-11-19: one evidence-preserving diagnostic rerun after partial-source failure.
+# Retain first validated source's contact sheet while second remains fail-closed.
+
+# V2 pivot: one vertical 10-second candlelit notebook source (Pexels 7026683).
+# Historical V1 report retained in prior Actions artifacts; this trigger is intentional.

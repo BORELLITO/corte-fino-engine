@@ -1,0 +1,67 @@
+{
+  "schema_version": "1.0.0",
+  "project_id": "VERBO_NO_CHAO_EXCLUSIVO",
+  "episode_id": "VNC-W01-E1",
+  "scene_id": "VNC-E01V2-S01",
+  "requested_s01_seconds": 5.74,
+  "purpose": "RESEARCH_TWO_SINGLE_TAKE_S01_ALTERNATIVES_ONLY",
+  "mode": "REAL_CAMERA_STOCK_NO_GENERATIVE_VIDEO",
+  "commercial_rights": "PENDING_ITEM_REVIEW",
+  "editorial_approval": false,
+  "full_master_authorized": false,
+  "publication_authorized": false,
+  "no_cost_trial_only": true,
+  "review_requirements": [
+    "motion_in_actual_MP4",
+    "native_crop_at_least_1080x1920",
+    "dark_room_or_rain_cohesion",
+    "faceless_or_no_negative_association",
+    "no_readable_text_or_logos",
+    "true_single_take_not_fake_shared_actor",
+    "closed_notebook_if_script_storyboard_requires",
+    "license_and_third_party_rights_review"
+  ],
+  "candidates": [
+    {
+      "video_id": 4510748,
+      "page_url": "https://www.pexels.com/video/woman-sitting-by-the-window-4510748/",
+      "creator": "Yaroslav Shuraev",
+      "web_page_dimensions": [
+        2160,
+        3840
+      ],
+      "web_page_duration_seconds": 10,
+      "web_page_fps": 24,
+      "search_reason": "Low-light candle-lit single silhouette beside foggy window, one continuous source",
+      "known_conflict": "Dining table rather than closed notebook; rain not confirmed; identity release needs review",
+      "page_license": "Free / Pexels",
+      "downloaded": false,
+      "editorial_status": "PENDING_PHYSICAL_AND_FRAME_QA",
+      "rights_cleared": false
+    },
+    {
+      "video_id": 28174743,
+      "page_url": "https://www.pexels.com/video/a-woman-is-sitting-at-a-desk-in-front-of-a-window-28174743/",
+      "creator": "PinkWitch 诸葛筱暖",
+      "web_page_dimensions": [
+        3840,
+        2160
+      ],
+      "web_page_duration_seconds": 24,
+      "web_page_fps": 29.97,
+      "search_reason": "One real source shows silhouette at desk and rain through window, possible single-take narrative",
+      "known_conflict": "Daylight/brightness and notebook state unknown; original horizontal requires portrait crop (about 1214x2160 native)",
+      "page_license": "Free / Pexels",
+      "downloaded": false,
+      "editorial_status": "PENDING_PHYSICAL_AND_FRAME_QA",
+      "rights_cleared": false
+    }
+  ],
+  "source_urls": [
+    "https://www.pexels.com/license/"
+  ],
+  "previously_rejected_preview_shas": [
+    "3653dd73575446533b1f47512b3c236b9184bba150fec5116c5526ba0ee1013e",
+    "2c099db52b219cb901977d98fac29f91579a4be1d9a2126f4ff6ba0cbcc7c1e5"
+  ]
+}
