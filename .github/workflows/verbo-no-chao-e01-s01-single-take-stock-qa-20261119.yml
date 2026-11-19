@@ -62,3 +62,6 @@ jobs:
 
 # No dispatch, cron, generated visuals, paid providers, publication or branch merge.
 # Temporary downloaded source MP4s are deleted with the runner working directory.
+
+# 2026-11-19: one evidence-preserving diagnostic rerun after partial-source failure.
+# Retain first validated source's contact sheet while second remains fail-closed.
