@@ -36,7 +36,7 @@
 2. **18/11 — E01 v2:** rough cut de 12 cenas com fontes visuais parcialmente derivadas de imagens; prévia técnica, não filmagem real nem final.
 3. **19/11 às 09:51:44Z — PR #49 MERGED** exclusivamente na branch operacional VNC, commit db6e1d4acf23e82793f6230535a1716842ba5cd0. Reúne gates de integridade/anti-replay, correções de mídia e rejeições editoriais S03/S04/S10; **não equivale a merge em main ou à publicação**.
 4. **19/11 — PRs #50–#56:** pesquisas e tentativas isoladas (Flow, Agnes, LTX, stock S01 e contenção de workflows legados). Em consulta atual permaneceram em DRAFT/OPEN. Seus resultados não substituem o HEAD operacional.
-5. **19/11 às 21:11Z — PR #57 DRAFT/OPEN:** shortlist de stock para 12 cenas; código para ingestão e montagem real da abertura. Base db6e1d4a, head 751288de498ad7f09dc9a5dad900583e74abb4c2, **não mesclada**.
+5. **19/11 às 21:11Z — PR #57 DRAFT/OPEN:** shortlist de stock para 12 cenas; código para ingestão e montagem real da abertura. Base db6e1d4a, head **1db7a29f027d551d81bfd6a5e83fed8c1b66f06d** após reconciliação documental, **não mesclada**.
 6. **19/11 — opção reafirmada pelo usuário:** priorizar vídeos prontos de bancos online, preservando R$0 e qualidade cinematográfica. Aprovação de fonte de mídia ≠ aprovação de uma nova linguagem de montagem.
 
 **Mudança de nome do repositório:** a consulta ao identificador legado BORELLITO/corte-fino-engine retornou via redirecionamento o repositório 1400839762, atualmente **BORELLITO/verbo-no-chao-engine**. Atualizar referências operacionais futuras; **não editar URLs/arquivos históricos automaticamente**.
@@ -65,7 +65,7 @@
 | VNC-P0-01 | P0 | COMPROVADA | Sem master, direitos de terceiros/voz/trilha e aprovação de publicação | Manter publicação bloqueada, revisar todos os direitos antes de lançamento |
 | VNC-P1-01 | P1 | COMPROVADA | S01 V1 e V2 fisicamente renderizadas, mas rejeitadas visualmente | Curar nova abertura REAL com coerência de noite/chuva/personagem/ação |
 | VNC-P1-02 | P1 | COMPROVADA | PR #57 propõe multi-stock simbólico enquanto contrato anterior fixa ROOM_A com personagem único | Não promover plano alternativo sem aprovação estética expressa |
-| VNC-P2-01 | P2 | COMPROVADA | Shortlist PR #57 ainda menciona Pexels 32788087 como fonte S01; código piloto V2 usa IDs **8860242 e 4458845** | Atualizar shortlist e proveniência na própria PR #57, com teste documental, sem tocar branch operacional |
+| VNC-P2-01 | P2 | COMPROVADA — **CORRIGIDA EM PR #57 DRAFT** | Shortlist antes citava Pexels 32788087; código piloto V2 usa IDs **8860242 e 4458845** | Shortlist alinhada + teste anti-regressão; ainda não é aprovação de mídia ou merge |
 | VNC-P2-02 | P2 | COMPROVADA | Prévia S01 real tem 720×1280 e 5,767s, versus meta final 1080×1920 e janela S01 de 5,74s | Separar preview técnico e master; validar cortes exatos e material nativo na seleção final |
 | VNC-P2-03 | P2 | HIPÓTESE | Link/ID de Drive privado consta na descrição pública da PR #57; metadados indicam acesso restrito | Revisar necessidade de expor o identificador, sem mudar permissões da pasta |
 | VNC-P2-04 | P2 | HISTÓRICA | Áudio v2 tinha alerta de ASR sobre uma palavra, ainda sem prova de erro acústico ou aprovação final | Revalidar audição e licença quando chegar ao mix final |
@@ -93,10 +93,18 @@
 
 ## 8. Segurança, escopo de alteração e rollback
 
-- Esta intervenção deve modificar **apenas o arquivo ESTADO_ATUAL.md em branch isolada de documentação**, sem tocar workflows, contracts, engine, áudio, artes, outros projetos ou branch operacional.
+- O checkpoint em PR #58 modifica **apenas o arquivo ESTADO_ATUAL.md em branch isolada**. Correção adicional autorizada, reversível e **somente documental/teste**, foi aplicada à PR #57; workflows, contracts, engine, áudio, artes, outros projetos e branch operacional permanecem inalterados.
 - Não efetuar merges automáticos, geração de IA, publicação, alteração de permissões de Drive ou reativação de automação.
 - Rollback: fechar a PR documental sem merge, preservando íntegros HEAD operacional e PR #57.
 - **Lacunas indisponíveis:** transcrição integral do CHAT 03; verificação acústica e dos bytes completos do WAV/trilha privados na sessão; revisão de cada segundo das 12 futuras filmagens; aprovação humana da direção visual alternativa.
+
+### 8.1 Registro de intervenção posterior ao snapshot da PR #57
+
+- **PR #57 atualizada sem merge:** shortlist S01 substituiu fonte obsoleta por Pexels IDs 8860242 e 4458845 usados pelo código; o texto distingue material experimental das versões rejeitadas.
+- Adicionado teste **test_shortlist_s01_provenance_matches_runtime** para proteger contra divergência entre tabela e código.
+- Commits PR #57: 43cce9ab85da1faa0acec3199d5aecba6fb2af13 (documentação) e 1db7a29f027d551d81bfd6a5e83fed8c1b66f06d (teste).
+- **Engine Gates SUCCESS** no HEAD da PR #57 após correção: [run 44625149040](https://github.com/BORELLITO/verbo-no-chao-engine/actions/runs/44625149040). Auditoria de especialistas estava em execução no momento da consulta; não declarar PASS sem nova verificação.
+- A montagem S01 V2 permanece **REJEITADA PARA MASTER**. Novo teste documental não comprova direitos de mídia, aprovação estética nem render final.
 
 ## 9. Links de verificação
 
