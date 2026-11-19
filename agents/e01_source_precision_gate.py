@@ -17,6 +17,9 @@ WORLD = Path("contracts/e01_v2_visual_single_world_acquisition_v1.json")
 CATALOG1 = Path("contracts/e01_v2_stock_candidates_v1.json")
 CATALOG2 = Path("contracts/e01_v2_stock_alternatives_v1.json")
 DIRECTOR = Path("contracts/e01_director_editorial_decisions_v1.json")
+S03_LOCAL_REJECTS = Path("contracts/e01_s03_editorial_rejections_20261118.json")
+S04_REJECTIONS = Path("contracts/e01_s04_real_stock_editorial_rejections_20261119.json")
+S10_REJECTIONS = Path("contracts/e01_s10_real_stock_editorial_rejections_20261119.json")
 SCRIPT = "c64b57cb9d6529b60b9e80ab7607e5887f909dd00e14cd80ed9ec2b7474a5dc6"
 AUDIO = "4f2ee1ff0171ddedb7c64e0dce2300c53a0ef105ef12d643a7af6b0a4621942e"
 EXCLUDED_PEXELS = frozenset((
@@ -149,6 +152,84 @@ def verify(root:Path=ROOT, data:dict|None=None)->dict:
 def rejected_sha(sha:str)->bool:
  return isinstance(sha,str) and sha.lower() in EXCLUDED_SHA
 
+def s03_rejected_for_scene(root:Path,scene_id:str,video_id:int)->bool:
+ """Read separately versioned S03 rejects without rewriting the frozen history."""
+ evidence=read_json(root,S03_LOCAL_REJECTS)
+ require(evidence.get("project")=="verbo-no-chao"
+         and evidence.get("episode_id")=="VNC-W01-E1"
+         and evidence.get("scene_id")=="VNC-E01V2-S03"
+         and evidence.get("master_approved") is False
+         and evidence.get("publication_authorized") is False,
+         "source_precision:s03_rejection_ledger_invalid")
+ records=evidence.get("decisions")
+ require(isinstance(records,list) and len(records)==2
+         and {x.get("source_video_id") for x in records}=={40316686,19381590}
+         and all(x.get("allowed_for_s03_master") is False
+                 and x.get("commercial_rights_cleared") is False
+                 and x.get("decision","").startswith("REJECTED")
+                 for x in records),
+         "source_precision:s03_rejection_ledger_invalid")
+ require(any(x.get("source_video_id")==19381590
+                 and x.get("source_sha256")=="c41fcc7e8309a30e9e82c349fb46cfd485c9a4ecf0e59fe7f4ba9c800197fa5d"
+                 for x in records)
+         and any(x.get("source_video_id")==40316686
+                 and x.get("source_sha256") is None for x in records),
+         "source_precision:s03_source_hash_changed")
+ return scene_id=="VNC-E01V2-S03" and any(
+     x.get("source_video_id")==video_id for x in records)
+
+
+def s04_rejected_for_scene(root:Path, scene_id:str, video_id:int)->bool:
+ """Frozen independent real-frame director rejects, without changing old registry."""
+ ledger=read_json(root,S04_REJECTIONS)
+ decisions=ledger.get("evidence")
+ require(ledger.get("project_id")=="VERBO_NO_CHAO_EXCLUSIVO"
+     and ledger.get("episode_id")=="VNC-W01-E1"
+     and ledger.get("scene_id")=="VNC-E01V2-S04"
+     and ledger.get("editorial_approved") is False
+     and ledger.get("commercial_rights_cleared") is False
+     and ledger.get("allowed_in_master") is False
+     and ledger.get("publication_authorized") is False
+     and isinstance(decisions,list)
+     and len(decisions)==2
+     and {v.get("id") for v in decisions}=={7977614,11137423}
+     and all(v.get("decision")=="REJECTED_FOR_S04"
+             and v.get("commercial_rights_cleared") is False
+             and v.get("allowed_for_s04_master") is False
+             and isinstance(v.get("source_sha256"),str)
+             and re.fullmatch(r"[0-9a-f]{64}",v["source_sha256"])
+             for v in decisions),
+     "source_precision:s04_rejection_evidence_missing_or_changed")
+ require({x.get("id"):x.get("source_sha256") for x in decisions} == {
+            7977614:"3140ee521b6e24fdb2d4660d0cf038e53f19e17faf85b0e3232ecc81d2a397c0",
+            11137423:"357430ded428ceaa4d9bf00a58b74fb54f8ed9f020110faf3d3db1dabc7f9f4f"},
+         "source_precision:s04_source_hash_changed")
+ return scene_id=="VNC-E01V2-S04" and video_id in {7977614,11137423}
+
+def s10_rejected_for_scene(root:Path,scene_id:str,video_id:int)->bool:
+ """Evidence-linked, scene-specific rejected stock; never alters historic archive."""
+ ledger=read_json(root,S10_REJECTIONS)
+ decisions=ledger.get("decisions")
+ require(ledger.get("schema_version")=="1.0.0"
+     and ledger.get("project_id")=="VERBO_NO_CHAO_EXCLUSIVO"
+     and ledger.get("episode_id")=="VNC-W01-E1"
+     and ledger.get("scene_id")=="VNC-E01V2-S10"
+     and ledger.get("editorial_approved") is False
+     and ledger.get("allowed_in_master") is False
+     and ledger.get("commercial_rights_cleared") is False
+     and ledger.get("publication_authorized") is False
+     and isinstance(decisions,list) and len(decisions)==1
+     and decisions[0].get("source_video_id")==9490306
+     and decisions[0].get("status")=="REJECTED_FOR_S10"
+     and decisions[0].get("full_original_sha256")==
+         "cfecb6aa945c25258728a5155840ae03a1ca636866a4719137c29c8dec75c35e"
+     and decisions[0].get("full_source_decoded") is True
+     and decisions[0].get("editorial_approved") is False
+     and decisions[0].get("allowed_for_s10_master") is False
+     and decisions[0].get("third_party_rights_cleared") is False,
+     "source_precision:s10_rejection_evidence_missing_or_changed")
+ return scene_id=="VNC-E01V2-S10" and video_id==9490306
+
 def preflight_stock(scene_id:str,video_id:int,page_url:str,query:str,
                     root:Path=ROOT)->dict:
  """Select a new public stock page for inspection, NEVER for scene admission.
@@ -164,6 +245,15 @@ def preflight_stock(scene_id:str,video_id:int,page_url:str,query:str,
          "source_precision:recurring_actor_must_use_approved_actor_reference")
  require(type(video_id) is int and video_id>0 and video_id not in EXCLUDED_PEXELS,
          "source_precision:rejected_reused_or_invalid_video_id")
+ if scene_id=="VNC-E01V2-S03":
+  require(not s03_rejected_for_scene(root,scene_id,video_id),
+          "source_precision:s03_editorially_rejected")
+ elif scene_id=="VNC-E01V2-S04":
+  require(not s04_rejected_for_scene(root,scene_id,video_id),
+          "source_precision:s04_real_frame_editorially_rejected")
+ elif scene_id=="VNC-E01V2-S10":
+  require(not s10_rejected_for_scene(root,scene_id,video_id),
+          "source_precision:s10_real_frame_editorially_rejected")
  require(isinstance(query,str)
          and query in scene["locked_search_queries_en"],
          "source_precision:generic_or_cross_scene_query")
