@@ -214,7 +214,7 @@
       "requested_resolution": "720p",
       "requested_aspect_ratio": "9:16",
       "generate_n": 1,
-      "suggested_day": 2,
+      "suggested_day": 1,
       "world": "ROOM_A",
       "flow_mode": "text_to_video",
       "reference_anchor": "S01 requires director approval before using extracted frame as room anchor for later scenes",
