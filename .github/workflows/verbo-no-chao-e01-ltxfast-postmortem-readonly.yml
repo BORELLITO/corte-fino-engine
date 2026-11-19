@@ -1,0 +1,45 @@
+name: Verbo no Chão — LTX Fast postmortem only (NO generation)
+
+on:
+  push:
+    branches:
+      - "verbo-no-chao/e01-ltx-video-fast-free-proof-20261119-v1"
+    paths:
+      - ".github/workflows/verbo-no-chao-e01-ltxfast-postmortem-readonly.yml"
+
+permissions:
+  actions: read
+  contents: read
+
+jobs:
+  audit-previous-proof:
+    runs-on: ubuntu-latest
+    timeout-minutes: 3
+    steps:
+      - name: Download strictly existing one-shot artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: VNC-E01-S01-LTXFAST-REAL-MOTION-CANDIDATE-NOT-PUBLISH
+          run-id: 44588195761
+          repository: BORELLITO/verbo-no-chao-engine
+          github-token: ${{ github.token }}
+          path: existing-result
+      - name: Print safe media audit (no new provider request)
+        run: |
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          files=list(Path("existing-result").rglob("technical_report.json"))
+          assert len(files)==1, "NOT_ONE_REPORT"
+          obj=json.loads(files[0].read_text(encoding="utf-8"))
+          keys=("status","reason","source_space","source_model","requested_seconds",
+                "full_decode_ok","publication_authorized")
+          out={k:obj.get(k) for k in keys}
+          assert out["publication_authorized"] is False
+          assert obj.get("source_space") == "Lightricks/ltx-video-distilled"
+          print(json.dumps(out,ensure_ascii=False,sort_keys=True))
+          media=list(Path("existing-result").rglob("*.mp4"))
+          print("PHYSICAL_MEDIA_FILES:",len(media))
+          PY
+
+# Absolutely NO generation/API POST, no paid providers, no retry or media release.
