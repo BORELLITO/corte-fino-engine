@@ -1,0 +1,48 @@
+name: Verbo no Chão — E01 S04 FREE public Space config probe (NO GPU)
+
+on:
+  push:
+    branches:
+      - "verbo-no-chao/e01-s04-free-provider-probe-20261118"
+    paths:
+      - ".github/workflows/verbo-no-chao-e01-s04-free-provider-probe.yml"
+      - "agents/e01_s04_public_space_readonly_probe.py"
+      - "tests/test_e01_s04_free_provider_readiness.py"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: vnc-e01-s04-free-provider-config-readonly
+  cancel-in-progress: false
+
+jobs:
+  no-cost-api-inspection:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Safe checkout — read only VNC branch
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - name: Python 3.12
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Five regression tests, zero provider requests
+        run: python -m unittest tests.test_e01_s04_free_provider_readiness -v
+      - name: Inspect only three public GET /config endpoints
+        run: |
+          set -euo pipefail
+          timeout -k 5s 65s python -m agents.e01_s04_public_space_readonly_probe
+      - name: Preserve sanitized metadata report, no media
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: VNC-E01-S04-PUBLIC-SPACE-READONLY-NO-GPU
+          path: artifacts/vnc_s04_space_readonly/S04_SPACE_API_PREFLIGHT.json
+          if-no-files-found: warn
+          retention-days: 1
+      - name: Explicitly keep rights, master and publication blocked
+        if: always()
+        run: echo "NO GENERATION. NO MEDIA UPLOAD. NO COST. NO MASTER. NO PUBLICATION."

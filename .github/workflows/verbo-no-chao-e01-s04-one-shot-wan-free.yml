@@ -1,0 +1,78 @@
+name: Verbo no Chão — E01 S04 ONE free Wan22 ZeroGPU candidate (NO RELEASE)
+
+on:
+  push:
+    branches:
+      - "verbo-no-chao/e01-s04-free-provider-probe-20261118"
+    paths:
+      - "contracts/e01_s04_new_provider_one_shot_20261118.json"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: vnc-e01-s04-wan22-one-shot-20261118
+  cancel-in-progress: false
+
+jobs:
+  one-free-independent-scene:
+    if: ${{ github.event_name == 'push' && github.event.head_commit.message == 'vnc-e01-s04-wan22-once-20261118' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 11
+    steps:
+      - name: Read VNC-only branch without persistent credentials
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - name: Fail closed on nonce replay or altered payload
+        shell: bash
+        run: |
+          set -euo pipefail
+          nonce=contracts/e01_s04_new_provider_one_shot_20261118.json
+          test "$(git diff-tree --no-commit-id --name-status -r "$GITHUB_SHA")" = "$(printf 'A\t%s' "$nonce")"
+          test "$(git rev-list --count "$GITHUB_SHA" -- "$nonce")" -eq 1
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          expected={
+            "project_id":"VERBO_NO_CHAO_EXCLUSIVO",
+            "episode_id":"VNC-W01-E1",
+            "scene_id":"VNC-E01V2-S04",
+            "provider":"Fhwang/wan2-video-generation",
+            "number_of_provider_submissions":1,
+            "use_anonymous_free_gpu_only":True,
+            "no_private_media":True,
+            "no_retry":True,
+            "publication_authorized":False,
+          }
+          assert json.loads(Path("contracts/e01_s04_new_provider_one_shot_20261118.json").read_text(encoding="utf8")) == expected
+          PY
+      - name: Python 3.12
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Strict offline tests first
+        run: python -m unittest tests.test_e01_s04_one_shot_zero_gpu_candidate -v
+      - name: Bounded pinned dependencies — no apt, no credentials
+        shell: bash
+        run: |
+          set -euo pipefail
+          timeout -k 5s 100s python -m pip install --disable-pip-version-check --no-cache-dir --retries 0 \
+            "gradio_client==2.7.2" "portable-ffmpeg==0.5.0"
+      - name: ONE free GPU submission; no paid fallback or rerun
+        shell: bash
+        run: |
+          set -euo pipefail
+          timeout -k 5s 355s python -m agents.e01_s04_one_shot_zero_gpu_candidate
+      - name: Preserve limited candidate physical QA — NOT FINAL OR LICENSED
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: VNC-E01-S04-WAN22-RESEARCH-NOT-MASTER
+          path: artifacts/vnc_e01_s04_free_trial/
+          if-no-files-found: warn
+          retention-days: 1
+      - name: Confirm no publishing pathway
+        if: always()
+        run: echo "Only independent symbolic S04 research. No private reference, payment, master or publication."
