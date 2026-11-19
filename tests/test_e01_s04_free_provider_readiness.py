@@ -35,6 +35,17 @@ class TestS04FreeProviderReadiness(unittest.TestCase):
                          "UNKNOWN_REQUIRES_EXACT_ENDPOINT_ROLE_DURATION_LICENSE_QA")
         self.assertFalse(summary["cost_authorized"])
 
+    def test_frame_count_controls_are_not_mistaken_for_seconds(self):
+        cfg=self.sample(5)
+        cfg["components"].append({"id":4,"type":"slider",
+            "props":{"label":"Number of Frames (more frames = longer video)",
+                     "minimum":1,"maximum":145}})
+        summary=summarize_config("sample",cfg)
+        self.assertFalse(summary["s04_5_82_seconds_in_visible_slider"])
+        self.assertTrue(summary["s04_possible_by_frame_control"])
+        self.assertTrue(summary["visible_frame_controls"][0]["fps_unverified"])
+        self.assertNotEqual(summary["video_generation_compatible"],"PASS")
+
     def test_all_endpoints_are_allowlisted_hf_space_config(self):
         self.assertEqual(len(PUBLIC_SPACES),3)
         for _,url in PUBLIC_SPACES:
