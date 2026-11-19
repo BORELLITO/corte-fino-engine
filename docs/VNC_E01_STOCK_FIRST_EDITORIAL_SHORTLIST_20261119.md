@@ -28,7 +28,12 @@ A abordagem antiga exigia 8 cenas ROOM_A com a mesma pessoa, roupa, quarto, cade
 - Nunca assumir que Pexels, Mixkit e Pixabay cobrem terceiros, marcas, faces, música extra, contexto histórico ou direitos de voz.
 
 ## Prova prática S01 nesta branch
-- `agents/e01_s01_multi_stock_pilot_v1.py` baixa no runner SOMENTE três Pexels oficiais em diretório temporário, testa origem e FFprobe, renderiza 3 cortes 720×1280 / 30fps total de 173 frames (5,767s) e decodifica integralmente, com SHA256 e relatório. **Não é MASTER nem aprovação estética**.
+- **V1** https://github.com/BORELLITO/verbo-no-chao-engine/actions/runs/44614902739: renderização real 5,767s / 720×1280 / 30 fps e SHA256 `3653dd73575446533b1f47512b3c236b9184bba150fec5116c5526ba0ee1013e`; **REJEIÇÃO ESTÉTICA** por texto/decorativo na parede e corte de caderno branco claro que rompe a harmonia.
+- **V2** https://github.com/BORELLITO/verbo-no-chao-engine/actions/runs/44615672379: substituiu os dois cortes incompatíveis por uma silhueta real à janela + chuva noturna, total 5,767s / 720×1280 / 30 fps, SHA256 `2c099db52b219cb901977d98fac29f91579a4be1d9a2126f4ff6ba0cbcc7c1e5`. **REPROVADO PARA MASTER**: o frame da silhueta tem janela clara/diurna, diferente da chuva escura; caderno fechado não está presente na S01; sem aprovação de visual, direitos ou sincronismo com WAV.
+- ZIP com V2, vídeo real e relatório físico foi armazenado no Drive privado de quarentena (verificado por metadata): https://drive.google.com/file/d/1TN1u7c8HEc6KvcXWHCi9YDeWIELFNNsM/view
+- Ambos os vídeos são **evidência executável de ingestão e montagem automática de stock**, não solução cinematográfica completa. A seleção artística continua sendo o gargalo a resolver por revisão dos planos, sem impor personagem único ou gastar créditos em IA.
+
+- `agents/e01_s01_multi_stock_pilot_v1.py` baixa no runner dois Pexels oficiais em diretório temporário, testa origem e FFprobe, renderiza 2 cortes 720×1280 / 30fps total de 173 frames (5,767s) e decodifica integralmente, com SHA256 e relatório. **Não é MASTER nem aprovação estética**.
 - Workflow de execução física único `.github/workflows/verbo-no-chao-e01-s01-multi-stock-real-pilot.yml`; artifact temporário (24h) pode ser transferido via connector para **pasta privada já criada** `1M0eQCkN8srETZeMvZ2miPqDdxAfk5pdY` sem login manual.
 - Não registrar MP4s crus no repositório. Não ativar publicação. Não alterar a branch operacional aprovada sem aprovação do usuário do novo estilo.
 
