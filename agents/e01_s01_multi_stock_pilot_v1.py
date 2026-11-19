@@ -171,6 +171,8 @@ def main():
                 video_file=target.name,frames=FRAME_COUNT)
             # Technical PASS must not re-promote a previously rejected cinematic cut.
             result.update(classify_s01_stock_preview(result, movie_path=target))
+            if result["editorial_decision"] == "REJECTED_EDITORIAL_PREVIOUS_QA":
+                result["status"] = "REAL_STOCK_MONTAGE_PHYSICALLY_VERIFIED_REJECTED_EDITORIAL"
     except (PilotError,OSError,KeyError,ValueError,subprocess.TimeoutExpired,urllib.error.URLError) as error:
         (OUTPUT/"VNC-E01-S01-REAL-STOCK-MONTAGE-V2-CANDIDATE-NOT-MASTER.mp4").unlink(missing_ok=True)
         result.update(status="BLOCKED_NO_APPROVED_VIDEO",error_type=type(error).__name__,
