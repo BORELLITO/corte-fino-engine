@@ -14,8 +14,9 @@ from agents import e01_s01_single_take_stock_qa as m
 class SingleTakeContractTests(unittest.TestCase):
     def test_contract_is_candidate_only_and_distinct_from_rejected_sets(self):
         cs = m.validate_plan()
-        self.assertEqual([x["video_id"] for x in cs], [4510748, 28174743])
-        self.assertNotIn(4458845, [x["video_id"] for x in cs])
+        self.assertEqual([x["video_id"] for x in cs], [7026683])
+        self.assertNotIn(4510748, [x["video_id"] for x in cs])
+        self.assertNotIn(28174743, [x["video_id"] for x in cs])
         self.assertEqual(m.SAMPLE_TIMES, (0.5, 2.8, 5.4))
         self.assertLess(max(m.SAMPLE_TIMES), m.WINDOW)
 
@@ -35,9 +36,9 @@ class SingleTakeContractTests(unittest.TestCase):
 
     def test_candidate_ids_urls_and_state_are_locked(self):
         base=json.loads((m.ROOT/m.CONTRACT).read_text())
-        for field,val in (("video_id", 4458845),
+        for field,val in (("video_id", 4510748),
                           ("video_id", True),
-                          ("page_url", "https://evil.example/video/4510748/"),
+                          ("page_url", "https://evil.example/video/7026683/"),
                           ("downloaded", True),
                           ("editorial_status", "APPROVED"),
                           ("rights_cleared", True),
@@ -55,41 +56,29 @@ class SingleTakeContractTests(unittest.TestCase):
             with self.subTest(wh=wh), self.assertRaises(m.SingleTakeProbeError):
                 m.crop_native(*wh)
 
-    def test_partial_physical_qa_is_preserved_but_still_blocked(self):
+    def test_single_source_technical_success_remains_unapproved(self):
         with tempfile.TemporaryDirectory() as td:
-            path = Path(td)
-            fake = path / "mock_source.mp4"
-            fake.write_bytes(b"only a mock, not a real movie")
-            attempts = [0]
-
-            def fake_download(_source, _work):
-                attempts[0] += 1
-                if attempts[0] == 2:
-                    from agents.e01_s01_multi_stock_pilot_v1 import PilotError
-                    raise PilotError("source_not_compatible")
-                return fake, {
-                    "video_id": 4510748, "page_url": "https://www.pexels.com/video/woman-sitting-by-the-window-4510748/",
-                    "bytes": 999999, "source_sha256": "a" * 64,
-                    "source_rights_cleared": False
-                }
-
-            fake_probe = {"width": 2160, "height": 3840, "duration_seconds": 9.958,
-                          "source_codec": "h264"}
-            contact = {"sha256": "b" * 64, "path": "mock.jpg"}
-            with patch.object(m, "download_source", side_effect=fake_download), \
-                 patch.object(m, "probe", return_value=fake_probe), \
-                 patch.object(m, "run_cmd", return_value=None), \
-                 patch.object(m, "frame_at", return_value=object()), \
-                 patch.object(m, "build_contact", return_value=contact):
-                code, result = m.run(m.ROOT, path)
-            self.assertEqual(code, 2)
-            self.assertEqual(result["status"], "BLOCKED_PARTIAL_PHYSICAL_QA_EDITORIAL_RIGHTS_PENDING")
-            self.assertEqual(result["error_code"], "source_not_compatible")
-            self.assertEqual(result["failed_source_video_id"], 28174743)
-            self.assertEqual(len(result["clips"]), 1)
-            self.assertEqual(result["contact_sheet"], contact)
+            path=Path(td)
+            fake=path/"mock_source.mp4"
+            fake.write_bytes(b"mock only, not a real movie")
+            meta={"video_id":7026683,
+                  "page_url":"https://www.pexels.com/video/a-woman-writing-on-the-notebook-7026683/",
+                  "bytes":999999,"source_sha256":"a"*64,"source_rights_cleared":False}
+            p={"width":2160,"height":3840,"duration_seconds":10.0,"source_codec":"h264"}
+            with patch.object(m,"download_source",return_value=(fake,meta)), \
+                 patch.object(m,"probe",return_value=p), \
+                 patch.object(m,"run_cmd",return_value=None), \
+                 patch.object(m,"frame_at",return_value=object()), \
+                 patch.object(m,"build_contact",return_value={"path":"mock.jpg","sha256":"b"*64}):
+                code,result=m.run(m.ROOT,path)
+            self.assertEqual(code,0)
+            self.assertEqual(result["status"],
+                "PHYSICAL_SINGLE_TAKE_CANDIDATES_READY_FOR_HUMAN_FRAME_REVIEW_ONLY")
+            self.assertFalse(result["editorial_approved"])
             self.assertFalse(result["master_allowed"])
+            self.assertFalse(result["rights_cleared"])
             self.assertFalse(result["publication_authorized"])
+            self.assertEqual(len(result["clips"]),1)
 
     def test_failed_acquisition_is_not_a_success_or_master(self):
         with tempfile.TemporaryDirectory() as td:
@@ -101,8 +90,8 @@ class SingleTakeContractTests(unittest.TestCase):
             self.assertFalse(report["publication_authorized"])
             self.assertFalse(report["master_allowed"])
             self.assertFalse(report["new_master_created"])
-            self.assertTrue((Path(td)/"S01_SINGLE_TAKE_REPORT.json").is_file())
-            self.assertFalse((Path(td)/"S01_SINGLE_TAKE_CANDIDATES_QA.jpg").exists())
+            self.assertTrue((Path(td)/"S01_SINGLE_TAKE_V2_REPORT.json").is_file())
+            self.assertFalse((Path(td)/"S01_SINGLE_TAKE_V2_QA.jpg").exists())
 
 
 if __name__=="__main__":
