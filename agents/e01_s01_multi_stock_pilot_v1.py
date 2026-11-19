@@ -15,6 +15,7 @@ import urllib.request
 from pathlib import Path
 
 from agents.e01_stock_candidates import ROOT
+from agents.e01_s01_stock_rejection_gate import classify_s01_stock_preview
 
 OUTPUT = Path("artifacts/vnc_e01_s01_multi_stock_pilot")
 INPUTS = [
@@ -168,6 +169,8 @@ def main():
                 width=q["width"],height=q["height"],
                 visual_duration_covers_s01=True,full_video_decode_ok=True,
                 video_file=target.name,frames=FRAME_COUNT)
+            # Technical PASS must not re-promote a previously rejected cinematic cut.
+            result.update(classify_s01_stock_preview(result, movie_path=target))
     except (PilotError,OSError,KeyError,ValueError,subprocess.TimeoutExpired,urllib.error.URLError) as error:
         (OUTPUT/"VNC-E01-S01-REAL-STOCK-MONTAGE-V2-CANDIDATE-NOT-MASTER.mp4").unlink(missing_ok=True)
         result.update(status="BLOCKED_NO_APPROVED_VIDEO",error_type=type(error).__name__,
