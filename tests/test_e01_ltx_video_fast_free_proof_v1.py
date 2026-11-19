@@ -26,6 +26,15 @@ class TestLTXFastOneShot(unittest.TestCase):
             with self.subTest(result=result), self.assertRaises(ValueError):
                 m.video_path_from_result(result)
 
+    def test_identical_frames_are_not_motion(self):
+        frame = bytes([55]) * (64 * 112)
+        with self.assertRaisesRegex(ValueError, "near_static_or_fake_motion"):
+            m.adjacent_frame_motion_score(frame * 10, 64 * 112)
+        with self.assertRaises(ValueError):
+            m.adjacent_frame_motion_score(frame * 3, 64 * 112)
+        video = b"".join(bytes([x]) * (64 * 112) for x in range(0, 16))
+        self.assertGreater(m.adjacent_frame_motion_score(video, 64 * 112), 0.55)
+
     def test_bad_file_is_not_accepted_as_proof(self):
         with self.assertRaises(ValueError):
             m.verify_mp4(Path("/tmp/nonexistent-vnc-ltx-media-file-0001.mp4"))
