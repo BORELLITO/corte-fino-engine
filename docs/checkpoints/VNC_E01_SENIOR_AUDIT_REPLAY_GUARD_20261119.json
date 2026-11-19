@@ -1,7 +1,7 @@
 {
   "schema_version": "1.0.0",
   "project_id": "VERBO_NO_CHAO_EXCLUSIVO",
-  "timestamp_iso_tz": "2026-11-19T11:23:00.603Z",
+  "timestamp_iso_tz": "2026-11-19T11:24:59.686Z",
   "source_snapshot": {
     "master_v2_sha256": "28cba0f640cad30d30e194304bd0963b8761158b4200a7d29efe8cf7e032632e",
     "master_v2_uploaded_bytes": 22100,
@@ -11,7 +11,8 @@
     "main_head_last_verified": "b59bbbec9aef843bb7118f1328fab37e01b098b3",
     "merged_pr49": "https://github.com/BORELLITO/corte-fino-engine/pull/49",
     "live_pr50": "https://github.com/BORELLITO/corte-fino-engine/pull/50",
-    "checkpoint_pr51": "https://github.com/BORELLITO/corte-fino-engine/pull/51"
+    "checkpoint_pr51": "https://github.com/BORELLITO/corte-fino-engine/pull/51",
+    "ci_tested_head_before_documentation_update": "1405046252385d9f2f912e929403aebf3b3abd19"
   },
   "repo": "BORELLITO/corte-fino-engine",
   "branch": "verbo-no-chao/legacy-gpu-replay-containment-20261119-v1",
@@ -49,7 +50,7 @@
       "risk": "manual or push-triggered repeated external GPU calls or quota consumption",
       "minimal_fix": "job-level if: ${{ false }} in both legacy workflows; preserve source and release paths",
       "regression_test": "tests/test_vnc_legacy_gpu_replay_quarantine_20261119.py",
-      "status": "PATCH_COMMITTED_IN_DRAFT_NOT_MERGED;CI_PENDING"
+      "status": "PATCH_AND_THREE_REGRESSION_TESTS_PASS_ON_HEAD_1405046;DRAFT_NOT_MERGED"
     },
     {
       "id": "VNC-P0-SHARED-REPO-PROTECTION",
@@ -98,12 +99,29 @@
   ],
   "tests_with_evidence": [
     {
-      "test": "STATIC_PATCH_READBACK_AND_WORKFLOW_JOB_CONDITION",
-      "status": "PENDING"
+      "type": "ENGINE_GATES",
+      "run_id": 44514332882,
+      "head_sha": "1405046252385d9f2f912e929403aebf3b3abd19",
+      "status": "SUCCESS",
+      "tested": 485,
+      "skipped": 15,
+      "failures": 0,
+      "log_job_id": 135526292509,
+      "verification": "GITHUB_ACTIONS_JOB_LOG_READ"
     },
     {
-      "test": "GITHUB_ENGINE_GATES_ON_EXACT_PATCH_HEAD",
-      "status": "PENDING"
+      "type": "LEGACY_GPU_REGRESSION",
+      "source_test": "tests/test_vnc_legacy_gpu_replay_quarantine_20261119.py",
+      "status": "3_TESTS_PASS",
+      "evidence": "https://github.com/BORELLITO/corte-fino-engine/actions/runs/44514332882"
+    },
+    {
+      "type": "EIGHT_SPECIALIST_DETERMINISTIC_AUDITS",
+      "run_id": 44514332862,
+      "head_sha": "1405046252385d9f2f912e929403aebf3b3abd19",
+      "status": "SUCCESS",
+      "jobs": 13,
+      "note": "CI_jobs_not_independent_live_LLM_agents"
     }
   ],
   "external_effects_confirmed": {
@@ -121,6 +139,6 @@
     "provider_credit_spending": false,
     "publication": false
   },
-  "next_single_action": "VALIDATE_DRAFT_PR_CI_AND_DIFF;THEN_IN_AUTHENTICATED_WORK_CHECK_GOOGLE_FLOW_ACTUAL_CREDIT_QUOTE_BEFORE_GENERATION",
+  "next_single_action": "RECHECK_FINAL_DOC_ONLY_COMMIT_CI_AND_PR_DIFF;THEN_USE_AUTHENTICATED_WORK_TO_VERIFY_GOOGLE_FLOW_UI_BEFORE_ANY_GENERATION",
   "rollback": "Close draft PR without merging; operational branch remains at verified baseline HEAD"
 }
