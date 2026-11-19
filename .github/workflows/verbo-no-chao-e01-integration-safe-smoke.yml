@@ -1,0 +1,85 @@
+name: Verbo no Chão — E01 integration real FFmpeg smoke (NO PROVIDER)
+
+on:
+  push:
+    branches:
+      - "verbo-no-chao/integration-candidate-e01-20261119-v1"
+    paths:
+      - "engine/quality_gates.py"
+      - "orchestrator/runflow.py"
+      - "orchestrator/render.py"
+      - "agents/e01_source_precision_gate.py"
+      - "tests/test_vnc_audio_ducking_physical.py"
+      - "tests/test_vnc_integrity_hardening_20261118.py"
+      - "tests/test_vnc_integrated_scene_rejections_20261119.py"
+      - ".github/workflows/verbo-no-chao-e01-integration-safe-smoke.yml"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: vnc-e01-integration-no-provider-20261119
+  cancel-in-progress: false
+
+jobs:
+  no-gpu-integration-proof:
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - name: Checkout read-only without writer credentials
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          persist-credentials: false
+          fetch-depth: 0
+      - name: Python 3.12
+        uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065
+        with:
+          python-version: "3.12"
+      - name: Cross PR gates and original one-shot history
+        run: |
+          set -euo pipefail
+          python -m unittest tests.test_vnc_integrated_scene_rejections_20261119 tests.test_e01_s04_rejection_gate_20261119 tests.test_e01_s10_source_rejection_20261119 -v
+          test "$(git rev-list --count HEAD -- contracts/e01_ltx23_s01_one_shot_trigger_20261118.json)" -eq 1
+      - name: Obtain pinned free portable media tools
+        shell: bash
+        run: |
+          set -euo pipefail
+          timeout -k 5s 110s python -m pip install --disable-pip-version-check --no-cache-dir --retries 0 "portable-ffmpeg==0.5.0"
+          python - <<'PY'
+          import os
+          from pathlib import Path
+          from portable_ffmpeg import get_ffmpeg
+          ffmpeg,ffprobe=get_ffmpeg()
+          directory=Path(os.environ["RUNNER_TEMP"])/"vnc-media-bin"
+          directory.mkdir(parents=True,exist_ok=True)
+          for label,src in (("ffmpeg",ffmpeg),("ffprobe",ffprobe)):
+              target=directory/label
+              if target.exists() or target.is_symlink():
+                  target.unlink()
+              target.symlink_to(Path(src))
+          with open(os.environ["GITHUB_PATH"],"a",encoding="utf8") as output:
+              output.write(str(directory)+"\n")
+          PY
+      - name: Actual audio ducking, anti-loop and hash adversarial tests
+        shell: bash
+        run: |
+          set -euo pipefail
+          command -v ffmpeg
+          command -v ffprobe
+          timeout -k 5s 145s python -m unittest tests.test_vnc_audio_ducking_physical tests.test_vnc_integrity_hardening_20261118 -v
+      - name: Synthetic encode FFprobe full decode and binary SHA
+        shell: bash
+        run: |
+          set -euo pipefail
+          timeout -k 5s 155s python -m agents.e01_s01_runtime_preflight --synthetic-smoke --out artifacts/vnc_integration_physical
+      - name: Tiny JSON proof only; NO raw media
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: VNC-E01-INTEGRATION-NOGPU-PHYSICAL
+          path: artifacts/vnc_integration_physical/S01_RUNTIME_PREFLIGHT.json
+          if-no-files-found: warn
+          retention-days: 1
+      - name: Never grant rights or publish
+        if: always()
+        run: echo "No LTX call, GPU, paid generation, licensed final media, master or publication."
