@@ -28,4 +28,15 @@ class TestGoogleFlowS01(unittest.TestCase):
   self.assertEqual(self.m["source_image_location"],"PRIVATE_LIBRARY_NOT_GITHUB")
   self.assertEqual(len(self.m["source_image_sha256"]),64)
   self.assertIn("PEXELS_8860242_PREVIOUSLY_REJECTED",self.m["source_constraints"])
+ def test_higgsfield_fallback_is_quote_only_and_never_release(self):
+  alt=self.m["fallback_higgsfield_quote"]
+  self.assertEqual((alt["provider"],alt["model"]),("Higgsfield","seedance_2_0_mini"))
+  self.assertEqual((alt["duration_seconds"],alt["aspect_ratio"],alt["resolution"],alt["requested_outputs"]),(6,"9:16","720p",1))
+  self.assertEqual(alt["quoted_credits"],6)
+  for key in ("quote_is_not_generation","account_balance_not_persisted_publicly","free_tier_visible_watermark_possible"):
+   self.assertIs(alt[key],True,key)
+  for key in ("source_first_frame_uploaded","credit_spending_authorized","generator_job_submitted","allowed_in_master","publication_authorized"):
+   self.assertIs(alt[key],False,key)
+  self.assertIs(self.m["provider_route_comparison"]["no_generation_without_user_specific_credit_permission"],True)
+  self.assertEqual(alt["free_tier_model_access_at_submission"],"NOT_VERIFIED")
 if __name__=="__main__": unittest.main()
