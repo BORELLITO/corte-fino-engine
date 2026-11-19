@@ -55,6 +55,42 @@ class SingleTakeContractTests(unittest.TestCase):
             with self.subTest(wh=wh), self.assertRaises(m.SingleTakeProbeError):
                 m.crop_native(*wh)
 
+    def test_partial_physical_qa_is_preserved_but_still_blocked(self):
+        with tempfile.TemporaryDirectory() as td:
+            path = Path(td)
+            fake = path / "mock_source.mp4"
+            fake.write_bytes(b"only a mock, not a real movie")
+            attempts = [0]
+
+            def fake_download(_source, _work):
+                attempts[0] += 1
+                if attempts[0] == 2:
+                    from agents.e01_s01_multi_stock_pilot_v1 import PilotError
+                    raise PilotError("source_not_compatible")
+                return fake, {
+                    "video_id": 4510748, "page_url": "https://www.pexels.com/video/woman-sitting-by-the-window-4510748/",
+                    "bytes": 999999, "source_sha256": "a" * 64,
+                    "source_rights_cleared": False
+                }
+
+            fake_probe = {"width": 2160, "height": 3840, "duration_seconds": 9.958,
+                          "source_codec": "h264"}
+            contact = {"sha256": "b" * 64, "path": "mock.jpg"}
+            with patch.object(m, "download_source", side_effect=fake_download), \
+                 patch.object(m, "probe", return_value=fake_probe), \
+                 patch.object(m, "run_cmd", return_value=None), \
+                 patch.object(m, "frame_at", return_value=object()), \
+                 patch.object(m, "build_contact", return_value=contact):
+                code, result = m.run(m.ROOT, path)
+            self.assertEqual(code, 2)
+            self.assertEqual(result["status"], "BLOCKED_PARTIAL_PHYSICAL_QA_EDITORIAL_RIGHTS_PENDING")
+            self.assertEqual(result["error_code"], "source_not_compatible")
+            self.assertEqual(result["failed_source_video_id"], 28174743)
+            self.assertEqual(len(result["clips"]), 1)
+            self.assertEqual(result["contact_sheet"], contact)
+            self.assertFalse(result["master_allowed"])
+            self.assertFalse(result["publication_authorized"])
+
     def test_failed_acquisition_is_not_a_success_or_master(self):
         with tempfile.TemporaryDirectory() as td:
             with patch.object(m,"download_source",side_effect=ValueError("no media")):
