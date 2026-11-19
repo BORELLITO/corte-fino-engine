@@ -23,3 +23,16 @@ Duração, resolução, autor e licença publicados NÃO comprovam que o arquivo
 Comparar visualmente as seis amostras de cada fonte para decidir se merece assistir integralmente ao clipe. Se um ator real estiver frontal, o caderno estiver aberto ou a chuva inexistir, rejeitar S01 em vez de inventar esses elementos por edição não autorizada. Uma cena compatível ainda exigirá avaliação do vídeo inteiro, verificação dos direitos das pessoas e posterior montagem em contexto.
 
 **Estado até avaliação do artifact:** `NO_S01_VIDEO_APPROVED`. Sem master, sem publicação, sem alterações dos hashes do roteiro, WAV, 28 legendas, contrato do storyboard ou PRs existentes.
+
+## Resultado físico e editorial verificado (19/11/2026)
+- GitHub Actions: https://github.com/BORELLITO/verbo-no-chao-engine/actions/runs/44592239132 — **SUCCESS** depois de corrigir a ausência inicial de FFmpeg no runner e usar `portable-ffmpeg==0.5.0`.
+- Artifact de QA: ID `14563604068`, 3 folhas JPEG + JSON, retenção temporária de um dia. **Nenhum MP4 bruto nem credencial foi publicado**.
+- Arquivos reais: **3/3 baixados, SHA256 calculados e decodificação integral por FFmpeg concluída**. Durações 13,93s; 16,30s; 26,76s; amostragem visual de 18 imagens no total. Isso comprova a integridade técnica, **não** o uso editorial.
+- Pexels **16835716**, SHA256 `5052434451984e22fc4c098f73d9a1eb902a9830cf35403aa39918e56f45d2e4`: quadro visual mostra pessoa frontal lendo (livro aberto), em janela vista do exterior, movimento temporal muito limitado (diferença média de luminância 0,518). **REJEITADO S01**.
+- Pexels **32788087**, SHA256 `1d2b0773699ad984730d7c1d4ff0930cebea136bfd6aefc062da8f664117c767`: silhueta de adulto de costas em roupa escura, mesa e luminária, movimento real (diferença média 4,362). Composição próxima da proposta, porém **sem janela com chuva visível e sem caderno fechado comprovado**. **APENAS REFERÊNCIA DE ESTILO; NÃO LIBERAR COMO S01**.
+- Pexels **6944291**, SHA256 `206a172759ff982dd80b75ac43da2c0e25d2f3c9c89e8707e29479073f75718a`: ator frontal/de perfil com camiseta clara em iluminação amarela; sem mesa com caderno/janela/chuva (diferença de luminância 5,045). **REJEITADO S01**.
+- Decisão formal, vinculada a hashes e frames: `contracts/e01_s01_stock_nov19_editorial_v1.json`. Guardião `agents/e01_s01_stock_nov19_editorial_gate.py` impede que fonte rejeitada seja declarada aprovada. Testes adversariais cobrem tentativas de promover asset, direitos e publicação.
+- **Não houve assistência audiovisual à edição final nem master**. Nenhuma chamada paga, nenhuma geração adicional Agnes/LTX/Higgsfield, nenhum merge; os três MP4 temporários foram removidos.
+
+### Próximo passo viável
+A falha recorrente é a **composição completa do plano** e não a resolução nem o codec. Exigir uma única filmagem original da sala com chuva e caderno fechado ou uma geração IA com vídeo completo, elegibilidade gratuita e direitos confirmados antes de desbloquear S01. Não substituir por zoom de imagem, montagem de stock incompatível ou geração em serviços que exigem plano pago.
