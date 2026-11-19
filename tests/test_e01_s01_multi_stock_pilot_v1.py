@@ -42,5 +42,18 @@ class TestS01RealStock(unittest.TestCase):
         self.assertEqual(status,2)
 
 
+    def test_shortlist_s01_provenance_matches_runtime(self):
+        from pathlib import Path
+        readme = (Path(__file__).resolve().parents[1] / "docs" /
+                  "VNC_E01_STOCK_FIRST_EDITORIAL_SHORTLIST_20261119.md")
+        rows = readme.read_text(encoding="utf-8").splitlines()
+        s01 = next(row for row in rows if row.startswith("| S01 — pergunta sem resposta"))
+        for source in m.INPUTS:
+            self.assertIn(f"[Pexels {source['id']}]", s01)
+        self.assertNotIn("[Pexels 32788087]", s01)
+        self.assertNotIn("[Pexels 6376122]", s01)
+        self.assertIn("REJEITADA PARA MASTER", s01)
+
+
 if __name__=="__main__":
     unittest.main()
