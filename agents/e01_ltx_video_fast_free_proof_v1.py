@@ -152,6 +152,33 @@ def video_path_from_result(result):
     return Path(value)
 
 
+def adjacent_frame_motion_score(raw: bytes, pixels: int) -> float:
+    """Mean abs luminance change on independent frames (not editorial proof)."""
+    if pixels <= 0 or len(raw) < pixels * 8 or len(raw) % pixels:
+        raise ValueError("insufficient_sampled_video_frames")
+    frames = [memoryview(raw)[i:i + pixels] for i in range(0, len(raw), pixels)]
+    scores = []
+    for before, after in zip(frames, frames[1:]):
+        scores.append(sum(abs(a - b) for a, b in zip(before, after)) / pixels)
+    score = sum(scores) / len(scores)
+    if score < 0.55:
+        raise ValueError("near_static_or_fake_motion")
+    return round(score, 4)
+
+
+def measured_motion(source: Path):
+    sampled = subprocess.run(
+        ["ffmpeg", "-nostdin", "-v", "error", "-xerror", "-i", str(source),
+         "-map", "0:v:0", "-an", "-vf", "fps=4,scale=64:112:flags=fast_bilinear,format=gray",
+         "-f", "rawvideo", "-"],
+        capture_output=True, timeout=50)
+    if sampled.returncode:
+        raise ValueError("motion_sampling_failed")
+    if len(sampled.stdout) > 2_000_000:
+        raise ValueError("too_many_sampled_frames")
+    return adjacent_frame_motion_score(sampled.stdout, 64 * 112)
+
+
 def verify_mp4(source: Path):
     if not source.is_file() or not (20000 <= source.stat().st_size <= 75_000_000):
         raise ValueError("invalid_video_byte_count")
@@ -176,10 +203,12 @@ def verify_mp4(source: Path):
         capture_output=True, timeout=75)
     if decoded.returncode:
         raise ValueError("incomplete_full_video_decode")
+    motion_score = measured_motion(source)
     return {"duration_seconds": duration, "width": WIDTH, "height": HEIGHT,
             "fps": fps, "source_sha256": hashlib.sha256(source.read_bytes()).hexdigest(),
             "bytes": source.stat().st_size, "codec": stream["codec_name"],
-            "full_decode_ok": True, "covers_scene_duration": True}
+            "full_decode_ok": True, "covers_scene_duration": True,
+            "adjacent_frame_motion_score": motion_score}
 
 
 def main():
