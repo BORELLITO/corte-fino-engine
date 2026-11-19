@@ -1,0 +1,38 @@
+name: Verbo no Chão — Agnes Flash S01 API preflight read-only
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - "verbo-no-chao/agnes-flash-transport-gated-20261119-v1"
+    paths:
+      - "agents/e01_agnes_flash_transport_v1.py"
+      - "contracts/e01_agnes_flash_runtime_gate_v1.json"
+      - "tests/test_e01_agnes_flash_transport_v1.py"
+      - ".github/workflows/verbo-no-chao-e01-agnes-readonly-preflight.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  preflight-only:
+    runs-on: ubuntu-latest
+    timeout-minutes: 6
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Test guarded transport without provider calls
+        run: python -m unittest tests.test_e01_agnes_flash_transport_v1 -v
+      - name: Offline request plan (no API call)
+        run: python -m agents.e01_agnes_flash_transport_v1 --mode plan --report /tmp/vnc-agnes-plan.json
+      - name: Optional authenticated catalog GET (no POST)
+        env:
+          AGNES_API_KEY: ${{ secrets.VNC_AGNES_API_KEY }}
+        run: |
+          if [ -z "$AGNES_API_KEY" ]; then
+            echo "BLOCKED_NO_AGNES_API_KEY: optional read-only preflight skipped"
+          else
+            python -m agents.e01_agnes_flash_transport_v1 --mode preflight
+          fi
