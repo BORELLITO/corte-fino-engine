@@ -1,0 +1,144 @@
+{
+  "schema_version": "1.0.0",
+  "project_id": "VERBO_NO_CHAO_EXCLUSIVO",
+  "timestamp_iso_tz": "2026-11-19T11:24:59.686Z",
+  "source_snapshot": {
+    "master_v2_sha256": "28cba0f640cad30d30e194304bd0963b8761158b4200a7d29efe8cf7e032632e",
+    "master_v2_uploaded_bytes": 22100,
+    "repository": "BORELLITO/corte-fino-engine",
+    "operational_branch": "verbo-no-chao/e01-stock-curation-gate-v1",
+    "verified_operational_head": "db6e1d4acf23e82793f6230535a1716842ba5cd0",
+    "main_head_last_verified": "b59bbbec9aef843bb7118f1328fab37e01b098b3",
+    "merged_pr49": "https://github.com/BORELLITO/corte-fino-engine/pull/49",
+    "live_pr50": "https://github.com/BORELLITO/corte-fino-engine/pull/50",
+    "checkpoint_pr51": "https://github.com/BORELLITO/corte-fino-engine/pull/51",
+    "ci_tested_head_before_documentation_update": "1405046252385d9f2f912e929403aebf3b3abd19"
+  },
+  "repo": "BORELLITO/corte-fino-engine",
+  "branch": "verbo-no-chao/legacy-gpu-replay-containment-20261119-v1",
+  "baseline_head": "db6e1d4acf23e82793f6230535a1716842ba5cd0",
+  "current_phase": "E01_REAL_MOTION_SOURCE_BLOCKED;_READ_ONLY_AUDIT_AND_SAFETY_PATCH_IN_DRAFT",
+  "last_verified_output": "NO_APPROVED_E01_S01_REAL_MP4",
+  "locked_artifact_sha": {
+    "script": "c64b57cb9d6529b60b9e80ab7607e5887f909dd00e14cd80ed9ec2b7474a5dc6",
+    "wav": "4f2ee1ff0171ddedb7c64e0dce2300c53a0ef105ef12d643a7af6b0a4621942e",
+    "ass": "0b8171a473cbc247eb48ed822bb006a04c74510b8c4cd1b30e409c226f1bb98a"
+  },
+  "scope_review": {
+    "architecture": "REVIEWED_CORE_RUNFLOW_RENDER_AND_QUALITY_GATES;INDEPENDENT_MEDIA_QA_INCOMPLETE",
+    "creative_memory": "EPISODE_AND_SCENE_BLUEPRINT_VERIFIED;SEMANTIC_DUPLICATION_QA_PENDING",
+    "biblical_research": "HABAKKUK_1_2_4_CONTEXT_DRAFT_FOUND;INDEPENDENT_REVIEW_PENDING",
+    "script": "SIX_BLOCK_CANONICAL_SCRIPT_HASH_LOCKED;NO_REWRITE",
+    "cinematic_direction": "12_SCENE_70_425_SECONDS_BLUEPRINT;ROOM_A_8_SCENES_PENDING_S01_IDENTITY_REFERENCE",
+    "acquisition": "S03_S04_S10_REJECTIONS_VERIFIED_IN_CONTRACTS;NO_APPROVED_E01_MEDIA",
+    "rights": "THIRD_PARTY_STOCK_GENERATOR_VOICE_MUSIC_RIGHTS_PENDING",
+    "voice": "WAV_HASH_RECORDED;DUAL_ASR_EVIDENCE_FOUND;HUMAN_LISTENING_AND_RIGHTS_PENDING",
+    "music": "DUCKING_FFMPEG_SMOKE_REPORTED;MUSIC_RIGHTS_AND_FINAL_MIX_PENDING",
+    "editing": "RUNFLOW_RENDER_CODE_READ;REAL_MASTER_NOT_PRESENT",
+    "captions": "28_CUES_QA_CONTRACT_FOUND;FULL_SYNC_FRAME_QA_UNAPPROVED",
+    "release": "MASTER_BLOCKED;PUBLISH_BLOCKED;CHANNEL_ID_UNVERIFIED",
+    "agents": "EIGHT_DETERMINISTIC_JOB_AUDITS_NOT_EIGHT_INDEPENDENT_LIVE_LLM_AGENTS",
+    "github": "27_VNC_WORKFLOWS_REVIEWED;21_MANUAL_DISPATCH;2_EXPLICIT_GPU_JOBS_FROZEN_IN_THIS_DRAFT",
+    "continuity": "PR49_MERGED_IN_VNC_BRANCH_NOT_MAIN;PR50_PR51_STILL_DRAFT"
+  },
+  "issues": [
+    {
+      "id": "VNC-P0-LEGACY-GPU-REPLAY",
+      "priority": "P0",
+      "evidence": "verbo-no-chao-e01-free-motion-probe.yml and verbo-no-chao-e01-ltx23-motion.yml each have workflow_dispatch and push and execute external GPU probes without a once-only approval gate",
+      "root_cause": "legacy experimental triggers were retained after replacement by no-replay S01 workflow",
+      "risk": "manual or push-triggered repeated external GPU calls or quota consumption",
+      "minimal_fix": "job-level if: ${{ false }} in both legacy workflows; preserve source and release paths",
+      "regression_test": "tests/test_vnc_legacy_gpu_replay_quarantine_20261119.py",
+      "status": "PATCH_AND_THREE_REGRESSION_TESTS_PASS_ON_HEAD_1405046;DRAFT_NOT_MERGED"
+    },
+    {
+      "id": "VNC-P0-SHARED-REPO-PROTECTION",
+      "priority": "P0",
+      "evidence": "GitHub API reports protected=false for main and VNC operational branch",
+      "root_cause": "branch protection/ruleset not active or not visible",
+      "risk": "unintended merges across projects",
+      "minimal_fix": "keep all VNC edits on dedicated branches and require cross-project diff review before any merge; repo protection requires separate approval",
+      "regression_test": "PR_DIFF_ONLY_VNC_PATHS_AND_BASE_BRANCH_CHECK",
+      "status": "OPEN"
+    },
+    {
+      "id": "VNC-P1-S01-NO-REAL-FOOTAGE",
+      "priority": "P1",
+      "evidence": "S01 frame/release contract says approved_source_video_sha256=null, no approved real footage",
+      "root_cause": "physical source generation not proven; prior free-provider retries/quota limits",
+      "risk": "eight ROOM_A scenes cannot be anchored",
+      "minimal_fix": "one verified video provider opportunity with authenticated account, per-output budget approval and QA",
+      "regression_test": "physical ffprobe+frames+license+story continuity",
+      "status": "BLOCKED"
+    },
+    {
+      "id": "VNC-P1-RIGHTS-AND-RELEASE",
+      "priority": "P1",
+      "evidence": "copyright/voice/music/stock ledger flags false; independent script review pending",
+      "root_cause": "verified individual licenses and human editorial approvals not present",
+      "risk": "rights or factual release failure",
+      "minimal_fix": "per-asset rights/voice/music proof and theological review before promoting media",
+      "regression_test": "rights evidence and release authorization bound to exact hashes",
+      "status": "BLOCKED"
+    }
+  ],
+  "blocked_items": [
+    "S01_REAL_VIDEO",
+    "EIGHT_SCENE_ROOM_A_CONTINUITY",
+    "S03_S04_S10_APPROVED_FOOTAGE",
+    "GENERATOR_COMMERCIAL_RIGHTS",
+    "VOICE_AND_MUSIC_RIGHTS",
+    "FINAL_1080x1920_MASTER",
+    "PUBLISH"
+  ],
+  "changes_committed": [
+    ".github/workflows/verbo-no-chao-e01-free-motion-probe.yml",
+    ".github/workflows/verbo-no-chao-e01-ltx23-motion.yml",
+    "tests/test_vnc_legacy_gpu_replay_quarantine_20261119.py"
+  ],
+  "tests_with_evidence": [
+    {
+      "type": "ENGINE_GATES",
+      "run_id": 44514332882,
+      "head_sha": "1405046252385d9f2f912e929403aebf3b3abd19",
+      "status": "SUCCESS",
+      "tested": 485,
+      "skipped": 15,
+      "failures": 0,
+      "log_job_id": 135526292509,
+      "verification": "GITHUB_ACTIONS_JOB_LOG_READ"
+    },
+    {
+      "type": "LEGACY_GPU_REGRESSION",
+      "source_test": "tests/test_vnc_legacy_gpu_replay_quarantine_20261119.py",
+      "status": "3_TESTS_PASS",
+      "evidence": "https://github.com/BORELLITO/corte-fino-engine/actions/runs/44514332882"
+    },
+    {
+      "type": "EIGHT_SPECIALIST_DETERMINISTIC_AUDITS",
+      "run_id": 44514332862,
+      "head_sha": "1405046252385d9f2f912e929403aebf3b3abd19",
+      "status": "SUCCESS",
+      "jobs": 13,
+      "note": "CI_jobs_not_independent_live_LLM_agents"
+    }
+  ],
+  "external_effects_confirmed": {
+    "legacy_jobs_disabled_on_live_operational_branch": false,
+    "main_modified": false,
+    "publish": false,
+    "provider_requests": 0,
+    "new_spending": 0,
+    "external_image_upload": false
+  },
+  "permissions": {
+    "draft_branch_edit": true,
+    "merge_to_operational": false,
+    "main_edit": false,
+    "provider_credit_spending": false,
+    "publication": false
+  },
+  "next_single_action": "RECHECK_FINAL_DOC_ONLY_COMMIT_CI_AND_PR_DIFF;THEN_USE_AUTHENTICATED_WORK_TO_VERIFY_GOOGLE_FLOW_UI_BEFORE_ANY_GENERATION",
+  "rollback": "Close draft PR without merging; operational branch remains at verified baseline HEAD"
+}
