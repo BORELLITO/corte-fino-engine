@@ -167,6 +167,9 @@ def motion_metric(source: Path):
 
 
 def frame(source: Path, t: float, crop_mode: str):
+    # Reject untrusted framing before requiring optional imaging dependencies.
+    if crop_mode not in ("wide", "left", "center", "right"):
+        raise StockSemanticError("invalid_crop_mode")
     # Each frame is real footage; no face generation or added objects.
     from PIL import Image
     if crop_mode == "wide":
