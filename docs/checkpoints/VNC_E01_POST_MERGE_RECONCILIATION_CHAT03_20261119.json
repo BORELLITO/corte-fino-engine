@@ -1,0 +1,107 @@
+{
+  "schema_version": "1.0.0",
+  "project_id": "VERBO_NO_CHAO_EXCLUSIVO",
+  "episode_id": "VNC-W01-E1",
+  "source_date": "2026-11-19",
+  "checkpoint_kind": "POST_MERGE_READ_ONLY_RECONCILIATION",
+  "source_of_truth": "GITHUB_LIVE_METADATA_PLUS_OFFICIAL_PROVIDER_DOCS",
+  "predecessor_checkpoint": "docs/checkpoints/VNC_E01_CONSOLIDATED_20261119.json",
+  "predecessor_is_historical": true,
+  "predecessor_stale_fields": [
+    "current_phase=TECHNICAL_CONSOLIDATION_CANDIDATE_NOT_MERGED",
+    "repository_branch=verbo-no-chao/integration-candidate-e01-20261119-v1",
+    "source_snapshot.operational_head=097baca..."
+  ],
+  "repository": {
+    "full_name": "BORELLITO/corte-fino-engine",
+    "visibility": "public",
+    "default_branch": "main",
+    "operational_branch": "verbo-no-chao/e01-stock-curation-gate-v1",
+    "verified_operational_head": "db6e1d4acf23e82793f6230535a1716842ba5cd0",
+    "main_unchanged_by_merge_49": true,
+    "evidence": "https://github.com/BORELLITO/corte-fino-engine/pull/49"
+  },
+  "integration": {
+    "pr": 49,
+    "status": "MERGED_TO_VNC_OPERATIONAL_BRANCH_NOT_MAIN",
+    "merge_commit_sha": "db6e1d4acf23e82793f6230535a1716842ba5cd0",
+    "merged_at_utc": "2026-11-19T09:51:44Z",
+    "includes": [
+      "S01_OLD_NONCE_ANTI_REPLAY",
+      "PHYSICAL_MEDIA_INTEGRITY_GATES",
+      "SCENE_SCOPED_REJECTION_GATES_S03_S04_S10",
+      "SYNTHETIC_NO_GPU_FFMPEG_SMOKE"
+    ],
+    "actual_e01_clip_produced": false,
+    "final_master_approved": false,
+    "publication_authorized": false
+  },
+  "current_draft": {
+    "pr": 50,
+    "state": "OPEN_DRAFT_NOT_MERGED",
+    "head_sha": "d6083ba115b632b3bca0ecbcda0cf1f88e358475",
+    "branch": "verbo-no-chao/e01-s01-google-flow-free-preflight-20261119-v1",
+    "documentation_only": true,
+    "ci_jobs_observed": [
+      {
+        "run_id": 44507074681,
+        "job": "blocking-gates",
+        "status": "COMPLETED_SUCCESS"
+      },
+      {
+        "run_id": 44507074705,
+        "jobs_count": 13,
+        "status": "COMPLETED_SUCCESS"
+      }
+    ],
+    "tested_scope": "PRE-FLIGHT/STATIC_NO_PROVIDER_ACCOUNT_OR_GENERATED_MP4"
+  },
+  "provider_preflight": {
+    "provider": "Google Flow",
+    "public_eligibility": "BRAZIL_SUPPORTED_AND_FREE_50_CREDITS_PER_DAY",
+    "model": "Veo 3.1 Lite",
+    "public_credit_cost_per_generation": 10,
+    "public_output": "720p_9_16_4_6_OR_8_SECONDS",
+    "target_scene_duration_seconds": 5.74,
+    "proposed_generation_seconds": 6,
+    "account_authenticated": "UNVERIFIED",
+    "remaining_credits": "UNVERIFIED",
+    "visible_watermark": "UNVERIFIED",
+    "actual_request_output_count": "UNVERIFIED",
+    "note": "Cost is PER GENERATION; a request may yield multiple outputs. UI model/price must be verified before any credit use. Limits can change. Free video generation can be restricted in peak hours.",
+    "official_sources": [
+      "https://support.google.com/flow/answer/16353333",
+      "https://support.google.com/flow/answer/16526234",
+      "https://support.google.com/flow/answer/16352836",
+      "https://support.google.com/flow/answer/16353544"
+    ]
+  },
+  "private_asset_verification": {
+    "private_package_name": "VERBO_NO_CHAO_S01_GOOGLE_FLOW_PREFLIGHT_20261119.zip",
+    "package_exists_and_hash_match": "NOT_VERIFIED_IN_THIS_RECONCILIATION",
+    "source_first_frame_editorially_approved": false,
+    "no_private_media_added_to_public_repository": true
+  },
+  "gates": {
+    "S01_REAL_MP4_EXISTS": false,
+    "S01_MOTION_FRAME_QA": false,
+    "ROOM_A_8_SCENE_CONTINUITY": false,
+    "S03_S04_S10_EDITORIAL_APPROVAL": false,
+    "MEDIA_RIGHTS_CLEARED": false,
+    "NARRATION_AND_MUSIC_RIGHTS_COMPLETED": false,
+    "FINAL_MASTER_APPROVED": false,
+    "CHANNEL_ID_VERIFIED": false,
+    "PUBLISH_AUTHORIZED": false
+  },
+  "budget_and_permissions": {
+    "new_spending": false,
+    "external_upload": false,
+    "consume_free_credits": false,
+    "automatic_retry": false,
+    "publish": false,
+    "merge_to_operational": false
+  },
+  "next_single_action": "In ChatGPT Work, visually inspect authenticated Google Flow UI for actual account balance, number of outputs per request, watermark and per-output credit quote; do not submit a generation, upload private reference or spend credits until specifically authorized.",
+  "change_scope": "ONE_NEW_CHECKPOINT_ONLY_NO_ENGINE_OR_WORKFLOW_CHANGES",
+  "status": "RECONCILED_DOCUMENTATION_ONLY_NOT_PRODUCTION"
+}
