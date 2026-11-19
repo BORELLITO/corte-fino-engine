@@ -17,8 +17,8 @@ from agents.e01_s01_multi_stock_pilot_v1 import download_source, probe
 from agents.e01_s01_stock_rejection_gate import load_registry
 from agents.e01_stock_candidates import ROOT
 
-CONTRACT = Path("contracts/e01_s01_single_take_stock_candidates_20261119_v1.json")
-ALLOWED = (4510748, 28174743)
+CONTRACT = Path("contracts/e01_s01_single_take_stock_candidates_20261119_v2.json")
+ALLOWED = (7026683,)
 WINDOW = 5.74
 WIDTH, HEIGHT = 216, 384
 SAMPLE_TIMES = (0.5, 2.8, 5.4)
@@ -36,7 +36,7 @@ def validate_plan(root: Path = ROOT, obj: dict | None = None) -> list[dict]:
     if (obj.get("project_id") != "VERBO_NO_CHAO_EXCLUSIVO"
             or obj.get("episode_id") != "VNC-W01-E1"
             or obj.get("scene_id") != "VNC-E01V2-S01"
-            or obj.get("purpose") != "RESEARCH_TWO_SINGLE_TAKE_S01_ALTERNATIVES_ONLY"
+            or obj.get("purpose") != "RESEARCH_SINGLE_TAKE_S01_ALTERNATIVE_V2_ONLY"
             or obj.get("mode") != "REAL_CAMERA_STOCK_NO_GENERATIVE_VIDEO"
             or obj.get("requested_s01_seconds") != WINDOW
             or obj.get("editorial_approval") is not False
@@ -52,8 +52,7 @@ def validate_plan(root: Path = ROOT, obj: dict | None = None) -> list[dict]:
         if not isinstance(item, dict):
             raise SingleTakeProbeError("candidate_not_object")
         expected_page = {
-            4510748: "https://www.pexels.com/video/woman-sitting-by-the-window-4510748/",
-            28174743: "https://www.pexels.com/video/a-woman-is-sitting-at-a-desk-in-front-of-a-window-28174743/",
+            7026683: "https://www.pexels.com/video/a-woman-writing-on-the-notebook-7026683/",
         }[expected_id]
         if (type(item.get("video_id")) is not int
                 or item["video_id"] != expected_id
@@ -173,7 +172,7 @@ def run(root: Path, output: Path) -> tuple[int, dict]:
                     "not_assumed_same_person_as_prior_sources":True,
                 })
                 movie.unlink(missing_ok=True)
-            report["contact_sheet"]=build_contact(rows,output/"S01_SINGLE_TAKE_CANDIDATES_QA.jpg")
+            report["contact_sheet"]=build_contact(rows,output/"S01_SINGLE_TAKE_V2_QA.jpg")
             report["status"]="PHYSICAL_SINGLE_TAKE_CANDIDATES_READY_FOR_HUMAN_FRAME_REVIEW_ONLY"
     except Exception as exc:
         # Fail closed even if one source is unavailable; retain verified frames
@@ -190,16 +189,16 @@ def run(root: Path, output: Path) -> tuple[int, dict]:
         if rows:
             try:
                 report["contact_sheet"]=build_contact(
-                    rows,output/"S01_SINGLE_TAKE_CANDIDATES_QA.jpg"
+                    rows,output/"S01_SINGLE_TAKE_V2_QA.jpg"
                 )
                 report["status"]="BLOCKED_PARTIAL_PHYSICAL_QA_EDITORIAL_RIGHTS_PENDING"
             except Exception:
                 report["status"]="BLOCKED_NO_NEW_MEDIA_QA"
-                (output/"S01_SINGLE_TAKE_CANDIDATES_QA.jpg").unlink(missing_ok=True)
+                (output/"S01_SINGLE_TAKE_V2_QA.jpg").unlink(missing_ok=True)
         else:
             report["status"]="BLOCKED_NO_NEW_MEDIA_QA"
-            (output/"S01_SINGLE_TAKE_CANDIDATES_QA.jpg").unlink(missing_ok=True)
-    (output/"S01_SINGLE_TAKE_REPORT.json").write_text(
+            (output/"S01_SINGLE_TAKE_V2_QA.jpg").unlink(missing_ok=True)
+    (output/"S01_SINGLE_TAKE_V2_REPORT.json").write_text(
         json.dumps(report,indent=2,ensure_ascii=False)+"\n",encoding="utf-8")
     print(json.dumps({"status":report["status"],"candidates_checked":len(report["clips"]),
                       "master_allowed":report["master_allowed"],
