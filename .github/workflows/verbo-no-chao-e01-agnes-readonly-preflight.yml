@@ -30,6 +30,7 @@ jobs:
         run: python -m unittest tests.test_e01_agnes_flash_transport_v1 -v
       - name: Offline request plan (no API call)
         run: python -m agents.e01_agnes_flash_transport_v1 --mode plan --report /tmp/vnc-agnes-plan.json
+      # Only authorized HTTPS GET /v1/models; do not submit, download, or publish media.
       - name: Optional authenticated catalog GET (no POST)
         env:
           AGNES_API_KEY: ${{ secrets.VNC_AGNES_API_KEY }}
