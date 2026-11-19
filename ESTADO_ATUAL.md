@@ -134,6 +134,18 @@
 - Fonte de verdade do parecer atualizado: `contracts/e01_s01_single_take_physical_editorial_decisions_20261119_v1.json` e `docs/E01_S01_REAL_STOCK_PHYSICAL_VISUAL_REVIEW_20261119.md` da PR #60. As fotos dos quadros são evidências de **três instantes**, não de auditoria visual segundo a segundo.
 - **Próxima ação prioritária:** deixar de testar cenas visualmente genéricas e buscar take verdadeiramente coerente (sombra, noite/chuva, pessoa não identificável e caderno fechado), sempre inspecionar frames antes de montar, ou obter aprovação explícita de direção simbólica alternativa. Sem gastos, geração de IA, master ou publicação.
 
+### 8.5 Nova direção cinematográfica simbólica real — PR #61 (19/11/2026)
+
+- **PR #61 DRAFT** (branch `verbo-no-chao/e01-s01-night-rain-motif-probe-20261119-v1`, head `cc261f3a1950f44113b60097c623c181841e8ba8`), empilhada sobre PR #60. Nenhum merge em PR #60, PR #59, PR #57 ou branch operacional.
+- **Abertura S01 candidata como metáfora**, não substituição aprovada: vídeo stock Pexels #31069867, chuva noturna por vidro de metrô, luzes desfocadas, sem fingir mesma pessoa/ambiente `ROOM_A`. Divergências: ausência de ator e caderno fechado, cenário externo urbano. **Aprovação estética do conceito pelo usuário pendente.**
+- Fonte física temporariamente baixada na CI: **93.575.530 bytes**, **2160×3840**, **24,000 s**, H.264, SHA-256 `fc36bb6b4039e307828d9ad0acabdb54a1baa4cb6e9d41f2889d2278be7c6df8`; FFmpeg full decode **PASS**. [Actions run 44638759167](https://github.com/BORELLITO/verbo-no-chao-engine/actions/runs/44638759167) **SUCCESS**.
+- Artefato gerado em vídeo temporal real (não foto com zoom): **5,766667 s, 173 frames, 30 fps, 720×1280**, sem áudio/legendas e com marca `PREVIA DE QA - NAO PUBLICAR`. SHA-256 `724ae91368af7d843f39195b34f77db50341aa7f92b0e5960a17061e9da3f961`. Decodificação de todos os quadros e rehash **confirmados novamente em ambiente local independente**.
+- Três fotogramas físicos de **0,5 / 2,8 / 5,4 s** (médias de diferença 14,09 e 12,57) exibem movimento e noite/chuvoso. Não constituem auditoria quadro a quadro nem provam origem de captura por câmera ou direitos de terceiros.
+- **Três arquivos preservados com sucesso na Biblioteca privada do ChatGPT:** `/VERBO_NO_CHAO/E01_STOCK_QA_20261119/S01_31069867_PREVIA_SIMBOLICA_NAO_APROVADA.mp4`, `S01_31069867_FOTOGRAMAS_QA.jpg` e `S01_31069867_RELATORIO_FISICO.json`. Original MP4 não publicado/arquivado. Download da prévia e contato acessíveis também nos anexos desta conversa.
+- Verdade por camadas: `contracts/e01_s01_night_rain_physical_visual_review_20261119_v1.json`, `docs/E01_S01_NIGHT_RAIN_REAL_VIDEO_EXPERIMENT_20261119.md` e teste `tests/test_e01_s01_night_rain_physical_evidence_lock_v1.py` na PR #61. Engine Gates **SUCCESS** no HEAD `cc261f3a` ([run 44639382675](https://github.com/BORELLITO/verbo-no-chao-engine/actions/runs/44639382675)). Eight Specialist Audits estava em execução na última leitura, verificar novamente antes de qualquer merge.
+- **MASTER_1080x1920 BLOQUEADA; direitos visuais de terceiros, áudio, trilha, legenda e publicação NÃO aprovados.** O storyboard V2 original (12 cenas, 70,425s e 28 legendas) permanece intacto.
+- **Próxima prioridade:** avaliação humana do **vídeo completo de 5,767s** para aprovar ou rejeitar explicitamente a DIREÇÃO SIMBÓLICA, não a publicação; somente se aprovada, desenhar visual das demais cenas e validar fontes individualmente. Não expandir às cegas nem produzir outro preview apenas para testar plataforma.
+
 ## 9. Links de verificação
 
 - [PR #41 — branch operacional](https://github.com/BORELLITO/verbo-no-chao-engine/pull/41)
