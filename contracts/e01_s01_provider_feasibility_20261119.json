@@ -83,7 +83,8 @@
       "result": "PHYSICALLY_DECODED_MULTIPLE_CLIPS_BUT_NO_ROOM_A_MATCH_APPROVED",
       "video_returned": true,
       "editorial_master_approved": false,
-      "details": "docs/E01_REAL_STOCK_CURATED_CANDIDATES_V1.md"
+      "details": "docs/E01_REAL_STOCK_CURATED_CANDIDATES_V1.md",
+      "automatic_retry_allowed": false
     }
   ],
   "licensing": "No accepted generation proves commercial output rights. Legal/music/voice/licence review remains pending.",
