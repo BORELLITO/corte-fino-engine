@@ -1,4 +1,4 @@
-name: Verbo no Chão — E01 S01 three real stock clips visual montage (not master)
+name: Verbo no Chão — E01 S01 V2 two real stock shots, visual candidate
 
 on:
   push:
@@ -63,4 +63,4 @@ jobs:
 
 # Stock sources are publicly licensed, but actor/scene rights and editorial fit remain pending.
 # The project is public: this artifact is transient, for user editorial review only.
-# This workflow is not an automated publisher and cannot create a final master.
+# V2: remove incompatible wall-script / white notebook; retain only window silhouette + rain.\n# This workflow is not an automated publisher and cannot create a final master.
