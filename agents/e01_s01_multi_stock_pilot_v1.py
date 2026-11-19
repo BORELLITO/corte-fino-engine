@@ -96,7 +96,7 @@ def download_source(source,temp:Path):
     return out,{"video_id":ident,"page_url":source["page"],"bytes":count,
                 "source_sha256":sha.hexdigest(),"source_rights_cleared":False}
 
-def probe(filename):
+def probe(filename,min_seconds=7.0,min_width=1080,min_height=720):
     a=subprocess.run(["ffprobe","-v","error","-select_streams","v:0",
          "-show_entries","stream=codec_name,width,height,avg_frame_rate:format=duration",
          "-of","json",str(filename)],capture_output=True,text=True,timeout=35)
@@ -105,7 +105,7 @@ def probe(filename):
     video=(obj.get("streams")or[None])[0]
     if not video:raise PilotError("no_video")
     dur=float(obj["format"]["duration"])
-    if dur<7 or int(video["width"])<1080 or int(video["height"])<720:
+    if dur<min_seconds or int(video["width"])<min_width or int(video["height"])<min_height:
         raise PilotError("source_not_compatible")
     return {"duration_seconds":round(dur,3),"width":video["width"],
             "height":video["height"],"source_codec":video.get("codec_name")}
@@ -155,7 +155,7 @@ def main():
                 "-f","concat","-safe","0","-i",str(concat),
                 "-an","-c","copy","-movflags","+faststart",str(target)],45,
                 "concat_failed")
-            q=probe(target)
+            q=probe(target,min_seconds=5.70,min_width=720,min_height=1280)
             duration=q["duration_seconds"]
             if not 5.70<=duration<=5.80:
                 raise PilotError("wrong_montage_duration")
