@@ -1,0 +1,55 @@
+name: Verbo no Chão — E01 S01 precise real-camera candidates one-shot QA
+
+on:
+  push:
+    branches:
+      - "verbo-no-chao/e01-s01-stock-semantic-qa-20261119-v1"
+    paths:
+      - ".github/workflows/verbo-no-chao-e01-s01-stock-semantic-once.yml"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: vnc-e01-s01-precise-stock-qa-20261119
+  cancel-in-progress: false
+
+jobs:
+  one-shot-source-probe:
+    if: github.event_name == 'push' && github.run_attempt == 1
+    runs-on: ubuntu-latest
+    timeout-minutes: 9
+    steps:
+      - name: Checkout exclusive VNC candidate branch
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - name: Python 3.12
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Prepare verified local FFmpeg and imaging dependencies
+        run: |
+          set -euo pipefail
+          command -v ffmpeg
+          command -v ffprobe
+          python -m pip install --disable-pip-version-check --no-cache-dir "Pillow==11.3.0"
+      - name: Run offline scene-lock and URL-security regression tests
+        run: python -m unittest tests.test_e01_s01_stock_semantic_probe -v
+      - name: Download, fully decode, hash and visually sample three Pexels clips
+        run: |
+          set -euo pipefail
+          timeout -k 5s 375s python -u -m agents.e01_s01_stock_semantic_probe --out artifacts/vnc_e01_s01_stock_semantic
+      - name: Preserve ONLY technical QA report and small derived stills, never raw movie
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: VNC-E01-S01-Pexels-Precise-Stock-Visual-QA-NOT-MASTER
+          path: artifacts/vnc_e01_s01_stock_semantic/
+          if-no-files-found: warn
+          retention-days: 1
+
+# No provider video generation, no API key, no card, no cron, no user interaction.
+# Pexels footage is downloaded temporarily and deleted before job termination.
+# Pexels License restricts negative portrayal of identifiable people and endorsement;
+# publication, master render and rights clearance remain explicitly blocked.
