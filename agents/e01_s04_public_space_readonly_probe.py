@@ -24,6 +24,7 @@ def summarize_config(space_name: str, config: dict) -> dict:
     comps = config.get("components") or []
     by_id = {c.get("id"): c for c in comps if isinstance(c, dict)}
     duration_controls = []
+    frame_controls = []
     for c in comps:
         if not isinstance(c, dict):
             continue
@@ -31,16 +32,23 @@ def summarize_config(space_name: str, config: dict) -> dict:
         if not isinstance(props, dict):
             continue
         label = str(props.get("label") or "")
-        if "duration" not in label.lower() and "seconds" not in label.lower():
-            continue
         maximum = props.get("maximum", props.get("max"))
         minimum = props.get("minimum", props.get("min"))
-        duration_controls.append({
-            "label": label,
-            "min": minimum,
-            "max": maximum,
-            "covers_s04_duration": type(maximum) in (int, float) and maximum >= REQUIRED_DURATION_S,
-        })
+        if "duration" in label.lower() or "seconds" in label.lower():
+            duration_controls.append({
+                "label": label,
+                "min": minimum,
+                "max": maximum,
+                "covers_s04_duration": type(maximum) in (int, float) and maximum >= REQUIRED_DURATION_S,
+            })
+        if "frame" in label.lower() and type(maximum) in (int, float):
+            frame_controls.append({
+                "label": label,
+                "min": minimum,
+                "max": maximum,
+                "can_hold_5_82_seconds_at_24fps": maximum >= 141,
+                "fps_unverified": True,
+            })
     endpoints = []
     for dep in config.get("dependencies") or []:
         if not isinstance(dep, dict):
@@ -62,13 +70,16 @@ def summarize_config(space_name: str, config: dict) -> dict:
         for e in endpoints
     )
     covers_s04 = any(c["covers_s04_duration"] for c in duration_controls)
+    frame_capacity_possible = any(c["can_hold_5_82_seconds_at_24fps"] for c in frame_controls)
     return {
         "space": space_name,
         "probe_status": "CONFIG_READ_OK",
         "visible_duration_controls": duration_controls,
+        "visible_frame_controls": frame_controls,
         "api_endpoints": endpoints[:25],
         "possible_video_generation_endpoint": appears_generation,
         "s04_5_82_seconds_in_visible_slider": covers_s04,
+        "s04_possible_by_frame_control": frame_capacity_possible,
         "video_generation_compatible": "UNKNOWN_REQUIRES_EXACT_ENDPOINT_ROLE_DURATION_LICENSE_QA",
         "source_video_generated": False,
         "video_duration_verified": False,
@@ -133,5 +144,6 @@ if __name__ == "__main__":
     for candidate in result["candidates"]:
         print(json.dumps({"space":candidate["space"], "status":candidate["probe_status"],
                           "s04_duration_slider":candidate.get("s04_5_82_seconds_in_visible_slider"),
+                          "s04_frame_capacity":candidate.get("s04_possible_by_frame_control"),
                           "has_api":candidate.get("possible_video_generation_endpoint")}))
     print("ZERO GPU CALLS. ZERO SECRET/IMAGE UPLOADS. ZERO RIGHTS/MASTER AUTHORIZATION.")
