@@ -1,0 +1,66 @@
+name: Verbo no Chão — E01 S01 V2 two real stock shots, visual candidate
+
+on:
+  push:
+    branches:
+      - "verbo-no-chao/e01-stock-montage-pilot-20261119-v1"
+    paths:
+      - ".github/workflows/verbo-no-chao-e01-s01-multi-stock-real-pilot.yml"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: vnc-s01-real-stock-montage-pilot-20261119
+  cancel-in-progress: false
+
+jobs:
+  one-off-real-stock-montage:
+    runs-on: ubuntu-latest
+    timeout-minutes: 9
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Install portable, project-validated FFmpeg
+        run: |
+          set -euo pipefail
+          python -m pip install --disable-pip-version-check --no-cache-dir --retries 0 portable-ffmpeg==0.5.0
+          python - <<'PY'
+          import os
+          from pathlib import Path
+          from portable_ffmpeg import get_ffmpeg
+          ffmpeg,ffprobe=get_ffmpeg()
+          root=Path(os.environ["RUNNER_TEMP"])/"vncff"
+          root.mkdir(parents=True,exist_ok=True)
+          for name,source in (("ffmpeg",ffmpeg),("ffprobe",ffprobe)):
+              link=root/name
+              if link.exists() or link.is_symlink():
+                  link.unlink()
+              link.symlink_to(Path(source))
+          with open(os.environ["GITHUB_PATH"],"a") as out:
+              out.write(str(root)+"\n")
+          PY
+      - name: Offline storyboard and URL tests
+        run: python -m unittest tests.test_e01_s01_multi_stock_pilot_v1 -v
+      - name: Build one experimental 5.74 second REAL STOCK montage
+        run: |
+          set -euo pipefail
+          command -v ffmpeg
+          command -v ffprobe
+          timeout -k 5s 380s python -u -m agents.e01_s01_multi_stock_pilot_v1
+      - name: Upload temporary candidate movie and provenance report for private Drive intake
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: VNC-E01-S01-REAL-STOCK-PILOT-NOT-APPROVED
+          path: artifacts/vnc_e01_s01_multi_stock_pilot/
+          retention-days: 1
+          if-no-files-found: warn
+
+# Stock sources are publicly licensed, but actor/scene rights and editorial fit remain pending.
+# The project is public: this artifact is transient, for user editorial review only.
+# V2: remove incompatible wall-script / white notebook; retain only window silhouette + rain.\n# This workflow is not an automated publisher and cannot create a final master.
