@@ -1,0 +1,92 @@
+{
+  "schema_version": "1.0.0",
+  "project_id": "VERBO_NO_CHAO_EXCLUSIVO",
+  "episode_id": "VNC-W01-E1",
+  "scene_id": "VNC-E01V2-S01",
+  "as_of": "2026-11-19",
+  "scope": "S01_SOURCE_REVIEW_ONLY_NOT_GLOBAL_BAN",
+  "publication_authorized": false,
+  "master_allowed": false,
+  "commercial_rights_cleared": false,
+  "sources": [
+    {
+      "video_id": 4510748,
+      "source_url": "https://www.pexels.com/video/woman-sitting-by-the-window-4510748/",
+      "source_sha256": "c9893c53a3c51d9e6244e772ad16553ff3319db8b7bd070a9744800f316a2fa0",
+      "bytes": 27473889,
+      "width": 2160,
+      "height": 3840,
+      "duration_seconds": 9.958,
+      "physical_full_video_decode": true,
+      "sampled_frame_seconds": [
+        0.5,
+        2.8,
+        5.4
+      ],
+      "contact_sheet_sha256": "5b2af2b792ecfb9ffabe0318f848ba428a27993ad0859b8069aeda39e64db66e",
+      "evidence_run": "https://github.com/BORELLITO/verbo-no-chao-engine/actions/runs/44630728010",
+      "measured_luma_means": [
+        126.27,
+        126.39,
+        126.31
+      ],
+      "measured_frame_differences": [
+        0.78,
+        0.83
+      ],
+      "decision": "REJECTED_FOR_S01_EDITORIAL",
+      "reason": "Strong daylight outside, not dark rainy-night room; no closed notebook visible; near-static composition in 3 samples",
+      "source_license_general": "Pexels Free; third-party rights not evaluated",
+      "rights_cleared": false
+    },
+    {
+      "video_id": 28174743,
+      "source_url": "https://www.pexels.com/video/a-woman-is-sitting-at-a-desk-in-front-of-a-window-28174743/",
+      "source_sha256": null,
+      "bytes": null,
+      "physical_full_video_decode": false,
+      "sampled_frame_seconds": [],
+      "evidence_run": "https://github.com/BORELLITO/verbo-no-chao-engine/actions/runs/44630728010",
+      "failure_code": "oversized_source",
+      "decision": "TECHNICAL_INTAKE_BLOCKED_EDITORIAL_UNASSESSED",
+      "reason": "Original download exceeded existing 160 MB safety cap; no complete physical file or frame review. Do not label aesthetically rejected.",
+      "rights_cleared": false
+    },
+    {
+      "video_id": 7026683,
+      "source_url": "https://www.pexels.com/video/a-woman-writing-on-the-notebook-7026683/",
+      "source_sha256": "53bc1ff9d0a34528b12c7f0095e2ed61797943391ddf900ab740b1949c38a7dc",
+      "bytes": 25994187,
+      "width": 2160,
+      "height": 3840,
+      "duration_seconds": 10.01,
+      "physical_full_video_decode": true,
+      "sampled_frame_seconds": [
+        0.5,
+        2.8,
+        5.4
+      ],
+      "contact_sheet_sha256": "1d3e76f2307cbab21dc090ff3dea89c98dc3fedf086f354c622c72746328343d",
+      "evidence_run": "https://github.com/BORELLITO/verbo-no-chao-engine/actions/runs/44631386851",
+      "measured_luma_means": [
+        159.87,
+        159.2,
+        152.93
+      ],
+      "measured_frame_differences": [
+        7.51,
+        8.81
+      ],
+      "decision": "REJECTED_FOR_S01_EDITORIAL",
+      "reason": "Bright room and visible actor face, open notebook and visible laptop rather than anonymous dark rainy window and closed journal; candle alone does not create visual continuity",
+      "source_license_general": "Pexels Free; third-party rights not evaluated",
+      "rights_cleared": false
+    }
+  ],
+  "evidence_only": [
+    "No raw stock MP4 stored in public repo",
+    "GH Actions generated low-resolution derived contact sheets and physical JSON reports",
+    "No final master, no licensed voice/music, no synchronized captions, no user release authorization"
+  ],
+  "next_single_action": "DO_NOT_REUSE_REJECTED_S01_SOURCES; identify authentic compatible single-take dim rainy-window footage, evaluate preview before any S01 render"
+}
