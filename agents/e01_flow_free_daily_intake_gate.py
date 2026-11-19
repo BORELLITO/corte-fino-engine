@@ -55,6 +55,10 @@ def verified_manifest(root: Path = ROOT) -> dict[str, Any]:
         and plan.get("total_scenes") == 12
         and plan.get("total_credits_nominal") == 120
         and plan.get("minimum_daily_cycles_if_no_rejections") == 3
+        and plan.get("room_a_reference_frames_generated") is False
+        and plan.get("room_a_free_image_entitlement_verified") is False
+        and isinstance(plan.get("room_a_consistency_strategy"), str)
+        and "S01" in plan["room_a_consistency_strategy"]
         and plan.get("direct_flow_api_connection_available") is False
         and plan.get("live_user_account_entitlement_verified") is False
         and plan.get("automated_browser_credentials_or_unofficial_api_permitted") is False
@@ -92,7 +96,12 @@ def verified_manifest(root: Path = ROOT) -> dict[str, Any]:
             and clip.get("credits_estimate") == 10
             and clip.get("suggested_day") in VALID_DAYS
             and clip.get("output_filename") == expected_filename
-            and clip.get("flow_mode") == "text_to_video"
+            and clip.get("flow_mode") == ("first_frame_to_video" if clip.get("world") == "ROOM_A" and i != 0 else "text_to_video")
+            and clip.get("reference_media_verified") is False
+            and clip.get("first_frame_status") == (
+                "S01_IS_ROOT_VIDEO_ANCHOR_PENDING" if i == 0 else
+                "PENDING_APPROVED_S01_FRAME_AND_SHOT_SPECIFIC_KEYFRAME"
+                if clip.get("world") == "ROOM_A" else "NOT_REQUIRED")
             and clip.get("final_use_allowed") is False
             and clip.get("technical_verified") is False
             and clip.get("editorial_approved") is False
