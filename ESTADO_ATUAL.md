@@ -106,6 +106,15 @@
 - **Engine Gates SUCCESS** no HEAD da PR #57 após correção: [run 44625149040](https://github.com/BORELLITO/verbo-no-chao-engine/actions/runs/44625149040). Auditoria de especialistas estava em execução no momento da consulta; não declarar PASS sem nova verificação.
 - A montagem S01 V2 permanece **REJEITADA PARA MASTER**. Novo teste documental não comprova direitos de mídia, aprovação estética nem render final.
 
+### 8.2 Proteção pós-curadoria S01 — PR #59 (19/11/2026)
+
+- **Nova PR #59 DRAFT, empilhada sobre a PR #57**, branch `verbo-no-chao/e01-s01-stock-rejection-lock-20261119-v1`, head `3b465af0c55ad2c3822e7e6aa00e42668273641a`. Nenhum merge em branch operacional.
+- Registro JSON dos SHAs S01 stock V1 `3653dd73575446533b1f47512b3c236b9184bba150fec5116c5526ba0ee1013e` e V2 `2c099db52b219cb901977d98fac29f91579a4be1d9a2126f4ff6ba0cbcc7c1e5`, com conjuntos de fontes respectivos. Ambas as prévias continuam **REJEITADAS** por coerência cinematográfica.
+- `agents/e01_s01_stock_rejection_gate.py` mais integração ao piloto existente: detecta resultado anteriormente reprovado por hash ou reaproveitamento do mesmo conjunto de fontes, sinaliza `REAL_STOCK_MONTAGE_PHYSICALLY_VERIFIED_REJECTED_EDITORIAL` e mantém liberação de master e publicação negadas.
+- 10 métodos de teste adversarial offline no módulo `tests/test_e01_s01_stock_rejection_gate.py`, além da suíte geral. [Engine Gates run 44627983647](https://github.com/BORELLITO/verbo-no-chao-engine/actions/runs/44627983647) **SUCCESS** e [Eight Specialist Audits run 44627983601](https://github.com/BORELLITO/verbo-no-chao-engine/actions/runs/44627983601) **SUCCESS** no mesmo SHA.
+- Nenhuma nova filmagem foi encontrada, baixada, gerada, montada ou aprovada nesta intervenção. O novo gate é proteção editorial, **não avalia conteúdo visual autonomamente**.
+- **Próxima prioridade inalterada:** encontrar uma S01 com filmagem real e visual coerente (preferir sessão/ator único e noite chuvosa com caderno fechado), conferir licença e quadros, provar os bytes; se impossível, submeter direção simbólica alternativa a revisão estética. NUNCA reciclar V1/V2 como master.
+
 ## 9. Links de verificação
 
 - [PR #41 — branch operacional](https://github.com/BORELLITO/verbo-no-chao-engine/pull/41)
