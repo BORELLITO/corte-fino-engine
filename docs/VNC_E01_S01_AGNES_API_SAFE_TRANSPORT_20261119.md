@@ -23,7 +23,8 @@
 - python -m agents.e01_agnes_flash_transport_v1 --mode preflight (somente após colocar AGNES_API_KEY em ambiente seguro).
 
 ## Segurança e limites
-- Chave nunca no chat, no código, no PR nem em logs públicos; futura configuração em GitHub Actions Secret VNC_AGNES_API_KEY.
+- Chave nunca no chat, no código, no PR nem em logs públicos. Armazenar como **GitHub Actions Environment secret**, NÃO como repository-wide secret: ambiente `verbo-no-chao-agnes-readonly`, nome `VNC_AGNES_API_KEY`.
+- Em Settings > Environments > `verbo-no-chao-agnes-readonly`, restringir **Deployment branches and tags** a `Selected branches and tags`, com branch `verbo-no-chao/agnes-flash-transport-gated-20261119-v1`. Nenhum workflow de outro projeto deve ter acesso a esse ambiente. A restrição por branch limita exposição, mas ambientes não constituem isolamento criptográfico contra código malicioso autorizado na mesma branch; revisar PRs antes de merge.
 - Workflow novo só executa testes, plano offline e GET autenticado opcional; NÃO faz POST.
 - A API oficial não fornece ao nosso adaptador uma prova programática do preço específico da conta: manter enable_submission FALSE até verificação.
 - Não carregar imagens, não guardar URLs privadas, não entregar MP4, não liberar master nem publicar.
