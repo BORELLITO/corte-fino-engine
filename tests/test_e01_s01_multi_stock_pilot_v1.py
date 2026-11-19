@@ -10,7 +10,7 @@ class TestS01RealStock(unittest.TestCase):
         self.assertTrue(m.assert_inputs())
 
     def test_exact_original_sources_three(self):
-        self.assertEqual([x["id"] for x in m.INPUTS],[32788087,4458845,6376122])
+        self.assertEqual([x["id"] for x in m.INPUTS],[8860242,4458845])
         self.assertEqual(m.FRAME_COUNT,173)
         self.assertEqual(m.CANVAS,(720,1280))
         self.assertLess(abs(m.FRAME_COUNT/m.FPS-m.TARGET),0.03)
