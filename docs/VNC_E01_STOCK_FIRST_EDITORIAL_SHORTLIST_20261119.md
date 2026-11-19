@@ -8,7 +8,7 @@ A abordagem antiga exigia 8 cenas ROOM_A com a mesma pessoa, roupa, quarto, cade
 ## Fontes de vídeos prontas encontradas, por trecho
 | Cena | Faixa | Fonte primária candidata | Por que funciona | Risco / QA |
 |---|---:|---|---|---|
-| S01 — pergunta sem resposta | 0–5,74s | [Pexels 32788087](https://www.pexels.com/video/silhouette-of-man-working-in-a-dimly-lit-study-32788087/); [Pexels 4458845](https://www.pexels.com/video/rainy-nights-4458845/); [Pexels 6376122](https://www.pexels.com/video/a-white-notebook-on-the-table-6376122/) | 3 planos verdadeiros: pessoa de costas, chuva, caderno fechado | autores/salas diferentes; caderno branco e não preto; verificar crop e dramaturgia |
+| S01 — pergunta sem resposta | 0–5,74s | [Pexels 8860242](https://www.pexels.com/video/a-silhouette-of-a-man-sitting-alone-beside-a-window-8860242/); [Pexels 4458845](https://www.pexels.com/video/rainy-nights-4458845/) | Duas tomadas reais da V2 de teste: pessoa anônima à janela e chuva noturna | **REJEITADA PARA MASTER:** a janela parece diurna/clara perante chuva escura; caderno fechado ausente; atores/cenários não devem ser declarados idênticos |
 | S02 — dor da espera | 5,74–10,62s | [Pexels 36448548](https://www.pexels.com/video/vintage-alarm-clock-on-wooden-desk-36448548/) | relógio em mesa iluminada quente | verificar movimento do ponteiro e corte 9:16 |
 | S03 — violência e injustiça | 10,62–16,76s | [Pexels 9943158](https://www.pexels.com/video/a-back-view-of-a-person-walking-in-the-dark-9943158/) | figura anônima solitária em ambiente sombrio | solidão não é injustiça; não apresentar como evidência de evento real |
 | S04 — contexto de Habacuque | 16,76–22,58s | [Pexels 11530045](https://www.pexels.com/video/a-person-flipping-pages-of-an-old-book-11530045/) | velas e manuscrito/livro antigo, luz baixa | metáfora, não reconstituição histórica real; escrita legível |
@@ -26,6 +26,8 @@ A abordagem antiga exigia 8 cenas ROOM_A com a mesma pessoa, roupa, quarto, cade
 - [Mixkit Stock Video Free License](https://mixkit.co/license/modal/videoFree/): uso comercial permitido em videoclipes Free; versões rotuladas **Restricted License** são apenas uso pessoal e foram excluídas desta lista.
 - [Pixabay Content License](https://pixabay.com/service/license-summary/): é alternativa futura, conteúdo gratuito com direitos e marcas a verificar por item. Muitas cenas novas são rotuladas IA-gerada; a seleção prioriza cenas reais.
 - Nunca assumir que Pexels, Mixkit e Pixabay cobrem terceiros, marcas, faces, música extra, contexto histórico ou direitos de voz.
+
+**Reconciliação de origem S01 (19/11/2026):** o piloto V2 atual usa exatamente os IDs 8860242 e 4458845 (conforme agents/e01_s01_multi_stock_pilot_v1.py). Os IDs 32788087 e 6376122 aparecem em pesquisas anteriores, **não** são fontes do render V2. Esta correção documenta a origem real, **não** aprova a dupla nem cria novos direitos de uso.
 
 ## Prova prática S01 nesta branch
 - **V1** https://github.com/BORELLITO/verbo-no-chao-engine/actions/runs/44614902739: renderização real 5,767s / 720×1280 / 30 fps e SHA256 `3653dd73575446533b1f47512b3c236b9184bba150fec5116c5526ba0ee1013e`; **REJEIÇÃO ESTÉTICA** por texto/decorativo na parede e corte de caderno branco claro que rompe a harmonia.
