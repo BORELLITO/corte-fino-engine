@@ -1,0 +1,39 @@
+{
+  "schema_version": "1.0.0",
+  "project_id": "VERBO_NO_CHAO_EXCLUSIVO",
+  "episode_id": "VNC-W01-E1",
+  "scene_id": "VNC-E01V2-S01",
+  "footage_policy": "REAL_CAMERA_STOCK_ONLY_FOR_CURRENT_PATH",
+  "purpose": "LOCK_PREVIOUSLY_REJECTED_S01_PREVIEWS_NOT_LICENSE_OR_ARTISTIC_APPROVAL",
+  "publication_authorized": false,
+  "master_allowed": false,
+  "rejections": [
+    {
+      "id": "S01_STOCK_V1_20261119",
+      "output_sha256": "3653dd73575446533b1f47512b3c236b9184bba150fec5116c5526ba0ee1013e",
+      "source_video_ids": [
+        32788087,
+        4458845,
+        6376122
+      ],
+      "proof_run": "https://github.com/BORELLITO/verbo-no-chao-engine/actions/runs/44614902739",
+      "decision": "REJECTED_EDITORIAL",
+      "reason": "Wall writing/decorative text and bright white notebook break dark cinematic continuity; technical decode is not approval.",
+      "rights_cleared": false
+    },
+    {
+      "id": "S01_STOCK_V2_20261119",
+      "output_sha256": "2c099db52b219cb901977d98fac29f91579a4be1d9a2126f4ff6ba0cbcc7c1e5",
+      "source_video_ids": [
+        8860242,
+        4458845
+      ],
+      "proof_run": "https://github.com/BORELLITO/verbo-no-chao-engine/actions/runs/44615672379",
+      "decision": "REJECTED_EDITORIAL",
+      "reason": "Window appears bright/daylight versus dark night rain; closed notebook absent. Two locations must not masquerade as a single physical room.",
+      "rights_cleared": false
+    }
+  ],
+  "next_candidate_rule": "No reused rejected SHA or identical source-set may be described as accepted or ready for master. New preview is PENDING visual, source rights, audio, safe zone and owner review.",
+  "accepted_for_master": false
+}
