@@ -101,6 +101,22 @@ class S01StockRejectionLock(unittest.TestCase):
             with self.subTest(change=change), self.assertRaises(g.S01EditorialGateError):
                 g.classify_s01_stock_preview(report)
 
+    def test_native_portrait_resolution_is_not_invented_by_render_canvas(self):
+        report = valid_preview("a" * 64, [11111, 22222])
+        report["source_clips"][0].update(width=4096, height=2160)
+        report["source_clips"][1].update(width=1920, height=1080)
+        verdict = g.classify_s01_stock_preview(report)
+        self.assertFalse(verdict["source_native_1080x1920_dimensions_sufficient"])
+        self.assertEqual(verdict["release_gate"], "BLOCKED_NOT_MASTER")
+        report["source_clips"][1].update(width=2160, height=3840)
+        verdict = g.classify_s01_stock_preview(report)
+        self.assertTrue(verdict["source_native_1080x1920_dimensions_sufficient"])
+        self.assertEqual(verdict["release_gate"], "BLOCKED_NOT_MASTER")
+        # Dimensions alone cannot prove license, visual meaning or native quality.
+        report["source_clips"][1].update(width=True, height=3840)
+        verdict = g.classify_s01_stock_preview(report)
+        self.assertFalse(verdict["source_native_1080x1920_dimensions_sufficient"])
+
     def test_actual_movie_hash_must_match_report(self):
         with tempfile.TemporaryDirectory() as td:
             path = Path(td) / "physical.mp4"
