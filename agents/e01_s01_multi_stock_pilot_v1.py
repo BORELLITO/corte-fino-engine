@@ -1,6 +1,6 @@
 """VERBO NO CHÃO E01 S01 — deterministic real-stock short-form montage proof.
 
-Three independently licensed Pexels pages, real camera footage, no AI video.
+Two independently licensed Pexels pages, real camera footage, no AI video.
 Only a candidate preview is created; no user data, master or publication.
 """
 from __future__ import annotations
@@ -18,9 +18,8 @@ from agents.e01_stock_candidates import ROOT
 
 OUTPUT = Path("artifacts/vnc_e01_s01_multi_stock_pilot")
 INPUTS = [
-    {"id":32788087,"role":"CONTEMPLATIVE_HUMAN_SILHOUETTE","page":"https://www.pexels.com/video/silhouette-of-man-working-in-a-dimly-lit-study-32788087/","frames":69,"seek_seconds":3,"crop":"center","risk":"No genuine rain window or closed notebook; previously only a style reference."},
-    {"id":4458845,"role":"RAINY_WINDOW_AT_NIGHT","page":"https://www.pexels.com/video/rainy-nights-4458845/","frames":54,"seek_seconds":1,"crop":"center","risk":"Different studio/source; do not imply same room."},
-    {"id":6376122,"role":"CLOSED_NOTEBOOK_ON_TABLE","page":"https://www.pexels.com/video/a-white-notebook-on-the-table-6376122/","frames":50,"seek_seconds":1,"crop":"center","risk":"Notebook is white, not charcoal; may be static or have text."},
+    {"id":8860242,"role":"ANONYMOUS_PERSON_AT_WINDOW","page":"https://www.pexels.com/video/a-silhouette-of-a-man-sitting-alone-beside-a-window-8860242/","frames":93,"seek_seconds":5,"crop":"center","risk":"Check center crop and no readable wall text or recognizable face; this replaces prior unsuitable 32788087 source."},
+    {"id":4458845,"role":"RAINY_WINDOW_AT_NIGHT","page":"https://www.pexels.com/video/rainy-nights-4458845/","frames":80,"seek_seconds":1,"crop":"center","risk":"Separate source; symbolic montage, never claim same physical room."},
 ]
 CLOSED_SCRIPT_SHA="c64b57cb9d6529b60b9e80ab7607e5887f909dd00e14cd80ed9ec2b7474a5dc6"
 CLOSED_VOICE_SHA="4f2ee1ff0171ddedb7c64e0dce2300c53a0ef105ef12d643a7af6b0a4621942e"
@@ -35,9 +34,9 @@ class PilotError(ValueError): pass
 def assert_inputs():
     if FRAME_COUNT!=173 or abs(FRAME_COUNT/FPS-TARGET)>0.03:
         raise PilotError("bad_target_duration")
-    if [x["id"] for x in INPUTS]!=[32788087,4458845,6376122]:
+    if [x["id"] for x in INPUTS]!=[8860242,4458845]:
         raise PilotError("unapproved_candidate_set")
-    if len({x["id"] for x in INPUTS})!=3:
+    if len({x["id"] for x in INPUTS})!=2:
         raise PilotError("duplicate_sources")
     if any(x["frames"]<30 or x["seek_seconds"]<0 or x["crop"]!="center" or
            not x["page"].startswith("https://www.pexels.com/video/") or
@@ -129,7 +128,7 @@ def main():
     result={
        "project":"VERBO_NO_CHAO_EXCLUSIVO","scene_id":"VNC-E01V2-S01",
        "status":"BLOCKED_NO_MEDIA_YET",
-       "mode":"REAL_STOCK_EDITORIAL_MONTAGE_NOT_SINGLE_WORLD",
+       "mode":"REAL_STOCK_EDITORIAL_MONTAGE_V2_NOT_SINGLE_WORLD",
        "source_audio_added":False,"captions_added":False,
        "editorial_reviewed":False,"rights_cleared":False,
        "original_scene_contract_modified":False,"master_allowed":False,
@@ -150,7 +149,7 @@ def main():
                 movie.unlink(missing_ok=True)
             concat=temp/"parts.txt"
             concat.write_text("".join(f"file '{p.name}'\n" for p in parts),encoding="utf8")
-            target=OUTPUT/"VNC-E01-S01-REAL-STOCK-MONTAGE-CANDIDATE-NOT-MASTER.mp4"
+            target=OUTPUT/"VNC-E01-S01-REAL-STOCK-MONTAGE-V2-CANDIDATE-NOT-MASTER.mp4"
             checked_run(["ffmpeg","-nostdin","-v","error","-y",
                 "-f","concat","-safe","0","-i",str(concat),
                 "-an","-c","copy","-movflags","+faststart",str(target)],45,
@@ -170,7 +169,7 @@ def main():
                 visual_duration_covers_s01=True,full_video_decode_ok=True,
                 video_file=target.name,frames=FRAME_COUNT)
     except (PilotError,OSError,KeyError,ValueError,subprocess.TimeoutExpired,urllib.error.URLError) as error:
-        (OUTPUT/"VNC-E01-S01-REAL-STOCK-MONTAGE-CANDIDATE-NOT-MASTER.mp4").unlink(missing_ok=True)
+        (OUTPUT/"VNC-E01-S01-REAL-STOCK-MONTAGE-V2-CANDIDATE-NOT-MASTER.mp4").unlink(missing_ok=True)
         result.update(status="BLOCKED_NO_APPROVED_VIDEO",error_type=type(error).__name__,
             error_reason=str(error) if isinstance(error,PilotError) else None)
     (OUTPUT/"technical_report.json").write_text(json.dumps(result,indent=2,ensure_ascii=False)+"\n",encoding="utf8")
