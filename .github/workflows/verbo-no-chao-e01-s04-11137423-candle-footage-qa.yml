@@ -1,0 +1,65 @@
+name: Verbo no Chão — S04 real candlelit stock 4K physical QA (no AI)
+
+on:
+  push:
+    branches:
+      - "verbo-no-chao/e01-s04-real-footage-qa-20261119-v1"
+    paths:
+      - ".github/workflows/verbo-no-chao-e01-s04-11137423-candle-footage-qa.yml"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: vnc-e01-s04-pexels-11137423-physical-once
+  cancel-in-progress: false
+
+jobs:
+  single-real-film-source-review:
+    if: ${{ github.event_name == 'push' && github.event.head_commit.message == 'vnc-s04-11137423-physical-once-20261119' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 2
+          persist-credentials: false
+      - name: Exact workflow-only push gate
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(git show --pretty= --name-only "$GITHUB_SHA" | sed '/^$/d')" = ".github/workflows/verbo-no-chao-e01-s04-11137423-candle-footage-qa.yml"
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Four no-network contract tests
+        run: python -m unittest tests.test_e01_s04_pexels_11137423_physical_qa -v
+      - name: Pinned free ffmpeg binaries, no apt
+        run: timeout -k 5s 90s python -m pip install --disable-pip-version-check --retries 0 --no-cache-dir "portable-ffmpeg==0.5.0"
+      - name: ONE public source download only, no retry
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/vnc_s04_4k
+          curl --fail --location --silent --show-error --retry 0 \
+            --connect-timeout 15 --max-time 140 --max-filesize 250000000 \
+            --output /tmp/vnc_s04_4k/S04_Pexels_11137423_4K_original.mp4 \
+            'https://videos.pexels.com/video-files/11137423/11137423-hd_3840_2160_25fps.mp4'
+      - name: Whole-file decode, center vertical and original-wide contact sheets
+        shell: bash
+        run: |
+          set -euo pipefail
+          python -m agents.e01_s04_pexels_11137423_physical_qa \
+            /tmp/vnc_s04_4k/S04_Pexels_11137423_4K_original.mp4 \
+            artifacts/vnc_e01_s04_11137423
+      - name: Research frames only; no raw video hosted, no master
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: VNC-E01-S04-11137423-REAL-FRAMES-QUARANTINE
+          path: artifacts/vnc_e01_s04_11137423/
+          if-no-files-found: warn
+          retention-days: 1
+      - name: No promotion of license or biblical proof
+        if: always()
+        run: echo 'S04 stock remains only candidate; commercial, master, and publication blocked.'
