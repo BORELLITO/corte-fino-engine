@@ -123,6 +123,17 @@
 - Novo teste adversarial diferencia fonte 4096×2160 com crop nativo suficiente da fonte 1920×1080 inadequada; também rejeita largura booleana falsificada. [Engine Gates run 44628425836](https://github.com/BORELLITO/verbo-no-chao-engine/actions/runs/44628425836) **SUCCESS** no HEAD; a auditoria de especialistas estava em execução na última consulta.
 - **Nenhum download novo, master, publicação, gasto ou aprovação estética**. Reavaliação visual da S01 com filmagem real nova permanece prioridade.
 
+### 8.4 Pesquisa física de stock S01 — PR #60 DRAFT (19/11/2026)
+
+- **PR #60** `verbo-no-chao/e01-s01-single-take-research-20261119-v1`, head `563731b6b2302bbb208786d5c7cc41f1406f6057`, base PR #59 (também DRAFT). **Sem merges ou alteração operacional.**
+- **Pexels 4510748:** MP4 H.264 real, 2160×3840, 9,958s, 27.473.889 bytes, SHA `c9893c53a3c51d9e6244e772ad16553ff3319db8b7bd070a9744800f316a2fa0`. Decodificação integral passou. Três fotogramas (0,5 / 2,8 / 5,4s) exibiram janela extremamente clara e ausência de caderno fechado; movimento de quadros muito pequeno. **REJEITADO EDITORIALMENTE PARA S01**, apesar da prova técnica positiva.
+- **Pexels 28174743:** download `oversized_source` (> limite 160 MB existente); sem bytes completos nem opinião estética. **BLOQUEADO TECNICAMENTE, NÃO REJEITADO POR CONTEÚDO**.
+- **Pexels 7026683:** MP4 H.264 real, 2160×3840, 10,01s, 25.994.187 bytes, SHA `53bc1ff9d0a34528b12c7f0095e2ed61797943391ddf900ab740b1949c38a7dc`. Decodificação integral passou, três quadros (0,5 / 2,8 / 5,4s) mostram rosto visível, paredes claras, laptop e caderno aberto. **REJEITADO EDITORIALMENTE PARA S01**, não globalmente.
+- Provas: [Actions V1 parcial 44630728010](https://github.com/BORELLITO/verbo-no-chao-engine/actions/runs/44630728010), [Actions V2 sucesso físico 44631386851](https://github.com/BORELLITO/verbo-no-chao-engine/actions/runs/44631386851). [Engine Gates 44632337377](https://github.com/BORELLITO/verbo-no-chao-engine/actions/runs/44632337377) e [Eight Specialist Audits 44632337403](https://github.com/BORELLITO/verbo-no-chao-engine/actions/runs/44632337403) **SUCCESS** no HEAD da PR #60.
+- Folhas de contato JPEG e relatórios JSON físicos foram preservados **na Biblioteca privada do ChatGPT**, caminho `/VERBO_NO_CHAO/E01_STOCK_QA_20261119/`. Não alegar que arquivos originais MP4 ou ZIP foram preservados no Drive; tentativa de handoff GitHub→Drive falhou. Um subdiretório vazio no Drive foi criado como tentativa de backup, sem arquivos enviados; **não confundir com backup efetivo**.
+- Fonte de verdade do parecer atualizado: `contracts/e01_s01_single_take_physical_editorial_decisions_20261119_v1.json` e `docs/E01_S01_REAL_STOCK_PHYSICAL_VISUAL_REVIEW_20261119.md` da PR #60. As fotos dos quadros são evidências de **três instantes**, não de auditoria visual segundo a segundo.
+- **Próxima ação prioritária:** deixar de testar cenas visualmente genéricas e buscar take verdadeiramente coerente (sombra, noite/chuva, pessoa não identificável e caderno fechado), sempre inspecionar frames antes de montar, ou obter aprovação explícita de direção simbólica alternativa. Sem gastos, geração de IA, master ou publicação.
+
 ## 9. Links de verificação
 
 - [PR #41 — branch operacional](https://github.com/BORELLITO/verbo-no-chao-engine/pull/41)
