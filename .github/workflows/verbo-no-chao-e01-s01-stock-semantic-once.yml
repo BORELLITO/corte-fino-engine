@@ -45,7 +45,7 @@ jobs:
                   target.unlink()
               target.symlink_to(Path(source))
           with open(os.environ["GITHUB_PATH"],"a",encoding="utf8") as f:
-              f.write(str(dest)+"\\n")
+              f.write(str(dest)+"\n")
           PY
       - name: Verify installed codecs available
         run: |
