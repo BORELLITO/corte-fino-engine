@@ -1,0 +1,46 @@
+name: Verbo no Chão — LTX Fast Gradio metadata read-only (no generation)
+
+on:
+  push:
+    branches:
+      - "verbo-no-chao/e01-ltx-video-fast-free-proof-20261119-v1"
+    paths:
+      - ".github/workflows/verbo-no-chao-e01-ltxfast-gradio-metadata-readonly.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  inspect-only:
+    runs-on: ubuntu-latest
+    timeout-minutes: 3
+    steps:
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Inspect public Gradio client and exposed endpoints only
+        run: |
+          set -euo pipefail
+          timeout -k 5s 70s python -m pip install --disable-pip-version-check --no-cache-dir --retries 0 gradio_client==2.7.2
+          timeout -k 5s 60s python - <<'PY'
+          from gradio_client import Client
+          space="Lightricks/ltx-video-distilled"
+          try:
+              client=Client(space,verbose=False)
+          except Exception as error:
+              print("CLIENT_CONSTRUCTOR_ERROR_CLASS:",type(error).__name__)
+              raise SystemExit(2)
+          print("CLIENT_CONSTRUCTOR_SUCCESS")
+          try:
+              api=client.view_api(return_format="dict")
+              print("API_METADATA_TYPE:",type(api).__name__)
+              txt=str(api)
+              print("HAS_TEXT_TO_VIDEO:","/text_to_video" in txt)
+              if "/text_to_video" not in txt:
+                  raise SystemExit(2)
+          except Exception as error:
+              print("CLIENT_VIEW_API_ERROR_CLASS:",type(error).__name__)
+              raise SystemExit(2)
+          PY
+
+# No predict(), submit(), API key, image, video generation, money or publishing.
