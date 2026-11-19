@@ -28,12 +28,30 @@ jobs:
         uses: actions/setup-python@v5
         with:
           python-version: "3.12"
-      - name: Prepare verified local FFmpeg and imaging dependencies
+      - name: Prepare verified portable FFmpeg and imaging dependencies
         run: |
           set -euo pipefail
-          command -v ffmpeg
-          command -v ffprobe
-          python -m pip install --disable-pip-version-check --no-cache-dir "Pillow==11.3.0"
+          timeout -k 5s 110s python -m pip install --disable-pip-version-check --no-cache-dir --retries 0 "Pillow==11.3.0" "portable-ffmpeg==0.5.0"
+          python - <<'PY'
+          import os
+          from pathlib import Path
+          from portable_ffmpeg import get_ffmpeg
+          ffmpeg, ffprobe = get_ffmpeg()
+          dest = Path(os.environ["RUNNER_TEMP"]) / "vnc-ffmpeg"
+          dest.mkdir(parents=True,exist_ok=True)
+          for name,source in (("ffmpeg",ffmpeg),("ffprobe",ffprobe)):
+              target=dest/name
+              if target.exists() or target.is_symlink():
+                  target.unlink()
+              target.symlink_to(Path(source))
+          with open(os.environ["GITHUB_PATH"],"a",encoding="utf8") as f:
+              f.write(str(dest)+"\\n")
+          PY
+      - name: Verify installed codecs available
+        run: |
+          set -euo pipefail
+          ffmpeg -version
+          ffprobe -version
       - name: Run offline scene-lock and URL-security regression tests
         run: python -m unittest tests.test_e01_s01_stock_semantic_probe -v
       - name: Download, fully decode, hash and visually sample three Pexels clips
