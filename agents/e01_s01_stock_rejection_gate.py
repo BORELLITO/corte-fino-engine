@@ -120,7 +120,17 @@ def classify_s01_stock_preview(
     known_hash = digest in LOCKED_REJECTIONS
     known_source_set = frozenset(ids) in LOCKED_REJECTIONS.values()
     previously_rejected = known_hash or known_source_set
+    # For a 1080x1920 crop with no enlargement, source dimensions must
+    # contain at least 1080 horizontal and 1920 vertical physical pixels.
+    # The original Pexels rainy-night 1920x1080 is PREVIEW-ONLY.
+    native_master_dimensions_sufficient = all(
+        type(src.get("width")) is int and src["width"] >= 1080
+        and type(src.get("height")) is int and src["height"] >= 1920
+        for src in sources
+    )
     return {
+        "source_native_1080x1920_dimensions_sufficient": native_master_dimensions_sufficient,
+        "native_resolution_evidence_is_ffprobe_metadata_only": True,
         "editorial_decision": (
             "REJECTED_EDITORIAL_PREVIOUS_QA"
             if previously_rejected else "PENDING_HUMAN_FRAME_AND_RIGHTS_REVIEW"
