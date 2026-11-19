@@ -17,6 +17,7 @@ WORLD = Path("contracts/e01_v2_visual_single_world_acquisition_v1.json")
 CATALOG1 = Path("contracts/e01_v2_stock_candidates_v1.json")
 CATALOG2 = Path("contracts/e01_v2_stock_alternatives_v1.json")
 DIRECTOR = Path("contracts/e01_director_editorial_decisions_v1.json")
+S04_REJECTIONS = Path("contracts/e01_s04_real_stock_editorial_rejections_20261119.json")
 SCRIPT = "c64b57cb9d6529b60b9e80ab7607e5887f909dd00e14cd80ed9ec2b7474a5dc6"
 AUDIO = "4f2ee1ff0171ddedb7c64e0dce2300c53a0ef105ef12d643a7af6b0a4621942e"
 EXCLUDED_PEXELS = frozenset((
@@ -149,6 +150,29 @@ def verify(root:Path=ROOT, data:dict|None=None)->dict:
 def rejected_sha(sha:str)->bool:
  return isinstance(sha,str) and sha.lower() in EXCLUDED_SHA
 
+def s04_rejected_for_scene(root:Path, scene_id:str, video_id:int)->bool:
+ """Frozen independent real-frame director rejects, without changing old registry."""
+ ledger=read_json(root,S04_REJECTIONS)
+ decisions=ledger.get("evidence")
+ require(ledger.get("project_id")=="VERBO_NO_CHAO_EXCLUSIVO"
+     and ledger.get("episode_id")=="VNC-W01-E1"
+     and ledger.get("scene_id")=="VNC-E01V2-S04"
+     and ledger.get("editorial_approved") is False
+     and ledger.get("commercial_rights_cleared") is False
+     and ledger.get("allowed_in_master") is False
+     and ledger.get("publication_authorized") is False
+     and isinstance(decisions,list)
+     and len(decisions)==2
+     and {v.get("id") for v in decisions}=={7977614,11137423}
+     and all(v.get("decision")=="REJECTED_FOR_S04"
+             and v.get("commercial_rights_cleared") is False
+             and v.get("allowed_for_s04_master") is False
+             and isinstance(v.get("source_sha256"),str)
+             and re.fullmatch(r"[0-9a-f]{64}",v["source_sha256"])
+             for v in decisions),
+     "source_precision:s04_rejection_evidence_missing_or_changed")
+ return scene_id=="VNC-E01V2-S04" and video_id in {7977614,11137423}
+
 def preflight_stock(scene_id:str,video_id:int,page_url:str,query:str,
                     root:Path=ROOT)->dict:
  """Select a new public stock page for inspection, NEVER for scene admission.
@@ -164,6 +188,8 @@ def preflight_stock(scene_id:str,video_id:int,page_url:str,query:str,
          "source_precision:recurring_actor_must_use_approved_actor_reference")
  require(type(video_id) is int and video_id>0 and video_id not in EXCLUDED_PEXELS,
          "source_precision:rejected_reused_or_invalid_video_id")
+ require(not s04_rejected_for_scene(root,scene_id,video_id),
+         "source_precision:s04_real_frame_editorially_rejected")
  require(isinstance(query,str)
          and query in scene["locked_search_queries_en"],
          "source_precision:generic_or_cross_scene_query")
