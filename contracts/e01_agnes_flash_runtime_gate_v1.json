@@ -1,0 +1,26 @@
+{
+  "schema_version": "1.0.0",
+  "project": "verbo-no-chao",
+  "episode_id": "VNC-W01-E1",
+  "scene_id": "VNC-E01V2-S01",
+  "model": "agnes-video-2.5-flash",
+  "endpoint": "https://apihub.agnes-ai.com/v1/videos",
+  "usage": "ONE_6_SECOND_TEXT_TO_VIDEO_NO_REFERENCE_MEDIA",
+  "price_ceiling_usd": 0,
+  "max_post_attempts": 1,
+  "api_access_verified": false,
+  "account_default_plan_verified": false,
+  "account_specific_zero_price_verified": false,
+  "zero_price_reverified_before_generation": false,
+  "scene_generation_authorized": false,
+  "enable_submission": false,
+  "reference_upload_authorized": false,
+  "rights_cleared": false,
+  "master_allowed": false,
+  "publication_authorized": false,
+  "policy": "No trial, no authenticated catalog access, and no public pricing announcement is sufficient to authorize a job. No retries after ambiguous POST. Private media may not be written to public repository or CI artifacts. This file is a deny-by-default integration plan; lifting any gate requires separate evidence, explicit authorization, and reviewed change.",
+  "sources": [
+    "https://wiki.agnes-ai.com/en/docs/pricing.md",
+    "https://github.com/AgnesAI-Labs/skills/blob/main/agnes-ai-models/references/model_catalog.md"
+  ]
+}
