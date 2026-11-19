@@ -65,3 +65,6 @@ jobs:
 
 # 2026-11-19: one evidence-preserving diagnostic rerun after partial-source failure.
 # Retain first validated source's contact sheet while second remains fail-closed.
+
+# V2 pivot: one vertical 10-second candlelit notebook source (Pexels 7026683).
+# Historical V1 report retained in prior Actions artifacts; this trigger is intentional.
