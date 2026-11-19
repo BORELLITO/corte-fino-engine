@@ -46,5 +46,40 @@
     "PEXELS_8860242_PREVIOUSLY_REJECTED",
     "NO_REPLAY_OLD_LTX_NONCE"
   ],
-  "next_action": "CONFIRM_AUTHENTICATED_GOOGLE_FLOW_AVAILABLE_AND_REAL_QUOTE_IN_WORK_MODE_BEFORE_ONE_S01"
+  "next_action": "CONFIRM_AUTHENTICATED_GOOGLE_FLOW_AVAILABLE_AND_REAL_QUOTE_IN_WORK_MODE_BEFORE_ONE_S01",
+  "comparison_reverified_utc_date": "2026-11-19",
+  "preferred_route_decision": "GOOGLE_FLOW_FIRST_FRAME_DAILY_FREE_REQUIRES_AUTHENTICATED_ACCOUNT_CHECK",
+  "fallback_higgsfield_quote": {
+    "provider": "Higgsfield",
+    "model": "seedance_2_0_mini",
+    "quote_source": "CONNECTED_READ_ONLY_ESTIMATE_NO_UPLOAD_NO_JOB",
+    "duration_seconds": 6,
+    "aspect_ratio": "9:16",
+    "resolution": "720p",
+    "requested_outputs": 1,
+    "audio_requested": false,
+    "quoted_credits": 6,
+    "quote_is_not_generation": true,
+    "account_balance_not_persisted_publicly": true,
+    "free_plan_recurring_allowance": false,
+    "free_tier_visible_watermark_possible": true,
+    "free_tier_model_access_at_submission": "NOT_VERIFIED",
+    "commercial_rights_per_provider_terms": "GENERICALLY_PERMITTED_SUBJECT_TO_THIRD_PARTY_RIGHTS_AND_WATERMARK_CHECK",
+    "source_first_frame_uploaded": false,
+    "credit_spending_authorized": false,
+    "generator_job_submitted": false,
+    "allowed_in_master": false,
+    "publication_authorized": false,
+    "sources": [
+      "https://higgsfield.ai/creator-hub/help-center/plans/what-does-the-free-plan-include",
+      "https://higgsfield.ai/creator-hub/help-center/account/who-owns-my-generations-and-can-i-use-them-commercially",
+      "https://higgsfield.ai/creator-hub/help-center/ai-models/how-do-i-use-seedance"
+    ]
+  },
+  "provider_route_comparison": {
+    "google_flow": "PUBLIC_50_FREE_CREDITS_DAILY_10_PER_6S_GENERATION_720P_FIRST_FRAME_MODE;ACCOUNT_AND_UI_UNVERIFIED",
+    "higgsfield": "ONE_VERIFIED_6_CREDIT_PRICE_QUOTE_NO_FREE_MONTHLY_REPLENISHMENT_POSSIBLE_VISIBLE_WATERMARK",
+    "no_generation_without_user_specific_credit_permission": true,
+    "no_private_media_uploaded_to_3p": true
+  }
 }
