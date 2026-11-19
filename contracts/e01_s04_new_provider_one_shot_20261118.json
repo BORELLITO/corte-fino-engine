@@ -1,0 +1,11 @@
+{
+  "project_id": "VERBO_NO_CHAO_EXCLUSIVO",
+  "episode_id": "VNC-W01-E1",
+  "scene_id": "VNC-E01V2-S04",
+  "provider": "Fhwang/wan2-video-generation",
+  "number_of_provider_submissions": 1,
+  "use_anonymous_free_gpu_only": true,
+  "no_private_media": true,
+  "no_retry": true,
+  "publication_authorized": false
+}
