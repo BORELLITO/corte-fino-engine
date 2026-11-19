@@ -1,0 +1,54 @@
+{
+  "schema_version": "1.0.0",
+  "project_id": "VERBO_NO_CHAO_EXCLUSIVO",
+  "episode_id": "VNC-W01-E1",
+  "scene_id": "VNC-E01V2-S01",
+  "parent_head": "563731b6b2302bbb208786d5c7cc41f1406f6057",
+  "concept": "NIGHT_RAIN_WINDOW_SINGLE_TAKE_SYMBOLIC_VISUAL_ALTERNATIVE",
+  "narrative_intent": "A unanswered question represented by real raindrops on window with dark distant lights; no fabricated actor continuity",
+  "approval_status": "CONCEPT_RESEARCH_ONLY_NOT_USER_APPROVED",
+  "source_class": "PEXELS_REAL_FOOTAGE_REVIEW_ONLY",
+  "source_id": 31069867,
+  "page_url": "https://www.pexels.com/video/raindrop-reflections-on-nighttime-metro-glass-31069867/",
+  "page_author": "Zeki Okur",
+  "page_license": "Free / Pexels",
+  "general_license_url": "https://www.pexels.com/license/",
+  "page_metadata": {
+    "width": 2160,
+    "height": 3840,
+    "fps": 50,
+    "duration_seconds": 24
+  },
+  "scene_window_seconds": 5.74,
+  "experimental_preview": {
+    "width": 720,
+    "height": 1280,
+    "fps": 30,
+    "frames": 173,
+    "watermark": "PREVIA DE QA - NAO PUBLICAR",
+    "source_audio_removed": true,
+    "voice_added": false,
+    "subtitles_added": false
+  },
+  "known_storyboard_deviation": [
+    "No visible actor",
+    "No closed notebook",
+    "Metro window is not ROOM_A",
+    "Does not claim a single character or room shared across the E01"
+  ],
+  "free_cost_only": true,
+  "raw_movie_to_repo": false,
+  "editorial_approved": false,
+  "third_party_rights_cleared": false,
+  "voice_license_cleared": false,
+  "master_allowed": false,
+  "publication_authorized": false,
+  "release_state": "BLOCKED_RESEARCH",
+  "rejected_source_ids": [
+    4510748,
+    7026683,
+    8860242,
+    4458845
+  ],
+  "next_gate": "PHYSICAL_MP4_FRAMES_VISUAL_DIRECTION_APPROVAL_BEFORE_ANY_STORYBOARD_CHANGE"
+}
