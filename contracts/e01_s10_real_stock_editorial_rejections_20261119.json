@@ -1,0 +1,58 @@
+{
+  "schema_version": "1.0.0",
+  "project_id": "VERBO_NO_CHAO_EXCLUSIVO",
+  "episode_id": "VNC-W01-E1",
+  "scene_id": "VNC-E01V2-S10",
+  "review_date": "2026-11-19",
+  "canonical_plan": "contracts/e01_v2_12_scene_visual_plan_v1.json",
+  "canonical_scene_duration_seconds": 6.6,
+  "scene_timeline": [
+    55.56,
+    62.16
+  ],
+  "source_review_scope": "S10_ONLY",
+  "decisions": [
+    {
+      "source_video_id": 9490306,
+      "creator": "Yaroslav Shuraev",
+      "source_page": "https://www.pexels.com/video/a-woman-talking-to-her-friend-while-sitting-at-a-table-9490306/",
+      "source_download": "https://videos.pexels.com/video-files/9490306/9490306-uhd_2160_3840_25fps.mp4",
+      "status": "REJECTED_FOR_S10",
+      "basis": "TWO_6_6S_REAL_FRAME_WINDOWS_AND_NATIVE_LOWER_BODY_CROP",
+      "director_reason_pt": "Os quadros reais mostram atividade de estudo: livros abertos, maca(s), uma pessoa sentada sobre a mesa, rostos reconhecíveis, ambiente claro. O recorte sem rostos mantém livros e mãos, mas não comunica escuta e apoio mútuo. Isso diverge do storyboard de apoio responsável sem testemunho real ou endosso.",
+      "full_original_sha256": "cfecb6aa945c25258728a5155840ae03a1ca636866a4719137c29c8dec75c35e",
+      "source_bytes": 19127730,
+      "width": 2160,
+      "height": 3840,
+      "original_duration_seconds": 16.56,
+      "original_fps": 25,
+      "full_source_decoded": true,
+      "real_frame_review": true,
+      "sheets": [
+        {
+          "file": "S10_REAL_SOURCE_FRAMES_WINDOW_1.jpg",
+          "sha256": "f596f2a768d943061f5bc76cd37484840ab0bed72d852f02d5379e601daab6ee"
+        },
+        {
+          "file": "S10_REAL_SOURCE_FRAMES_WINDOW_2.jpg",
+          "sha256": "36ad56f013b3d79addb55b4614186488ebb92db85da8066c0352d8feb109a6d6"
+        },
+        {
+          "file": "S10_LOWER_BODY_NATIVE_CROP_REVIEW.jpg",
+          "sha256": "eb64bed267ba32fc814e154f4f783b94477beb856f7f26c05e2f00a16cb36d07"
+        }
+      ],
+      "github_physical_run": "https://github.com/BORELLITO/corte-fino-engine/actions/runs/44491955202",
+      "third_party_rights_cleared": false,
+      "editorial_approved": false,
+      "allowed_for_s10_master": false
+    }
+  ],
+  "legacy_rejections_registry_changed": false,
+  "editorial_approved": false,
+  "commercial_rights_cleared": false,
+  "allowed_in_master": false,
+  "publication_authorized": false,
+  "auto_reconsider_same_video_for_s10": false,
+  "record_status": "DIRECTOR_REJECTED_NOT_MASTER"
+}
