@@ -1,0 +1,67 @@
+name: Verbo no Chão — S04 actual Pexels footage physical test (one-off, no AI)
+
+on:
+  push:
+    branches:
+      - "verbo-no-chao/e01-s04-real-footage-qa-20261119-v1"
+    paths:
+      - ".github/workflows/verbo-no-chao-e01-s04-real-pexels-physical-qa.yml"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: vnc-s04-real-pexels-7977614-one-time
+  cancel-in-progress: false
+
+jobs:
+  one-real-source-research:
+    if: ${{ github.event_name == 'push' && github.event.head_commit.message == 'vnc-s04-pexels-7977614-physical-once-20261119' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 7
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 2
+          persist-credentials: false
+      - name: Ensure trigger modifies only this workflow
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(git show --pretty= --name-only "$GITHUB_SHA" | sed '/^$/d')" = ".github/workflows/verbo-no-chao-e01-s04-real-pexels-physical-qa.yml"
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: No-network adversarial tests
+        run: python -m unittest tests.test_e01_s04_pexels_7977614_physical_qa -v
+      - name: Install proved non-apt ffmpeg+ffprobe wheel
+        run: |
+          set -euo pipefail
+          timeout -k 5s 80s python -m pip install --disable-pip-version-check --no-cache-dir --retries 0 "portable-ffmpeg==0.5.0"
+      - name: Download one publicly licensed video, no API token or retry
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/vnc_s04_qa
+          curl --fail --location --silent --show-error --connect-timeout 15 \
+            --max-time 120 --retry 0 --max-filesize 160000000 \
+            -o /tmp/vnc_s04_qa/S04_original_public_Pexels_7977614.mp4 \
+            "https://videos.pexels.com/video-files/7977614/7977614-hd_1080_1920_30fps.mp4"
+      - name: Decode all frames and generate real contact sheets only
+        shell: bash
+        run: |
+          set -euo pipefail
+          python -m agents.e01_s04_pexels_7977614_physical_qa \
+            /tmp/vnc_s04_qa/S04_original_public_Pexels_7977614.mp4 \
+            artifacts/vnc_e01_s04_7977614
+      - name: Upload evidence only (no raw MP4, not approved)
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: VNC-E01-S04-7977614-REAL-FRAMES-QUARANTINE
+          path: artifacts/vnc_e01_s04_7977614/
+          if-no-files-found: warn
+          retention-days: 1
+      - name: Block master and release
+        if: always()
+        run: echo "No edits to original E01 sources. Editorial and rights remain BLOCKED. No publication."
