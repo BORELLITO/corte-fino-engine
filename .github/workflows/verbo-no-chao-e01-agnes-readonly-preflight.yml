@@ -16,6 +16,9 @@ permissions:
 
 jobs:
   preflight-only:
+    # Credential belongs to the VNC environment, not repository-wide secrets.
+    # Configure deployment branches restricted to this VNC preflight branch.
+    environment: verbo-no-chao-agnes-readonly
     runs-on: ubuntu-latest
     timeout-minutes: 6
     steps:
