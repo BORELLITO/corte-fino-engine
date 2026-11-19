@@ -150,6 +150,7 @@ class S01StockRejectionLock(unittest.TestCase):
         import inspect
         source = inspect.getsource(pilot.main)
         self.assertIn("classify_s01_stock_preview(result, movie_path=target)", source)
+        self.assertIn("REAL_STOCK_MONTAGE_PHYSICALLY_VERIFIED_REJECTED_EDITORIAL", source)
         self.assertEqual([s["id"] for s in pilot.INPUTS], [8860242, 4458845])
 
 
