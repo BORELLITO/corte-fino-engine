@@ -115,6 +115,14 @@
 - Nenhuma nova filmagem foi encontrada, baixada, gerada, montada ou aprovada nesta intervenção. O novo gate é proteção editorial, **não avalia conteúdo visual autonomamente**.
 - **Próxima prioridade inalterada:** encontrar uma S01 com filmagem real e visual coerente (preferir sessão/ator único e noite chuvosa com caderno fechado), conferir licença e quadros, provar os bytes; se impossível, submeter direção simbólica alternativa a revisão estética. NUNCA reciclar V1/V2 como master.
 
+### 8.3 Resolução de fonte S01 auditada, PR #59 atualizada (19/11/2026)
+
+- PR #59 segue **DRAFT**, HEAD `3cc57e3a49ccc5c386b61ae371d824513466325b`, base PR #57 não mesclada.
+- Fonte Pexels 4458845 usada para chuva da S01 V2 anuncia **1920×1080 horizontal**. Recorte 9:16 sem expansão alcança apenas aproximadamente **608×1080** de pixels físicos; por isso não pode fundamentar master vertical nativa 1080×1920.
+- Gate introduz `source_native_1080x1920_dimensions_sufficient`, calculado a partir das dimensões FFprobe das fontes, para registrar explicitamente insuficiência e manter MASTER_BLOCKED. Um PASS dimensional isolado nunca prova direitos, composição, conteúdo ou autorização.
+- Novo teste adversarial diferencia fonte 4096×2160 com crop nativo suficiente da fonte 1920×1080 inadequada; também rejeita largura booleana falsificada. [Engine Gates run 44628425836](https://github.com/BORELLITO/verbo-no-chao-engine/actions/runs/44628425836) **SUCCESS** no HEAD; a auditoria de especialistas estava em execução na última consulta.
+- **Nenhum download novo, master, publicação, gasto ou aprovação estética**. Reavaliação visual da S01 com filmagem real nova permanece prioridade.
+
 ## 9. Links de verificação
 
 - [PR #41 — branch operacional](https://github.com/BORELLITO/verbo-no-chao-engine/pull/41)
