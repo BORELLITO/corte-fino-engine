@@ -1,0 +1,64 @@
+{
+ "queries": {
+  "S01_chuva_janela_noite": [
+   "https://mixkit.co/free-stock-video/discover/rain/?orientation=vertical",
+   "https://mixkit.co/free-stock-video/discover/window/?orientation=vertical",
+   "https://mixkit.co/free-stock-video/discover/night-rain/?orientation=vertical"
+  ],
+  "S02_espera_maos": [
+   "https://mixkit.co/free-stock-video/discover/waiting/?orientation=vertical",
+   "https://mixkit.co/free-stock-video/discover/hands/?orientation=vertical",
+   "https://mixkit.co/free-stock-video/discover/clock/?orientation=vertical"
+  ],
+  "S03_rua_injustica": [
+   "https://mixkit.co/free-stock-video/discover/street/?orientation=vertical",
+   "https://mixkit.co/free-stock-video/discover/night-city/?orientation=vertical",
+   "https://mixkit.co/free-stock-video/discover/rain-street/?orientation=vertical"
+  ],
+  "S04_pergaminho_vela": [
+   "https://mixkit.co/free-stock-video/discover/candle/?orientation=vertical",
+   "https://mixkit.co/free-stock-video/discover/parchment/?orientation=vertical",
+   "https://mixkit.co/free-stock-video/discover/quill/?orientation=vertical"
+  ],
+  "S05_corredor_arcos": [
+   "https://mixkit.co/free-stock-video/discover/corridor/?orientation=vertical",
+   "https://mixkit.co/free-stock-video/discover/arch/?orientation=vertical",
+   "https://mixkit.co/free-stock-video/discover/hallway/?orientation=vertical"
+  ],
+  "S06_caderno_mesa": [
+   "https://mixkit.co/free-stock-video/discover/notebook/?orientation=vertical",
+   "https://mixkit.co/free-stock-video/discover/journal/?orientation=vertical",
+   "https://mixkit.co/free-stock-video/discover/desk/?orientation=vertical"
+  ],
+  "S07_pessoa_janela": [
+   "https://mixkit.co/free-stock-video/discover/silhouette/?orientation=vertical",
+   "https://mixkit.co/free-stock-video/discover/looking-out/?orientation=vertical",
+   "https://mixkit.co/free-stock-video/discover/contemplation/?orientation=vertical"
+  ],
+  "S08_maos_oracao": [
+   "https://mixkit.co/free-stock-video/discover/praying/?orientation=vertical",
+   "https://mixkit.co/free-stock-video/discover/prayer/?orientation=vertical",
+   "https://mixkit.co/free-stock-video/discover/hands/?orientation=vertical"
+  ],
+  "S09_escrevendo": [
+   "https://mixkit.co/free-stock-video/discover/writing/?orientation=vertical",
+   "https://mixkit.co/free-stock-video/discover/pen/?orientation=vertical",
+   "https://mixkit.co/free-stock-video/discover/handwriting/?orientation=vertical"
+  ],
+  "S10_apoio_maos": [
+   "https://mixkit.co/free-stock-video/discover/holding-hands/?orientation=vertical",
+   "https://mixkit.co/free-stock-video/discover/comforting/?orientation=vertical",
+   "https://mixkit.co/free-stock-video/discover/support/?orientation=vertical"
+  ],
+  "S11_amanhecer": [
+   "https://mixkit.co/free-stock-video/discover/dawn/?orientation=vertical",
+   "https://mixkit.co/free-stock-video/discover/sunrise-window/?orientation=vertical",
+   "https://mixkit.co/free-stock-video/discover/morning-light/?orientation=vertical"
+  ],
+  "S12_abrindo_caderno": [
+   "https://mixkit.co/free-stock-video/discover/opening-book/?orientation=vertical",
+   "https://mixkit.co/free-stock-video/discover/book/?orientation=vertical",
+   "https://mixkit.co/free-stock-video/discover/notebook/?orientation=vertical"
+  ]
+ }
+}

@@ -1,0 +1,21 @@
+name: Verbo no Chão — E01 free stock scan (read-only)
+on:
+  push:
+    branches: ["verbo-no-chao/e01-ai-i2v-probe-20261120-v1"]
+    paths:
+      - ".github/workflows/verbo-no-chao-e01-stock-scrape.yml"
+      - "agents/e01_stock_scrape.py"
+      - "contracts/e01_stock_scrape_inputs.json"
+permissions:
+  contents: read
+jobs:
+  scan:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Scan listings (no footage download, no spend, no publish)
+        run: python -m agents.e01_stock_scrape contracts/e01_stock_scrape_inputs.json
