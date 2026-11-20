@@ -1,0 +1,57 @@
+name: Verbo no Chão — Produzir episódio (preview)
+
+on:
+  workflow_dispatch:
+    inputs:
+      spec_path:
+        description: "Spec do episódio (ex.: episodes/E02.json)"
+        required: true
+        type: string
+  schedule:
+    - cron: "17 9 * * 1"   # segunda; só roda se queue/next.json existir
+
+permissions:
+  contents: read
+
+jobs:
+  produce:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    env:
+      PEXELS_API_KEY: ${{ secrets.PEXELS_API_KEY }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Resolve spec
+        id: spec
+        run: |
+          SPEC="${{ inputs.spec_path }}"
+          if [ -z "$SPEC" ]; then SPEC="queue/next.json"; fi
+          if [ ! -f "$SPEC" ]; then echo "found=false" >> "$GITHUB_OUTPUT"; echo "sem spec: nada a produzir"; exit 0; fi
+          echo "found=true" >> "$GITHUB_OUTPUT"
+          echo "path=$SPEC" >> "$GITHUB_OUTPUT"
+      - name: Engine gates first (fail closed)
+        if: steps.spec.outputs.found == 'true'
+        run: python -m unittest discover -s tests -p "test_*.py"
+      - name: Install producer runtime
+        if: steps.spec.outputs.found == 'true'
+        run: |
+          sudo apt-get update -qq && sudo apt-get install -y -qq espeak-ng
+          python -m pip install --disable-pip-version-check -r requirements-producer.txt
+      - name: Produce preview and validate with the engine gates
+        if: steps.spec.outputs.found == 'true'
+        run: python -m producer.cli "${{ steps.spec.outputs.path }}" --out build/episode --report-dir run-reports
+      - name: Upload preview + reports (never publishes)
+        if: always() && steps.spec.outputs.found == 'true'
+        uses: actions/upload-artifact@v4
+        with:
+          name: vnc-preview-${{ github.run_id }}
+          path: |
+            build/episode/output.mp4
+            build/episode/package.json
+            build/episode/captions.ass
+            run-reports/
+          if-no-files-found: warn
+          retention-days: 14
