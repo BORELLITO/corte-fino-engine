@@ -31,8 +31,42 @@ def _norm(word: str) -> str:
     return re.sub(r"[^\w]", "", "".join(c for c in base if not unicodedata.combining(c)))
 
 
+# Function words that must never close a line or a cue (they belong to the NEXT word).
+_WEAK_RAW = ("""
+a o as os um uma uns umas de do da dos das em no na nos nas num numa ao aos à às pelo pela pelos pelas
+por para pra com sem sob sobre entre até e ou mas que se como quando onde nem
+meu minha meus minhas teu tua teus tuas seu sua seus suas nosso nossa nossos nossas
+me te lhe nos lhes já não mais mesmo
+""")
+WEAK_WORDS = frozenset(_norm(w) for w in _WEAK_RAW.split())
+SOFT_TARGET_CHARS = 42  # reading comfort for a 9:16 short; above this a cue gets a penalty
+
+
+def _weak(word: str) -> bool:
+    return _norm(word) in WEAK_WORDS and not re.search(r"[.!?,;:…]$", word)
+
+
+def _split_two_lines(words: list[str]) -> tuple[str, str] | None:
+    """Best 2-line split: both lines fit, balanced, no line ends on a function word, no 1-word tail."""
+    best, best_cost = None, None
+    for i in range(1, len(words)):
+        l1, l2 = " ".join(words[:i]), " ".join(words[i:])
+        if len(l1) > MAX_LINE_CHARS or len(l2) > MAX_LINE_CHARS:
+            continue
+        cost = abs(len(l1) - len(l2)) + (100 if _weak(words[i - 1]) else 0) + (30 if len(words) - i == 1 else 0)
+        if best_cost is None or cost < best_cost:
+            best, best_cost = (l1, l2), cost
+    return best
+
+
 def wrap(words: list[str]) -> tuple[str, ...]:
-    lines, current = [], ""
+    one = " ".join(words)
+    if len(one) <= MAX_LINE_CHARS or len(words) < 2:
+        return (one,)
+    two = _split_two_lines(words)
+    if two:
+        return two
+    lines, current = [], ""  # overlong content: greedy (the caller sees >MAX_LINES and rejects it)
     for word in words:
         trial = f"{current} {word}".strip()
         if len(trial) <= MAX_LINE_CHARS or not current:
@@ -44,17 +78,48 @@ def wrap(words: list[str]) -> tuple[str, ...]:
     return tuple(lines)
 
 
+def _chunk_cost(words: list[str], last_of_text: bool) -> float:
+    text = " ".join(words)
+    cost = 10.0
+    if not last_of_text and _weak(words[-1]):
+        cost += 80
+    if len(words) == 1 and not last_of_text:
+        cost += 60
+    lines = wrap(words)
+    cost += 40 * sum(_weak(line.split()[-1]) for line in lines[:-1])  # a line closing on a function word
+    if len(lines) == 2 and len(lines[1].split()) == 1 and len(words) > 2:
+        cost += 20  # one-word tail line
+    if len(text) > SOFT_TARGET_CHARS:
+        cost += (len(text) - SOFT_TARGET_CHARS) * 1.5
+    if re.search(r"[.!?…]$", words[-1]):
+        cost -= 25
+    elif re.search(r"[,;:]$", words[-1]):
+        cost -= 12
+    return cost
+
+
 def chunk_words(words: list[str]) -> list[list[int]]:
-    """Group word indexes so each chunk fits MAX_LINES x MAX_LINE_CHARS."""
-    chunks, current = [], []
-    for i, word in enumerate(words):
-        if current and len(wrap([words[j] for j in current] + [word])) > MAX_LINES:
-            chunks.append(current)
-            current = []
-        current.append(i)
-    if current:
-        chunks.append(current)
-    return chunks
+    """Group word indexes into cues (each fits 2 lines) by dynamic programming:
+    prefer breaks at punctuation, never end a cue on a function word, avoid 1-word cues."""
+    n = len(words)
+    if n == 0:
+        return []
+    INF = float("inf")
+    best, prev = [INF] * (n + 1), [0] * (n + 1)
+    best[0] = 0.0
+    for i in range(1, n + 1):
+        for j in range(i - 1, -1, -1):
+            chunk = words[j:i]
+            if len(wrap(chunk)) > MAX_LINES:
+                break  # longer chunks (smaller j) can only be wider
+            cost = best[j] + _chunk_cost(chunk, i == n)
+            if cost < best[i]:
+                best[i], prev[i] = cost, j
+    out, i = [], n
+    while i > 0:
+        out.append(list(range(prev[i], i)))
+        i = prev[i]
+    return out[::-1]
 
 
 def proportional_times(words: list[str], t0: float, t1: float) -> list[tuple[float, float]]:

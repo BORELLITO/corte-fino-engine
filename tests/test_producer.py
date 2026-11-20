@@ -390,3 +390,41 @@ class KeyHygieneTests(unittest.TestCase):
             with self.assertRaises(ProducerError):
                 ElevenLabsVoice().synthesize("oi", Path(d) / "a.wav")
         self.assertEqual(seen["key"], "abc123")
+
+
+class CaptionBreakTests(unittest.TestCase):
+    def cues(self, text):
+        w = text.split()
+        return [captions.wrap([w[i] for i in c]) for c in captions.chunk_words(w)]
+
+    def test_no_line_or_cue_ends_on_function_word(self):
+        texts = [
+            "O profeta Habacuque também perguntou até quando, Senhor? E mesmo assim, ele continuou de pé esperando resposta.",
+            "Por que me fazes ver a iniquidade e contemplar a opressão? A destruição e a violência estão diante de mim.",
+            "Tem dias em que a oração parece bater no teto e voltar.",
+        ]
+        for t in texts:
+            for lines in self.cues(t):
+                for line in lines[:-1]:
+                    self.assertFalse(captions._weak(line.split()[-1]), (t, lines))
+            last = self.cues(t)[:-1]
+            for lines in last:
+                self.assertFalse(captions._weak(lines[-1].split()[-1]), (t, lines))
+
+    def test_prefers_punctuation_and_never_exceeds_limits(self):
+        out = self.cues("Até quando, Senhor, clamarei por socorro, e tu não ouvirás? Gritarei a ti: Violência!")
+        for lines in out:
+            self.assertLessEqual(len(lines), 2)
+            self.assertTrue(all(len(x) <= captions.MAX_LINE_CHARS for x in lines))
+        self.assertEqual(out[0], ("Até quando, Senhor,",))
+
+    def test_weak_words_are_accent_insensitive(self):
+        self.assertTrue(captions._weak("até"))
+        self.assertTrue(captions._weak("Às"))
+        self.assertFalse(captions._weak("Senhor"))
+        self.assertFalse(captions._weak("e,"))
+
+    def test_chunks_cover_every_word_once_in_order(self):
+        w = "Senhor até quando clamarei sem que tu me ouças e me salves da violência".split()
+        flat = [i for c in captions.chunk_words(w) for i in c]
+        self.assertEqual(flat, list(range(len(w))))
