@@ -34,3 +34,14 @@ Arquivos preservados na Biblioteca privada do ChatGPT em:
 A fonte bruta não foi persistida em repositório ou Biblioteca. Contrato de pré-voo em `contracts/e01_s02_waiting_clock_stock_preflight_20261119_v1.json` e parecer em `contracts/e01_s02_waiting_clock_physical_visual_review_20261119_v1.json`.
 
 **Próximo passo:** apresentar a prévia S02 junto à abertura S01, avaliar contraste/legibilidade e decidir estética. Somente então avançar para S03, sem assumir que aprovação da S01 vale para S02. Direitos individuais, master/áudio/legendas/publicação e merge continuam BLOQUEADOS.
+
+
+## Prova adicional: corte conjunto S01 + S02 (sem áudio)
+
+Com as duas prévias JPEG/MP4 físicas disponíveis e **verificadas por seus hashes originais**, foi executada uma concatenação de QA, mantendo a referência artística S01 intacta. O vídeo de S01 aprovado tinha 173 quadros (5,767 s), mas o limite de roteiro 5,74 s arredonda em 30 fps para **172** quadros. A S02 fornece **147** quadros: total **319** quadros, **10,633333 s**, 720×1280, 30 fps, H.264, sem áudio/legendas e com marca de QA.
+
+- SHA-256 do corte combinado: `31ea65a045bbe067a66837b85c03ccc9fdf20bf93ac6b15603c6f4c7bf66156b`, **1.840.317 bytes**, FFprobe e full FFmpeg decode **PASS**, render local em contêiner do ChatGPT.
+- O comparativo de frames **5,65 s** (ainda S01 azul-escura) e **5,95 s** (S02 relógio) confirma um salto perceptível de luminosidade no mostrador branco. **Aprovação estética da S02 continua PENDENTE.**
+- Registro `contracts/e01_s01_s02_transition_qa_20261119_v1.json` e testes de frame/escopo em `tests/test_e01_s01_s02_transition_qa_v1.py`.
+- A pasta da Biblioteca privada listada acima recebeu ainda `S01_S02_TRANSICAO_VISUAL_NAO_APROVADA.mp4`, `S01_S02_COMPARACAO_DO_CORTE.jpg`, `S01_S02_TRANSICAO_RELATORIO.json`.
+- **Reprodução:** usar os exatos MP4s de prévia preservados na Biblioteca e o FFmpeg, validar os dois SHAs, aplicar `trim=start_frame=0:end_frame=172` à S01, `trim=start_frame=0:end_frame=147` à S02, `setpts=PTS-STARTPTS` em ambas, `concat=n=2:v=1:a=0`, `format=yuv420p`, encode H.264 em 30 fps. O material não é um master nem libera fontes para publicação.
