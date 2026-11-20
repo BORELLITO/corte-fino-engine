@@ -22,7 +22,9 @@ class VoiceCandidateTests(unittest.TestCase):
         self.assertFalse(d["production_audio_master_approved"])
         self.assertFalse(d["publication_authorized"])
         self.assertEqual(d["word_count"], 182)
-        self.assertEqual(d["speech_duration_seconds"], 76.72)
+        self.assertEqual(d["speech_duration_seconds"], 76.67)
+        self.assertEqual(d["provenance"]["audio_probe"]["file_sha256"],
+                         "35f435199df54f6380d80d129ddd95b04ddb0ff5f97ede97a74da856995b5685")
 
     def test_words_equal_canonical_script_and_are_ordered(self):
         words, duration = load()

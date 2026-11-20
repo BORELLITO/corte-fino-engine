@@ -17,7 +17,7 @@ from agents.e01_v2_caption_pipeline import (
 ROOT = Path(__file__).resolve().parents[1]
 CONTRACT = ROOT / "contracts/e01_v3_voice_johnes_word_timing_v1.json"
 SCRIPT = ROOT / "contracts/e01_script_v2_candidate.json"
-SPEECH_DURATION = 76.72
+SPEECH_DURATION = 76.67
 
 
 def load(path: Path = CONTRACT) -> tuple[list[dict], float]:
