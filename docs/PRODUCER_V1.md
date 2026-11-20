@@ -9,3 +9,5 @@
 **Rodar:** workflow *Produzir episódio (preview)* (precisa do workflow na branch padrão) ou `python -m producer.cli episodes/X.json --out build/X --footage local:catalog,pixabay`.
 **Secrets:** `PIXABAY_API_KEY` (opcional `PEXELS_API_KEY`, emissão pausada). Nunca no repositório.
 **Atenção:** artefatos de Actions em repositório público são acessíveis a qualquer conta com acesso de leitura; não gerar prévia com mídia privada enquanto o repo for público.
+
+**Entrega das prévias:** o job `deliver` cria um **rascunho de release** (privado, não publicado) com `chat_preview.mp4` (540x960, leve) e o MP4 completo. A prévia é entregue ao proprietário no chat, sem precisar abrir o GitHub. Isso também evita expor mídia em artefatos públicos de Actions.
