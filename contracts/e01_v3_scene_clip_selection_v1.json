@@ -65,7 +65,8 @@
    "id": "coverr-a-religious-woman-places-a-lit-candle-and-prays-6910",
    "preview_seconds": 23.5,
    "license": "Coverr (gratuito comercial, site)",
-   "note_pt": "mulher acende vela e reza; série com a mesma personagem e igreja"
+   "note_pt": "mulher acende vela e reza; série com a mesma personagem e igreja",
+   "crop_cx": 0.28
   },
   {
    "scene": "S07",
@@ -73,7 +74,8 @@
    "id": "coverr-a-religious-woman-reads-a-bible-near-a-church-3407",
    "preview_seconds": 13.3,
    "license": "Coverr (gratuito comercial, site)",
-   "note_pt": "mulher lê a Bíblia junto à igreja; mesma personagem de S06"
+   "note_pt": "mulher lê a Bíblia junto à igreja; mesma personagem de S06",
+   "crop_cx": 0.57
   },
   {
    "scene": "S08",

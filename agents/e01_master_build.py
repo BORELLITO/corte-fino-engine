@@ -88,7 +88,7 @@ def main():
             src = WORK / f"{sc}.src.mp4"; r.update(fetch_clip(c, src)); pr = probe(src); r.update({"src_w": pr["w"], "src_h": pr["h"], "src_s": round(pr["dur"], 2)})
             start = min(max(0.4, pr["dur"] * 0.08), max(0.0, pr["dur"] - sd - 0.2)); r["start"] = round(start, 2)
             if pr["w"] > pr["h"] * 0.6:
-                cx = motion_center(src, pr["dur"]); cw = int(pr["h"] * 9 / 16) // 2 * 2; x0 = int(min(max(cx * pr["w"] - cw / 2, 0), pr["w"] - cw)); r["crop_cx"] = round(cx, 2)
+                cx = c.get("crop_cx") or motion_center(src, pr["dur"]); cw = int(pr["h"] * 9 / 16) // 2 * 2; x0 = int(min(max(cx * pr["w"] - cw / 2, 0), pr["w"] - cw)); r["crop_cx"] = round(cx, 2)
                 vf = f"crop={cw}:{pr['h']}:{x0}:0,scale={W}:{H}:flags=lanczos,setsar=1,fps=30"
             else:
                 vf = f"scale={W}:{H}:force_original_aspect_ratio=increase:flags=lanczos,crop={W}:{H},setsar=1,fps=30"
