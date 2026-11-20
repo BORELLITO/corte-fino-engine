@@ -2,7 +2,7 @@
  "schema_version": "1.0.0",
  "project": "verbo-no-chao",
  "episode_id": "VNC-W01-E1",
- "stage": "VOICE_CANDIDATE_JOHNES_WORD_TIMING_NOT_MASTER",
+ "stage": "VOICE_CANDIDATE_JOHNES_MEASURED_AUDIO_NOT_MASTER",
  "provenance": {
   "tts_provider": "ElevenLabs",
   "tts_model": "eleven_v4",
@@ -14,9 +14,24 @@
   "timing_source": "ElevenLabs Scribe v1 (eleven_scribe_v1)",
   "timing_generation_id": "6hKLUaOdiwXmnHWqxCz8",
   "script_sha256": "c64b57cb9d6529b60b9e80ab7607e5887f909dd00e14cd80ed9ec2b7474a5dc6",
-  "user_listening_approval": "APPROVED_BY_USER_2026-11-20_BY_EAR_NOT_MEASURED"
+  "user_listening_approval": "APPROVED_BY_USER_2026-11-20_BY_EAR_NOT_MEASURED",
+  "audio_probe": {
+   "workflow": "verbo-no-chao-e01-v3-voice-probe.yml",
+   "run_id": 44798218347,
+   "file_bytes": 1244297,
+   "file_sha256": "35f435199df54f6380d80d129ddd95b04ddb0ff5f97ede97a74da856995b5685",
+   "duration_seconds": 76.67,
+   "loudness": {
+    "integrated_lufs": -21.1,
+    "true_peak_dbfs": -1.0,
+    "loudness_range_lu": 4.0
+   },
+   "silence_detect": "ffmpeg silencedetect noise=-38dB min 0.12s",
+   "silence_count": 31
+  },
+  "end_rule": "end = min(scribe_end, file duration, start of first measured silence at least 0.12s after word start)"
  },
- "speech_duration_seconds": 76.72,
+ "speech_duration_seconds": 76.67,
  "word_count": 182,
  "words": [
   {
@@ -25,7 +40,8 @@
    "start": 0.0,
    "end": 0.32,
    "block": "opening",
-   "key": "voce"
+   "key": "voce",
+   "scribe_end": 0.32
   },
   {
    "index": 1,
@@ -33,7 +49,8 @@
    "start": 0.36,
    "end": 0.44,
    "block": "opening",
-   "key": "ja"
+   "key": "ja",
+   "scribe_end": 0.44
   },
   {
    "index": 2,
@@ -41,7 +58,8 @@
    "start": 0.48,
    "end": 0.88,
    "block": "opening",
-   "key": "repetiu"
+   "key": "repetiu",
+   "scribe_end": 0.88
   },
   {
    "index": 3,
@@ -49,7 +67,8 @@
    "start": 0.96,
    "end": 1.12,
    "block": "opening",
-   "key": "a"
+   "key": "a",
+   "scribe_end": 1.12
   },
   {
    "index": 4,
@@ -57,7 +76,8 @@
    "start": 1.2,
    "end": 1.44,
    "block": "opening",
-   "key": "mesma"
+   "key": "mesma",
+   "scribe_end": 1.44
   },
   {
    "index": 5,
@@ -65,7 +85,8 @@
    "start": 1.52,
    "end": 2.0,
    "block": "opening",
-   "key": "pergunta"
+   "key": "pergunta",
+   "scribe_end": 2.0
   },
   {
    "index": 6,
@@ -73,7 +94,8 @@
    "start": 2.16,
    "end": 2.64,
    "block": "opening",
-   "key": "tantas"
+   "key": "tantas",
+   "scribe_end": 2.64
   },
   {
    "index": 7,
@@ -81,7 +103,8 @@
    "start": 2.72,
    "end": 3.12,
    "block": "opening",
-   "key": "vezes"
+   "key": "vezes",
+   "scribe_end": 3.12
   },
   {
    "index": 8,
@@ -89,7 +112,8 @@
    "start": 3.2,
    "end": 3.28,
    "block": "opening",
-   "key": "que"
+   "key": "que",
+   "scribe_end": 3.28
   },
   {
    "index": 9,
@@ -97,7 +121,8 @@
    "start": 3.4,
    "end": 3.68,
    "block": "opening",
-   "key": "comecou"
+   "key": "comecou",
+   "scribe_end": 3.68
   },
   {
    "index": 10,
@@ -105,7 +130,8 @@
    "start": 3.72,
    "end": 3.76,
    "block": "opening",
-   "key": "a"
+   "key": "a",
+   "scribe_end": 3.76
   },
   {
    "index": 11,
@@ -113,7 +139,8 @@
    "start": 3.8,
    "end": 4.24,
    "block": "opening",
-   "key": "acreditar"
+   "key": "acreditar",
+   "scribe_end": 4.24
   },
   {
    "index": 12,
@@ -121,7 +148,8 @@
    "start": 4.32,
    "end": 4.4,
    "block": "opening",
-   "key": "que"
+   "key": "que",
+   "scribe_end": 4.4
   },
   {
    "index": 13,
@@ -129,7 +157,8 @@
    "start": 4.48,
    "end": 4.88,
    "block": "opening",
-   "key": "ninguem"
+   "key": "ninguem",
+   "scribe_end": 4.88
   },
   {
    "index": 14,
@@ -137,15 +166,17 @@
    "start": 4.96,
    "end": 5.2,
    "block": "opening",
-   "key": "estava"
+   "key": "estava",
+   "scribe_end": 5.2
   },
   {
    "index": 15,
    "text": "ouvindo?",
    "start": 5.28,
-   "end": 5.76,
+   "end": 5.72,
    "block": "opening",
-   "key": "ouvindo"
+   "key": "ouvindo",
+   "scribe_end": 5.76
   },
   {
    "index": 16,
@@ -153,7 +184,8 @@
    "start": 6.4,
    "end": 6.6,
    "block": "connection",
-   "key": "as"
+   "key": "as",
+   "scribe_end": 6.6
   },
   {
    "index": 17,
@@ -161,7 +193,8 @@
    "start": 6.64,
    "end": 7.28,
    "block": "connection",
-   "key": "vezes"
+   "key": "vezes",
+   "scribe_end": 7.28
   },
   {
    "index": 18,
@@ -169,15 +202,17 @@
    "start": 7.36,
    "end": 7.76,
    "block": "connection",
-   "key": "esperar"
+   "key": "esperar",
+   "scribe_end": 7.76
   },
   {
    "index": 19,
    "text": "machuca.",
    "start": 7.84,
-   "end": 8.76,
+   "end": 8.512,
    "block": "connection",
-   "key": "machuca"
+   "key": "machuca",
+   "scribe_end": 8.76
   },
   {
    "index": 20,
@@ -185,7 +220,8 @@
    "start": 9.04,
    "end": 9.28,
    "block": "connection",
-   "key": "doi"
+   "key": "doi",
+   "scribe_end": 9.28
   },
   {
    "index": 21,
@@ -193,7 +229,8 @@
    "start": 9.4,
    "end": 9.68,
    "block": "connection",
-   "key": "ainda"
+   "key": "ainda",
+   "scribe_end": 9.68
   },
   {
    "index": 22,
@@ -201,7 +238,8 @@
    "start": 9.76,
    "end": 10.0,
    "block": "connection",
-   "key": "mais"
+   "key": "mais",
+   "scribe_end": 10.0
   },
   {
    "index": 23,
@@ -209,7 +247,8 @@
    "start": 10.08,
    "end": 10.24,
    "block": "connection",
-   "key": "ver"
+   "key": "ver",
+   "scribe_end": 10.24
   },
   {
    "index": 24,
@@ -217,7 +256,8 @@
    "start": 10.32,
    "end": 10.96,
    "block": "connection",
-   "key": "injusticas"
+   "key": "injusticas",
+   "scribe_end": 10.96
   },
   {
    "index": 25,
@@ -225,7 +265,8 @@
    "start": 11.04,
    "end": 11.76,
    "block": "connection",
-   "key": "repetidas"
+   "key": "repetidas",
+   "scribe_end": 11.76
   },
   {
    "index": 26,
@@ -233,7 +274,8 @@
    "start": 11.84,
    "end": 11.92,
    "block": "connection",
-   "key": "e"
+   "key": "e",
+   "scribe_end": 11.92
   },
   {
    "index": 27,
@@ -241,7 +283,8 @@
    "start": 12.0,
    "end": 12.32,
    "block": "connection",
-   "key": "pessoas"
+   "key": "pessoas",
+   "scribe_end": 12.32
   },
   {
    "index": 28,
@@ -249,7 +292,8 @@
    "start": 12.4,
    "end": 13.12,
    "block": "connection",
-   "key": "feridas"
+   "key": "feridas",
+   "scribe_end": 13.12
   },
   {
    "index": 29,
@@ -257,7 +301,8 @@
    "start": 13.2,
    "end": 13.52,
    "block": "connection",
-   "key": "enquanto"
+   "key": "enquanto",
+   "scribe_end": 13.52
   },
   {
    "index": 30,
@@ -265,7 +310,8 @@
    "start": 13.6,
    "end": 13.84,
    "block": "connection",
-   "key": "parece"
+   "key": "parece",
+   "scribe_end": 13.84
   },
   {
    "index": 31,
@@ -273,7 +319,8 @@
    "start": 13.92,
    "end": 14.0,
    "block": "connection",
-   "key": "que"
+   "key": "que",
+   "scribe_end": 14.0
   },
   {
    "index": 32,
@@ -281,15 +328,17 @@
    "start": 14.16,
    "end": 14.4,
    "block": "connection",
-   "key": "nada"
+   "key": "nada",
+   "scribe_end": 14.4
   },
   {
    "index": 33,
    "text": "muda.",
    "start": 14.48,
-   "end": 15.44,
+   "end": 14.831,
    "block": "connection",
-   "key": "muda"
+   "key": "muda",
+   "scribe_end": 15.44
   },
   {
    "index": 34,
@@ -297,7 +346,8 @@
    "start": 15.48,
    "end": 15.52,
    "block": "connection",
-   "key": "e"
+   "key": "e",
+   "scribe_end": 15.52
   },
   {
    "index": 35,
@@ -305,7 +355,8 @@
    "start": 15.64,
    "end": 16.08,
    "block": "connection",
-   "key": "admitir"
+   "key": "admitir",
+   "scribe_end": 16.08
   },
   {
    "index": 36,
@@ -313,7 +364,8 @@
    "start": 16.16,
    "end": 16.24,
    "block": "connection",
-   "key": "essa"
+   "key": "essa",
+   "scribe_end": 16.24
   },
   {
    "index": 37,
@@ -321,7 +373,8 @@
    "start": 16.32,
    "end": 16.96,
    "block": "connection",
-   "key": "revolta"
+   "key": "revolta",
+   "scribe_end": 16.96
   },
   {
    "index": 38,
@@ -329,7 +382,8 @@
    "start": 17.04,
    "end": 17.2,
    "block": "connection",
-   "key": "pode"
+   "key": "pode",
+   "scribe_end": 17.2
   },
   {
    "index": 39,
@@ -337,15 +391,17 @@
    "start": 17.28,
    "end": 17.52,
    "block": "connection",
-   "key": "trazer"
+   "key": "trazer",
+   "scribe_end": 17.52
   },
   {
    "index": 40,
    "text": "vergonha.",
    "start": 17.6,
-   "end": 18.52,
+   "end": 18.146,
    "block": "connection",
-   "key": "vergonha"
+   "key": "vergonha",
+   "scribe_end": 18.52
   },
   {
    "index": 41,
@@ -353,7 +409,8 @@
    "start": 18.88,
    "end": 18.96,
    "block": "biblical_reference",
-   "key": "em"
+   "key": "em",
+   "scribe_end": 18.96
   },
   {
    "index": 42,
@@ -361,7 +418,8 @@
    "start": 19.04,
    "end": 19.68,
    "block": "biblical_reference",
-   "key": "habacuque"
+   "key": "habacuque",
+   "scribe_end": 19.68
   },
   {
    "index": 43,
@@ -369,15 +427,17 @@
    "start": 19.76,
    "end": 20.08,
    "block": "biblical_reference",
-   "key": "capitulo"
+   "key": "capitulo",
+   "scribe_end": 20.08
   },
   {
    "index": 44,
    "text": "um,",
    "start": 20.24,
-   "end": 20.64,
+   "end": 20.406,
    "block": "biblical_reference",
-   "key": "um"
+   "key": "um",
+   "scribe_end": 20.64
   },
   {
    "index": 45,
@@ -385,7 +445,8 @@
    "start": 20.68,
    "end": 20.72,
    "block": "biblical_reference",
-   "key": "o"
+   "key": "o",
+   "scribe_end": 20.72
   },
   {
    "index": 46,
@@ -393,7 +454,8 @@
    "start": 20.8,
    "end": 21.2,
    "block": "biblical_reference",
-   "key": "profeta"
+   "key": "profeta",
+   "scribe_end": 21.2
   },
   {
    "index": 47,
@@ -401,15 +463,17 @@
    "start": 21.28,
    "end": 21.76,
    "block": "biblical_reference",
-   "key": "denuncia"
+   "key": "denuncia",
+   "scribe_end": 21.76
   },
   {
    "index": 48,
    "text": "violência,",
    "start": 21.84,
-   "end": 22.72,
+   "end": 22.574,
    "block": "biblical_reference",
-   "key": "violencia"
+   "key": "violencia",
+   "scribe_end": 22.72
   },
   {
    "index": 49,
@@ -417,7 +481,8 @@
    "start": 22.8,
    "end": 23.52,
    "block": "biblical_reference",
-   "key": "injustica"
+   "key": "injustica",
+   "scribe_end": 23.52
   },
   {
    "index": 50,
@@ -425,7 +490,8 @@
    "start": 23.76,
    "end": 23.84,
    "block": "biblical_reference",
-   "key": "e"
+   "key": "e",
+   "scribe_end": 23.84
   },
   {
    "index": 51,
@@ -433,7 +499,8 @@
    "start": 23.96,
    "end": 24.08,
    "block": "biblical_reference",
-   "key": "uma"
+   "key": "uma",
+   "scribe_end": 24.08
   },
   {
    "index": 52,
@@ -441,7 +508,8 @@
    "start": 24.16,
    "end": 24.32,
    "block": "biblical_reference",
-   "key": "lei"
+   "key": "lei",
+   "scribe_end": 24.32
   },
   {
    "index": 53,
@@ -449,7 +517,8 @@
    "start": 24.4,
    "end": 24.56,
    "block": "biblical_reference",
-   "key": "que"
+   "key": "que",
+   "scribe_end": 24.56
   },
   {
    "index": 54,
@@ -457,7 +526,8 @@
    "start": 24.64,
    "end": 24.96,
    "block": "biblical_reference",
-   "key": "perdeu"
+   "key": "perdeu",
+   "scribe_end": 24.96
   },
   {
    "index": 55,
@@ -465,15 +535,17 @@
    "start": 25.0,
    "end": 25.04,
    "block": "biblical_reference",
-   "key": "a"
+   "key": "a",
+   "scribe_end": 25.04
   },
   {
    "index": 56,
    "text": "força.",
    "start": 25.12,
-   "end": 25.6,
+   "end": 25.515,
    "block": "biblical_reference",
-   "key": "forca"
+   "key": "forca",
+   "scribe_end": 25.6
   },
   {
    "index": 57,
@@ -481,7 +553,8 @@
    "start": 26.16,
    "end": 26.32,
    "block": "biblical_reference",
-   "key": "ele"
+   "key": "ele",
+   "scribe_end": 26.32
   },
   {
    "index": 58,
@@ -489,7 +562,8 @@
    "start": 26.4,
    "end": 26.72,
    "block": "biblical_reference",
-   "key": "leva"
+   "key": "leva",
+   "scribe_end": 26.72
   },
   {
    "index": 59,
@@ -497,7 +571,8 @@
    "start": 26.8,
    "end": 26.88,
    "block": "biblical_reference",
-   "key": "essa"
+   "key": "essa",
+   "scribe_end": 26.88
   },
   {
    "index": 60,
@@ -505,7 +580,8 @@
    "start": 26.96,
    "end": 27.52,
    "block": "biblical_reference",
-   "key": "indignacao"
+   "key": "indignacao",
+   "scribe_end": 27.52
   },
   {
    "index": 61,
@@ -513,15 +589,17 @@
    "start": 27.56,
    "end": 27.6,
    "block": "biblical_reference",
-   "key": "a"
+   "key": "a",
+   "scribe_end": 27.6
   },
   {
    "index": 62,
    "text": "Deus.",
    "start": 27.68,
-   "end": 28.32,
+   "end": 28.08,
    "block": "biblical_reference",
-   "key": "deus"
+   "key": "deus",
+   "scribe_end": 28.32
   },
   {
    "index": 63,
@@ -529,7 +607,8 @@
    "start": 28.56,
    "end": 28.64,
    "block": "biblical_reference",
-   "key": "nao"
+   "key": "nao",
+   "scribe_end": 28.64
   },
   {
    "index": 64,
@@ -537,7 +616,8 @@
    "start": 28.72,
    "end": 28.88,
    "block": "biblical_reference",
-   "key": "esta"
+   "key": "esta",
+   "scribe_end": 28.88
   },
   {
    "index": 65,
@@ -545,7 +625,8 @@
    "start": 28.96,
    "end": 29.36,
    "block": "biblical_reference",
-   "key": "buscando"
+   "key": "buscando",
+   "scribe_end": 29.36
   },
   {
    "index": 66,
@@ -553,7 +634,8 @@
    "start": 29.44,
    "end": 29.52,
    "block": "biblical_reference",
-   "key": "uma"
+   "key": "uma",
+   "scribe_end": 29.52
   },
   {
    "index": 67,
@@ -561,15 +643,17 @@
    "start": 29.64,
    "end": 30.0,
    "block": "biblical_reference",
-   "key": "conquista"
+   "key": "conquista",
+   "scribe_end": 30.0
   },
   {
    "index": 68,
    "text": "pessoal:",
    "start": 30.08,
-   "end": 31.04,
+   "end": 30.594,
    "block": "biblical_reference",
-   "key": "pessoal"
+   "key": "pessoal",
+   "scribe_end": 31.04
   },
   {
    "index": 69,
@@ -577,7 +661,8 @@
    "start": 31.2,
    "end": 31.52,
    "block": "biblical_reference",
-   "key": "sofre"
+   "key": "sofre",
+   "scribe_end": 31.52
   },
   {
    "index": 70,
@@ -585,7 +670,8 @@
    "start": 31.6,
    "end": 31.92,
    "block": "biblical_reference",
-   "key": "diante"
+   "key": "diante",
+   "scribe_end": 31.92
   },
   {
    "index": 71,
@@ -593,7 +679,8 @@
    "start": 31.96,
    "end": 32.0,
    "block": "biblical_reference",
-   "key": "de"
+   "key": "de",
+   "scribe_end": 32.0
   },
   {
    "index": 72,
@@ -601,7 +688,8 @@
    "start": 32.08,
    "end": 32.16,
    "block": "biblical_reference",
-   "key": "uma"
+   "key": "uma",
+   "scribe_end": 32.16
   },
   {
    "index": 73,
@@ -609,15 +697,17 @@
    "start": 32.28,
    "end": 32.8,
    "block": "biblical_reference",
-   "key": "sociedade"
+   "key": "sociedade",
+   "scribe_end": 32.8
   },
   {
    "index": 74,
    "text": "ferida.",
    "start": 32.88,
-   "end": 33.64,
+   "end": 33.392,
    "block": "biblical_reference",
-   "key": "ferida"
+   "key": "ferida",
+   "scribe_end": 33.64
   },
   {
    "index": 75,
@@ -625,7 +715,8 @@
    "start": 33.92,
    "end": 34.0,
    "block": "reflection",
-   "key": "os"
+   "key": "os",
+   "scribe_end": 34.0
   },
   {
    "index": 76,
@@ -633,7 +724,8 @@
    "start": 34.08,
    "end": 34.48,
    "block": "reflection",
-   "key": "primeiros"
+   "key": "primeiros",
+   "scribe_end": 34.48
   },
   {
    "index": 77,
@@ -641,7 +733,8 @@
    "start": 34.56,
    "end": 35.04,
    "block": "reflection",
-   "key": "versos"
+   "key": "versos",
+   "scribe_end": 35.04
   },
   {
    "index": 78,
@@ -649,7 +742,8 @@
    "start": 35.08,
    "end": 35.2,
    "block": "reflection",
-   "key": "nao"
+   "key": "nao",
+   "scribe_end": 35.2
   },
   {
    "index": 79,
@@ -657,7 +751,8 @@
    "start": 35.32,
    "end": 35.68,
    "block": "reflection",
-   "key": "entregam"
+   "key": "entregam",
+   "scribe_end": 35.68
   },
   {
    "index": 80,
@@ -665,7 +760,8 @@
    "start": 35.76,
    "end": 35.84,
    "block": "reflection",
-   "key": "uma"
+   "key": "uma",
+   "scribe_end": 35.84
   },
   {
    "index": 81,
@@ -673,15 +769,17 @@
    "start": 35.92,
    "end": 36.4,
    "block": "reflection",
-   "key": "explicacao"
+   "key": "explicacao",
+   "scribe_end": 36.4
   },
   {
    "index": 82,
    "text": "confortável.",
    "start": 36.48,
-   "end": 37.28,
+   "end": 37.197,
    "block": "reflection",
-   "key": "confortavel"
+   "key": "confortavel",
+   "scribe_end": 37.28
   },
   {
    "index": 83,
@@ -689,7 +787,8 @@
    "start": 37.68,
    "end": 38.08,
    "block": "reflection",
-   "key": "mostram"
+   "key": "mostram",
+   "scribe_end": 38.08
   },
   {
    "index": 84,
@@ -697,7 +796,8 @@
    "start": 38.16,
    "end": 38.24,
    "block": "reflection",
-   "key": "um"
+   "key": "um",
+   "scribe_end": 38.24
   },
   {
    "index": 85,
@@ -705,7 +805,8 @@
    "start": 38.32,
    "end": 38.56,
    "block": "reflection",
-   "key": "homem"
+   "key": "homem",
+   "scribe_end": 38.56
   },
   {
    "index": 86,
@@ -713,7 +814,8 @@
    "start": 38.64,
    "end": 38.72,
    "block": "reflection",
-   "key": "que"
+   "key": "que",
+   "scribe_end": 38.72
   },
   {
    "index": 87,
@@ -721,7 +823,8 @@
    "start": 38.8,
    "end": 38.88,
    "block": "reflection",
-   "key": "se"
+   "key": "se",
+   "scribe_end": 38.88
   },
   {
    "index": 88,
@@ -729,7 +832,8 @@
    "start": 38.96,
    "end": 39.44,
    "block": "reflection",
-   "key": "recusa"
+   "key": "recusa",
+   "scribe_end": 39.44
   },
   {
    "index": 89,
@@ -737,7 +841,8 @@
    "start": 39.48,
    "end": 39.52,
    "block": "reflection",
-   "key": "a"
+   "key": "a",
+   "scribe_end": 39.52
   },
   {
    "index": 90,
@@ -745,7 +850,8 @@
    "start": 39.6,
    "end": 39.92,
    "block": "reflection",
-   "key": "chamar"
+   "key": "chamar",
+   "scribe_end": 39.92
   },
   {
    "index": 91,
@@ -753,7 +859,8 @@
    "start": 39.96,
    "end": 40.0,
    "block": "reflection",
-   "key": "o"
+   "key": "o",
+   "scribe_end": 40.0
   },
   {
    "index": 92,
@@ -761,7 +868,8 @@
    "start": 40.12,
    "end": 40.24,
    "block": "reflection",
-   "key": "mal"
+   "key": "mal",
+   "scribe_end": 40.24
   },
   {
    "index": 93,
@@ -769,7 +877,8 @@
    "start": 40.32,
    "end": 40.4,
    "block": "reflection",
-   "key": "de"
+   "key": "de",
+   "scribe_end": 40.4
   },
   {
    "index": 94,
@@ -777,7 +886,8 @@
    "start": 40.68,
    "end": 40.96,
    "block": "reflection",
-   "key": "normal"
+   "key": "normal",
+   "scribe_end": 40.96
   },
   {
    "index": 95,
@@ -785,7 +895,8 @@
    "start": 41.12,
    "end": 41.2,
    "block": "reflection",
-   "key": "e"
+   "key": "e",
+   "scribe_end": 41.2
   },
   {
    "index": 96,
@@ -793,7 +904,8 @@
    "start": 41.28,
    "end": 41.44,
    "block": "reflection",
-   "key": "nao"
+   "key": "nao",
+   "scribe_end": 41.44
   },
   {
    "index": 97,
@@ -801,7 +913,8 @@
    "start": 41.56,
    "end": 41.92,
    "block": "reflection",
-   "key": "esconde"
+   "key": "esconde",
+   "scribe_end": 41.92
   },
   {
    "index": 98,
@@ -809,15 +922,17 @@
    "start": 42.0,
    "end": 42.16,
    "block": "reflection",
-   "key": "suas"
+   "key": "suas",
+   "scribe_end": 42.16
   },
   {
    "index": 99,
    "text": "perguntas.",
    "start": 42.24,
-   "end": 42.88,
+   "end": 42.85,
    "block": "reflection",
-   "key": "perguntas"
+   "key": "perguntas",
+   "scribe_end": 42.88
   },
   {
    "index": 100,
@@ -825,7 +940,8 @@
    "start": 43.44,
    "end": 43.52,
    "block": "reflection",
-   "key": "o"
+   "key": "o",
+   "scribe_end": 43.52
   },
   {
    "index": 101,
@@ -833,7 +949,8 @@
    "start": 43.6,
    "end": 44.0,
    "block": "reflection",
-   "key": "dialogo"
+   "key": "dialogo",
+   "scribe_end": 44.0
   },
   {
    "index": 102,
@@ -841,7 +958,8 @@
    "start": 44.08,
    "end": 44.64,
    "block": "reflection",
-   "key": "continua"
+   "key": "continua",
+   "scribe_end": 44.64
   },
   {
    "index": 103,
@@ -849,7 +967,8 @@
    "start": 44.68,
    "end": 44.72,
    "block": "reflection",
-   "key": "ao"
+   "key": "ao",
+   "scribe_end": 44.72
   },
   {
    "index": 104,
@@ -857,7 +976,8 @@
    "start": 44.8,
    "end": 45.0,
    "block": "reflection",
-   "key": "longo"
+   "key": "longo",
+   "scribe_end": 45.0
   },
   {
    "index": 105,
@@ -865,15 +985,17 @@
    "start": 45.04,
    "end": 45.12,
    "block": "reflection",
-   "key": "do"
+   "key": "do",
+   "scribe_end": 45.12
   },
   {
    "index": 106,
    "text": "livro,",
    "start": 45.24,
-   "end": 45.6,
+   "end": 45.498,
    "block": "reflection",
-   "key": "livro"
+   "key": "livro",
+   "scribe_end": 45.6
   },
   {
    "index": 107,
@@ -881,7 +1003,8 @@
    "start": 45.68,
    "end": 45.76,
    "block": "reflection",
-   "key": "com"
+   "key": "com",
+   "scribe_end": 45.76
   },
   {
    "index": 108,
@@ -889,15 +1012,17 @@
    "start": 45.88,
    "end": 46.32,
    "block": "reflection",
-   "key": "respostas"
+   "key": "respostas",
+   "scribe_end": 46.32
   },
   {
    "index": 109,
    "text": "difíceis.",
    "start": 46.4,
-   "end": 47.4,
+   "end": 47.134,
    "block": "reflection",
-   "key": "dificeis"
+   "key": "dificeis",
+   "scribe_end": 47.4
   },
   {
    "index": 110,
@@ -905,7 +1030,8 @@
    "start": 47.68,
    "end": 47.76,
    "block": "reflection",
-   "key": "a"
+   "key": "a",
+   "scribe_end": 47.76
   },
   {
    "index": 111,
@@ -913,7 +1039,8 @@
    "start": 47.92,
    "end": 48.16,
    "block": "reflection",
-   "key": "fe"
+   "key": "fe",
+   "scribe_end": 48.16
   },
   {
    "index": 112,
@@ -921,7 +1048,8 @@
    "start": 48.32,
    "end": 48.4,
    "block": "reflection",
-   "key": "nao"
+   "key": "nao",
+   "scribe_end": 48.4
   },
   {
    "index": 113,
@@ -929,7 +1057,8 @@
    "start": 48.48,
    "end": 49.04,
    "block": "reflection",
-   "key": "precisa"
+   "key": "precisa",
+   "scribe_end": 49.04
   },
   {
    "index": 114,
@@ -937,7 +1066,8 @@
    "start": 49.12,
    "end": 49.52,
    "block": "reflection",
-   "key": "fingir"
+   "key": "fingir",
+   "scribe_end": 49.52
   },
   {
    "index": 115,
@@ -945,7 +1075,8 @@
    "start": 49.6,
    "end": 49.68,
    "block": "reflection",
-   "key": "que"
+   "key": "que",
+   "scribe_end": 49.68
   },
   {
    "index": 116,
@@ -953,7 +1084,8 @@
    "start": 49.707,
    "end": 49.733,
    "block": "reflection",
-   "key": "a"
+   "key": "a",
+   "scribe_end": 49.733
   },
   {
    "index": 117,
@@ -961,7 +1093,8 @@
    "start": 49.76,
    "end": 50.4,
    "block": "reflection",
-   "key": "injustica"
+   "key": "injustica",
+   "scribe_end": 50.4
   },
   {
    "index": 118,
@@ -969,15 +1102,17 @@
    "start": 50.48,
    "end": 50.56,
    "block": "reflection",
-   "key": "e"
+   "key": "e",
+   "scribe_end": 50.56
   },
   {
    "index": 119,
    "text": "paz.",
    "start": 50.693,
-   "end": 51.16,
+   "end": 50.967,
    "block": "reflection",
-   "key": "paz"
+   "key": "paz",
+   "scribe_end": 51.16
   },
   {
    "index": 120,
@@ -985,7 +1120,8 @@
    "start": 51.36,
    "end": 51.44,
    "block": "reflection",
-   "key": "e"
+   "key": "e",
+   "scribe_end": 51.44
   },
   {
    "index": 121,
@@ -993,7 +1129,8 @@
    "start": 51.52,
    "end": 52.0,
    "block": "reflection",
-   "key": "possivel"
+   "key": "possivel",
+   "scribe_end": 52.0
   },
   {
    "index": 122,
@@ -1001,7 +1138,8 @@
    "start": 52.08,
    "end": 52.4,
    "block": "reflection",
-   "key": "orar"
+   "key": "orar",
+   "scribe_end": 52.4
   },
   {
    "index": 123,
@@ -1009,7 +1147,8 @@
    "start": 52.56,
    "end": 52.64,
    "block": "reflection",
-   "key": "e"
+   "key": "e",
+   "scribe_end": 52.64
   },
   {
    "index": 124,
@@ -1017,7 +1156,8 @@
    "start": 52.72,
    "end": 53.36,
    "block": "reflection",
-   "key": "reconhecer"
+   "key": "reconhecer",
+   "scribe_end": 53.36
   },
   {
    "index": 125,
@@ -1025,7 +1165,8 @@
    "start": 53.4,
    "end": 53.44,
    "block": "reflection",
-   "key": "o"
+   "key": "o",
+   "scribe_end": 53.44
   },
   {
    "index": 126,
@@ -1033,7 +1174,8 @@
    "start": 53.52,
    "end": 53.6,
    "block": "reflection",
-   "key": "que"
+   "key": "que",
+   "scribe_end": 53.6
   },
   {
    "index": 127,
@@ -1041,7 +1183,8 @@
    "start": 53.72,
    "end": 54.0,
    "block": "reflection",
-   "key": "precisa"
+   "key": "precisa",
+   "scribe_end": 54.0
   },
   {
    "index": 128,
@@ -1049,15 +1192,17 @@
    "start": 54.08,
    "end": 54.16,
    "block": "reflection",
-   "key": "ser"
+   "key": "ser",
+   "scribe_end": 54.16
   },
   {
    "index": 129,
    "text": "enfrentado.",
    "start": 54.24,
-   "end": 54.96,
+   "end": 54.872,
    "block": "reflection",
-   "key": "enfrentado"
+   "key": "enfrentado",
+   "scribe_end": 54.96
   },
   {
    "index": 130,
@@ -1065,7 +1210,8 @@
    "start": 55.52,
    "end": 55.92,
    "block": "application",
-   "key": "talvez"
+   "key": "talvez",
+   "scribe_end": 55.92
   },
   {
    "index": 131,
@@ -1073,7 +1219,8 @@
    "start": 56.0,
    "end": 56.24,
    "block": "application",
-   "key": "hoje"
+   "key": "hoje",
+   "scribe_end": 56.24
   },
   {
    "index": 132,
@@ -1081,7 +1228,8 @@
    "start": 56.28,
    "end": 56.48,
    "block": "application",
-   "key": "voce"
+   "key": "voce",
+   "scribe_end": 56.48
   },
   {
    "index": 133,
@@ -1089,7 +1237,8 @@
    "start": 56.56,
    "end": 56.96,
    "block": "application",
-   "key": "precise"
+   "key": "precise",
+   "scribe_end": 56.96
   },
   {
    "index": 134,
@@ -1097,7 +1246,8 @@
    "start": 57.12,
    "end": 57.44,
    "block": "application",
-   "key": "nomear"
+   "key": "nomear",
+   "scribe_end": 57.44
   },
   {
    "index": 135,
@@ -1105,7 +1255,8 @@
    "start": 57.52,
    "end": 57.56,
    "block": "application",
-   "key": "o"
+   "key": "o",
+   "scribe_end": 57.56
   },
   {
    "index": 136,
@@ -1113,7 +1264,8 @@
    "start": 57.6,
    "end": 57.64,
    "block": "application",
-   "key": "que"
+   "key": "que",
+   "scribe_end": 57.64
   },
   {
    "index": 137,
@@ -1121,15 +1273,17 @@
    "start": 57.68,
    "end": 57.88,
    "block": "application",
-   "key": "esta"
+   "key": "esta",
+   "scribe_end": 57.88
   },
   {
    "index": 138,
    "text": "errado,",
    "start": 57.92,
-   "end": 58.56,
+   "end": 58.301,
    "block": "application",
-   "key": "errado"
+   "key": "errado",
+   "scribe_end": 58.56
   },
   {
    "index": 139,
@@ -1137,7 +1291,8 @@
    "start": 58.64,
    "end": 58.96,
    "block": "application",
-   "key": "procurar"
+   "key": "procurar",
+   "scribe_end": 58.96
   },
   {
    "index": 140,
@@ -1145,7 +1300,8 @@
    "start": 59.12,
    "end": 59.36,
    "block": "application",
-   "key": "apoio"
+   "key": "apoio",
+   "scribe_end": 59.36
   },
   {
    "index": 141,
@@ -1153,7 +1309,8 @@
    "start": 59.44,
    "end": 60.08,
    "block": "application",
-   "key": "confiavel"
+   "key": "confiavel",
+   "scribe_end": 60.08
   },
   {
    "index": 142,
@@ -1161,7 +1318,8 @@
    "start": 60.4,
    "end": 60.56,
    "block": "application",
-   "key": "ou"
+   "key": "ou",
+   "scribe_end": 60.56
   },
   {
    "index": 143,
@@ -1169,7 +1327,8 @@
    "start": 60.64,
    "end": 60.72,
    "block": "application",
-   "key": "dar"
+   "key": "dar",
+   "scribe_end": 60.72
   },
   {
    "index": 144,
@@ -1177,7 +1336,8 @@
    "start": 60.8,
    "end": 60.88,
    "block": "application",
-   "key": "um"
+   "key": "um",
+   "scribe_end": 60.88
   },
   {
    "index": 145,
@@ -1185,7 +1345,8 @@
    "start": 61.0,
    "end": 61.16,
    "block": "application",
-   "key": "passo"
+   "key": "passo",
+   "scribe_end": 61.16
   },
   {
    "index": 146,
@@ -1193,7 +1354,8 @@
    "start": 61.2,
    "end": 62.0,
    "block": "application",
-   "key": "responsavel"
+   "key": "responsavel",
+   "scribe_end": 62.0
   },
   {
    "index": 147,
@@ -1201,7 +1363,8 @@
    "start": 62.04,
    "end": 62.08,
    "block": "application",
-   "key": "em"
+   "key": "em",
+   "scribe_end": 62.08
   },
   {
    "index": 148,
@@ -1209,7 +1372,8 @@
    "start": 62.16,
    "end": 62.4,
    "block": "application",
-   "key": "favor"
+   "key": "favor",
+   "scribe_end": 62.4
   },
   {
    "index": 149,
@@ -1217,15 +1381,17 @@
    "start": 62.44,
    "end": 62.48,
    "block": "application",
-   "key": "de"
+   "key": "de",
+   "scribe_end": 62.48
   },
   {
    "index": 150,
    "text": "alguém.",
    "start": 62.56,
-   "end": 63.44,
+   "end": 62.815,
    "block": "application",
-   "key": "alguem"
+   "key": "alguem",
+   "scribe_end": 63.44
   },
   {
    "index": 151,
@@ -1233,7 +1399,8 @@
    "start": 63.52,
    "end": 63.6,
    "block": "application",
-   "key": "e"
+   "key": "e",
+   "scribe_end": 63.6
   },
   {
    "index": 152,
@@ -1241,7 +1408,8 @@
    "start": 63.68,
    "end": 63.84,
    "block": "application",
-   "key": "pode"
+   "key": "pode",
+   "scribe_end": 63.84
   },
   {
    "index": 153,
@@ -1249,7 +1417,8 @@
    "start": 63.92,
    "end": 64.16,
    "block": "application",
-   "key": "levar"
+   "key": "levar",
+   "scribe_end": 64.16
   },
   {
    "index": 154,
@@ -1257,7 +1426,8 @@
    "start": 64.24,
    "end": 64.48,
    "block": "application",
-   "key": "suas"
+   "key": "suas",
+   "scribe_end": 64.48
   },
   {
    "index": 155,
@@ -1265,7 +1435,8 @@
    "start": 64.56,
    "end": 64.96,
    "block": "application",
-   "key": "perguntas"
+   "key": "perguntas",
+   "scribe_end": 64.96
   },
   {
    "index": 156,
@@ -1273,7 +1444,8 @@
    "start": 65.0,
    "end": 65.04,
    "block": "application",
-   "key": "a"
+   "key": "a",
+   "scribe_end": 65.04
   },
   {
    "index": 157,
@@ -1281,7 +1453,8 @@
    "start": 65.12,
    "end": 65.84,
    "block": "application",
-   "key": "oracao"
+   "key": "oracao",
+   "scribe_end": 65.84
   },
   {
    "index": 158,
@@ -1289,7 +1462,8 @@
    "start": 65.92,
    "end": 66.0,
    "block": "application",
-   "key": "sem"
+   "key": "sem",
+   "scribe_end": 66.0
   },
   {
    "index": 159,
@@ -1297,15 +1471,17 @@
    "start": 66.08,
    "end": 66.56,
    "block": "application",
-   "key": "inventar"
+   "key": "inventar",
+   "scribe_end": 66.56
   },
   {
    "index": 160,
    "text": "respostas.",
    "start": 66.68,
-   "end": 67.84,
+   "end": 67.291,
    "block": "application",
-   "key": "respostas"
+   "key": "respostas",
+   "scribe_end": 67.84
   },
   {
    "index": 161,
@@ -1313,7 +1489,8 @@
    "start": 67.92,
    "end": 68.08,
    "block": "conclusion",
-   "key": "nem"
+   "key": "nem",
+   "scribe_end": 68.08
   },
   {
    "index": 162,
@@ -1321,7 +1498,8 @@
    "start": 68.133,
    "end": 68.24,
    "block": "conclusion",
-   "key": "toda"
+   "key": "toda",
+   "scribe_end": 68.24
   },
   {
    "index": 163,
@@ -1329,7 +1507,8 @@
    "start": 68.32,
    "end": 68.8,
    "block": "conclusion",
-   "key": "espera"
+   "key": "espera",
+   "scribe_end": 68.8
   },
   {
    "index": 164,
@@ -1337,7 +1516,8 @@
    "start": 68.88,
    "end": 68.96,
    "block": "conclusion",
-   "key": "tem"
+   "key": "tem",
+   "scribe_end": 68.96
   },
   {
    "index": 165,
@@ -1345,15 +1525,17 @@
    "start": 69.04,
    "end": 69.6,
    "block": "conclusion",
-   "key": "explicacao"
+   "key": "explicacao",
+   "scribe_end": 69.6
   },
   {
    "index": 166,
    "text": "pronta.",
    "start": 69.68,
-   "end": 70.56,
+   "end": 70.028,
    "block": "conclusion",
-   "key": "pronta"
+   "key": "pronta",
+   "scribe_end": 70.56
   },
   {
    "index": 167,
@@ -1361,7 +1543,8 @@
    "start": 70.64,
    "end": 70.72,
    "block": "conclusion",
-   "key": "mas"
+   "key": "mas",
+   "scribe_end": 70.72
   },
   {
    "index": 168,
@@ -1369,7 +1552,8 @@
    "start": 70.76,
    "end": 70.8,
    "block": "conclusion",
-   "key": "o"
+   "key": "o",
+   "scribe_end": 70.8
   },
   {
    "index": 169,
@@ -1377,7 +1561,8 @@
    "start": 70.92,
    "end": 71.52,
    "block": "conclusion",
-   "key": "silencio"
+   "key": "silencio",
+   "scribe_end": 71.52
   },
   {
    "index": 170,
@@ -1385,7 +1570,8 @@
    "start": 71.6,
    "end": 71.68,
    "block": "conclusion",
-   "key": "nao"
+   "key": "nao",
+   "scribe_end": 71.68
   },
   {
    "index": 171,
@@ -1393,7 +1579,8 @@
    "start": 71.76,
    "end": 72.16,
    "block": "conclusion",
-   "key": "obriga"
+   "key": "obriga",
+   "scribe_end": 72.16
   },
   {
    "index": 172,
@@ -1401,7 +1588,8 @@
    "start": 72.24,
    "end": 72.56,
    "block": "conclusion",
-   "key": "voce"
+   "key": "voce",
+   "scribe_end": 72.56
   },
   {
    "index": 173,
@@ -1409,7 +1597,8 @@
    "start": 72.6,
    "end": 72.64,
    "block": "conclusion",
-   "key": "a"
+   "key": "a",
+   "scribe_end": 72.64
   },
   {
    "index": 174,
@@ -1417,7 +1606,8 @@
    "start": 72.72,
    "end": 73.28,
    "block": "conclusion",
-   "key": "abandonar"
+   "key": "abandonar",
+   "scribe_end": 73.28
   },
   {
    "index": 175,
@@ -1425,15 +1615,17 @@
    "start": 73.307,
    "end": 73.333,
    "block": "conclusion",
-   "key": "a"
+   "key": "a",
+   "scribe_end": 73.333
   },
   {
    "index": 176,
    "text": "verdade,",
    "start": 73.36,
-   "end": 74.16,
+   "end": 73.945,
    "block": "conclusion",
-   "key": "verdade"
+   "key": "verdade",
+   "scribe_end": 74.16
   },
   {
    "index": 177,
@@ -1441,15 +1633,17 @@
    "start": 74.2,
    "end": 74.24,
    "block": "conclusion",
-   "key": "a"
+   "key": "a",
+   "scribe_end": 74.24
   },
   {
    "index": 178,
    "text": "responsabilidade",
    "start": 74.32,
-   "end": 75.52,
+   "end": 75.429,
    "block": "conclusion",
-   "key": "responsabilidade"
+   "key": "responsabilidade",
+   "scribe_end": 75.52
   },
   {
    "index": 179,
@@ -1457,7 +1651,8 @@
    "start": 75.6,
    "end": 75.68,
    "block": "conclusion",
-   "key": "ou"
+   "key": "ou",
+   "scribe_end": 75.68
   },
   {
    "index": 180,
@@ -1465,21 +1660,24 @@
    "start": 75.76,
    "end": 75.893,
    "block": "conclusion",
-   "key": "a"
+   "key": "a",
+   "scribe_end": 75.893
   },
   {
    "index": 181,
    "text": "esperança.",
    "start": 76.027,
-   "end": 76.72,
+   "end": 76.435,
    "block": "conclusion",
-   "key": "esperanca"
+   "key": "esperanca",
+   "scribe_end": 76.72
   }
  ],
  "limitations": [
-  "Audio file NOT downloaded (egress blocked): file hash, true file duration and loudness are NOT VERIFIED.",
+  "Audio file hash/duration/loudness measured on GitHub runner (run 44798218347); file is NOT stored in the repo.",
   "Voice rights/commercial licence of the library voice NOT VERIFIED; voice_rights_cleared=false.",
-  "Word times come from Scribe, not from the audio; sentence-final words span trailing pause (up to ~1 s) so karaoke fill may lag on them: NOT VERIFIED by ear.",
+  "Word starts come from Scribe; ends were trimmed to measured silences. Sync still NOT VERIFIED by ear.",
+  "Loudness -21.1 LUFS integrated is below typical social-video targets: normalization NOT done.",
   "This candidate does NOT replace the canonical 70.425 s WAV; scene timings (12 scenes) not yet re-fitted.",
   "Not master, not published."
  ],

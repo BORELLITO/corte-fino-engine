@@ -1,0 +1,22 @@
+name: Verbo no Chão — E01 v3 independent sync check (read-only)
+on:
+  push:
+    branches: ["verbo-no-chao/e01-voice-johnes-probe-20261120-v1"]
+    paths:
+      - ".github/workflows/verbo-no-chao-e01-v3-sync-check.yml"
+      - "agents/e01_v3_sync_check.py"
+      - "contracts/e01_v3_karaoke_under_test.ass"
+permissions:
+  contents: read
+jobs:
+  sync:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: python -m pip install --disable-pip-version-check "faster-whisper==1.2.1" "imageio-ffmpeg==0.6.0"
+      - name: Whisper vs pinned timing vs .ass (no upload, no spend, no publish)
+        run: python -m agents.e01_v3_sync_check contracts/e01_v3_voice_probe_link.txt

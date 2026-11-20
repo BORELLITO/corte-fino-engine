@@ -1,0 +1,262 @@
+[Script Info]
+Title: VERBO NO CHAO | E01 | QA-ONLY KARAOKE (layout v3c, word-by-word highlight)
+ScriptType: v4.00+
+PlayResX: 1080
+PlayResY: 1920
+WrapStyle: 2
+ScaledBorderAndShadow: yes
+
+[V4+ Styles]
+Format: Name, Fontname, Fontsize, PrimaryColour, SecondaryColour, OutlineColour, BackColour, Bold, Italic, Underline, StrikeOut, ScaleX, ScaleY, Spacing, Angle, BorderStyle, Outline, Shadow, Alignment, MarginL, MarginR, MarginV, Encoding
+Style: Caption,Atkinson Hyperlegible Next,107,&H00EEF1F2,&H00EEF1F2,&H00141210,&H96000000,-1,0,0,0,100,100,0.6,0,1,7,3,2,180,180,576,1
+Style: QA,DejaVu Sans,34,&H00E6E6E6,&H00E6E6E6,&H0012100E,&H80000000,1,0,0,0,100,100,0,0,1,2,0,8,90,90,118,1
+
+[Events]
+Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text
+Dialogue: 1,0:00:00.00,0:01:16.67,QA,,0,0,0,,PRÉVIA TÉCNICA - NÃO PUBLICAR
+Dialogue: 0,0:00:00.00,0:00:00.36,Caption,,0,0,0,,{\1c&H00F2B0C4&}Você{\1c&H00EEF1F2&} já repetiu\Na mesma pergunta
+Dialogue: 0,0:00:00.36,0:00:00.48,Caption,,0,0,0,,Você {\1c&H00F2B0C4&}já{\1c&H00EEF1F2&} repetiu\Na mesma pergunta
+Dialogue: 0,0:00:00.48,0:00:00.96,Caption,,0,0,0,,Você já {\1c&H00F2B0C4&}repetiu{\1c&H00EEF1F2&}\Na mesma pergunta
+Dialogue: 0,0:00:00.96,0:00:01.20,Caption,,0,0,0,,Você já repetiu\N{\1c&H00F2B0C4&}a{\1c&H00EEF1F2&} mesma pergunta
+Dialogue: 0,0:00:01.20,0:00:01.52,Caption,,0,0,0,,Você já repetiu\Na {\1c&H00F2B0C4&}mesma{\1c&H00EEF1F2&} pergunta
+Dialogue: 0,0:00:01.52,0:00:02.00,Caption,,0,0,0,,Você já repetiu\Na mesma {\1c&H00F2B0C4&}pergunta{\1c&H00EEF1F2&}
+Dialogue: 0,0:00:02.00,0:00:02.02,Caption,,0,0,0,,Você já repetiu\Na mesma pergunta
+Dialogue: 0,0:00:02.06,0:00:02.16,Caption,,0,0,0,,tantas vezes\Nque começou
+Dialogue: 0,0:00:02.16,0:00:02.72,Caption,,0,0,0,,{\1c&H00F2B0C4&}tantas{\1c&H00EEF1F2&} vezes\Nque começou
+Dialogue: 0,0:00:02.72,0:00:03.20,Caption,,0,0,0,,tantas {\1c&H00F2B0C4&}vezes{\1c&H00EEF1F2&}\Nque começou
+Dialogue: 0,0:00:03.20,0:00:03.40,Caption,,0,0,0,,tantas vezes\N{\1c&H00F2B0C4&}que{\1c&H00EEF1F2&} começou
+Dialogue: 0,0:00:03.40,0:00:03.68,Caption,,0,0,0,,tantas vezes\Nque {\1c&H00F2B0C4&}começou{\1c&H00EEF1F2&}
+Dialogue: 0,0:00:03.72,0:00:03.80,Caption,,0,0,0,,{\1c&H00F2B0C4&}a{\1c&H00EEF1F2&} acreditar\Nque ninguém
+Dialogue: 0,0:00:03.80,0:00:04.32,Caption,,0,0,0,,a {\1c&H00F2B0C4&}acreditar{\1c&H00EEF1F2&}\Nque ninguém
+Dialogue: 0,0:00:04.32,0:00:04.48,Caption,,0,0,0,,a acreditar\N{\1c&H00F2B0C4&}que{\1c&H00EEF1F2&} ninguém
+Dialogue: 0,0:00:04.48,0:00:04.88,Caption,,0,0,0,,a acreditar\Nque {\1c&H00F2B0C4&}ninguém{\1c&H00EEF1F2&}
+Dialogue: 0,0:00:04.92,0:00:04.96,Caption,,0,0,0,,estava ouvindo?
+Dialogue: 0,0:00:04.96,0:00:05.28,Caption,,0,0,0,,{\1c&H00F2B0C4&}estava{\1c&H00EEF1F2&} ouvindo?
+Dialogue: 0,0:00:05.28,0:00:05.72,Caption,,0,0,0,,estava {\1c&H00F2B0C4&}ouvindo?{\1c&H00EEF1F2&}
+Dialogue: 0,0:00:05.72,0:00:06.07,Caption,,0,0,0,,estava ouvindo?
+Dialogue: 0,0:00:06.30,0:00:06.40,Caption,,0,0,0,,Às vezes,\Nesperar machuca
+Dialogue: 0,0:00:06.40,0:00:06.64,Caption,,0,0,0,,{\1c&H00F2B0C4&}Às{\1c&H00EEF1F2&} vezes,\Nesperar machuca
+Dialogue: 0,0:00:06.64,0:00:07.36,Caption,,0,0,0,,Às {\1c&H00F2B0C4&}vezes,{\1c&H00EEF1F2&}\Nesperar machuca
+Dialogue: 0,0:00:07.36,0:00:07.84,Caption,,0,0,0,,Às vezes,\N{\1c&H00F2B0C4&}esperar{\1c&H00EEF1F2&} machuca
+Dialogue: 0,0:00:07.84,0:00:08.51,Caption,,0,0,0,,Às vezes,\Nesperar {\1c&H00F2B0C4&}machuca{\1c&H00EEF1F2&}
+Dialogue: 0,0:00:08.51,0:00:08.86,Caption,,0,0,0,,Às vezes,\Nesperar machuca
+Dialogue: 0,0:00:08.94,0:00:09.04,Caption,,0,0,0,,Dói ainda mais\Nver injustiças
+Dialogue: 0,0:00:09.04,0:00:09.40,Caption,,0,0,0,,{\1c&H00F2B0C4&}Dói{\1c&H00EEF1F2&} ainda mais\Nver injustiças
+Dialogue: 0,0:00:09.40,0:00:09.76,Caption,,0,0,0,,Dói {\1c&H00F2B0C4&}ainda{\1c&H00EEF1F2&} mais\Nver injustiças
+Dialogue: 0,0:00:09.76,0:00:10.08,Caption,,0,0,0,,Dói ainda {\1c&H00F2B0C4&}mais{\1c&H00EEF1F2&}\Nver injustiças
+Dialogue: 0,0:00:10.08,0:00:10.32,Caption,,0,0,0,,Dói ainda mais\N{\1c&H00F2B0C4&}ver{\1c&H00EEF1F2&} injustiças
+Dialogue: 0,0:00:10.32,0:00:10.96,Caption,,0,0,0,,Dói ainda mais\Nver {\1c&H00F2B0C4&}injustiças{\1c&H00EEF1F2&}
+Dialogue: 0,0:00:11.00,0:00:11.04,Caption,,0,0,0,,repetidas\Ne pessoas feridas
+Dialogue: 0,0:00:11.04,0:00:11.84,Caption,,0,0,0,,{\1c&H00F2B0C4&}repetidas{\1c&H00EEF1F2&}\Ne pessoas feridas
+Dialogue: 0,0:00:11.84,0:00:12.00,Caption,,0,0,0,,repetidas\N{\1c&H00F2B0C4&}e{\1c&H00EEF1F2&} pessoas feridas
+Dialogue: 0,0:00:12.00,0:00:12.40,Caption,,0,0,0,,repetidas\Ne {\1c&H00F2B0C4&}pessoas{\1c&H00EEF1F2&} feridas
+Dialogue: 0,0:00:12.40,0:00:13.12,Caption,,0,0,0,,repetidas\Ne pessoas {\1c&H00F2B0C4&}feridas{\1c&H00EEF1F2&}
+Dialogue: 0,0:00:13.16,0:00:13.20,Caption,,0,0,0,,enquanto parece\Nque nada muda
+Dialogue: 0,0:00:13.20,0:00:13.60,Caption,,0,0,0,,{\1c&H00F2B0C4&}enquanto{\1c&H00EEF1F2&} parece\Nque nada muda
+Dialogue: 0,0:00:13.60,0:00:13.92,Caption,,0,0,0,,enquanto {\1c&H00F2B0C4&}parece{\1c&H00EEF1F2&}\Nque nada muda
+Dialogue: 0,0:00:13.92,0:00:14.16,Caption,,0,0,0,,enquanto parece\N{\1c&H00F2B0C4&}que{\1c&H00EEF1F2&} nada muda
+Dialogue: 0,0:00:14.16,0:00:14.48,Caption,,0,0,0,,enquanto parece\Nque {\1c&H00F2B0C4&}nada{\1c&H00EEF1F2&} muda
+Dialogue: 0,0:00:14.48,0:00:14.83,Caption,,0,0,0,,enquanto parece\Nque nada {\1c&H00F2B0C4&}muda{\1c&H00EEF1F2&}
+Dialogue: 0,0:00:14.83,0:00:15.18,Caption,,0,0,0,,enquanto parece\Nque nada muda
+Dialogue: 0,0:00:15.38,0:00:15.48,Caption,,0,0,0,,E admitir\Nessa revolta
+Dialogue: 0,0:00:15.48,0:00:15.64,Caption,,0,0,0,,{\1c&H00F2B0C4&}E{\1c&H00EEF1F2&} admitir\Nessa revolta
+Dialogue: 0,0:00:15.64,0:00:16.16,Caption,,0,0,0,,E {\1c&H00F2B0C4&}admitir{\1c&H00EEF1F2&}\Nessa revolta
+Dialogue: 0,0:00:16.16,0:00:16.32,Caption,,0,0,0,,E admitir\N{\1c&H00F2B0C4&}essa{\1c&H00EEF1F2&} revolta
+Dialogue: 0,0:00:16.32,0:00:16.96,Caption,,0,0,0,,E admitir\Nessa {\1c&H00F2B0C4&}revolta{\1c&H00EEF1F2&}
+Dialogue: 0,0:00:17.00,0:00:17.04,Caption,,0,0,0,,pode trazer\Nvergonha
+Dialogue: 0,0:00:17.04,0:00:17.28,Caption,,0,0,0,,{\1c&H00F2B0C4&}pode{\1c&H00EEF1F2&} trazer\Nvergonha
+Dialogue: 0,0:00:17.28,0:00:17.60,Caption,,0,0,0,,pode {\1c&H00F2B0C4&}trazer{\1c&H00EEF1F2&}\Nvergonha
+Dialogue: 0,0:00:17.60,0:00:18.15,Caption,,0,0,0,,pode trazer\N{\1c&H00F2B0C4&}vergonha{\1c&H00EEF1F2&}
+Dialogue: 0,0:00:18.15,0:00:18.50,Caption,,0,0,0,,pode trazer\Nvergonha
+Dialogue: 0,0:00:18.78,0:00:18.88,Caption,,0,0,0,,Em Habacuque,\Ncapítulo um
+Dialogue: 0,0:00:18.88,0:00:19.04,Caption,,0,0,0,,{\1c&H00F2B0C4&}Em{\1c&H00EEF1F2&} Habacuque,\Ncapítulo um
+Dialogue: 0,0:00:19.04,0:00:19.76,Caption,,0,0,0,,Em {\1c&H00F2B0C4&}Habacuque,{\1c&H00EEF1F2&}\Ncapítulo um
+Dialogue: 0,0:00:19.76,0:00:20.24,Caption,,0,0,0,,Em Habacuque,\N{\1c&H00F2B0C4&}capítulo{\1c&H00EEF1F2&} um
+Dialogue: 0,0:00:20.24,0:00:20.41,Caption,,0,0,0,,Em Habacuque,\Ncapítulo {\1c&H00F2B0C4&}um{\1c&H00EEF1F2&}
+Dialogue: 0,0:00:20.41,0:00:20.54,Caption,,0,0,0,,Em Habacuque,\Ncapítulo um
+Dialogue: 0,0:00:20.58,0:00:20.68,Caption,,0,0,0,,o profeta\Ndenuncia violência
+Dialogue: 0,0:00:20.68,0:00:20.80,Caption,,0,0,0,,{\1c&H00F2B0C4&}o{\1c&H00EEF1F2&} profeta\Ndenuncia violência
+Dialogue: 0,0:00:20.80,0:00:21.28,Caption,,0,0,0,,o {\1c&H00F2B0C4&}profeta{\1c&H00EEF1F2&}\Ndenuncia violência
+Dialogue: 0,0:00:21.28,0:00:21.84,Caption,,0,0,0,,o profeta\N{\1c&H00F2B0C4&}denuncia{\1c&H00EEF1F2&} violência
+Dialogue: 0,0:00:21.84,0:00:22.57,Caption,,0,0,0,,o profeta\Ndenuncia {\1c&H00F2B0C4&}violência{\1c&H00EEF1F2&}
+Dialogue: 0,0:00:22.57,0:00:22.66,Caption,,0,0,0,,o profeta\Ndenuncia violência
+Dialogue: 0,0:00:22.70,0:00:22.80,Caption,,0,0,0,,injustiça e uma lei\Nque perdeu a força
+Dialogue: 0,0:00:22.80,0:00:23.52,Caption,,0,0,0,,{\1c&H00F2B0C4&}injustiça{\1c&H00EEF1F2&} e uma lei\Nque perdeu a força
+Dialogue: 0,0:00:23.52,0:00:23.76,Caption,,0,0,0,,injustiça e uma lei\Nque perdeu a força
+Dialogue: 0,0:00:23.76,0:00:23.96,Caption,,0,0,0,,injustiça {\1c&H00F2B0C4&}e{\1c&H00EEF1F2&} uma lei\Nque perdeu a força
+Dialogue: 0,0:00:23.96,0:00:24.16,Caption,,0,0,0,,injustiça e {\1c&H00F2B0C4&}uma{\1c&H00EEF1F2&} lei\Nque perdeu a força
+Dialogue: 0,0:00:24.16,0:00:24.40,Caption,,0,0,0,,injustiça e uma {\1c&H00F2B0C4&}lei{\1c&H00EEF1F2&}\Nque perdeu a força
+Dialogue: 0,0:00:24.40,0:00:24.64,Caption,,0,0,0,,injustiça e uma lei\N{\1c&H00F2B0C4&}que{\1c&H00EEF1F2&} perdeu a força
+Dialogue: 0,0:00:24.64,0:00:25.00,Caption,,0,0,0,,injustiça e uma lei\Nque {\1c&H00F2B0C4&}perdeu{\1c&H00EEF1F2&} a força
+Dialogue: 0,0:00:25.00,0:00:25.12,Caption,,0,0,0,,injustiça e uma lei\Nque perdeu {\1c&H00F2B0C4&}a{\1c&H00EEF1F2&} força
+Dialogue: 0,0:00:25.12,0:00:25.52,Caption,,0,0,0,,injustiça e uma lei\Nque perdeu a {\1c&H00F2B0C4&}força{\1c&H00EEF1F2&}
+Dialogue: 0,0:00:25.52,0:00:25.86,Caption,,0,0,0,,injustiça e uma lei\Nque perdeu a força
+Dialogue: 0,0:00:26.06,0:00:26.16,Caption,,0,0,0,,Ele leva\Nessa indignação
+Dialogue: 0,0:00:26.16,0:00:26.40,Caption,,0,0,0,,{\1c&H00F2B0C4&}Ele{\1c&H00EEF1F2&} leva\Nessa indignação
+Dialogue: 0,0:00:26.40,0:00:26.80,Caption,,0,0,0,,Ele {\1c&H00F2B0C4&}leva{\1c&H00EEF1F2&}\Nessa indignação
+Dialogue: 0,0:00:26.80,0:00:26.96,Caption,,0,0,0,,Ele leva\N{\1c&H00F2B0C4&}essa{\1c&H00EEF1F2&} indignação
+Dialogue: 0,0:00:26.96,0:00:27.52,Caption,,0,0,0,,Ele leva\Nessa {\1c&H00F2B0C4&}indignação{\1c&H00EEF1F2&}
+Dialogue: 0,0:00:27.56,0:00:27.68,Caption,,0,0,0,,{\1c&H00F2B0C4&}a{\1c&H00EEF1F2&} Deus
+Dialogue: 0,0:00:27.68,0:00:28.08,Caption,,0,0,0,,a {\1c&H00F2B0C4&}Deus{\1c&H00EEF1F2&}
+Dialogue: 0,0:00:28.08,0:00:28.42,Caption,,0,0,0,,a Deus
+Dialogue: 0,0:00:28.46,0:00:28.56,Caption,,0,0,0,,Não está buscando
+Dialogue: 0,0:00:28.56,0:00:28.72,Caption,,0,0,0,,{\1c&H00F2B0C4&}Não{\1c&H00EEF1F2&} está buscando
+Dialogue: 0,0:00:28.72,0:00:28.96,Caption,,0,0,0,,Não {\1c&H00F2B0C4&}está{\1c&H00EEF1F2&} buscando
+Dialogue: 0,0:00:28.96,0:00:29.36,Caption,,0,0,0,,Não está {\1c&H00F2B0C4&}buscando{\1c&H00EEF1F2&}
+Dialogue: 0,0:00:29.40,0:00:29.44,Caption,,0,0,0,,uma conquista\Npessoal: sofre
+Dialogue: 0,0:00:29.44,0:00:29.64,Caption,,0,0,0,,{\1c&H00F2B0C4&}uma{\1c&H00EEF1F2&} conquista\Npessoal: sofre
+Dialogue: 0,0:00:29.64,0:00:30.08,Caption,,0,0,0,,uma {\1c&H00F2B0C4&}conquista{\1c&H00EEF1F2&}\Npessoal: sofre
+Dialogue: 0,0:00:30.08,0:00:30.59,Caption,,0,0,0,,uma conquista\N{\1c&H00F2B0C4&}pessoal:{\1c&H00EEF1F2&} sofre
+Dialogue: 0,0:00:30.59,0:00:31.20,Caption,,0,0,0,,uma conquista\Npessoal: sofre
+Dialogue: 0,0:00:31.20,0:00:31.52,Caption,,0,0,0,,uma conquista\Npessoal: {\1c&H00F2B0C4&}sofre{\1c&H00EEF1F2&}
+Dialogue: 0,0:00:31.56,0:00:31.60,Caption,,0,0,0,,diante de uma\Nsociedade ferida
+Dialogue: 0,0:00:31.60,0:00:31.96,Caption,,0,0,0,,{\1c&H00F2B0C4&}diante{\1c&H00EEF1F2&} de uma\Nsociedade ferida
+Dialogue: 0,0:00:31.96,0:00:32.08,Caption,,0,0,0,,diante {\1c&H00F2B0C4&}de{\1c&H00EEF1F2&} uma\Nsociedade ferida
+Dialogue: 0,0:00:32.08,0:00:32.28,Caption,,0,0,0,,diante de {\1c&H00F2B0C4&}uma{\1c&H00EEF1F2&}\Nsociedade ferida
+Dialogue: 0,0:00:32.28,0:00:32.88,Caption,,0,0,0,,diante de uma\N{\1c&H00F2B0C4&}sociedade{\1c&H00EEF1F2&} ferida
+Dialogue: 0,0:00:32.88,0:00:33.39,Caption,,0,0,0,,diante de uma\Nsociedade {\1c&H00F2B0C4&}ferida{\1c&H00EEF1F2&}
+Dialogue: 0,0:00:33.39,0:00:33.74,Caption,,0,0,0,,diante de uma\Nsociedade ferida
+Dialogue: 0,0:00:33.82,0:00:33.92,Caption,,0,0,0,,Os primeiros versos\Nnão entregam
+Dialogue: 0,0:00:33.92,0:00:34.08,Caption,,0,0,0,,{\1c&H00F2B0C4&}Os{\1c&H00EEF1F2&} primeiros versos\Nnão entregam
+Dialogue: 0,0:00:34.08,0:00:34.56,Caption,,0,0,0,,Os {\1c&H00F2B0C4&}primeiros{\1c&H00EEF1F2&} versos\Nnão entregam
+Dialogue: 0,0:00:34.56,0:00:35.08,Caption,,0,0,0,,Os primeiros {\1c&H00F2B0C4&}versos{\1c&H00EEF1F2&}\Nnão entregam
+Dialogue: 0,0:00:35.08,0:00:35.32,Caption,,0,0,0,,Os primeiros versos\N{\1c&H00F2B0C4&}não{\1c&H00EEF1F2&} entregam
+Dialogue: 0,0:00:35.32,0:00:35.68,Caption,,0,0,0,,Os primeiros versos\Nnão {\1c&H00F2B0C4&}entregam{\1c&H00EEF1F2&}
+Dialogue: 0,0:00:35.72,0:00:35.76,Caption,,0,0,0,,uma explicação\Nconfortável
+Dialogue: 0,0:00:35.76,0:00:35.92,Caption,,0,0,0,,{\1c&H00F2B0C4&}uma{\1c&H00EEF1F2&} explicação\Nconfortável
+Dialogue: 0,0:00:35.92,0:00:36.48,Caption,,0,0,0,,uma {\1c&H00F2B0C4&}explicação{\1c&H00EEF1F2&}\Nconfortável
+Dialogue: 0,0:00:36.48,0:00:37.20,Caption,,0,0,0,,uma explicação\N{\1c&H00F2B0C4&}confortável{\1c&H00EEF1F2&}
+Dialogue: 0,0:00:37.20,0:00:37.54,Caption,,0,0,0,,uma explicação\Nconfortável
+Dialogue: 0,0:00:37.58,0:00:37.68,Caption,,0,0,0,,Mostram\Num homem
+Dialogue: 0,0:00:37.68,0:00:38.16,Caption,,0,0,0,,{\1c&H00F2B0C4&}Mostram{\1c&H00EEF1F2&}\Num homem
+Dialogue: 0,0:00:38.16,0:00:38.32,Caption,,0,0,0,,Mostram\N{\1c&H00F2B0C4&}um{\1c&H00EEF1F2&} homem
+Dialogue: 0,0:00:38.32,0:00:38.56,Caption,,0,0,0,,Mostram\Num {\1c&H00F2B0C4&}homem{\1c&H00EEF1F2&}
+Dialogue: 0,0:00:38.60,0:00:38.64,Caption,,0,0,0,,que se recusa\Na chamar
+Dialogue: 0,0:00:38.64,0:00:38.80,Caption,,0,0,0,,{\1c&H00F2B0C4&}que{\1c&H00EEF1F2&} se recusa\Na chamar
+Dialogue: 0,0:00:38.80,0:00:38.96,Caption,,0,0,0,,que {\1c&H00F2B0C4&}se{\1c&H00EEF1F2&} recusa\Na chamar
+Dialogue: 0,0:00:38.96,0:00:39.48,Caption,,0,0,0,,que se {\1c&H00F2B0C4&}recusa{\1c&H00EEF1F2&}\Na chamar
+Dialogue: 0,0:00:39.48,0:00:39.60,Caption,,0,0,0,,que se recusa\N{\1c&H00F2B0C4&}a{\1c&H00EEF1F2&} chamar
+Dialogue: 0,0:00:39.60,0:00:39.92,Caption,,0,0,0,,que se recusa\Na {\1c&H00F2B0C4&}chamar{\1c&H00EEF1F2&}
+Dialogue: 0,0:00:39.96,0:00:40.12,Caption,,0,0,0,,{\1c&H00F2B0C4&}o{\1c&H00EEF1F2&} mal de normal
+Dialogue: 0,0:00:40.12,0:00:40.32,Caption,,0,0,0,,o {\1c&H00F2B0C4&}mal{\1c&H00EEF1F2&} de normal
+Dialogue: 0,0:00:40.32,0:00:40.40,Caption,,0,0,0,,o mal {\1c&H00F2B0C4&}de{\1c&H00EEF1F2&} normal
+Dialogue: 0,0:00:40.40,0:00:40.68,Caption,,0,0,0,,o mal de normal
+Dialogue: 0,0:00:40.68,0:00:40.96,Caption,,0,0,0,,o mal de {\1c&H00F2B0C4&}normal{\1c&H00EEF1F2&}
+Dialogue: 0,0:00:40.96,0:00:40.98,Caption,,0,0,0,,o mal de normal
+Dialogue: 0,0:00:41.02,0:00:41.12,Caption,,0,0,0,,e não esconde\Nsuas perguntas
+Dialogue: 0,0:00:41.12,0:00:41.28,Caption,,0,0,0,,{\1c&H00F2B0C4&}e{\1c&H00EEF1F2&} não esconde\Nsuas perguntas
+Dialogue: 0,0:00:41.28,0:00:41.56,Caption,,0,0,0,,e {\1c&H00F2B0C4&}não{\1c&H00EEF1F2&} esconde\Nsuas perguntas
+Dialogue: 0,0:00:41.56,0:00:42.00,Caption,,0,0,0,,e não {\1c&H00F2B0C4&}esconde{\1c&H00EEF1F2&}\Nsuas perguntas
+Dialogue: 0,0:00:42.00,0:00:42.24,Caption,,0,0,0,,e não esconde\N{\1c&H00F2B0C4&}suas{\1c&H00EEF1F2&} perguntas
+Dialogue: 0,0:00:42.24,0:00:42.85,Caption,,0,0,0,,e não esconde\Nsuas {\1c&H00F2B0C4&}perguntas{\1c&H00EEF1F2&}
+Dialogue: 0,0:00:42.85,0:00:43.20,Caption,,0,0,0,,e não esconde\Nsuas perguntas
+Dialogue: 0,0:00:43.34,0:00:43.44,Caption,,0,0,0,,O diálogo continua\Nao longo do livro
+Dialogue: 0,0:00:43.44,0:00:43.60,Caption,,0,0,0,,{\1c&H00F2B0C4&}O{\1c&H00EEF1F2&} diálogo continua\Nao longo do livro
+Dialogue: 0,0:00:43.60,0:00:44.08,Caption,,0,0,0,,O {\1c&H00F2B0C4&}diálogo{\1c&H00EEF1F2&} continua\Nao longo do livro
+Dialogue: 0,0:00:44.08,0:00:44.68,Caption,,0,0,0,,O diálogo {\1c&H00F2B0C4&}continua{\1c&H00EEF1F2&}\Nao longo do livro
+Dialogue: 0,0:00:44.68,0:00:44.80,Caption,,0,0,0,,O diálogo continua\N{\1c&H00F2B0C4&}ao{\1c&H00EEF1F2&} longo do livro
+Dialogue: 0,0:00:44.80,0:00:45.04,Caption,,0,0,0,,O diálogo continua\Nao {\1c&H00F2B0C4&}longo{\1c&H00EEF1F2&} do livro
+Dialogue: 0,0:00:45.04,0:00:45.24,Caption,,0,0,0,,O diálogo continua\Nao longo {\1c&H00F2B0C4&}do{\1c&H00EEF1F2&} livro
+Dialogue: 0,0:00:45.24,0:00:45.50,Caption,,0,0,0,,O diálogo continua\Nao longo do {\1c&H00F2B0C4&}livro{\1c&H00EEF1F2&}
+Dialogue: 0,0:00:45.50,0:00:45.54,Caption,,0,0,0,,O diálogo continua\Nao longo do livro
+Dialogue: 0,0:00:45.58,0:00:45.68,Caption,,0,0,0,,com respostas\Ndifíceis
+Dialogue: 0,0:00:45.68,0:00:45.88,Caption,,0,0,0,,{\1c&H00F2B0C4&}com{\1c&H00EEF1F2&} respostas\Ndifíceis
+Dialogue: 0,0:00:45.88,0:00:46.40,Caption,,0,0,0,,com {\1c&H00F2B0C4&}respostas{\1c&H00EEF1F2&}\Ndifíceis
+Dialogue: 0,0:00:46.40,0:00:47.13,Caption,,0,0,0,,com respostas\N{\1c&H00F2B0C4&}difíceis{\1c&H00EEF1F2&}
+Dialogue: 0,0:00:47.13,0:00:47.48,Caption,,0,0,0,,com respostas\Ndifíceis
+Dialogue: 0,0:00:47.58,0:00:47.68,Caption,,0,0,0,,A fé não precisa\Nfingir
+Dialogue: 0,0:00:47.68,0:00:47.92,Caption,,0,0,0,,{\1c&H00F2B0C4&}A{\1c&H00EEF1F2&} fé não precisa\Nfingir
+Dialogue: 0,0:00:47.92,0:00:48.32,Caption,,0,0,0,,A {\1c&H00F2B0C4&}fé{\1c&H00EEF1F2&} não precisa\Nfingir
+Dialogue: 0,0:00:48.32,0:00:48.48,Caption,,0,0,0,,A fé {\1c&H00F2B0C4&}não{\1c&H00EEF1F2&} precisa\Nfingir
+Dialogue: 0,0:00:48.48,0:00:49.12,Caption,,0,0,0,,A fé não {\1c&H00F2B0C4&}precisa{\1c&H00EEF1F2&}\Nfingir
+Dialogue: 0,0:00:49.12,0:00:49.52,Caption,,0,0,0,,A fé não precisa\N{\1c&H00F2B0C4&}fingir{\1c&H00EEF1F2&}
+Dialogue: 0,0:00:49.56,0:00:49.60,Caption,,0,0,0,,que a injustiça\Né paz
+Dialogue: 0,0:00:49.60,0:00:49.71,Caption,,0,0,0,,{\1c&H00F2B0C4&}que{\1c&H00EEF1F2&} a injustiça\Né paz
+Dialogue: 0,0:00:49.71,0:00:49.76,Caption,,0,0,0,,que {\1c&H00F2B0C4&}a{\1c&H00EEF1F2&} injustiça\Né paz
+Dialogue: 0,0:00:49.76,0:00:50.48,Caption,,0,0,0,,que a {\1c&H00F2B0C4&}injustiça{\1c&H00EEF1F2&}\Né paz
+Dialogue: 0,0:00:50.48,0:00:50.69,Caption,,0,0,0,,que a injustiça\N{\1c&H00F2B0C4&}é{\1c&H00EEF1F2&} paz
+Dialogue: 0,0:00:50.69,0:00:50.97,Caption,,0,0,0,,que a injustiça\Né {\1c&H00F2B0C4&}paz{\1c&H00EEF1F2&}
+Dialogue: 0,0:00:50.97,0:00:51.22,Caption,,0,0,0,,que a injustiça\Né paz
+Dialogue: 0,0:00:51.26,0:00:51.36,Caption,,0,0,0,,É possível orar\Ne reconhecer
+Dialogue: 0,0:00:51.36,0:00:51.52,Caption,,0,0,0,,{\1c&H00F2B0C4&}É{\1c&H00EEF1F2&} possível orar\Ne reconhecer
+Dialogue: 0,0:00:51.52,0:00:52.08,Caption,,0,0,0,,É {\1c&H00F2B0C4&}possível{\1c&H00EEF1F2&} orar\Ne reconhecer
+Dialogue: 0,0:00:52.08,0:00:52.56,Caption,,0,0,0,,É possível {\1c&H00F2B0C4&}orar{\1c&H00EEF1F2&}\Ne reconhecer
+Dialogue: 0,0:00:52.56,0:00:52.72,Caption,,0,0,0,,É possível orar\N{\1c&H00F2B0C4&}e{\1c&H00EEF1F2&} reconhecer
+Dialogue: 0,0:00:52.72,0:00:53.36,Caption,,0,0,0,,É possível orar\Ne {\1c&H00F2B0C4&}reconhecer{\1c&H00EEF1F2&}
+Dialogue: 0,0:00:53.40,0:00:53.52,Caption,,0,0,0,,{\1c&H00F2B0C4&}o{\1c&H00EEF1F2&} que precisa\Nser enfrentado
+Dialogue: 0,0:00:53.52,0:00:53.72,Caption,,0,0,0,,o {\1c&H00F2B0C4&}que{\1c&H00EEF1F2&} precisa\Nser enfrentado
+Dialogue: 0,0:00:53.72,0:00:54.08,Caption,,0,0,0,,o que {\1c&H00F2B0C4&}precisa{\1c&H00EEF1F2&}\Nser enfrentado
+Dialogue: 0,0:00:54.08,0:00:54.24,Caption,,0,0,0,,o que precisa\N{\1c&H00F2B0C4&}ser{\1c&H00EEF1F2&} enfrentado
+Dialogue: 0,0:00:54.24,0:00:54.87,Caption,,0,0,0,,o que precisa\Nser {\1c&H00F2B0C4&}enfrentado{\1c&H00EEF1F2&}
+Dialogue: 0,0:00:54.87,0:00:55.22,Caption,,0,0,0,,o que precisa\Nser enfrentado
+Dialogue: 0,0:00:55.42,0:00:55.52,Caption,,0,0,0,,Talvez hoje\Nvocê precise
+Dialogue: 0,0:00:55.52,0:00:56.00,Caption,,0,0,0,,{\1c&H00F2B0C4&}Talvez{\1c&H00EEF1F2&} hoje\Nvocê precise
+Dialogue: 0,0:00:56.00,0:00:56.28,Caption,,0,0,0,,Talvez {\1c&H00F2B0C4&}hoje{\1c&H00EEF1F2&}\Nvocê precise
+Dialogue: 0,0:00:56.28,0:00:56.56,Caption,,0,0,0,,Talvez hoje\N{\1c&H00F2B0C4&}você{\1c&H00EEF1F2&} precise
+Dialogue: 0,0:00:56.56,0:00:56.96,Caption,,0,0,0,,Talvez hoje\Nvocê {\1c&H00F2B0C4&}precise{\1c&H00EEF1F2&}
+Dialogue: 0,0:00:56.96,0:00:56.98,Caption,,0,0,0,,Talvez hoje\Nvocê precise
+Dialogue: 0,0:00:57.02,0:00:57.12,Caption,,0,0,0,,nomear\No que está errado
+Dialogue: 0,0:00:57.12,0:00:57.52,Caption,,0,0,0,,{\1c&H00F2B0C4&}nomear{\1c&H00EEF1F2&}\No que está errado
+Dialogue: 0,0:00:57.52,0:00:57.60,Caption,,0,0,0,,nomear\N{\1c&H00F2B0C4&}o{\1c&H00EEF1F2&} que está errado
+Dialogue: 0,0:00:57.60,0:00:57.68,Caption,,0,0,0,,nomear\No {\1c&H00F2B0C4&}que{\1c&H00EEF1F2&} está errado
+Dialogue: 0,0:00:57.68,0:00:57.92,Caption,,0,0,0,,nomear\No que {\1c&H00F2B0C4&}está{\1c&H00EEF1F2&} errado
+Dialogue: 0,0:00:57.92,0:00:58.30,Caption,,0,0,0,,nomear\No que está {\1c&H00F2B0C4&}errado{\1c&H00EEF1F2&}
+Dialogue: 0,0:00:58.30,0:00:58.50,Caption,,0,0,0,,nomear\No que está errado
+Dialogue: 0,0:00:58.54,0:00:58.64,Caption,,0,0,0,,procurar apoio\Nconfiável
+Dialogue: 0,0:00:58.64,0:00:59.12,Caption,,0,0,0,,{\1c&H00F2B0C4&}procurar{\1c&H00EEF1F2&} apoio\Nconfiável
+Dialogue: 0,0:00:59.12,0:00:59.44,Caption,,0,0,0,,procurar {\1c&H00F2B0C4&}apoio{\1c&H00EEF1F2&}\Nconfiável
+Dialogue: 0,0:00:59.44,0:01:00.08,Caption,,0,0,0,,procurar apoio\N{\1c&H00F2B0C4&}confiável{\1c&H00EEF1F2&}
+Dialogue: 0,0:01:00.08,0:01:00.26,Caption,,0,0,0,,procurar apoio\Nconfiável
+Dialogue: 0,0:01:00.30,0:01:00.40,Caption,,0,0,0,,ou dar um passo\Nresponsável
+Dialogue: 0,0:01:00.40,0:01:00.64,Caption,,0,0,0,,{\1c&H00F2B0C4&}ou{\1c&H00EEF1F2&} dar um passo\Nresponsável
+Dialogue: 0,0:01:00.64,0:01:00.80,Caption,,0,0,0,,ou {\1c&H00F2B0C4&}dar{\1c&H00EEF1F2&} um passo\Nresponsável
+Dialogue: 0,0:01:00.80,0:01:01.00,Caption,,0,0,0,,ou dar {\1c&H00F2B0C4&}um{\1c&H00EEF1F2&} passo\Nresponsável
+Dialogue: 0,0:01:01.00,0:01:01.20,Caption,,0,0,0,,ou dar um {\1c&H00F2B0C4&}passo{\1c&H00EEF1F2&}\Nresponsável
+Dialogue: 0,0:01:01.20,0:01:02.00,Caption,,0,0,0,,ou dar um passo\N{\1c&H00F2B0C4&}responsável{\1c&H00EEF1F2&}
+Dialogue: 0,0:01:02.04,0:01:02.16,Caption,,0,0,0,,{\1c&H00F2B0C4&}em{\1c&H00EEF1F2&} favor de alguém
+Dialogue: 0,0:01:02.16,0:01:02.44,Caption,,0,0,0,,em {\1c&H00F2B0C4&}favor{\1c&H00EEF1F2&} de alguém
+Dialogue: 0,0:01:02.44,0:01:02.56,Caption,,0,0,0,,em favor {\1c&H00F2B0C4&}de{\1c&H00EEF1F2&} alguém
+Dialogue: 0,0:01:02.56,0:01:02.82,Caption,,0,0,0,,em favor de {\1c&H00F2B0C4&}alguém{\1c&H00EEF1F2&}
+Dialogue: 0,0:01:02.82,0:01:03.16,Caption,,0,0,0,,em favor de alguém
+Dialogue: 0,0:01:03.42,0:01:03.52,Caption,,0,0,0,,E pode levar\Nsuas perguntas
+Dialogue: 0,0:01:03.52,0:01:03.68,Caption,,0,0,0,,{\1c&H00F2B0C4&}E{\1c&H00EEF1F2&} pode levar\Nsuas perguntas
+Dialogue: 0,0:01:03.68,0:01:03.92,Caption,,0,0,0,,E {\1c&H00F2B0C4&}pode{\1c&H00EEF1F2&} levar\Nsuas perguntas
+Dialogue: 0,0:01:03.92,0:01:04.24,Caption,,0,0,0,,E pode {\1c&H00F2B0C4&}levar{\1c&H00EEF1F2&}\Nsuas perguntas
+Dialogue: 0,0:01:04.24,0:01:04.56,Caption,,0,0,0,,E pode levar\N{\1c&H00F2B0C4&}suas{\1c&H00EEF1F2&} perguntas
+Dialogue: 0,0:01:04.56,0:01:04.96,Caption,,0,0,0,,E pode levar\Nsuas {\1c&H00F2B0C4&}perguntas{\1c&H00EEF1F2&}
+Dialogue: 0,0:01:05.00,0:01:05.12,Caption,,0,0,0,,{\1c&H00F2B0C4&}à{\1c&H00EEF1F2&} oração
+Dialogue: 0,0:01:05.12,0:01:05.84,Caption,,0,0,0,,à {\1c&H00F2B0C4&}oração{\1c&H00EEF1F2&}
+Dialogue: 0,0:01:05.88,0:01:05.92,Caption,,0,0,0,,sem inventar\Nrespostas
+Dialogue: 0,0:01:05.92,0:01:06.08,Caption,,0,0,0,,{\1c&H00F2B0C4&}sem{\1c&H00EEF1F2&} inventar\Nrespostas
+Dialogue: 0,0:01:06.08,0:01:06.68,Caption,,0,0,0,,sem {\1c&H00F2B0C4&}inventar{\1c&H00EEF1F2&}\Nrespostas
+Dialogue: 0,0:01:06.68,0:01:07.29,Caption,,0,0,0,,sem inventar\N{\1c&H00F2B0C4&}respostas{\1c&H00EEF1F2&}
+Dialogue: 0,0:01:07.29,0:01:07.64,Caption,,0,0,0,,sem inventar\Nrespostas
+Dialogue: 0,0:01:07.82,0:01:07.92,Caption,,0,0,0,,Nem toda espera
+Dialogue: 0,0:01:07.92,0:01:08.13,Caption,,0,0,0,,{\1c&H00F2B0C4&}Nem{\1c&H00EEF1F2&} toda espera
+Dialogue: 0,0:01:08.13,0:01:08.32,Caption,,0,0,0,,Nem {\1c&H00F2B0C4&}toda{\1c&H00EEF1F2&} espera
+Dialogue: 0,0:01:08.32,0:01:08.80,Caption,,0,0,0,,Nem toda {\1c&H00F2B0C4&}espera{\1c&H00EEF1F2&}
+Dialogue: 0,0:01:08.84,0:01:08.88,Caption,,0,0,0,,tem explicação\Npronta
+Dialogue: 0,0:01:08.88,0:01:09.04,Caption,,0,0,0,,{\1c&H00F2B0C4&}tem{\1c&H00EEF1F2&} explicação\Npronta
+Dialogue: 0,0:01:09.04,0:01:09.68,Caption,,0,0,0,,tem {\1c&H00F2B0C4&}explicação{\1c&H00EEF1F2&}\Npronta
+Dialogue: 0,0:01:09.68,0:01:10.03,Caption,,0,0,0,,tem explicação\N{\1c&H00F2B0C4&}pronta{\1c&H00EEF1F2&}
+Dialogue: 0,0:01:10.03,0:01:10.38,Caption,,0,0,0,,tem explicação\Npronta
+Dialogue: 0,0:01:10.54,0:01:10.64,Caption,,0,0,0,,Mas o silêncio\Nnão obriga
+Dialogue: 0,0:01:10.64,0:01:10.76,Caption,,0,0,0,,{\1c&H00F2B0C4&}Mas{\1c&H00EEF1F2&} o silêncio\Nnão obriga
+Dialogue: 0,0:01:10.76,0:01:10.92,Caption,,0,0,0,,Mas {\1c&H00F2B0C4&}o{\1c&H00EEF1F2&} silêncio\Nnão obriga
+Dialogue: 0,0:01:10.92,0:01:11.60,Caption,,0,0,0,,Mas o {\1c&H00F2B0C4&}silêncio{\1c&H00EEF1F2&}\Nnão obriga
+Dialogue: 0,0:01:11.60,0:01:11.76,Caption,,0,0,0,,Mas o silêncio\N{\1c&H00F2B0C4&}não{\1c&H00EEF1F2&} obriga
+Dialogue: 0,0:01:11.76,0:01:12.16,Caption,,0,0,0,,Mas o silêncio\Nnão {\1c&H00F2B0C4&}obriga{\1c&H00EEF1F2&}
+Dialogue: 0,0:01:12.20,0:01:12.24,Caption,,0,0,0,,você a abandonar\Na verdade
+Dialogue: 0,0:01:12.24,0:01:12.60,Caption,,0,0,0,,{\1c&H00F2B0C4&}você{\1c&H00EEF1F2&} a abandonar\Na verdade
+Dialogue: 0,0:01:12.60,0:01:12.72,Caption,,0,0,0,,você {\1c&H00F2B0C4&}a{\1c&H00EEF1F2&} abandonar\Na verdade
+Dialogue: 0,0:01:12.72,0:01:13.31,Caption,,0,0,0,,você a {\1c&H00F2B0C4&}abandonar{\1c&H00EEF1F2&}\Na verdade
+Dialogue: 0,0:01:13.31,0:01:13.36,Caption,,0,0,0,,você a abandonar\N{\1c&H00F2B0C4&}a{\1c&H00EEF1F2&} verdade
+Dialogue: 0,0:01:13.36,0:01:13.94,Caption,,0,0,0,,você a abandonar\Na {\1c&H00F2B0C4&}verdade{\1c&H00EEF1F2&}
+Dialogue: 0,0:01:13.94,0:01:14.06,Caption,,0,0,0,,você a abandonar\Na verdade
+Dialogue: 0,0:01:14.10,0:01:14.20,Caption,,0,0,0,,a responsabilidade\Nou a esperança
+Dialogue: 0,0:01:14.20,0:01:14.32,Caption,,0,0,0,,{\1c&H00F2B0C4&}a{\1c&H00EEF1F2&} responsabilidade\Nou a esperança
+Dialogue: 0,0:01:14.32,0:01:15.60,Caption,,0,0,0,,a {\1c&H00F2B0C4&}responsabilidade{\1c&H00EEF1F2&}\Nou a esperança
+Dialogue: 0,0:01:15.60,0:01:15.76,Caption,,0,0,0,,a responsabilidade\N{\1c&H00F2B0C4&}ou{\1c&H00EEF1F2&} a esperança
+Dialogue: 0,0:01:15.76,0:01:16.03,Caption,,0,0,0,,a responsabilidade\Nou {\1c&H00F2B0C4&}a{\1c&H00EEF1F2&} esperança
+Dialogue: 0,0:01:16.03,0:01:16.44,Caption,,0,0,0,,a responsabilidade\Nou a {\1c&H00F2B0C4&}esperança{\1c&H00EEF1F2&}
+Dialogue: 0,0:01:16.44,0:01:16.67,Caption,,0,0,0,,a responsabilidade\Nou a esperança
