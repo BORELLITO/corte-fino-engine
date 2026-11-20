@@ -89,7 +89,9 @@ class RunflowEntryTests(unittest.TestCase):
     def test_pipeline_never_names_missing_workflow(self):
         spec = json.loads((ROOT / "contracts" / "e01_pipeline_v3.json").read_text())
         out = evaluate(spec, ROOT)
-        self.assertEqual(out["stages"]["clips_approved"]["status"], "READY")
+        self.assertEqual(out["stages"]["clips_approved"]["status"], "DONE")
+        self.assertEqual(out["stages"]["clips_rights"]["status"], "READY")
+        self.assertEqual(out["next_action"], "owner_authorization_required")
         self.assertNotEqual(out["next_action"], "run_workflow:None")
 
     def test_master_requires_voice_and_clip_rights_and_publication_is_human(self):
