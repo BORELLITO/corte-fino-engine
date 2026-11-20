@@ -135,11 +135,17 @@ class PixabayFootage:
             return resp.read()
 
     def fetch(self, query, min_seconds, exclude, dst_dir):
-        qs = urllib.parse.urlencode({"key": self.key, "q": query, "per_page": 50, "safesearch": "true"})
-        try:
-            hits = json.loads(self._get(f"{self.API}?{qs}")).get("hits", [])
-        except Exception as exc:
-            raise ProducerError(f"producer:footage:pixabay_search_failed:{type(exc).__name__}") from exc
+        hits: list = []
+        for page in (1, 2, 3):  # portrait-native files are rare: look deeper before giving up
+            qs = urllib.parse.urlencode({"key": self.key, "q": query, "per_page": 50,
+                                         "safesearch": "true", "page": page})
+            try:
+                batch = json.loads(self._get(f"{self.API}?{qs}")).get("hits", [])
+            except Exception as exc:
+                raise ProducerError(f"producer:footage:pixabay_search_failed:{type(exc).__name__}") from exc
+            hits.extend(batch)
+            if len(batch) < 50:
+                break
         for hit in hits:
             asset_id = f"pixabay-{hit['id']}"
             if asset_id in exclude or hit.get("pageURL") in exclude or hit.get("duration", 0) < min_seconds + 0.5:
@@ -166,3 +172,25 @@ class PixabayFootage:
                 continue
             return clip
         raise ProducerError(f"producer:footage:no_unused_clip_for:{query}")
+
+
+class ChainFootage:
+    """Try several providers in order; each scene may offer several queries (broad -> narrow fallbacks)."""
+
+    def __init__(self, providers: list) -> None:
+        if not providers:
+            raise ProducerError("producer:footage:empty_chain")
+        self.providers = providers
+
+    def fetch(self, query, min_seconds, exclude, dst_dir):
+        queries = [query] if isinstance(query, str) else list(query)
+        last: ProducerError | None = None
+        for provider in self.providers:
+            for q in queries:
+                try:
+                    return provider.fetch(q, min_seconds, exclude, dst_dir)
+                except ProducerError as exc:
+                    if "no_unused_clip_for" not in str(exc):
+                        raise  # real failures (auth, network, corrupt) must not be hidden by fallbacks
+                    last = exc
+        raise ProducerError(f"producer:footage:no_unused_clip_for_any_query:{queries}") from last

@@ -15,7 +15,7 @@ from orchestrator.runflow import run_flow
 from producer import captions
 from producer.build import build_package
 from producer.common import ProducerError, audio_integrity_ok, duration_sec, run_ffmpeg, sha256_file
-from producer.footage import Clip, PexelsFootage, PixabayFootage
+from producer.footage import ChainFootage, Clip, PexelsFootage, PixabayFootage
 from producer.rejections import load_rejections
 from producer.music import write_music
 
@@ -182,6 +182,31 @@ class ProducerUnitTest(unittest.TestCase):
         self.assertEqual(clip.asset_id, "pixabay-2")  # landscape #1 rejected, never upscaled
         with self.assertRaises(ProducerError):
             Fake("k").fetch("q", 2.0, {"pixabay-2"}, d)  # protected/used id is skipped
+
+    def test_chain_falls_back_across_queries_and_providers_but_not_past_real_errors(self):
+        calls = []
+
+        class Empty:
+            def fetch(self, q, *a):
+                calls.append(("empty", q)); raise ProducerError(f"producer:footage:no_unused_clip_for:{q}")
+
+        class Hit:
+            def fetch(self, q, *a):
+                calls.append(("hit", q))
+                if q == "narrow":
+                    return "CLIP"
+                raise ProducerError(f"producer:footage:no_unused_clip_for:{q}")
+
+        class Broken:
+            def fetch(self, q, *a): raise ProducerError("producer:footage:pixabay_search_failed:HTTPError")
+
+        self.assertEqual(ChainFootage([Empty(), Hit()]).fetch(["broad", "narrow"], 1, set(), None), "CLIP")
+        self.assertEqual(calls, [("empty", "broad"), ("empty", "narrow"), ("hit", "broad"), ("hit", "narrow")])
+        with self.assertRaises(ProducerError) as ctx:
+            ChainFootage([Broken(), Hit()]).fetch(["narrow"], 1, set(), None)
+        self.assertIn("search_failed", str(ctx.exception))  # auth/network errors are never masked
+        with self.assertRaises(ProducerError):
+            ChainFootage([Empty()]).fetch("x", 1, set(), None)
 
     def test_cue_verification_catches_overlap_and_window_escape(self):
         scenes = [("a b", 0.0, 2.0)]

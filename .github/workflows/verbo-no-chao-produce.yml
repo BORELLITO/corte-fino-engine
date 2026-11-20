@@ -8,7 +8,7 @@ on:
         required: true
         type: string
       footage:
-        description: "Fonte de footage: pexels | pixabay | local:<pasta>"
+        description: "Cadeia de fontes, em ordem (ex.: local:catalog,pixabay)"
         required: false
         default: "pixabay"
         type: string

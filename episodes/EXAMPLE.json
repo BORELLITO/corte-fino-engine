@@ -1,11 +1,30 @@
 {
   "_comment": "MODELO. Texto de exemplo para testar o fluxo; revisar fidelidade bíblica antes de usar em episódio real.",
   "episode_id": "EXAMPLE",
-  "voice": {"voice": "pf_dora", "speed": 1.0},
+  "voice": {
+    "voice": "pf_dora",
+    "speed": 1.0
+  },
   "music_seed": 1,
   "scenes": [
-    {"id": "S01", "narration": "Tem dias em que a oração parece bater no teto e voltar.", "footage_query": "person praying window morning"},
-    {"id": "S02", "narration": "O profeta Habacuque também perguntou até quando.", "footage_query": "empty road dawn"},
-    {"id": "S03", "narration": "E mesmo assim, ele continuou de pé esperando resposta.", "footage_query": "man standing hill sunrise"}
+    {
+      "id": "S01",
+      "narration": "Tem dias em que a oração parece bater no teto e voltar.",
+      "footage_query": [
+        "person praying window morning",
+        "man alone window light",
+        "silhouette window sunrise"
+      ]
+    },
+    {
+      "id": "S02",
+      "narration": "O profeta Habacuque também perguntou até quando.",
+      "footage_query": "empty road dawn"
+    },
+    {
+      "id": "S03",
+      "narration": "E mesmo assim, ele continuou de pé esperando resposta.",
+      "footage_query": "man standing hill sunrise"
+    }
   ]
 }

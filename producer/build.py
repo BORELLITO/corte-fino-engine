@@ -26,7 +26,11 @@ def _check_spec(spec: Any) -> None:
         raise ProducerError("producer:spec:scene_ids_invalid_or_duplicate")
     for s in scenes:
         for key in ("narration", "footage_query"):
-            if not isinstance(s.get(key), str) or not s[key].strip():
+            value = s.get(key)
+            ok = (isinstance(value, str) and value.strip()) or (
+                key == "footage_query" and isinstance(value, list) and value
+                and all(isinstance(q, str) and q.strip() for q in value))
+            if not ok:
                 raise ProducerError(f"producer:spec:scene_{s.get('id')}:{key}_missing")
 
 

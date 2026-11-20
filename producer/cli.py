@@ -11,7 +11,7 @@ from orchestrator.runflow import run_flow
 from .build import build_package
 from .captions import FasterWhisperAligner
 from .common import ProducerError
-from .footage import LocalCatalogFootage, PexelsFootage, PixabayFootage
+from .footage import ChainFootage, LocalCatalogFootage, PexelsFootage, PixabayFootage
 from .rejections import load_rejections
 from .voice import KokoroVoice
 
@@ -21,16 +21,18 @@ def main(argv: list[str] | None = None) -> int:
     ap.add_argument("spec", type=Path)
     ap.add_argument("--out", required=True, type=Path)
     ap.add_argument("--report-dir", type=Path, default=Path("run-reports"))
-    ap.add_argument("--footage", default="pexels", help="pexels | pixabay | local:<dir with catalog.json>")
+    ap.add_argument("--footage", default="pexels", help="comma-separated chain, tried in order: local:<dir> | pixabay | pexels")
     ap.add_argument("--no-asr", action="store_true", help="skip ASR alignment (captions will NOT be marked synchronized)")
     args = ap.parse_args(argv)
     try:
         spec = json.loads(args.spec.read_text(encoding="utf-8"))
-        if spec.get("approved_sources_only") and not args.footage.startswith("local:"):
+        sources = [x.strip() for x in args.footage.split(",") if x.strip()]
+        if spec.get("approved_sources_only") and not all(x.startswith("local:") for x in sources):
             raise ProducerError("producer:spec:approved_sources_only_requires_local_catalog")
         rejected = load_rejections(Path(__file__).resolve().parent.parent / "contracts")
-        footage = (LocalCatalogFootage(Path(args.footage[6:])) if args.footage.startswith("local:")
-                   else PixabayFootage() if args.footage == "pixabay" else PexelsFootage())
+        footage = ChainFootage([LocalCatalogFootage(Path(x[6:])) if x.startswith("local:")
+                                else PixabayFootage() if x == "pixabay" else PexelsFootage()
+                                for x in sources])
         aligner = None if args.no_asr else FasterWhisperAligner()
         build_package(spec, args.out, KokoroVoice(**spec.get("voice", {})), footage, aligner, rejected)
     except (ProducerError, OSError, json.JSONDecodeError) as exc:
