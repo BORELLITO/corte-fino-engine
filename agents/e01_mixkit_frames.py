@@ -53,11 +53,18 @@ for c in cfg["clips"]:
         r["license_text"] = lic[1] if lic else None
         dur = re.search(r"Duration</?[^>]*>\s*([0-9:]+)", page)
         r["page_duration"] = dur[1] if dur else None
-        pick = next((m for m in mp4 if "-360" in m), mp4[0] if mp4 else None)
-        if not pick: raise RuntimeError("no video url on page")
-        r["video_url"] = pick
-        data = get(pick, binary=True)
-        open("/tmp/c.mp4", "wb").write(data)
+        cands = [m for m in mp4 if "-360" in m] + [m for m in mp4 if "-360" not in m]
+        best = None
+        for m in cands:
+            blob = get(m, binary=True)
+            open("/tmp/c.mp4", "wb").write(blob)
+            pr = probe("/tmp/c.mp4")
+            if pr["seconds"] and pr["seconds"] > 1.0 and (pr["h"] or 0) >= 360:
+                if best is None or (pr["h"] or 0) > best[1]["h"]:
+                    best = (m, pr, blob)
+        if not best: raise RuntimeError("no playable video among %d urls" % len(cands))
+        r["video_url"] = best[0]
+        open("/tmp/c.mp4", "wb").write(best[2])
         r.update(probe("/tmp/c.mp4"))
         fs = frames("/tmp/c.mp4", r["seconds"] or 5)
         arr = [np.asarray(f.resize((90, 160)).convert("L"), dtype=float) for f in fs]
