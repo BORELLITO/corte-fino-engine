@@ -1,0 +1,227 @@
+{
+  "schema_version": "1.0.0",
+  "project_id": "VERBO_NO_CHAO_EXCLUSIVO",
+  "timestamp_iso_tz": "2026-11-20T00:08:31-03:00",
+  "snapshot_kind": "OBSERVED_REMOTELY_WITH_HISTORICAL_ARTIFACT_RECONCILIATION",
+  "source_snapshot": {
+    "user_uploaded_prompt": "05_PROMPT_MASTER_VERBO_NO_CHAO_V2.txt",
+    "user_uploaded_prompt_sha256": "28cba0f640cad30d30e194304bd0963b8761158b4200a7d29efe8cf7e032632e",
+    "prompt_read_directly_in_current_session": true,
+    "github_repo": "BORELLITO/verbo-no-chao-engine",
+    "repo_id": 1400839762,
+    "repo_visibility": "public",
+    "baseline_default_branch": "verbo-no-chao/e01-stock-curation-gate-v1",
+    "baseline_default_head": "db6e1d4acf23e82793f6230535a1716842ba5cd0",
+    "historical_main_head": "b59bbbec9aef843bb7118f1328fab37e01b098b3",
+    "recent_qa_research_prs": [
+      57,
+      58,
+      59,
+      60,
+      61,
+      62,
+      63,
+      64,
+      65
+    ],
+    "recorded_as_draft_unmerged": true,
+    "current_scope_integration_state": "PR66 DRAFT NOT MERGED; EXTERNAL PROVIDER DISPATCH STILL POSSIBLE ON EXISTING DEFAULT WORKFLOWS"
+  },
+  "audit_branch": "verbo-no-chao/master-v2-provider-replay-safety-audit-20261120-v1",
+  "branch_baseline_sha": "db6e1d4acf23e82793f6230535a1716842ba5cd0",
+  "last_reviewed_change_commit_before_checkpoint": "955ea5aad4527e0924f0fcd072c34fcd0af2dbad",
+  "candidate_head_at_checkpoint_creation": "955ea5aad4527e0924f0fcd072c34fcd0af2dbad",
+  "current_phase": "SAFE_AUDIT_AND_DRAFT_HARDENING_NOT_MERGED",
+  "last_verified_output": {
+    "artifact": "E01_S01_APPROVED_RAIN_MOTIF_720P_QA_AND_S02_UNAPPROVED_720P_CAPTION_PREVIEW",
+    "s01_approved_preview_sha256": "724ae91368af7d843f39195b34f77db50341aa7f92b0e5960a17061e9da3f961",
+    "s02_qa_preview_with_real_ass_sha256": "f30b1e1461412185f429bfa28c1b42a2def53b6ce8704fcc84a7ee99348f774c",
+    "s02_qa_not_a_master": true,
+    "owner_visual_approval_only_s01": true
+  },
+  "approved_artifacts_sha": {
+    "approved_visual_s01": "724ae91368af7d843f39195b34f77db50341aa7f92b0e5960a17061e9da3f961",
+    "script_recorded": "c64b57cb9d6529b60b9e80ab7607e5887f909dd00e14cd80ed9ec2b7474a5dc6",
+    "physical_narration_wav_recorded": "4f2ee1ff0171ddedb7c64e0dce2300c53a0ef105ef12d643a7af6b0a4621942e",
+    "canonical_28_cue_ass": "0b8171a473cbc247eb48ed822bb006a04c74510b8c4cd1b30e409c226f1bb98a"
+  },
+  "blocked_items": [
+    "S02_OWNER_ART_DIRECTION_PENDING",
+    "S03_TO_S12_REAL_SCENE_MEDIA_AND_CONTINUITY_PENDING",
+    "PER_ASSET_THIRD_PARTY_RIGHTS_CLEARANCE_PENDING",
+    "VOICE_AND_MUSIC_LICENSE_EVIDENCE_PENDING",
+    "1080X1920_REAL_NATIVE_MASTER_NOT_RENDERED",
+    "FULL_AUDIO_SYNC_AND_MOBILE_SUBTITLE_QA_PENDING",
+    "YOUTUBE_CHANNEL_ID_NOT_VERIFIED_FOR_PUBLICATION",
+    "EXPLICIT_PUBLICATION_PERMISSION_NOT_GRANTED",
+    "AUDIT_PR_NOT_MERGED_INTO_DEFAULT",
+    "BRANCH_PROTECTION_ENFORCEMENT_NOT_VERIFIED_BY_CONNECTOR"
+  ],
+  "issues_p0_p1": [
+    {
+      "id": "VNC-P0-01",
+      "severity": "P0",
+      "state": "BLOCKED_BY_EXISTING_RELEASE_GATES"
+    },
+    {
+      "id": "VNC-P1-02",
+      "severity": "P1",
+      "state": "FIXED_IN_ISOLATED_BRANCH_PENDING_MERGE"
+    },
+    {
+      "id": "VNC-P1-03",
+      "severity": "P1",
+      "state": "FIXED_IN_ISOLATED_BRANCH_PENDING_MERGE"
+    },
+    {
+      "id": "VNC-P1-04",
+      "severity": "P1",
+      "state": "FIXED_IN_ISOLATED_BRANCH_PENDING_MERGE"
+    },
+    {
+      "id": "VNC-P1-05",
+      "severity": "P1",
+      "state": "TRACKED_UNMERGED_PR_STACK"
+    },
+    {
+      "id": "VNC-P1-06",
+      "severity": "P1",
+      "state": "UNKNOWN_REMOTE_RULESET_PROTECTION"
+    },
+    {
+      "id": "VNC-P1-07",
+      "severity": "P1",
+      "state": "S02_QA_CONFLICT_WITH_CAPTION_SAFE_ZONE"
+    },
+    {
+      "id": "VNC-P1-12",
+      "severity": "P1",
+      "state": "LEGACY_BROWSER_VOICE_DISPATCH_RETIRED_IN_PR_NOT_OPERATIONAL"
+    },
+    {
+      "id": "VNC-P1-13",
+      "severity": "P1",
+      "state": "LEGACY_QUARANTINE_VOICE_DISPATCH_RETIRED_IN_PR_NOT_OPERATIONAL"
+    }
+  ],
+  "changes_committed": [
+    ".github/workflows/verbo-no-chao-e01-ltx23-motion.yml",
+    ".github/workflows/verbo-no-chao-e01-free-motion-probe.yml",
+    "tests/test_vnc_provider_replay_containment_v2.py",
+    "docs/ENGINE_LOCK.md",
+    "docs/SPECIALIST_TEAM.md",
+    "agents/team.py",
+    "tests/test_vnc_operational_branch_governance_v2.py",
+    "docs/VNC_MASTER_V2_SENIOR_AUDIT_20261120.md",
+    "docs/checkpoints/VNC_MASTER_V2_20261120_SAFE_AUDIT.json",
+    ".github/workflows/verbo-no-chao-e01-v2-voice.yml",
+    ".github/workflows/verbo-no-chao-e01-voice-preview.yml"
+  ],
+  "tests_with_evidence": [
+    {
+      "run_id": 44665628251,
+      "head_sha": "6497041bccda542e62eac69cdf9f78a923211f14",
+      "name": "Engine Gates",
+      "conclusion": "success",
+      "covers_all_changes": false
+    },
+    {
+      "run_id": 44665628302,
+      "head_sha": "6497041bccda542e62eac69cdf9f78a923211f14",
+      "name": "Eight Specialist Audits",
+      "conclusion": "success",
+      "covers_all_changes": false
+    },
+    {
+      "run_id": 44666051410,
+      "head_sha": "39973b561f202cf6435e5695f7a0836b523a212b",
+      "name": "Engine Gates baseline prior to expanded containment",
+      "conclusion": "success",
+      "total_tests": 492,
+      "skipped": 15,
+      "covers_all_changes": false
+    },
+    {
+      "run_id": 44666051344,
+      "head_sha": "39973b561f202cf6435e5695f7a0836b523a212b",
+      "name": "Eight Specialist Audits baseline prior to expanded containment",
+      "conclusion": "success",
+      "covers_all_changes": false
+    },
+    {
+      "name": "Engine Gates after four workflow retirements",
+      "run_id": 44667114663,
+      "head_sha": "955ea5aad4527e0924f0fcd072c34fcd0af2dbad",
+      "conclusion": "success",
+      "tests_executed": 493,
+      "skipped": 15,
+      "failures": 0,
+      "covers_four_workflow_changes": true
+    },
+    {
+      "name": "Eight Specialist Audits after four workflow retirements",
+      "run_id": 44667114754,
+      "head_sha": "955ea5aad4527e0924f0fcd072c34fcd0af2dbad",
+      "conclusion": "success",
+      "covers_four_workflow_changes": true,
+      "meaning": "deterministic specialists and coordinator; not human visual or full media QA"
+    }
+  ],
+  "external_effects_confirmed": {
+    "github_branch_created": true,
+    "github_isolated_files_modified": true,
+    "main_modified": false,
+    "operational_default_modified": false,
+    "any_pr_merged": false,
+    "any_remote_gpu_generation_run_by_this_audit": false,
+    "public_video_posted": false,
+    "charges_incurred_by_this_audit": false,
+    "users_private_media_uploaded_to_public_repo": false
+  },
+  "permissions": {
+    "isolated_reversible_patch": true,
+    "merge_to_operational": false,
+    "publication": false,
+    "new_spending": false,
+    "public_repository_creation": false,
+    "private_media_upload": false
+  },
+  "next_single_action": "REVIEW_PR66_FOUR_REMOTE_REPLAY_CONTAINMENTS_FOR_EXPLICIT_CONTROLLED_MERGE; S02_REMains_UNAPPROVED",
+  "rollback": "Close draft PR without merge; all original default-branch files remain byte-identical.",
+  "full_report_ref": "docs/VNC_MASTER_V2_SENIOR_AUDIT_20261120.md",
+  "citable_primary_resources": [
+    "https://bibleproject.com/guides/book-of-habakkuk/",
+    "https://www.pexels.com/pt-br/licenca/",
+    "https://docs.github.com/en/repositories/configuring-branches-and-merges-in-your-repository/managing-protected-branches/managing-a-branch-protection-rule"
+  ],
+  "extended_review": {
+    "scope": "FOUR_LEGACY_REMOTE_GENERATION_WORKFLOWS",
+    "date": "2026-11-20",
+    "branch": "verbo-no-chao/master-v2-provider-replay-safety-audit-20261120-v1",
+    "affected_vnc_workflows": [
+      ".github/workflows/verbo-no-chao-e01-ltx23-motion.yml",
+      ".github/workflows/verbo-no-chao-e01-free-motion-probe.yml",
+      ".github/workflows/verbo-no-chao-e01-v2-voice.yml",
+      ".github/workflows/verbo-no-chao-e01-voice-preview.yml"
+    ],
+    "original_generators_preserved": [
+      "agents/e01_ltx23_public_probe.py",
+      "agents/e01_public_zerogpu_motion_probe.py",
+      "agents/e01_v2_voice_preview.py",
+      "agents/e01_voice_preview.py"
+    ],
+    "retired_features": [
+      "workflow_dispatch",
+      "remote_gpu_generation",
+      "hosted_voice_rerender",
+      "automatic_source_asset_download_in_retired_workflows",
+      "publication"
+    ],
+    "no_raw_media_or_voice_modified": true,
+    "tests_covering_changes": "tests/test_vnc_provider_replay_containment_v2.py",
+    "evidence_document": "docs/VNC_MASTER_V2_SENIOR_AUDIT_20261120.md",
+    "patch_not_merged": true
+  },
+  "last_checks_verified_utc": "2026-11-20T03:21:42Z",
+  "last_commit_of_this_checkpoint": "SELF_COMMIT_CREATED_AFTER_PREVIOUS_GREEN_HEAD; CHECK_CI_ON_NEW_HEAD_AFTER_COMMIT"
+}

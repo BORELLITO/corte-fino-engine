@@ -38,7 +38,9 @@ def _governance(root: Path, evidence: dict[str, str], blockers: list[str]) -> No
     policy = _read(root, "docs/CLEAN_ROOM_POLICY.md", evidence)
     lock = _read(root, "docs/ENGINE_LOCK.md", evidence)
     _require("Estado: `APPROVED`" in policy, "clean_room_policy_not_approved", blockers)
-    _require("verbo-no-chao/bootstrap" in lock, "canonical_branch_not_recorded", blockers)
+    _require("A branch operacional atual verificada" in lock and
+             "`verbo-no-chao/e01-stock-curation-gate-v1`" in lock,
+             "canonical_branch_not_recorded", blockers)
     _require("publication_authorized" in lock, "publication_lock_missing", blockers)
 
 
