@@ -10,7 +10,7 @@ from .common import (ProducerError, audio_integrity_ok, decodes_cleanly, duratio
                      run_ffmpeg, sha256_file)
 from .footage import FootageProvider
 from .music import write_music
-from .voice import VoiceProvider
+from .voice import VoiceProvider, strip_audio_tags
 
 SPEC_REQUIRED = ("episode_id", "scenes")
 
@@ -82,7 +82,7 @@ def build_package(spec: dict[str, Any], out_dir: Path, voice: VoiceProvider,
     # 4. Captions: aligned to real audio; "synchronized" only if ASR alignment verified them.
     windows, cursor = [], 0.0
     for scene, dur in zip(scenes, durations):
-        windows.append((scene["narration"], cursor, cursor + dur))
+        windows.append((strip_audio_tags(scene["narration"]), cursor, cursor + dur))
         cursor += dur
     words = [w for text, _, _ in windows for w in text.split()]
     times = aligner.align(voice_path, words) if aligner else None

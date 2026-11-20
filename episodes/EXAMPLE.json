@@ -2,8 +2,9 @@
   "_comment": "MODELO. Texto de exemplo para testar o fluxo; revisar fidelidade bíblica antes de usar em episódio real.",
   "episode_id": "EXAMPLE",
   "voice": {
-    "voice": "pf_dora",
-    "speed": 1.0
+    "provider": "elevenlabs",
+    "voice_id": "AER0pA6w0SVtfnFMyfXG",
+    "model_id": "eleven_v4"
   },
   "music_seed": 1,
   "scenes": [

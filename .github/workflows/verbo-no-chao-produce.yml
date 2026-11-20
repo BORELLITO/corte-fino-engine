@@ -51,6 +51,7 @@ jobs:
         env:
           PEXELS_API_KEY: ${{ secrets.PEXELS_API_KEY }}
           PIXABAY_API_KEY: ${{ secrets.PIXABAY_API_KEY }}
+          ELEVENLABS_API_KEY: ${{ secrets.ELEVENLABS_API_KEY }}
           SPEC_PATH: ${{ steps.spec.outputs.path }}
           FOOTAGE: ${{ inputs.footage || 'pixabay' }}
         run: python -m producer.cli "$SPEC_PATH" --out build/episode --report-dir run-reports --footage "$FOOTAGE"

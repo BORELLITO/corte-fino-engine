@@ -252,3 +252,74 @@ class ProducerUnitTest(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class ElevenLabsTests(unittest.TestCase):
+    def _resp(self, data: bytes):
+        from unittest import mock
+        m = mock.MagicMock()
+        m.__enter__.return_value.read.return_value = data
+        return m
+
+    def test_strip_audio_tags(self):
+        from producer.voice import strip_audio_tags
+        self.assertEqual(strip_audio_tags("Mas respira. [short pause] Deus ouve."), "Mas respira. Deus ouve.")
+
+    def test_missing_key_blocks(self):
+        import os
+        from unittest import mock
+        from producer.voice import ElevenLabsVoice
+        with mock.patch.dict(os.environ, {}, clear=True), tempfile.TemporaryDirectory() as d:
+            with self.assertRaises(ProducerError) as cm:
+                ElevenLabsVoice().synthesize("oi", Path(d) / "a.wav")
+        self.assertIn("key_missing", str(cm.exception))
+
+    def test_http_error_never_leaks_key(self):
+        import os
+        import urllib.error
+        from unittest import mock
+        from producer.voice import ElevenLabsVoice
+        err = urllib.error.HTTPError("u", 401, "x", {}, None)
+        with mock.patch.dict(os.environ, {"ELEVENLABS_API_KEY": "SECRET123"}), \
+                mock.patch("urllib.request.urlopen", side_effect=err), tempfile.TemporaryDirectory() as d:
+            with self.assertRaises(ProducerError) as cm:
+                ElevenLabsVoice().synthesize("oi", Path(d) / "a.wav")
+        self.assertIn("http_401", str(cm.exception))
+        self.assertNotIn("SECRET123", str(cm.exception))
+
+    def test_short_audio_is_empty_output(self):
+        import os
+        from unittest import mock
+        from producer.voice import ElevenLabsVoice
+        with mock.patch.dict(os.environ, {"ELEVENLABS_API_KEY": "k"}), \
+                mock.patch("urllib.request.urlopen", return_value=self._resp(b"\0\0" * 100)), \
+                tempfile.TemporaryDirectory() as d:
+            with self.assertRaises(ProducerError) as cm:
+                ElevenLabsVoice().synthesize("oi", Path(d) / "a.wav")
+        self.assertIn("empty_output", str(cm.exception))
+
+    @needs_ffmpeg
+    def test_pcm_becomes_valid_wav(self):
+        import os
+        from unittest import mock
+        from producer.voice import ElevenLabsVoice
+        pcm = array("h", (int(0.3 * 32767 * math.sin(2 * math.pi * 220 * i / 24000)) for i in range(48000))).tobytes()
+        with mock.patch.dict(os.environ, {"ELEVENLABS_API_KEY": "k"}), \
+                mock.patch("urllib.request.urlopen", return_value=self._resp(pcm)), \
+                tempfile.TemporaryDirectory() as d:
+            dst = Path(d) / "a.wav"
+            ElevenLabsVoice().synthesize("oi", dst)
+            self.assertAlmostEqual(duration_sec(dst), 2.0, delta=0.1)
+
+    def test_make_voice(self):
+        from producer.cli import make_voice
+        from producer.voice import ElevenLabsVoice, KokoroVoice
+        self.assertIsInstance(make_voice({}), KokoroVoice)
+        self.assertIsInstance(make_voice({"provider": "elevenlabs"}), ElevenLabsVoice)
+        with self.assertRaises(ProducerError):
+            make_voice({"provider": "x"})
+
+    def test_gate_engine_whitelist(self):
+        from engine.quality_gates import ALLOWED_VOICE_ENGINES
+        self.assertIn("ElevenLabs", ALLOWED_VOICE_ENGINES)
+        self.assertNotIn("some-other-tts", ALLOWED_VOICE_ENGINES)

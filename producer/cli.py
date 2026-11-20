@@ -13,7 +13,18 @@ from .captions import FasterWhisperAligner
 from .common import ProducerError
 from .footage import ChainFootage, LocalCatalogFootage, PexelsFootage, PixabayFootage
 from .rejections import load_rejections
-from .voice import KokoroVoice
+from .voice import ElevenLabsVoice, KokoroVoice
+
+
+def make_voice(cfg: dict):
+    """spec["voice"] = {"provider": "elevenlabs"|"kokoro", ...provider args}. Default stays Kokoro."""
+    cfg = dict(cfg)
+    provider = cfg.pop("provider", "kokoro")
+    if provider == "elevenlabs":
+        return ElevenLabsVoice(**cfg)
+    if provider == "kokoro":
+        return KokoroVoice(**cfg)
+    raise ProducerError(f"producer:spec:unknown_voice_provider:{provider}")
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -34,7 +45,7 @@ def main(argv: list[str] | None = None) -> int:
                                 else PixabayFootage() if x == "pixabay" else PexelsFootage()
                                 for x in sources])
         aligner = None if args.no_asr else FasterWhisperAligner()
-        build_package(spec, args.out, KokoroVoice(**spec.get("voice", {})), footage, aligner, rejected)
+        build_package(spec, args.out, make_voice(spec.get("voice", {})), footage, aligner, rejected)
     except (ProducerError, OSError, json.JSONDecodeError) as exc:
         print(f"BLOCKED\n- {exc}")
         return 1
