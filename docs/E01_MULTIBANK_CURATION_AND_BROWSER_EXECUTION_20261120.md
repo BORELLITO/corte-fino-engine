@@ -55,3 +55,21 @@ A integração **Firecrawl — `firecrawl_interact`** foi exercitada no Mixkit: 
 **Situação comprovada da operação antes do workflow:** as páginas e licenças e URL final do navegador foram inspecionadas; a geração de quadros/MP4 S09 só pode ser considerada verificada após sucesso do workflow, recuperação, hash e inspeção física. Caso contrário, registrar erro `BLOCKED` sem fabricar clipe.
 
 A PR #66 de segurança e as PRs #58/#65/#67 históricas permanecem como rascunhos independentes. Este novo trabalho **não** toca na branch operacional.
+
+## Prova física Mixkit S09 — resultado de duas execuções auditadas
+
+**Primeira execução [44717362393](https://github.com/BORELLITO/verbo-no-chao-engine/actions/runs/44717362393)**: FAIL **do preview** por `ModuleNotFoundError` ao importar um helper de marca d'água de S01 localizado em branch de PR ainda sem merge. Mesmo nessa tentativa foram baixados, decodificados e preservados **9 quadros reais** do arquivo 4K; jamais confundir falha de um passo com clipe inexistente. Corrigida a importação para `PIL.ImageDraw` no próprio módulo, sem mexer em outros projetos. O teste adversarial também encontrou e corrigiu um índice de lista incorreto, substituído por busca pelo `video_id=99890`.
+
+**Segunda execução [44717869759](https://github.com/BORELLITO/verbo-no-chao-engine/actions/runs/44717869759)**: SUCCESS; workflow com arquivo de gatilho adicionado exatamente uma vez, sem dispatch/schedule, token leitura, original apagado do runner por diretório temporário. Não significa que o GitHub tenha validado direitos autorais de todos os elementos ou que o proprietário aprovou a filmagem.
+
+**Fatos observados na origem:**
+- Fonte oficial `Mixkit 99890`, download real de **42.005.370 bytes**, SHA `c401cd9b6dd78e2a482ef60a355a777d537ee2a5876f9b53f4f25d023c0e8ab8`; H.264.
+- A página indicava vídeo `4096×2160`, mas **o arquivo entregue foi 3840×2160**, razão para registrar dimensão **real** e não afirmar que o arquivo baixado seja 4096 pixels de largura. 8,174833s, `24000/1001` fps no source.
+- Recorte vertical nativo disponível de **1214×2160**, maior que o alvo 1080×1920, sem inventar pixels de cena. 9 quadros reais divididos entre **esquerda / centro / direita** e tempos 0,5/2,4/5,25s; diferenças de quadros não nulas confirmaram movimento visível.
+- **Prévia física H264 de 720×1280, 30fps, 173 quadros, 5,766667s**: `S09_MIXKIT_99890_RIGHT75_CROP_MOTION_QA_NOT_MASTER.mp4`, **693.859 bytes**, SHA `3eb7c59dbeed9d36fd52ea131f52c3fb670849a53d9cf4722b7b5ee0773094d4`, sem áudio/captions, aviso `NAO PUBLICAR`. A decodificação integral `ffmpeg -xerror` foi **PASS no CI e em inspeção local independente**. O SHA do JPEG 9 quadros é `0bf8c18064c742742df9cb1789e0328cf9016d7474be04c6565ded73effdb8e3`.
+
+**Avaliação editorial inicial:** uma mão adulta escreve num caderno de espiral. O enquadramento 75% à direita destaca ação e lápis/caneta, ao contrário do centro, que destaca papel vazio. Contudo, a **manga azul do tipo jeans, mesa relativamente clara e caneca escura visível** diferem do figurino carvão e da chuva noturna da S01. Ainda há risco de escrita legível e obstrução das legendas pelos dedos/sleeve. A S09 é **candidata técnica**, não direção final aprovada; a origem real de câmera (em vez de imagem sintética) não foi independentemente comprovada.
+
+**Cópias privadas verificadas:** `/VERBO_NO_CHAO/E01_MULTIBANK_MIXKIT_QA_20261120/S09_99890/` preserva pequeno MP4 QA, contato 3x3 e relatório JSON. O original 4K de 42 MB **não foi salvo no GitHub**. Comprovante e testes em `contracts/e01_s09_mixkit_99890_physical_qa_receipt_20261120_v1.json` e `tests/test_e01_s09_mixkit_99890_physical_receipt_v1.py`.
+
+**Selo:** `PHYSICAL_TECHNICAL_QA_PASSED_EDITORIAL_PENDING`. Não há aprovação estética S09, S02, direitos individuais, mix, master ou publicação. A seleção de páginas para S03–S11 não constitui prova de arquivo físico; avaliar de forma independente, sem rodar dezenas de downloads cegos.
