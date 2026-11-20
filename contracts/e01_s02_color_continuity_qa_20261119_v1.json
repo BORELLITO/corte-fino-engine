@@ -1,0 +1,79 @@
+{
+  "schema_version": "1.0.0",
+  "project_id": "VERBO_NO_CHAO_EXCLUSIVO",
+  "episode_id": "VNC-W01-E1",
+  "scene_id": "VNC-E01V2-S02",
+  "review_id": "VNC-E01-S02-GRADE-A-CONTINUITY-20261119",
+  "approved_context_scene": "VNC-E01V2-S01",
+  "approval_state": "S01_APPROVED_S02_CANDIDATE_NOT_APPROVED",
+  "parent_pr": 62,
+  "input_preview_source": {
+    "s01_filename": "S01_NIGHT_RAIN_SYMBOLIC_PREVIEW_NOT_MASTER.mp4",
+    "s01_expected_sha256": "724ae91368af7d843f39195b34f77db50341aa7f92b0e5960a17061e9da3f961",
+    "s01_trim_frames": 172,
+    "s01_art_approved": true,
+    "s02_filename": "S02_WAITING_CLOCK_QA_NOT_MASTER.mp4",
+    "s02_expected_sha256": "31d9500f8d5d321d14f6da9b6c65c1a96eb230354c62f03ece51abf955813786",
+    "s02_trim_frames": 147,
+    "s02_art_approved": false
+  },
+  "provenance": {
+    "s02_original_pexels_id": 7034348,
+    "s02_source_original_sha256": "6a8f877c0e57a1397f4eb96ffc9a86d25e173019fb298ec0a6945b73973f2a40",
+    "s02_original_source_resolution": "1080x1920",
+    "editing_source_resolution": "720x1280",
+    "no_original_1080x1920_master_source_in_output": true
+  },
+  "filter_for_s02_only": "eq=contrast=0.88:brightness=-0.035:saturation=0.65:gamma=0.64,colorbalance=bs=0.10:gs=0.04:rs=-0.01,vignette=PI/7",
+  "render_requirements": {
+    "fps": 30,
+    "frame_width": 720,
+    "frame_height": 1280,
+    "s02_frames": 147,
+    "s01_s02_total_frames": 319,
+    "audio_included": false,
+    "captions_included": false,
+    "watermark_remaining": true,
+    "master_allowed": false,
+    "publication_authorized": false,
+    "source_rights_cleared": false,
+    "s01_video_edited_other_than_composite_reencode": false,
+    "no_new_source_download": true
+  },
+  "observed_physical_results": {
+    "s02_graded_sha256": "0392829780be80a3228c5c03ee9f06aa9a6332ea1222b95e2687279596b022c3",
+    "s02_graded_bytes": 277678,
+    "s02_graded_motion_frame_differences": [
+      12.49,
+      12.94
+    ],
+    "s01_s02_composite_sha256": "598675e1e00b2a27880080bdd0052f6bc8ab8ae408d80be2272aeabd1eeae4ae",
+    "s01_s02_composite_bytes": 2906687,
+    "contact_sheet_sha256": "0f2f24d81927fb5fbe16b1c216d3b89c5218967b0c9c7012ebabf95aeb8fe146",
+    "contact_sheet_name": "S01_S02_GRADE_A_CUT_COMPARISON.jpg",
+    "mean_luma_samples_2_3s": {
+      "s01_approved": 29.6,
+      "s02_original": 70.16,
+      "s02_color_grade_a": 34.28
+    },
+    "mean_luma_samples_5_95s": {
+      "old_transition_clock": 61.79,
+      "new_transition_clock": 30.69
+    },
+    "measured_metrics_not_human_approval": true
+  },
+  "tests_and_limits": {
+    "not_approved_for_s02": true,
+    "no_rights_approval": true,
+    "no_master_created": true,
+    "no_publication": true,
+    "no_change_to_original_S01_preview": true,
+    "lossy_reencoding_of_s01_in_combined_QA_is_not_pixel_identity": true,
+    "no_transfer_of_visual_approval_to_s02": true,
+    "needs_review_for_lower_caption_safe_zone": true,
+    "risk": "Clock face and written QUARTZ still conspicuous; darkening cannot replace source rights or full edit review"
+  },
+  "library_path": "/VERBO_NO_CHAO/E01_STOCK_QA_20261119/S02_WAITING_CLOCK_REVIEW/S02_COLOR_MATCH_V1/",
+  "physical_validation": "LOCAL_HASH_FFPROBE_FULL_FFMPEG_DECODE_PASSED",
+  "generated_at_local_date": "2026-11-19"
+}
