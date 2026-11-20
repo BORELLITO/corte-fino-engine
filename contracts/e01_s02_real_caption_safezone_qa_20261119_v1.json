@@ -19,7 +19,7 @@
     "selected_qa_gradient_strength": 0.55,
     "gradient_start_y_px": 620,
     "gradient_end_y_px": 1279,
-    "gradient_formula": "smoothstep(t)=t*t*(3-2*t); alpha=round(255*0.55*smoothstep((y-620)/660))",
+    "gradient_formula": "smoothstep(t)=t*t*(3-2*t); alpha=floor(255*0.55*smoothstep((y-620)/660))",
     "caveats": [
       "QUARTZ lettering remains visible",
       "Clock large behind captions",
