@@ -110,7 +110,7 @@
    ],
    "executor": "auto",
    "workflow": null,
-   "evidence": "contracts/e01_v3_clip_direction_approval_v1.json",
+   "evidence": "contracts/e01_v3_clip_rights_verification_v1.json",
    "done_when": [
     {
      "field": "rights_cleared",
@@ -125,7 +125,7 @@
     "voice_rights"
    ],
    "executor": "auto",
-   "workflow": "verbo-no-chao-runflow.yml",
+   "workflow": null,
    "evidence": "contracts/e01_v3_master_evidence_v1.json",
    "done_when": [
     {
