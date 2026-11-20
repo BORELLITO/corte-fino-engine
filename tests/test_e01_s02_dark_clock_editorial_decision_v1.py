@@ -29,7 +29,7 @@ class TestS02RejectedDarkClockV1(unittest.TestCase):
         self.assertEqual((s["width"],s["height"]),(3840,2160))
         self.assertEqual(s["native_crop"],[1214,2160])
         self.assertTrue(s["full_video_decode_pass"])
-        self.assertEqual(s["source_bytes"] if "source_bytes" in s else s["source_bytes"],57975096)
+        self.assertEqual(s["source_bytes"],57975096)
         self.assertEqual(s["sha256"],"a6058b295f21cbfa5381d6a19263a1ed5606dcfb87a6579ae0aa4611e5130052")
         self.assertFalse(s["camera_original_proven"])
 
@@ -44,7 +44,7 @@ class TestS02RejectedDarkClockV1(unittest.TestCase):
         self.assertEqual((p["width"],p["height"],p["frames"],p["fps"]),(720,1280,147,30))
         self.assertEqual(p["sha256"],"3bb1c6efced29fbd5d48b235aec69af20d7e5c7bebf0b03fc8d09488d020ae94")
         self.assertTrue(p["full_decode_pass"])
-        self.assertFalse(p.get("contains_audio",True) if "contains_audio" in p else True is False)
+        self.assertTrue(p["verified_no_audio"])
 
     def test_s01_and_prior_grade_a_are_preserved_not_approved_for_s02(self):
         self.assertTrue(self.e["approved_scene_s01_preserved"])
