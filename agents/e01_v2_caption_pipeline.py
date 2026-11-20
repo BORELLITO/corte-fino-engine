@@ -16,7 +16,10 @@ import unicodedata
 from pathlib import Path
 from typing import Any
 
-from PIL import ImageFont
+try:
+    from PIL import ImageFont
+except ImportError:  # Primary engine gates do not install imaging packages.
+    ImageFont = None
 
 from agents.content_production import ProductionError, check
 from agents.autonomous_editorial_gate import canonical_sha
@@ -214,6 +217,7 @@ FUNCTION_WORDS = {
 def text_width(text: str) -> float:
     global _FONT
     if _FONT is None:
+        check(ImageFont is not None, "caption:pillow_required_for_pixel_layout")
         check(FONT_PATH.is_file() and digest_file(FONT_PATH) == FONT_SHA,
               "caption:caption_font_missing_or_changed")
         _FONT = ImageFont.truetype(str(FONT_PATH), FONT_EM_PX)

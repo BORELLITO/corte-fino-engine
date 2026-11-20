@@ -6,6 +6,12 @@ import unittest
 from pathlib import Path
 
 from agents.content_production import ProductionError
+try:
+    from PIL import ImageFont as _PIL
+except ImportError:
+    _PIL = None
+needs_pillow = unittest.skipUnless(
+    _PIL is not None, "Pillow is installed in the dedicated caption workflow")
 from agents.e01_v2_caption_pipeline import (
     ASR_SHA, ASR_BYTES, SCRIPT_SHA, WAV_SHA, VOICE_DURATION,
     MAX_LINE_PX, MAX_LINES, MARGIN_SIDE, MARGIN_BOTTOM, FONT_PATH, FONT_SHA,
@@ -56,10 +62,12 @@ class E01CaptionQATests(unittest.TestCase):
         out=align_once(ref,asr)
         self.assertTrue(all(w["alignment"]=="EXACT" for w in out))
 
+    @needs_pillow
     def test_short_phrase_is_one_line(self):
         group=[{"text":w} for w in ("Às","vezes,","esperar")]
         self.assertEqual(cue_lines(group),["Às vezes, esperar"])
 
+    @needs_pillow
     def test_two_line_balancing_never_exceeds_pixel_limit(self):
         group=[{"text":w} for w in
                ("Os","primeiros","versos","não")]
@@ -69,16 +77,19 @@ class E01CaptionQATests(unittest.TestCase):
         self.assertEqual(" ".join(lines),
                          "Os primeiros versos não")
 
+    @needs_pillow
     def test_too_many_words_for_two_pixel_lines_is_fail_closed(self):
         group=[{"text":w} for w in
                ("Os","primeiros","versos","não","entregam","uma","explicação.")]
         with self.assertRaisesRegex(ProductionError,"more_than_two_lines"):
             cue_lines(group)
 
+    @needs_pillow
     def test_unbreakable_single_word_is_fail_closed(self):
         with self.assertRaisesRegex(ProductionError,"more_than_two_lines"):
             cue_lines([{"text":"responsabilizacaointernacionalizada"}])
 
+    @needs_pillow
     def test_real_canonical_words_are_split_before_unbreakable_two_line_crossings(self):
         draft=json.loads((ROOT / "contracts/e01_script_v2_candidate.json")
                          .read_text(encoding="utf-8"))["episode"]
@@ -122,11 +133,13 @@ class E01CaptionQATests(unittest.TestCase):
         art=export_ass(c)
         self.assertEqual(art.count(r"\N"),1)
 
+    @needs_pillow
     def test_font_asset_is_pinned_and_has_license(self):
         self.assertEqual(digest_file(FONT_PATH),FONT_SHA)
         lic=(ROOT/"assets/fonts/OFL-AtkinsonHyperlegibleNext.txt").read_text(encoding="utf-8")
         self.assertIn("SIL Open Font License",lic)
 
+    @needs_pillow
     def test_layout_keeps_text_inside_hud_safe_columns(self):
         # rendered bbox ~= text width + 15 px (outline/spacing, measured)
         self.assertLessEqual(MARGIN_SIDE+MAX_LINE_PX+15,900)

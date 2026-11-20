@@ -45,8 +45,11 @@ jobs:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           path: wav-source/
 
+      - name: Install pinned Pillow for pixel-width caption layout
+        run: python -m pip install --disable-pip-version-check "pillow==12.3.0"
+
       # Fixed an intentionally overlong fixture: the production rule still
-      # rejects any cue that cannot fit exactly two lines of 28 characters.
+      # rejects any cue that cannot fit two lines within the pixel limit.
       - name: Test layout, exact script, timestamp alignment and forged-source protections
         run: python -m unittest discover -s tests -p "test_e01_v2_caption_pipeline.py" -v
 
