@@ -99,5 +99,26 @@ class VoiceCandidateTests(unittest.TestCase):
         self.assertIn("estava ouvindo?", [" ".join(c["lines"]) for c in make_cues_from_plan(words, plan, duration)])
 
 
+class AcousticOnsetGateTests(unittest.TestCase):
+    """Offline gate against the silences measured on the real audio (stored in the contract)."""
+    def test_no_word_starts_deep_inside_a_measured_silence(self):
+        words, _ = load()
+        sil = json.loads(Path("contracts/e01_v3_voice_johnes_word_timing_v1.json")
+                         .read_text(encoding="utf-8"))["provenance"]["silences_-38db_min0.12s"]
+        self.assertEqual(len(sil), 31)
+        for w in words:
+            for s in sil:
+                # known, documented exception: 'é' (index 118) lies 0.106 s inside a silence
+                inside = (min(w["end"], s["end"]) - max(w["start"], s["start"]))
+                if w["index"] != 118 and s["start"] < w["start"] < s["end"]:
+                    self.assertLessEqual(s["end"] - w["start"], 0.12, (w["text"], w["start"]))
+
+    def test_snapped_onsets_are_documented_and_reversible(self):
+        c = json.loads(Path("contracts/e01_v3_voice_johnes_word_timing_v1.json").read_text(encoding="utf-8"))
+        snapped = [w for w in c["words"] if "start_scribe" in w]
+        self.assertEqual([w["text"] for w in snapped], ["sofre", "Talvez"])
+        self.assertTrue(all(w["start"] < w["start_scribe"] for w in snapped))
+
+
 if __name__ == "__main__":
     unittest.main()

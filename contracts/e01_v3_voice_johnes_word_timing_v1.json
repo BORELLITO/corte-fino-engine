@@ -29,7 +29,134 @@
    "silence_detect": "ffmpeg silencedetect noise=-38dB min 0.12s",
    "silence_count": 31
   },
-  "end_rule": "end = min(scribe_end, file duration, start of first measured silence at least 0.12s after word start)"
+  "end_rule": "end = min(scribe_end, file duration, start of first measured silence at least 0.12s after word start)",
+  "onset_rule": "start snapped to the measured silence end only when Scribe start is >0.25 s after it AND an independent Whisper pass (no reference text) also places the word earlier; words: Talvez, sofre. Other post-pause words kept as Scribe (Ele +0.35, E +0.34 NOT corroborated). 'é' (index 118) lies inside a silence by 0.106 s and is left as is.",
+  "silences_-38db_min0.12s": [
+   {
+    "start": 2.037,
+    "end": 2.197
+   },
+   {
+    "start": 5.72,
+    "end": 6.378
+   },
+   {
+    "start": 8.512,
+    "end": 8.983
+   },
+   {
+    "start": 14.831,
+    "end": 15.143
+   },
+   {
+    "start": 15.365,
+    "end": 15.511
+   },
+   {
+    "start": 18.146,
+    "end": 18.904
+   },
+   {
+    "start": 20.406,
+    "end": 20.661
+   },
+   {
+    "start": 22.574,
+    "end": 22.723
+   },
+   {
+    "start": 23.618,
+    "end": 23.789
+   },
+   {
+    "start": 25.515,
+    "end": 25.807
+   },
+   {
+    "start": 25.98,
+    "end": 26.176
+   },
+   {
+    "start": 28.08,
+    "end": 28.569
+   },
+   {
+    "start": 30.594,
+    "end": 30.94
+   },
+   {
+    "start": 33.392,
+    "end": 33.929
+   },
+   {
+    "start": 37.197,
+    "end": 37.692
+   },
+   {
+    "start": 42.85,
+    "end": 43.241
+   },
+   {
+    "start": 43.241,
+    "end": 43.468
+   },
+   {
+    "start": 45.498,
+    "end": 45.653
+   },
+   {
+    "start": 47.134,
+    "end": 47.715
+   },
+   {
+    "start": 50.458,
+    "end": 50.586
+   },
+   {
+    "start": 50.967,
+    "end": 51.375
+   },
+   {
+    "start": 54.872,
+    "end": 55.134
+   },
+   {
+    "start": 55.279,
+    "end": 55.549
+   },
+   {
+    "start": 58.301,
+    "end": 58.61
+   },
+   {
+    "start": 60.244,
+    "end": 60.402
+   },
+   {
+    "start": 62.815,
+    "end": 63.435
+   },
+   {
+    "start": 67.291,
+    "end": 67.803
+   },
+   {
+    "start": 70.028,
+    "end": 70.566
+   },
+   {
+    "start": 73.945,
+    "end": 74.152
+   },
+   {
+    "start": 75.429,
+    "end": 75.586
+   },
+   {
+    "start": 76.435,
+    "end": 76.64
+   }
+  ]
  },
  "speech_duration_seconds": 76.67,
  "word_count": 182,
@@ -658,11 +785,12 @@
   {
    "index": 69,
    "text": "sofre",
-   "start": 31.2,
+   "start": 30.94,
    "end": 31.52,
    "block": "biblical_reference",
    "key": "sofre",
-   "scribe_end": 31.52
+   "scribe_end": 31.52,
+   "start_scribe": 31.2
   },
   {
    "index": 70,
@@ -1207,11 +1335,12 @@
   {
    "index": 130,
    "text": "Talvez",
-   "start": 55.52,
+   "start": 55.134,
    "end": 55.92,
    "block": "application",
    "key": "talvez",
-   "scribe_end": 55.92
+   "scribe_end": 55.92,
+   "start_scribe": 55.52
   },
   {
    "index": 131,
