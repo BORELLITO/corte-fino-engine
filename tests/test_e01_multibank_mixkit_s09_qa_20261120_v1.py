@@ -53,7 +53,7 @@ class E01MultibankS09Tests(unittest.TestCase):
           ("preview_physically_decoded",True),("page_url","http://evil.example/test"),
         ]:
             data=copy.deepcopy(self.plan)
-            data["source_candidates"][8][key]=value
+            next(x for x in data["source_candidates"] if x["video_id"]==99890)[key]=value
             with self.subTest(k=key),self.assertRaises(qa.IntakeError):
                 qa.check_manifest(data=data)
         for key,value in [
@@ -63,7 +63,7 @@ class E01MultibankS09Tests(unittest.TestCase):
           ("physical_file_sha256","0"*64)
         ]:
             data=copy.deepcopy(self.plan)
-            data["source_candidates"][8]["browser_probe"][key]=value
+            next(x for x in data["source_candidates"] if x["video_id"]==99890)["browser_probe"][key]=value
             with self.subTest(k=key),self.assertRaises(qa.IntakeError):
                 qa.check_manifest(data=data)
 
