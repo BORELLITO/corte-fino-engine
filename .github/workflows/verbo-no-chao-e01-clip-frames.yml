@@ -1,0 +1,22 @@
+name: Verbo no Chão — E01 clip frame review (read-only)
+on:
+  push:
+    branches: ["verbo-no-chao/e01-clip-review-20261120-v1"]
+    paths:
+      - ".github/workflows/verbo-no-chao-e01-clip-frames.yml"
+      - "agents/e01_v3_clip_frames.py"
+      - "contracts/e01_v3_clip_review_shortlist_v1.json"
+permissions:
+  contents: read
+jobs:
+  frames:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: python -m pip install --disable-pip-version-check "imageio-ffmpeg==0.6.0" "pillow==12.3.0" numpy
+      - name: Download, probe and sample frames (no commit, no upload, no spend, no publish)
+        run: python -m agents.e01_v3_clip_frames contracts/e01_v3_clip_review_shortlist_v1.json
