@@ -1,0 +1,109 @@
+{
+  "schema_version": "1.0.0",
+  "project_id": "VERBO_NO_CHAO_EXCLUSIVO",
+  "episode_id": "VNC-W01-E1",
+  "scene_id": "VNC-E01V2-S01",
+  "as_of_date": "2026-11-19",
+  "parent_storyboard_unchanged": true,
+  "narrative_strategy": "SINGLE_REAL_STOCK_VIDEO_SYMBOLIC_RAIN_MOTIF_NOT_ROOM_A",
+  "concept_owner_approved": false,
+  "candidate_id": "VNC-E01-S01-R3-NIGHT-RAIN",
+  "editorial_decision": "CANDIDATE_FOR_OWNER_AESTHETIC_REVIEW_ONLY",
+  "editorial_review_summary": {
+    "physical_frames_reviewed_at_seconds": [
+      0.5,
+      2.8,
+      5.4
+    ],
+    "visual_characteristics": [
+      "Rain-covered window",
+      "Deep shadows and cool blue night lights",
+      "Real temporal variation across sampled frames",
+      "No visible closed notebook or same-room actor"
+    ],
+    "strengths": [
+      "Strong nighttime atmosphere",
+      "Single continuous source instead of false same-actor montage",
+      "Native vertical geometry suitable for 1080x1920 crop",
+      "No identifiable actor in sampled images"
+    ],
+    "structural_deviations": [
+      "Scene is from a metro window, not ROOM_A",
+      "No closed notebook",
+      "No actor seated by desk",
+      "Scene may read as urban transit rather than indoor prayer"
+    ],
+    "human_actor_release_checked": false,
+    "logos_and_text_full_frame_audit_done": false,
+    "license_individual_cleared": false,
+    "editorial_approval": false,
+    "user_visual_direction_approval": false,
+    "no_promises_of_factual_historical_reenactment": true
+  },
+  "source": {
+    "site": "Pexels",
+    "id": 31069867,
+    "page": "https://www.pexels.com/video/raindrop-reflections-on-nighttime-metro-glass-31069867/",
+    "creator_page_name": "Zeki Okur",
+    "license_page": "https://www.pexels.com/license/",
+    "source_width": 2160,
+    "source_height": 3840,
+    "source_duration_seconds": 24,
+    "source_video_codec": "h264",
+    "source_bytes": 93575530,
+    "source_sha256": "fc36bb6b4039e307828d9ad0acabdb54a1baa4cb6e9d41f2889d2278be7c6df8",
+    "source_full_ffmpeg_decode_success": true,
+    "native_portrait_resolution_sufficient": true,
+    "camera_capture_origin_independently_proven": false,
+    "source_raw_mp4_distributed_or_committed": false
+  },
+  "derived_preview": {
+    "filename": "S01_NIGHT_RAIN_SYMBOLIC_PREVIEW_NOT_MASTER.mp4",
+    "output_width": 720,
+    "output_height": 1280,
+    "frames": 173,
+    "fps": 30,
+    "duration_seconds": 5.766667,
+    "contains_audio": false,
+    "has_watermark": true,
+    "output_size_bytes": 1516275,
+    "output_sha256": "724ae91368af7d843f39195b34f77db50341aa7f92b0e5960a17061e9da3f961",
+    "full_decode_success": true,
+    "independent_local_sha_verified": true,
+    "independent_local_ffprobe_verified": true,
+    "target_1080x1920_master_created": false,
+    "subtitles_added": false
+  },
+  "contact_sheet": {
+    "filename": "S01_NIGHT_RAIN_REAL_FRAMES_QA.jpg",
+    "sha256": "35638af1e60c9c450140175965033a809e2ade83b6893cb28ff82cf2d10147ba",
+    "samples_s": [
+      0.5,
+      2.8,
+      5.4
+    ],
+    "mean_luma": [
+      27.31,
+      29.12,
+      24.38
+    ],
+    "mean_frame_difference": [
+      14.09,
+      12.57
+    ],
+    "full_sequence_human_review_done": false,
+    "independent_local_sha_verified": true
+  },
+  "provenance_run": "https://github.com/BORELLITO/verbo-no-chao-engine/actions/runs/44638759167",
+  "personal_library_dir": "/VERBO_NO_CHAO/E01_STOCK_QA_20261119/",
+  "assets_preserved_to_personal_library": [
+    "S01_31069867_PREVIA_SIMBOLICA_NAO_APROVADA.mp4",
+    "S01_31069867_FOTOGRAMAS_QA.jpg",
+    "S01_31069867_RELATORIO_FISICO.json"
+  ],
+  "rights_clearance": false,
+  "master_allowed": false,
+  "publication_authorized": false,
+  "next_action": "Owner may aesthetically evaluate experimental thematic direction; never replace ROOM_A or expand to 12 scenes until approved. Continue source-specific rights and complete full visual QA if accepted.",
+  "rollback": "Close unmerged draft; original PR60 and operational VNC remain unchanged"
+}
