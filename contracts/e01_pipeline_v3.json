@@ -45,7 +45,7 @@
    ],
    "executor": "human_only",
    "workflow": null,
-   "evidence": "contracts/e01_v3_voice_johnes_word_timing_v1.json",
+   "evidence": "contracts/vnc_voice_policy_v1.json",
    "done_when": [
     {
      "field": "voice_rights_cleared",
@@ -95,7 +95,7 @@
    ],
    "executor": "auto",
    "workflow": null,
-   "evidence": "contracts/e01_v3_clip_review_v1.json",
+   "evidence": "contracts/e01_v3_clip_direction_approval_v1.json",
    "done_when": [
     {
      "field": "any_clip_approved",
@@ -110,7 +110,7 @@
    ],
    "executor": "auto",
    "workflow": null,
-   "evidence": "contracts/e01_v3_clip_review_v1.json",
+   "evidence": "contracts/e01_v3_clip_direction_approval_v1.json",
    "done_when": [
     {
      "field": "rights_cleared",

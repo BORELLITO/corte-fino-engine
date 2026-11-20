@@ -1,0 +1,15 @@
+{
+ "schema_version": "1.0.0",
+ "project": "verbo-no-chao",
+ "kind": "VOICE_POLICY_OWNER_DECLARATION",
+ "voice_name": "Johnes Bittar",
+ "provider": "elevenlabs",
+ "declared_on": "2026-11-20",
+ "voice_rights_cleared": true,
+ "rights_basis": "DECLARACAO_DO_DONO_NAO_VERIFICADA_PELO_CLAUDE",
+ "applies_to": "TODOS_OS_EPISODIOS",
+ "default_narrator": true,
+ "lock_rule": "R4: voz gerada vale até o vídeo final; sem regerar nem gastar créditos sem pedido explícito do dono",
+ "publication_authorized": false,
+ "note_pt": "O dono declarou a voz liberada para este e os próximos episódios. O Claude não verificou a licença da voz na plataforma; a declaração é registrada como decisão do dono, e publicação continua exigindo autorização própria."
+}
