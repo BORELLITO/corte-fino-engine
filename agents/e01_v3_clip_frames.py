@@ -63,15 +63,19 @@ def main():
                 rep["band_mean_luma"] = round(float(np.mean([x.mean() for x in g])), 1)
                 rep["band_luma_std"] = round(float(np.mean([x.std() for x in g])), 1)
             rep["covers_need"] = bool(rep["seconds"] and rep["seconds"] >= c["need_s"])
-            tw, th = 216, 384
+            tw, th = 160, 284
             sheet = Image.new("RGB", (tw * n, th))
             for i, im in enumerate(frames):
                 im.thumbnail((tw, th)); sheet.paste(im, (i * tw + (tw - im.width) // 2, (th - im.height) // 2))
-            buf = io.BytesIO(); sheet.save(buf, "JPEG", quality=55)
+            buf = io.BytesIO(); sheet.save(buf, "JPEG", quality=50)
             rep["sheet_b64"] = base64.b64encode(buf.getvalue()).decode()
         except Exception as e:  # report, never hide
             rep["error"] = repr(e)[:300]
+        b64 = rep.pop("sheet_b64", "")
         print(START); print(json.dumps(rep)); print(END, flush=True)
+        for i in range(0, len(b64), 2000):
+            print("VNC_CLIP_B64", c["id"], i // 2000, b64[i:i + 2000], flush=True)
+        print("VNC_CLIP_B64_DONE", c["id"], len(b64), flush=True)
 
 
 main()
