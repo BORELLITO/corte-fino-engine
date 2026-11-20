@@ -24,7 +24,8 @@
       64,
       65
     ],
-    "recorded_as_draft_unmerged": true
+    "recorded_as_draft_unmerged": true,
+    "current_scope_integration_state": "PR66 DRAFT NOT MERGED; EXTERNAL PROVIDER DISPATCH STILL POSSIBLE ON EXISTING DEFAULT WORKFLOWS"
   },
   "audit_branch": "verbo-no-chao/master-v2-provider-replay-safety-audit-20261120-v1",
   "branch_baseline_sha": "db6e1d4acf23e82793f6230535a1716842ba5cd0",
@@ -91,6 +92,16 @@
       "id": "VNC-P1-07",
       "severity": "P1",
       "state": "S02_QA_CONFLICT_WITH_CAPTION_SAFE_ZONE"
+    },
+    {
+      "id": "VNC-P1-12",
+      "severity": "P1",
+      "state": "LEGACY_BROWSER_VOICE_DISPATCH_RETIRED_IN_PR_NOT_OPERATIONAL"
+    },
+    {
+      "id": "VNC-P1-13",
+      "severity": "P1",
+      "state": "LEGACY_QUARANTINE_VOICE_DISPATCH_RETIRED_IN_PR_NOT_OPERATIONAL"
     }
   ],
   "changes_committed": [
@@ -102,7 +113,9 @@
     "agents/team.py",
     "tests/test_vnc_operational_branch_governance_v2.py",
     "docs/VNC_MASTER_V2_SENIOR_AUDIT_20261120.md",
-    "docs/checkpoints/VNC_MASTER_V2_20261120_SAFE_AUDIT.json"
+    "docs/checkpoints/VNC_MASTER_V2_20261120_SAFE_AUDIT.json",
+    ".github/workflows/verbo-no-chao-e01-v2-voice.yml",
+    ".github/workflows/verbo-no-chao-e01-voice-preview.yml"
   ],
   "tests_with_evidence": [
     {
@@ -123,6 +136,22 @@
       "name": "Final audited branch checks",
       "conclusion": "PENDING_POST_COMMIT_RECHECK",
       "covers_all_changes": null
+    },
+    {
+      "run_id": 44666051410,
+      "head_sha": "39973b561f202cf6435e5695f7a0836b523a212b",
+      "name": "Engine Gates baseline prior to expanded containment",
+      "conclusion": "success",
+      "total_tests": 492,
+      "skipped": 15,
+      "covers_all_changes": false
+    },
+    {
+      "run_id": 44666051344,
+      "head_sha": "39973b561f202cf6435e5695f7a0836b523a212b",
+      "name": "Eight Specialist Audits baseline prior to expanded containment",
+      "conclusion": "success",
+      "covers_all_changes": false
     }
   ],
   "external_effects_confirmed": {
@@ -144,12 +173,40 @@
     "public_repository_creation": false,
     "private_media_upload": false
   },
-  "next_single_action": "VERIFY_COMPLETE_CI_ON_AUDIT_PR_AND_REVIEW_MERGE_OF_TWO_RETIRED_PROVIDER_WORKFLOWS_ONLY_BEFORE_NEW_VIDEO_ACQUISITION",
+  "next_single_action": "VERIFY_LATEST_COMMIT_CI_FOR_FOUR_RETIRED_REMOTE_VIDEO_VOICE_WORKFLOWS_THEN_REVIEW_PR66_FOR_EXPLICIT_MERGE_AUTHORIZATION",
   "rollback": "Close draft PR without merge; all original default-branch files remain byte-identical.",
   "full_report_ref": "docs/VNC_MASTER_V2_SENIOR_AUDIT_20261120.md",
   "citable_primary_resources": [
     "https://bibleproject.com/guides/book-of-habakkuk/",
     "https://www.pexels.com/pt-br/licenca/",
     "https://docs.github.com/en/repositories/configuring-branches-and-merges-in-your-repository/managing-protected-branches/managing-a-branch-protection-rule"
-  ]
+  ],
+  "extended_review": {
+    "scope": "FOUR_LEGACY_REMOTE_GENERATION_WORKFLOWS",
+    "date": "2026-11-20",
+    "branch": "verbo-no-chao/master-v2-provider-replay-safety-audit-20261120-v1",
+    "affected_vnc_workflows": [
+      ".github/workflows/verbo-no-chao-e01-ltx23-motion.yml",
+      ".github/workflows/verbo-no-chao-e01-free-motion-probe.yml",
+      ".github/workflows/verbo-no-chao-e01-v2-voice.yml",
+      ".github/workflows/verbo-no-chao-e01-voice-preview.yml"
+    ],
+    "original_generators_preserved": [
+      "agents/e01_ltx23_public_probe.py",
+      "agents/e01_public_zerogpu_motion_probe.py",
+      "agents/e01_v2_voice_preview.py",
+      "agents/e01_voice_preview.py"
+    ],
+    "retired_features": [
+      "workflow_dispatch",
+      "remote_gpu_generation",
+      "hosted_voice_rerender",
+      "automatic_source_asset_download_in_retired_workflows",
+      "publication"
+    ],
+    "no_raw_media_or_voice_modified": true,
+    "tests_covering_changes": "tests/test_vnc_provider_replay_containment_v2.py",
+    "evidence_document": "docs/VNC_MASTER_V2_SENIOR_AUDIT_20261120.md",
+    "patch_not_merged": true
+  }
 }
