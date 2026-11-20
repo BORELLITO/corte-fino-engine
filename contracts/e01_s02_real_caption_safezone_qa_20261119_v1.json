@@ -1,0 +1,95 @@
+{
+  "schema_version": "1.0.0",
+  "project_id": "VERBO_NO_CHAO_EXCLUSIVO",
+  "episode_id": "VNC-W01-E1",
+  "scene_id": "VNC-E01V2-S02",
+  "approval_state": "S01_VISUAL_APPROVED_S02_UNAPPROVED",
+  "purpose": "RENDER_QA_REAL_CANONICAL_KARAOKE_ON_S01_S02_GRADED_720P_ONLY",
+  "s01": {
+    "source_preview_sha256": "724ae91368af7d843f39195b34f77db50341aa7f92b0e5960a17061e9da3f961",
+    "owner_approved_visual": true,
+    "source_original_unchanged": true,
+    "frames_used": 172
+  },
+  "s02": {
+    "graded_a_preview_sha256": "0392829780be80a3228c5c03ee9f06aa9a6332ea1222b95e2687279596b022c3",
+    "frames_used": 147,
+    "visual_owner_approved": false,
+    "license_individual_cleared": false,
+    "selected_qa_gradient_strength": 0.55,
+    "gradient_start_y_px": 620,
+    "gradient_end_y_px": 1279,
+    "gradient_formula": "smoothstep(t)=t*t*(3-2*t); alpha=floor(255*0.55*smoothstep((y-620)/660))",
+    "caveats": [
+      "QUARTZ lettering remains visible",
+      "Clock large behind captions",
+      "Prior edited MP4 is 720x1280 and not a native 1080x1920 master"
+    ]
+  },
+  "canonical_caption_artifact": {
+    "source_run": "https://github.com/BORELLITO/verbo-no-chao-engine/actions/runs/44208934506",
+    "artifact_id": 14385236602,
+    "source_archive_sha256": "2ea85dba50b4b91d71e4ff53a99b80cf0170ba042080322d435379686d0f8e64",
+    "ass_name": "e01-v2-karaoke-qa.ass",
+    "ass_sha256": "0b8171a473cbc247eb48ed822bb006a04c74510b8c4cd1b30e409c226f1bb98a",
+    "srt_sha256": "503eb0119c386096fbdb7e6c671828682b3390328d15cfded95b2d0ae383556d",
+    "caption_cue_total": 28,
+    "karaoke_qa_warning_preserved": true,
+    "voice_wav_not_present_in_preview": true,
+    "caption_text_and_times_unchanged": true
+  },
+  "output_requirements": {
+    "width": 720,
+    "height": 1280,
+    "fps": 30,
+    "frames": 319,
+    "duration_seconds": 10.633333,
+    "contains_audio": false,
+    "watermarks": true,
+    "master_allowed": false,
+    "publication_authorized": false,
+    "rights_cleared": false,
+    "no_stock_download": true,
+    "no_original_source_overwrite": true
+  },
+  "measured_local_physical_evidence": {
+    "no_gradient_captioned_sha256": "8ce132728c27db5dd1ce2cc6717d51ee3cd8d47cbb989081adc5c36ef2b27f3f",
+    "selected_gradient55_s02_sha256": "f1619ddf0857ab69b195ab81542827cc380610a10ef4a5c647ad6257e9005f3d",
+    "selected_gradient55_composite_ass_sha256": "f30b1e1461412185f429bfa28c1b42a2def53b6ce8704fcc84a7ee99348f774c",
+    "selected_gradient55_video_bytes": 2066424,
+    "selected_composite_probe_full_decode": true,
+    "threeway_frame_contact_sha256": "89fe5ad902652167178dae58260841d0c5782747be54ea75c9072b3c095de87e",
+    "threeway_sample_times_seconds": [
+      6.4,
+      8.6,
+      9.65
+    ],
+    "luma_mean_caption_area_at_8_6_seconds": {
+      "original": 66.96,
+      "gradient_35_percent": 54.4,
+      "gradient_55_percent": 47.5
+    },
+    "luma_mean_caption_area_at_9_65_seconds": {
+      "original": 69.86,
+      "gradient_35_percent": 57.13,
+      "gradient_55_percent": 50.04
+    },
+    "note": "Luminance alone does not objectively score caption readability. Visual review compared three frames at three times, with full MP4 decode, not an approval of all frames."
+  },
+  "private_evidence_folder": "/VERBO_NO_CHAO/E01_STOCK_QA_20261119/S02_CAPTION_READABILITY_20261119/",
+  "private_canonical_caption_folder": "/VERBO_NO_CHAO/E01_CAPTIONS_CANONICAL_V2/",
+  "limitations": [
+    "QA warnings intentionally remain at top of video",
+    "No voice/audio synchronized in current video",
+    "The ASS is QA-aligned and not final 1080x1920 release approval",
+    "Gradient is a candidate for S02 only; cannot infer owner aesthetics approval",
+    "Legibility on every physical mobile device not guaranteed",
+    "Third-party rights verification not complete"
+  ],
+  "s02_editorial_approved": false,
+  "rights_cleared": false,
+  "master_allowed": false,
+  "publication_authorized": false,
+  "merge_authorized": false,
+  "spend_authorized": false
+}
