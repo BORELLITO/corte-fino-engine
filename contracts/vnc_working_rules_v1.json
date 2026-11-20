@@ -1,0 +1,29 @@
+{
+ "schema_version": "1",
+ "project": "VERBO NO CHAO",
+ "kind": "WORKING_RULES",
+ "set_by": "owner (user), 2026-11-20",
+ "scope": "every episode, every stage",
+ "rules": [
+  {
+   "id": "R1",
+   "name": "TANGIBLE_PREVIEW_EVERY_DELIVERY",
+   "text_pt": "Toda entrega traz um exemplo visual palpável (imagem, vídeo curto ou prova renderizada) para o usuário aprovar vendo. Sem prévia, a etapa não está entregue.",
+   "enforced_by": [
+    "tests/test_vnc_working_rules.py",
+    "contracts/e01_v3_preview_manifest_v1.json"
+   ]
+  },
+  {
+   "id": "R2",
+   "name": "REVIEW_AND_REFINE_ALL_CLIPS",
+   "text_pt": "Todos os clipes de todas as cenas são revisados e refinados a cada mudança de tempo, voz ou legenda: duração com folga, faixa protegida da legenda, continuidade, estado de direitos. Cena sem clipe viável é declarada como tal, nunca preenchida com suposição.",
+   "enforced_by": [
+    "tests/test_vnc_working_rules.py",
+    "agents/e01_v3_clip_review.py",
+    "contracts/e01_v3_clip_review_v1.json"
+   ]
+  }
+ ],
+ "honesty": "A prévia mostra o que foi gerado; não substitui aprovação do usuário nem revisão de quadros reais. O que não foi visto fica NÃO VERIFICADO."
+}

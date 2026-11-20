@@ -1,0 +1,49 @@
+{
+ "schema_version": "1",
+ "project": "VERBO NO CHAO",
+ "episode_id": "E01",
+ "kind": "PREVIEW_MANIFEST",
+ "rule": "R1_TANGIBLE_PREVIEW_EVERY_DELIVERY",
+ "note": "Previews contain no audio of the licensed voice and no third-party footage. They are technical previews, not approvals.",
+ "stages": {
+  "captions": {
+   "contract": "contracts/e01_v3_caption_plan_v1.json",
+   "previews": [
+    "previews/e01_v3/e01_v3_captions_0-26s_SEM_AUDIO.mp4"
+   ]
+  },
+  "caption_band": {
+   "contract": "contracts/e01_v3_caption_band_v1.json",
+   "previews": [
+    "previews/e01_v3/e01_v3_caption_band_mock.png"
+   ]
+  },
+  "scenes": {
+   "contract": "contracts/e01_v3_12_scene_refit_v1.json",
+   "previews": [
+    "previews/e01_v3/e01_v3_scene_timeline.png"
+   ]
+  },
+  "clip_review": {
+   "contract": "contracts/e01_v3_clip_review_v1.json",
+   "previews": [
+    "previews/e01_v3/e01_v3_scene_timeline.png"
+   ]
+  }
+ },
+ "files": {
+  "previews/e01_v3/e01_v3_caption_band_mock.png": {
+   "bytes": 89666,
+   "sha256": "afee3caf5cd19d731358bea2c91ae75502a3e27678b35a1e0d0e1a8f4ce2e9f2"
+  },
+  "previews/e01_v3/e01_v3_captions_0-26s_SEM_AUDIO.mp4": {
+   "bytes": 286419,
+   "sha256": "2139074c4514fe401d6e95b139c2c545b9a3f53081be4acc090d556b1fc15145"
+  },
+  "previews/e01_v3/e01_v3_scene_timeline.png": {
+   "bytes": 95638,
+   "sha256": "b769c3f5dc42e7cf0f7349d02e747af74613035bf6ff721201581d2047d56334"
+  }
+ },
+ "approved_by_user": false
+}
