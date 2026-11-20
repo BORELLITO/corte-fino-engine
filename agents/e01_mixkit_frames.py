@@ -46,12 +46,15 @@ for c in cfg["clips"]:
     try:
         page = get(c["link"])
         mp4 = sorted(set(re.findall(r'https://assets\.mixkit\.co/[^"\'\s<>]+?\.mp4', page)))
+        if not mp4:
+            mp4 = sorted(set(re.findall(r'https://assets\.mixkit\.co/[a-z0-9]{20,}', page)))
         r["mp4_variants"] = [m.split("/")[-1] for m in mp4]
         lic = re.search(r"(Mixkit[^<]{0,60}License)", page)
         r["license_text"] = lic[1] if lic else None
         dur = re.search(r"Duration</?[^>]*>\s*([0-9:]+)", page)
         r["page_duration"] = dur[1] if dur else None
         pick = next((m for m in mp4 if "-360" in m), mp4[0] if mp4 else None)
+        if not pick: raise RuntimeError("no video url on page")
         r["video_url"] = pick
         data = get(pick, binary=True)
         open("/tmp/c.mp4", "wb").write(data)

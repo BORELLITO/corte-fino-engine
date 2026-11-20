@@ -2,97 +2,6 @@
  "clips": [
   {
    "scene": "S01",
-   "id": "99841",
-   "slug": "colorful-rain-soaked-bokeh-lights-at-night-99841",
-   "link": "https://mixkit.co/free-stock-video/colorful-rain-soaked-bokeh-lights-at-night-99841/",
-   "preview": "https://assets.mixkit.co/active_storage/video_items/99841/1717105845/99841-video-360.mp4"
-  },
-  {
-   "scene": "S02",
-   "id": "39855",
-   "slug": "hand-of-a-man-writing-on-a-sheet-on-a-39855",
-   "link": "https://mixkit.co/free-stock-video/hand-of-a-man-writing-on-a-sheet-on-a-39855/",
-   "preview": "https://assets.mixkit.co/videos/39855/39855-360.mp4"
-  },
-  {
-   "scene": "S03",
-   "id": "40746",
-   "slug": "night-walk-through-the-streets-of-a-big-city-40746",
-   "link": "https://mixkit.co/free-stock-video/night-walk-through-the-streets-of-a-big-city-40746/",
-   "preview": "https://assets.mixkit.co/videos/40746/40746-360.mp4"
-  },
-  {
-   "scene": "S03",
-   "id": "44694",
-   "slug": "vertical-video-of-bokeh-defocused-lights-of-an-avenue-at-44694",
-   "link": "https://mixkit.co/free-stock-video/vertical-video-of-bokeh-defocused-lights-of-an-avenue-at-44694/",
-   "preview": "https://assets.mixkit.co/videos/44694/44694-360.mp4"
-  },
-  {
-   "scene": "S03",
-   "id": "3456",
-   "slug": "old-street-at-night-3456",
-   "link": "https://mixkit.co/free-stock-video/old-street-at-night-3456/",
-   "preview": "https://assets.mixkit.co/videos/3456/3456-360.mp4"
-  },
-  {
-   "scene": "S04",
-   "id": "3458",
-   "slug": "candle-lighting-in-the-dark-3458",
-   "link": "https://mixkit.co/free-stock-video/candle-lighting-in-the-dark-3458/",
-   "preview": "https://assets.mixkit.co/videos/3458/3458-360.mp4"
-  },
-  {
-   "scene": "S04",
-   "id": "3438",
-   "slug": "flames-in-candles-close-up-3438",
-   "link": "https://mixkit.co/free-stock-video/flames-in-candles-close-up-3438/",
-   "preview": "https://assets.mixkit.co/videos/3438/3438-360.mp4"
-  },
-  {
-   "scene": "S04",
-   "id": "41739",
-   "slug": "hands-of-a-girl-holding-a-candle-in-the-dark-41739",
-   "link": "https://mixkit.co/free-stock-video/hands-of-a-girl-holding-a-candle-in-the-dark-41739/",
-   "preview": "https://assets.mixkit.co/videos/41739/41739-360.mp4"
-  },
-  {
-   "scene": "S05",
-   "id": "22724",
-   "slug": "side-door-of-a-gothic-church-in-the-dark-22724",
-   "link": "https://mixkit.co/free-stock-video/side-door-of-a-gothic-church-in-the-dark-22724/",
-   "preview": "https://assets.mixkit.co/videos/22724/22724-360.mp4"
-  },
-  {
-   "scene": "S06",
-   "id": "4953",
-   "slug": "girl-in-glasses-writing-with-pencil-on-a-notepad-4953",
-   "link": "https://mixkit.co/free-stock-video/girl-in-glasses-writing-with-pencil-on-a-notepad-4953/",
-   "preview": "https://assets.mixkit.co/videos/4953/4953-360.mp4"
-  },
-  {
-   "scene": "S06",
-   "id": "39855",
-   "slug": "hand-of-a-man-writing-on-a-sheet-on-a-39855",
-   "link": "https://mixkit.co/free-stock-video/hand-of-a-man-writing-on-a-sheet-on-a-39855/",
-   "preview": "https://assets.mixkit.co/videos/39855/39855-360.mp4"
-  },
-  {
-   "scene": "S07",
-   "id": "42734",
-   "slug": "face-of-a-woman-looking-through-a-window-42734",
-   "link": "https://mixkit.co/free-stock-video/face-of-a-woman-looking-through-a-window-42734/",
-   "preview": "https://assets.mixkit.co/videos/42734/42734-360.mp4"
-  },
-  {
-   "scene": "S09",
-   "id": "39855",
-   "slug": "hand-of-a-man-writing-on-a-sheet-on-a-39855",
-   "link": "https://mixkit.co/free-stock-video/hand-of-a-man-writing-on-a-sheet-on-a-39855/",
-   "preview": "https://assets.mixkit.co/videos/39855/39855-360.mp4"
-  },
-  {
-   "scene": "S01",
    "id": "101475",
    "slug": "man-reflection-in-rain-ripples-101475",
    "link": "https://mixkit.co/free-stock-video/man-reflection-in-rain-ripples-101475/",
@@ -160,31 +69,28 @@
    "slug": "hands-silhouette-against-city-lights-100950",
    "link": "https://mixkit.co/free-stock-video/hands-silhouette-against-city-lights-100950/",
    "preview": null
+  },
+  {
+   "scene": "S07",
+   "id": "100558",
+   "slug": "moody-silhouette-by-window-in-dark-mysterious-lighting-100558",
+   "link": "https://mixkit.co/free-stock-video/moody-silhouette-by-window-in-dark-mysterious-lighting-100558/",
+   "preview": null
+  },
+  {
+   "scene": "S10",
+   "id": "100735",
+   "slug": "two-people-holding-hands-against-a-green-background-100735",
+   "link": "https://mixkit.co/free-stock-video/two-people-holding-hands-against-a-green-background-100735/",
+   "preview": null
+  },
+  {
+   "scene": "S01",
+   "id": "101485",
+   "slug": "water-reflection-of-a-couple-in-the-rain-101485",
+   "link": "https://mixkit.co/free-stock-video/water-reflection-of-a-couple-in-the-rain-101485/",
+   "preview": null
   }
  ],
- "retry_queries": {
-  "S11_amanhecer": [
-   "dawn",
-   "sunrise",
-   "morning",
-   "window-light"
-  ],
-  "S12_abrindo_caderno": [
-   "opening-book",
-   "book",
-   "notebook",
-   "reading"
-  ],
-  "S08_oracao": [
-   "prayer",
-   "church",
-   "religion",
-   "faith"
-  ],
-  "S06_caderno": [
-   "journal",
-   "diary",
-   "notebook"
-  ]
- }
+ "retry_queries": {}
 }
