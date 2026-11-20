@@ -1,0 +1,62 @@
+{
+  "schema_version": "1.0.0",
+  "project_id": "VERBO_NO_CHAO_EXCLUSIVO",
+  "episode_id": "VNC-W01-E1",
+  "scene_id": "VNC-E01V2-S02",
+  "purpose": "COMPARE_DARK_CLOCK_REAL_STOCK_WITH_EXISTING_S02_QA_ONLY",
+  "artistic_state": "S01_USER_APPROVED_S02_UNAPPROVED",
+  "s01_approval_contract": "contracts/e01_s01_owner_visual_approval_20261119_v1.json",
+  "s01_preview_sha256": "724ae91368af7d843f39195b34f77db50341aa7f92b0e5960a17061e9da3f961",
+  "s01_preview_immutable": true,
+  "current_s02_reference_source_id": 7034348,
+  "current_s02_grade_a_preview_sha256": "0392829780be80a3228c5c03ee9f06aa9a6332ea1222b95e2687279596b022c3",
+  "current_s02_not_rejected_or_approved": true,
+  "candidate": {
+    "source_id": 29862379,
+    "page_url": "https://www.pexels.com/video/dramatic-clock-ticking-in-dark-room-29862379/",
+    "creator": "Sini Ko",
+    "source_page_license": "Free",
+    "listing_width": 3840,
+    "listing_height": 2160,
+    "listing_fps": 50,
+    "listing_duration_seconds": 11,
+    "minimum_native_portrait_crop": [
+      1080,
+      1920
+    ],
+    "expected_exact_center_native_crop": [
+      1214,
+      2160
+    ],
+    "candidate_risks": [
+      "Clock may crop out of center frame",
+      "Stock authenticity, branding or generative origin not independently established",
+      "Too bright/red or over-dramatic versus approved S01",
+      "Third-party rights not cleared"
+    ],
+    "mp4_verified": false,
+    "rights_cleared": false,
+    "editorial_approved": false
+  },
+  "required_output": {
+    "portrait_width": 720,
+    "portrait_height": 1280,
+    "fps": 30,
+    "frames": 147,
+    "watermark": "PREVIA DE QA - NAO PUBLICAR",
+    "audio": false,
+    "captions": false
+  },
+  "requested_frame_samples_s": [
+    0.5,
+    2.4,
+    4.5
+  ],
+  "source_media_persisted": false,
+  "s02_user_approved": false,
+  "rights_cleared": false,
+  "master_allowed": false,
+  "publication_authorized": false,
+  "paid_services_authorized": false,
+  "release_gate": "VISUAL_SOURCE_REVIEW_AND_INDIVIDUAL_RIGHTS_PENDING"
+}
