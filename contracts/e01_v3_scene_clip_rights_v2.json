@@ -1,0 +1,40 @@
+{
+ "schema_version": "1.0.0",
+ "project": "verbo-no-chao",
+ "episode_id": "E01",
+ "kind": "SCENE_CLIP_RIGHTS_12",
+ "verified_on": "2026-11-20",
+ "method": "leitura de páginas oficiais de licença (somente leitura, custo 0)",
+ "by_source": {
+  "pexels": "Pexels License: uso comercial sem atribuição (licença geral do site)",
+  "mixkit": "clipes 41739 e 4331 verificados na página do clipe: Mixkit Stock Video Free License",
+  "coverr": "coverr.co/license: tudo que o Coverr publica é gratuito para uso comercial; pessoas reconhecíveis podem exigir permissão própria; clipes 'premium' excluídos pelo nome"
+ },
+ "caveats_pt": [
+  "Coverr e Pexels: licença do site, página de cada clipe não aberta",
+  "pessoas reconhecíveis: Coverr afirma ter autorização de suas pessoas de stock, sem divulgá-la",
+  "não vender nem redistribuir os arquivos como estão"
+ ],
+ "sources": [
+  "https://coverr.co/license",
+  "https://help.pexels.com/hc/en-us/articles/360042295174-What-is-the-license-of-the-photos-and-videos-on-Pexels",
+  "https://mixkit.co/free-stock-video/traffic-on-a-rainy-night-4331/",
+  "https://mixkit.co/free-stock-video/hands-of-a-girl-holding-a-candle-in-the-dark-41739/"
+ ],
+ "scenes_covered": [
+  "S01",
+  "S02",
+  "S03",
+  "S04",
+  "S05",
+  "S06",
+  "S07",
+  "S08",
+  "S09",
+  "S10",
+  "S11",
+  "S12"
+ ],
+ "rights_cleared": true,
+ "publication_authorized": false
+}

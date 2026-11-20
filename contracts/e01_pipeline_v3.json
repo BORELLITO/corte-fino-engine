@@ -95,11 +95,15 @@
    ],
    "executor": "auto",
    "workflow": null,
-   "evidence": "contracts/e01_v3_clip_direction_approval_v1.json",
+   "evidence": "contracts/e01_v3_scene_clip_selection_v1.json",
    "done_when": [
     {
-     "field": "any_clip_approved",
+     "field": "all_scenes_have_approved_clip",
      "equals": true
+    },
+    {
+     "field": "scenes_total",
+     "equals": 12
     }
    ]
   },
@@ -110,7 +114,7 @@
    ],
    "executor": "auto",
    "workflow": null,
-   "evidence": "contracts/e01_v3_clip_rights_verification_v1.json",
+   "evidence": "contracts/e01_v3_scene_clip_rights_v2.json",
    "done_when": [
     {
      "field": "rights_cleared",

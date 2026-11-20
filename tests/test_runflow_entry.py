@@ -115,6 +115,13 @@ class RunflowEntryTests(unittest.TestCase):
         self.assertEqual({c["scene"] for c in r["clips"]}, {"S01", "S04", "S05", "S10"})
         self.assertIs(r["publication_authorized"], False)
 
+    def test_twelve_scene_selection_is_complete_and_not_master(self):
+        sel = json.loads((ROOT / "contracts" / "e01_v3_scene_clip_selection_v1.json").read_text())
+        self.assertEqual([c["scene"] for c in sel["clips"]], ["S%02d" % i for i in range(1, 13)])
+        self.assertIs(sel["master_approved"], False)
+        self.assertIs(sel["publication_authorized"], False)
+        self.assertFalse(any(c["id"].startswith("coverr-premium") for c in sel["clips"]))
+
     def test_master_requires_voice_and_clip_rights_and_publication_is_human(self):
         spec = json.loads((ROOT / "contracts" / "e01_pipeline_v3.json").read_text())
         master = next(s for s in spec["stages"] if s["id"] == "master")
