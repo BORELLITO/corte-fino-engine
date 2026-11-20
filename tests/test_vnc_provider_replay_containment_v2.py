@@ -14,6 +14,8 @@ ROOT = Path(__file__).resolve().parents[1]
 TARGETS = (
     ".github/workflows/verbo-no-chao-e01-ltx23-motion.yml",
     ".github/workflows/verbo-no-chao-e01-free-motion-probe.yml",
+    ".github/workflows/verbo-no-chao-e01-v2-voice.yml",
+    ".github/workflows/verbo-no-chao-e01-voice-preview.yml",
 )
 OPERATIONAL = "verbo-no-chao/e01-stock-curation-gate-v1"
 FORBIDDEN_NETWORK_STEPS = (
@@ -94,10 +96,29 @@ class VNCProviderReplayContainmentTests(unittest.TestCase):
             self.assertNotIn("agents/e01_public_zerogpu_motion_probe.py", triggers)
             self.assertNotIn("agents/e01_ltx23_public_probe.py", triggers)
 
+    def test_voice_scripts_never_run_browser_synthesis_in_retired_workflows(self):
+        for name in (
+            ".github/workflows/verbo-no-chao-e01-v2-voice.yml",
+            ".github/workflows/verbo-no-chao-e01-voice-preview.yml",
+        ):
+            with self.subTest(workflow=name):
+                content = workflow_text(name)
+                run_lines = "\\n".join(
+                    line.strip() for line in content.splitlines()
+                    if line.strip().startswith(("run:", "python ", "pip ", "sudo ", "timeout "))
+                )
+                self.assertNotIn("python -m agents.e01_voice_preview", run_lines)
+                self.assertNotIn("python -m agents.e01_v2_voice_preview", run_lines)
+                self.assertNotIn("playwright install", run_lines)
+                self.assertNotIn("google-chrome", run_lines)
+                self.assertIn("tests.test_vnc_provider_replay_containment_v2", content)
+
     def test_historical_provider_modules_remain_for_auditable_recovery(self):
         for name in (
             "agents/e01_public_zerogpu_motion_probe.py",
             "agents/e01_ltx23_public_probe.py",
+            "agents/e01_v2_voice_preview.py",
+            "agents/e01_voice_preview.py",
         ):
             self.assertTrue((ROOT / name).is_file())
 
