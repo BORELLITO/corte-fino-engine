@@ -45,7 +45,7 @@
    ],
    "executor": "human_only",
    "workflow": null,
-   "evidence": "contracts/e01_v3_voice_johnes_word_timing_v1.json",
+   "evidence": "contracts/vnc_voice_policy_v1.json",
    "done_when": [
     {
      "field": "voice_rights_cleared",

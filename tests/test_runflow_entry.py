@@ -28,8 +28,10 @@ class RunflowEntryTests(unittest.TestCase):
         self.assertIs(rep["publication_authorized"], False)
         self.assertEqual(rep["budget_new_spend_brl"], 0)
         self.assertNotEqual(rep["stages"]["publication"]["status"], "DONE")
-        self.assertEqual(rep["stages"]["voice_rights"]["status"], "HUMAN_ACTION")
-        self.assertEqual(rep["next_action"], "owner_authorization_required")
+        self.assertEqual(rep["stages"]["voice_rights"]["status"], "DONE")
+        self.assertEqual(rep["stages"]["clips_rights"]["status"], "READY")
+        self.assertEqual(rep["next_action"], "blocked:NO_AUTOMATED_EXECUTOR")
+        self.assertNotEqual(rep["stages"]["master"]["status"], "DONE")
 
     def test_preview_without_package_is_blocked(self):
         rep = run_entry(ROOT, "E01", "preview", self.tmp / "r", env={})
@@ -91,8 +93,15 @@ class RunflowEntryTests(unittest.TestCase):
         out = evaluate(spec, ROOT)
         self.assertEqual(out["stages"]["clips_approved"]["status"], "DONE")
         self.assertEqual(out["stages"]["clips_rights"]["status"], "READY")
-        self.assertEqual(out["next_action"], "owner_authorization_required")
+        self.assertEqual(out["next_action"], "no_automated_executor")
         self.assertNotEqual(out["next_action"], "run_workflow:None")
+
+    def test_voice_policy_is_owner_declaration_and_never_authorizes_publication(self):
+        v = json.loads((ROOT / "contracts" / "vnc_voice_policy_v1.json").read_text())
+        self.assertIs(v["voice_rights_cleared"], True)
+        self.assertIs(v["publication_authorized"], False)
+        self.assertIn("NAO_VERIFICADA", v["rights_basis"])
+        self.assertEqual(v["applies_to"], "TODOS_OS_EPISODIOS")
 
     def test_master_requires_voice_and_clip_rights_and_publication_is_human(self):
         spec = json.loads((ROOT / "contracts" / "e01_pipeline_v3.json").read_text())
