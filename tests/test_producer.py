@@ -90,6 +90,19 @@ class ProducerPipelineTest(unittest.TestCase):
         self.assertEqual(manifest["rights"]["voice_review"], "PENDING")
         self.assertTrue((pkg / "output.mp4").is_file())
 
+    def test_relative_package_dir_renders(self):
+        # Regression: render_package crashed with a relative --package-dir (used by CI).
+        import os
+        tmp = Path(tempfile.mkdtemp())
+        old = os.getcwd()
+        os.chdir(tmp)
+        try:
+            build_package(SPEC, Path("pkg"), FakeVoice(), FakeFootage(), FakeAligner())
+            result = run_flow({"t": 1}, Path("pkg"), Path("reports"), render=True)
+        finally:
+            os.chdir(old)
+        self.assertEqual((result.status, result.state), ("PASS", "PREVIEW_READY"))
+
     def test_without_asr_alignment_captions_block(self):
         _, result = self.build(aligner=None)
         self.assertEqual(result.status, "BLOCKED")

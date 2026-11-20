@@ -164,7 +164,7 @@ def render_package(package_dir: Path, package: dict[str, Any]) -> dict[str, Any]
     if not math.isfinite(duration) or abs(duration - expected_duration) > max(0.20, expected_duration * 0.005):
         raise RenderError("render:timeline_duration_drift")
     return {
-        "file": str(output.relative_to(package_dir)),
+        "file": str(output.relative_to(package_dir.resolve())),
         "sha256": _hash(output),
         "duration_sec": round(duration, 3),
         "width": 1080,
