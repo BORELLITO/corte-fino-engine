@@ -1,0 +1,93 @@
+{
+  "schema_version": "1.0.0",
+  "project_id": "VERBO_NO_CHAO_EXCLUSIVO",
+  "episode_id": "VNC-W01-E1",
+  "proof_name": "S03_S10_MIXKIT_TWO_SOURCE_20261120",
+  "source_event": {
+    "run_id": 44720731370,
+    "run_url": "https://github.com/BORELLITO/verbo-no-chao-engine/actions/runs/44720731370",
+    "run_sha": "1b87658e4235f76a6976227bdd39e57511bc86f1",
+    "success": true,
+    "artifact_id": 14622015687
+  },
+  "source_s03": {
+    "provider": "Mixkit",
+    "page_url": "https://mixkit.co/free-stock-video/traffic-on-a-rainy-night-4331/",
+    "license_label": "Mixkit Stock Video Free License",
+    "source_bytes": 51846621,
+    "source_sha256": "d5975aa71a2616ac4d9c70f671c192ea9b26d3b95eff190578fa392770e02a05",
+    "dimensions": [
+      1920,
+      1080
+    ],
+    "source_fps": 30,
+    "source_duration": 14.9,
+    "preview": {
+      "sha256": "8432d73bcda04aec85bf59eba867248822fbe47b27ab85e3a1bbd20c78c95cca",
+      "bytes": 1263440,
+      "dimensions": [
+        540,
+        960
+      ],
+      "frames": 184,
+      "fps": 30,
+      "duration": 6.133333,
+      "full_decode_github": true,
+      "full_decode_local": true
+    },
+    "frames_jpeg_sha256": "e2c719da0d09cb295c49ef54f0845dbc31849147edd0c7391513b4ceeb932363",
+    "editorial_review": "PROMISING_VISUAL_MOTIF_NOT_APPROVED",
+    "why": "Wet city street, traffic and nighttime reflections support social atmosphere; not a historical representation of injustice itself.",
+    "owner_approved": false,
+    "rights_cleared": false
+  },
+  "source_s10": {
+    "provider": "Mixkit",
+    "page_url": "https://mixkit.co/free-stock-video/sad-and-crestfallen-young-man-is-comforted-by-his-girlfriend-8748/",
+    "license_label": "Mixkit Stock Video Free License",
+    "source_bytes": 72219292,
+    "source_sha256": "c10db2c1c62de875b1a2b1721d1ac5bc8c5c93d8f33050224f34dbde11035a04",
+    "dimensions": [
+      3840,
+      2160
+    ],
+    "source_fps": 24,
+    "source_duration": 15,
+    "preview": {
+      "sha256": "84d6f4b6f28348de128ca35fc514ab6bacd2ac983f7958e80a7436b4495a0a29",
+      "bytes": 260405,
+      "dimensions": [
+        540,
+        960
+      ],
+      "frames": 198,
+      "fps": 30,
+      "duration": 6.6,
+      "full_decode_github": true,
+      "full_decode_local": true
+    },
+    "frames_jpeg_sha256": "0a20de4620f4f0ef53b897b03c83fc50c3c7dca4776dbd7ba845bad0ec18ac3e",
+    "editorial_review": "CROP_FAILS_SUPPORT_BEAT",
+    "why": "Vertical centered samples show one distressed man near kitchen counter; supportive second person not visible, so cannot claim support scene. Reframe/recut source only after proof; no automatic approval.",
+    "owner_approved": false,
+    "rights_cleared": false
+  },
+  "source_originals_not_uploaded_to_github": true,
+  "private_library": "/VERBO_NO_CHAO/E01_MULTIBANK_MIXKIT_QA_20261120/S03_S10_BATCH/",
+  "full_original_source_decode_claimed": false,
+  "S01_approved_visual_unchanged": true,
+  "S02_approved_visual": false,
+  "S03_owner_approved": false,
+  "S10_owner_approved": false,
+  "publication_authorized": false,
+  "master_allowed": false,
+  "rights_cleared": false,
+  "new_spending_authorized": false,
+  "merge_authorized": false,
+  "notes": [
+    "Two real source files were downloaded through fixed Mixkit URLs, no browser session/payment needed during GitHub physical QA",
+    "9:16 crop of 16:9 source at 540x960 is QA only, not native 1080x1920 master",
+    "Source listing license does not establish third-party rights or likeness/person clearance",
+    "S03 scene stock is a mood metaphor only, S10 shot may not convey support through current crop."
+  ]
+}
