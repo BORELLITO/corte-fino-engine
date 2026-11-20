@@ -21,6 +21,11 @@ HEX64 = set("0123456789abcdef")
 CORE_GATES = ("clip_repetition", "audio_integrity", "video_decode", "subtitle_safe_area")
 
 
+# 2026-11-20: owner rejected Kokoro as robotic and approved ElevenLabs voice "Mark" by ear; OpenAI-TTS is fallback only.
+# "Kokoro-82M" stays accepted ONLY so the legacy canonical pilot manifest keeps validating; the producer can no longer create it.
+ALLOWED_VOICE_ENGINES = {"ElevenLabs", "OpenAI-TTS", "Kokoro-82M"}
+
+
 def _is_sha256(value: Any) -> bool:
     return isinstance(value, str) and len(value) == 64 and set(value.casefold()) <= HEX64
 
@@ -140,7 +145,7 @@ def validate_manifest(manifest: dict[str, Any], artifact_root: Path | None = Non
                     )
 
     audio = _object(manifest.get("audio"), "audio", errors)
-    _add(errors, audio.get("engine") == "Kokoro-82M", "audio engine must remain Kokoro-82M")
+    _add(errors, audio.get("engine") in ALLOWED_VOICE_ENGINES, "audio engine is not an allowed voice engine")
     _add(errors, audio.get("language") == "pt-BR", "audio language must remain pt-BR")
     _add(errors, isinstance(audio.get("format"), str) and audio.get("format") in {"WAV 24 kHz mono float", "WAV 24 kHz mono PCM16"}, "audio format contract failed")
     _add(errors, audio.get("persisted") is True, "audio persistence is not proven")

@@ -3,5 +3,5 @@
   "runtime": {},
   "development": {},
   "external_services": [],
-  "note": "Phase 0 uses only the Python standard library."
+  "note": "Gates, engine and producer core use only the Python standard library. Heavy producer runtime (faster-whisper for caption alignment; voices are hosted APIs) lives in requirements-producer.txt and is installed only by the produce workflow."
 }

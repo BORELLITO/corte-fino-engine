@@ -1,0 +1,99 @@
+name: Verbo no Chão — Produzir episódio (preview)
+
+on:
+  workflow_dispatch:
+    inputs:
+      spec_path:
+        description: "Spec do episódio (ex.: episodes/E02.json)"
+        required: true
+        type: string
+      footage:
+        description: "Cadeia de fontes, em ordem (ex.: local:catalog,pixabay)"
+        required: false
+        default: "pixabay"
+        type: string
+  schedule:
+    - cron: "17 9 * * 1"   # segunda; só roda se queue/next.json existir
+
+permissions:
+  contents: read
+
+jobs:
+  produce:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Resolve spec
+        id: spec
+        env:
+          INPUT_SPEC: ${{ inputs.spec_path }}
+        run: |
+          SPEC="$INPUT_SPEC"
+          if [ -z "$SPEC" ]; then SPEC="queue/next.json"; fi
+          if [ ! -f "$SPEC" ]; then echo "found=false" >> "$GITHUB_OUTPUT"; echo "sem spec: nada a produzir"; exit 0; fi
+          echo "found=true" >> "$GITHUB_OUTPUT"
+          echo "path=$SPEC" >> "$GITHUB_OUTPUT"
+      - name: Engine gates first (fail closed)
+        if: steps.spec.outputs.found == 'true'
+        run: python -m unittest discover -s tests -p "test_*.py"
+      - name: Install producer runtime
+        if: steps.spec.outputs.found == 'true'
+        run: |
+          sudo apt-get update -qq && sudo apt-get install -y -qq ffmpeg
+          python -m pip install --disable-pip-version-check -r requirements-producer.txt
+      - name: Produce preview and validate with the engine gates
+        if: steps.spec.outputs.found == 'true'
+        env:
+          PEXELS_API_KEY: ${{ secrets.PEXELS_API_KEY }}
+          PIXABAY_API_KEY: ${{ secrets.PIXABAY_API_KEY }}
+          ELEVENLABS_API_KEY: ${{ secrets.ELEVENLABS_API_KEY }}
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+          SPEC_PATH: ${{ steps.spec.outputs.path }}
+          FOOTAGE: ${{ inputs.footage || 'pixabay' }}
+        run: python -m producer.cli "$SPEC_PATH" --out build/episode --report-dir run-reports --footage "$FOOTAGE"
+      - name: Upload preview + reports (never publishes)
+        if: always() && steps.spec.outputs.found == 'true'
+        uses: actions/upload-artifact@v4
+        with:
+          name: vnc-preview-${{ github.run_id }}
+          path: |
+            build/episode/output.mp4
+            build/episode/package.json
+            build/episode/captions.ass
+            run-reports/
+          if-no-files-found: warn
+          retention-days: 14
+
+  deliver:
+    # Separate job: the only place with write permission, and it never sees the API secrets.
+    # Creates a DRAFT release (invisible to the public) so the preview can be fetched without
+    # exposing media through public Actions artifacts.
+    needs: produce
+    if: needs.produce.result == 'success'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: vnc-preview-${{ github.run_id }}
+          path: delivered
+      - name: Light chat preview (540x960) + draft release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: preview-${{ github.run_id }}
+        run: |
+          sudo apt-get update -qq && sudo apt-get install -y -qq ffmpeg
+          OUT=$(find delivered -name output.mp4 | head -1)
+          test -n "$OUT" || { echo "output.mp4 ausente: nada a entregar"; exit 1; }
+          ffmpeg -nostdin -v error -y -i "$OUT" -vf scale=540:-2 -c:v libx264 -preset veryfast -crf 26 -c:a aac -b:a 96k -movflags +faststart chat_preview.mp4
+          gh release create "$TAG" --repo "$GITHUB_REPOSITORY" --draft --prerelease --target "$GITHUB_SHA" \
+            --title "Prévia $TAG (rascunho, não publicado)" \
+            --notes "Prévia automática. Rascunho privado. NÃO é publicação. Direitos pendentes." \
+            chat_preview.mp4 "$OUT"
+
