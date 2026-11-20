@@ -33,7 +33,7 @@ SPEC = {
 
 
 class FakeVoice:
-    engine, language = "Kokoro-82M", "pt-BR"
+    engine, language = "ElevenLabs", "pt-BR"
 
     def synthesize(self, text, dst):
         n = int(24000 * (0.4 + 0.08 * len(text.split())))
@@ -113,10 +113,10 @@ class ProducerPipelineTest(unittest.TestCase):
         self.assertEqual(result.status, "BLOCKED")
         self.assertTrue(any("repetition" in e for e in result.errors))
 
-    def test_non_kokoro_voice_is_blocked(self):
+    def test_non_allowed_voice_engine_is_blocked(self):
         _, result = self.build(voice=WrongEngineVoice())
         self.assertEqual(result.status, "BLOCKED")
-        self.assertIn("audio engine must remain Kokoro-82M", result.errors)
+        self.assertIn("audio engine is not an allowed voice engine", result.errors)
 
     def test_refuses_to_overwrite_existing_package(self):
         pkg, _ = self.build()
@@ -313,13 +313,64 @@ class ElevenLabsTests(unittest.TestCase):
 
     def test_make_voice(self):
         from producer.cli import make_voice
-        from producer.voice import ElevenLabsVoice, KokoroVoice
-        self.assertIsInstance(make_voice({}), KokoroVoice)
-        self.assertIsInstance(make_voice({"provider": "elevenlabs"}), ElevenLabsVoice)
+        from producer.voice import ElevenLabsVoice, FallbackVoice, OpenAIVoice
+        self.assertIsInstance(make_voice({}), FallbackVoice)
+        self.assertIsInstance(make_voice({"fallback": "none"}), ElevenLabsVoice)
+        self.assertIsInstance(make_voice({"provider": "openai"}), OpenAIVoice)
         with self.assertRaises(ProducerError):
             make_voice({"provider": "x"})
 
     def test_gate_engine_whitelist(self):
         from engine.quality_gates import ALLOWED_VOICE_ENGINES
-        self.assertIn("ElevenLabs", ALLOWED_VOICE_ENGINES)
+        self.assertTrue({"ElevenLabs", "OpenAI-TTS"} <= ALLOWED_VOICE_ENGINES)
+        from producer import voice
+        self.assertFalse(hasattr(voice, "KokoroVoice"))
         self.assertNotIn("some-other-tts", ALLOWED_VOICE_ENGINES)
+
+
+class FallbackTests(unittest.TestCase):
+    class Fail:
+        engine = "ElevenLabs"
+        def __init__(self, msg): self.msg = msg
+        def synthesize(self, text, dst): raise ProducerError(self.msg)
+
+    class Ok:
+        engine = "OpenAI-TTS"
+        def __init__(self): self.calls = 0
+        def synthesize(self, text, dst): self.calls += 1
+
+    def test_falls_back_when_voice_unavailable(self):
+        from producer.voice import FallbackVoice
+        for msg in ("producer:voice:elevenlabs_http_404", "producer:voice:elevenlabs_http_503",
+                    "producer:voice:elevenlabs_network:URLError"):
+            ok = self.Ok()
+            v = FallbackVoice(self.Fail(msg), ok)
+            v.synthesize("a", Path("x.wav"))
+            v.synthesize("b", Path("y.wav"))
+            self.assertEqual((v.engine, ok.calls), ("OpenAI-TTS", 2), msg)
+
+    def test_never_falls_back_on_auth_billing_or_quota(self):
+        from producer.voice import FallbackVoice
+        for code in (401, 402, 403, 429):
+            ok = self.Ok()
+            with self.assertRaises(ProducerError):
+                FallbackVoice(self.Fail(f"producer:voice:elevenlabs_http_{code}"), ok).synthesize("a", Path("x.wav"))
+            self.assertEqual(ok.calls, 0)
+
+    def test_primary_stays_when_available(self):
+        from producer.voice import FallbackVoice
+        class P(self.Ok):
+            engine = "ElevenLabs"
+        p, f = P(), self.Ok()
+        v = FallbackVoice(p, f)
+        v.synthesize("a", Path("x.wav"))
+        self.assertEqual((v.engine, p.calls, f.calls), ("ElevenLabs", 1, 0))
+
+    def test_openai_missing_key_blocks(self):
+        import os
+        from unittest import mock
+        from producer.voice import OpenAIVoice
+        with mock.patch.dict(os.environ, {}, clear=True):
+            with self.assertRaises(ProducerError) as cm:
+                OpenAIVoice().synthesize("oi", Path("x.wav"))
+        self.assertIn("openai_key_missing", str(cm.exception))

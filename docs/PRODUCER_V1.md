@@ -15,8 +15,10 @@
 
 ## Voz (decisão de 2026-11-20)
 
-O dono rejeitou o Kokoro como robótico e aprovou de ouvido a voz **Mark** (ElevenLabs, `eleven_v4`, pt-BR).
-- Segredo necessário: `ELEVENLABS_API_KEY` (plano pago Starter+ para uso comercial; plano grátis NÃO tem licença comercial).
-- Spec: `"voice": {"provider": "elevenlabs", "voice_id": "AER0pA6w0SVtfnFMyfXG", "model_id": "eleven_v4"}`. Sem `provider`, continua Kokoro.
-- Tags de direção como `[short pause]` entram no áudio e são removidas das legendas.
+O dono rejeitou o Kokoro como robótico e aprovou de ouvido a voz **Mark** (ElevenLabs, `eleven_v4`, pt-BR). O Kokoro foi removido do produtor.
+- Segredos: `ELEVENLABS_API_KEY` (plano pago Starter+ para uso comercial; o grátis NÃO tem licença comercial) e, opcional, `OPENAI_API_KEY` para a reserva.
+- Padrão do spec: `"voice": {"provider": "elevenlabs", "voice_id": "AER0pA6w0SVtfnFMyfXG", "model_id": "eleven_v4"}`.
+- Reserva (OpenAI gpt-4o-mini-tts, voz `ash`, instruída para soar calma e acolhedora): entra SÓ se a voz Mark estiver indisponível (404, 5xx, rede). Erros de chave, cobrança ou cota (401/402/403/429) bloqueiam, nunca caem para a reserva. Um episódio nunca mistura narradores. A reserva NÃO foi aprovada de ouvido: o dono precisa ouvir antes de publicar com ela.
+- Tags como `[short pause]` entram no áudio e são removidas das legendas.
 - Direitos de voz continuam `PENDING` até o dono revisar os termos da voz da biblioteca; publicação segue não autorizada.
+- A camada legada do Kokoro (pesquisa, evidências, ONNX, voice preview do E01) continua no repositório como registro histórico e fora do caminho de produção.

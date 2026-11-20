@@ -1,4 +1,4 @@
-"""Real-runtime smoke: Kokoro-82M voice + faster-whisper alignment on ONE original sentence.
+"""Real-runtime smoke: ElevenLabs voice + faster-whisper alignment on ONE original sentence.
 
 No footage, no publication, no secrets. Proves the two heavy engines work on the runner.
 """
@@ -11,7 +11,7 @@ from pathlib import Path
 
 from .captions import FasterWhisperAligner, build_cues, verify_cues
 from .common import ProducerError, audio_integrity_ok, duration_sec, sha256_file
-from .voice import KokoroVoice
+from .voice import ElevenLabsVoice
 
 TEXT = "Tem dias em que a oração parece bater no teto. Mesmo assim, eu continuo de pé."
 
@@ -20,7 +20,7 @@ def main() -> int:
     report: dict = {"text": TEXT, "status": "BLOCKED"}
     try:
         wav = Path(tempfile.mkdtemp()) / "smoke.wav"
-        KokoroVoice().synthesize(TEXT, wav)
+        ElevenLabsVoice().synthesize(TEXT, wav)
         dur = duration_sec(wav)
         report.update(voice_ok=True, duration_sec=round(dur, 2), audio_integrity=audio_integrity_ok(wav),
                       wav_sha256=sha256_file(wav))

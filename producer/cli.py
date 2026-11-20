@@ -13,18 +13,27 @@ from .captions import FasterWhisperAligner
 from .common import ProducerError
 from .footage import ChainFootage, LocalCatalogFootage, PexelsFootage, PixabayFootage
 from .rejections import load_rejections
-from .voice import ElevenLabsVoice, KokoroVoice
+from .voice import ElevenLabsVoice, FallbackVoice, OpenAIVoice
 
 
 def make_voice(cfg: dict):
-    """spec["voice"] = {"provider": "elevenlabs"|"kokoro", ...provider args}. Default stays Kokoro."""
+    """spec["voice"] = {"provider": "elevenlabs"|"openai", "fallback": "openai"|"none", ...ElevenLabs args}.
+
+    Default: ElevenLabs "Mark" with OpenAI-TTS as fallback when Mark itself is unavailable.
+    """
     cfg = dict(cfg)
-    provider = cfg.pop("provider", "kokoro")
-    if provider == "elevenlabs":
-        return ElevenLabsVoice(**cfg)
-    if provider == "kokoro":
-        return KokoroVoice(**cfg)
-    raise ProducerError(f"producer:spec:unknown_voice_provider:{provider}")
+    provider = cfg.pop("provider", "elevenlabs")
+    fallback = cfg.pop("fallback", "openai")
+    if provider == "openai":
+        return OpenAIVoice(**cfg)
+    if provider != "elevenlabs":
+        raise ProducerError(f"producer:spec:unknown_voice_provider:{provider}")
+    primary = ElevenLabsVoice(**cfg)
+    if fallback == "none":
+        return primary
+    if fallback != "openai":
+        raise ProducerError(f"producer:spec:unknown_voice_fallback:{fallback}")
+    return FallbackVoice(primary, OpenAIVoice())
 
 
 def main(argv: list[str] | None = None) -> int:

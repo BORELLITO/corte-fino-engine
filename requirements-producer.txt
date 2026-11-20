@@ -4,9 +4,5 @@ av==16.1.0                # PyAV >=19 removed av.open(metadata_errors=...) used 
 ctranslate2==4.9.0
 faster-whisper==1.2.1
 huggingface-hub==2.4.0
-kokoro==0.9.4
-misaki==0.9.4
 onnxruntime==1.32.0
-soundfile==0.14.0
 tokenizers==0.23.3
-transformers==5.23.0
