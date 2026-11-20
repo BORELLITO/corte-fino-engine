@@ -1,0 +1,119 @@
+{
+ "schema_version": "1.0.0",
+ "project": "verbo-no-chao",
+ "episode_id": "E01",
+ "kind": "SCENE_CLIP_SELECTION_12",
+ "selected_on": "2026-11-20",
+ "approved_by": "CLAUDE_SOB_AUTONOMIA_PERMANENTE_DO_DONO",
+ "scope": "DIRECAO_VISUAL_NAO_MASTER_NAO_PUBLICACAO",
+ "criteria_pt": "coerência de personagem e ambiente, tom sóbrio de paz e fé, sem promessa milagrosa, sem rosto exposto em cenas de dor, duração cobre a cena +1,0 s",
+ "evidence_pt": "quadros vistos em planilhas de contato geradas no GitHub Actions (prévias 360p do Coverr; Pexels e Mixkit já revistos antes)",
+ "not_verified_pt": [
+  "qualidade em resolução cheia dos clipes Coverr (só prévia 360p vista)",
+  "recorte vertical 9:16 dos clipes horizontais",
+  "sincronia por ouvido",
+  "encaixe em aparelho"
+ ],
+ "all_scenes_have_approved_clip": true,
+ "scenes_total": 12,
+ "clips": [
+  {
+   "scene": "S01",
+   "source": "pexels",
+   "id": "19967985",
+   "preview_seconds": 15.59,
+   "license": "Pexels License",
+   "note_pt": "chuva noturna na janela; remover áudio embutido"
+  },
+  {
+   "scene": "S02",
+   "source": "coverr",
+   "id": "coverr-mystery-in-the-shadows",
+   "preview_seconds": 20.5,
+   "license": "Coverr (gratuito comercial, site)",
+   "note_pt": "silhueta de mulher junto à janela escura; espera"
+  },
+  {
+   "scene": "S03",
+   "source": "mixkit",
+   "id": "4331",
+   "preview_seconds": 15,
+   "license": "Mixkit Stock Video Free License",
+   "note_pt": "trânsito em rua molhada à noite; fonte horizontal, recorte vertical"
+  },
+  {
+   "scene": "S04",
+   "source": "mixkit",
+   "id": "41739",
+   "preview_seconds": 12,
+   "license": "Mixkit Stock Video Free License",
+   "note_pt": "mãos com vela"
+  },
+  {
+   "scene": "S05",
+   "source": "pexels",
+   "id": "30635115",
+   "preview_seconds": 11.73,
+   "license": "Pexels License",
+   "note_pt": "silhueta em corredor de arcadas"
+  },
+  {
+   "scene": "S06",
+   "source": "coverr",
+   "id": "coverr-a-religious-woman-places-a-lit-candle-and-prays-6910",
+   "preview_seconds": 23.5,
+   "license": "Coverr (gratuito comercial, site)",
+   "note_pt": "mulher acende vela e reza; série com a mesma personagem e igreja"
+  },
+  {
+   "scene": "S07",
+   "source": "coverr",
+   "id": "coverr-a-religious-woman-reads-a-bible-near-a-church-3407",
+   "preview_seconds": 13.3,
+   "license": "Coverr (gratuito comercial, site)",
+   "note_pt": "mulher lê a Bíblia junto à igreja; mesma personagem de S06"
+  },
+  {
+   "scene": "S08",
+   "source": "coverr",
+   "id": "coverr-a-religious-woman-walks-in-a-garden-2105",
+   "preview_seconds": 24.6,
+   "license": "Coverr (gratuito comercial, site)",
+   "note_pt": "mulher caminha no jardim; mesma personagem"
+  },
+  {
+   "scene": "S09",
+   "source": "coverr",
+   "id": "coverr-natures-desk-outdoor-writing-session",
+   "preview_seconds": 17.4,
+   "license": "Coverr (gratuito comercial, site)",
+   "note_pt": "mulher anota em caderno ao ar livre"
+  },
+  {
+   "scene": "S10",
+   "source": "pexels",
+   "id": "5493833",
+   "preview_seconds": 27.12,
+   "license": "Pexels License",
+   "note_pt": "mãos dadas sem rostos"
+  },
+  {
+   "scene": "S11",
+   "source": "coverr",
+   "id": "coverr-a-smiling-woman-prays-near-a-church-3359",
+   "preview_seconds": 17.6,
+   "license": "Coverr (gratuito comercial, site)",
+   "note_pt": "mulher sorri e reza junto à igreja; mesma personagem"
+  },
+  {
+   "scene": "S12",
+   "source": "coverr",
+   "id": "coverr-sunrise-on-the-beach-9704",
+   "preview_seconds": 26.3,
+   "license": "Coverr (gratuito comercial, site)",
+   "note_pt": "nascer do sol na praia; esperança sem promessa"
+  }
+ ],
+ "publication_authorized": false,
+ "master_approved": false
+}
