@@ -5,6 +5,7 @@ Runs on a GitHub runner only. Prints JSON between markers. No upload, spend or p
 import difflib, json, re, statistics, subprocess, sys, unicodedata, urllib.request
 from pathlib import Path
 
+EXPECTED_SHA = "35f435199df54f6380d80d129ddd95b04ddb0ff5f97ede97a74da856995b5685"
 START, END = "VNC_SYNC_JSON_BEGIN", "VNC_SYNC_JSON_END"
 TIMING = Path("contracts/e01_v3_voice_johnes_word_timing_v1.json")
 ASS = Path("contracts/e01_v3_karaoke_under_test.ass")
@@ -40,6 +41,10 @@ def main():
     raw = subprocess.run([imageio_ffmpeg.get_ffmpeg_exe(), "-v", "error", "-i", str(wav), "-f", "f32le",
                           "-ac", "1", "-ar", "16000", "-"], capture_output=True, check=True).stdout
     samples = np.frombuffer(raw, dtype=np.float32)
+    import hashlib
+    sha = hashlib.sha256(wav.read_bytes()).hexdigest()
+    if sha != EXPECTED_SHA:
+        print(START); print(json.dumps({"error": "audio_sha256_mismatch", "got": sha})); print(END); sys.exit(2)
     from faster_whisper import WhisperModel
     model = WhisperModel("small", device="cpu", compute_type="int8")
     segs, _ = model.transcribe(samples, language="pt", beam_size=5, temperature=0.0,
@@ -64,7 +69,8 @@ def main():
         "worst": sorted(dev, key=lambda x: -abs(x["d"]))[:12],
         "ass_lilac_events": len(ass), "ass_vs_ref_max_abs": max((abs(x) for x in ass_dev), default=None),
         "ass_vs_ref_over_0.05": sum(abs(x) > .05 for x in ass_dev),
-        "asr_text": " ".join(a[0] for a in asr)[:400],
+        "audio_sha256": sha, "deviations": dev,
+        "asr_text": " ".join(a[0] for a in asr),
     }
     print(START); print(json.dumps(rep, ensure_ascii=False, default=float)); print(END)
 
