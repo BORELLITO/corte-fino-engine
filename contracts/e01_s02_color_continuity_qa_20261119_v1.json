@@ -49,7 +49,7 @@
     ],
     "s01_s02_composite_sha256": "598675e1e00b2a27880080bdd0052f6bc8ab8ae408d80be2272aeabd1eeae4ae",
     "s01_s02_composite_bytes": 2906687,
-    "contact_sheet_sha256": "c21b34742eb6e8829802090387ba6ba26dc0118f02814a6b2234dd0e10c23668",
+    "contact_sheet_sha256": "0f2f24d81927fb5fbe16b1c216d3b89c5218967b0c9c7012ebabf95aeb8fe146",
     "contact_sheet_name": "S01_S02_GRADE_A_CUT_COMPARISON.jpg",
     "mean_luma_samples_2_3s": {
       "s01_approved": 29.6,
