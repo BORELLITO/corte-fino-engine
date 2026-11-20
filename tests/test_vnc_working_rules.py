@@ -11,7 +11,7 @@ def _j(p):
 class WorkingRulesTests(unittest.TestCase):
     def test_both_owner_rules_are_registered_with_enforcement(self):
         r = _j("contracts/vnc_working_rules_v1.json")
-        self.assertEqual([x["id"] for x in r["rules"]], ["R1", "R2", "R3"])
+        self.assertEqual([x["id"] for x in r["rules"]], ["R1", "R2", "R3", "R4"])
         for x in r["rules"]:
             for f in x["enforced_by"]:
                 self.assertTrue(Path(f).is_file(), f)
@@ -59,6 +59,17 @@ class WorkingRulesTests(unittest.TestCase):
     def test_r2_contract_is_reproducible_from_evidence(self):
         from agents.e01_v3_clip_review import OUT, build
         self.assertEqual(build(), _j(OUT))
+
+
+class VoiceLockRuleTests(unittest.TestCase):
+    def test_r4_voice_lock(self):
+        import json as _j
+        from pathlib import Path as _P
+        r = _j.loads((_P(__file__).resolve().parents[1] / "contracts" / "vnc_working_rules_v1.json").read_text())
+        r4 = [x for x in r["rules"] if x["id"] == "R4"][0]
+        self.assertEqual(r4["name"], "VOICE_LOCK_NO_REGENERATION")
+        self.assertIn("Nunca gerar voz nova", r4["text_pt"])
+        self.assertIn("pedido explícito", r4["text_pt"])
 
 
 if __name__ == "__main__":
