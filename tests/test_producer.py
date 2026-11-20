@@ -374,3 +374,19 @@ class FallbackTests(unittest.TestCase):
             with self.assertRaises(ProducerError) as cm:
                 OpenAIVoice().synthesize("oi", Path("x.wav"))
         self.assertIn("openai_key_missing", str(cm.exception))
+
+
+class KeyHygieneTests(unittest.TestCase):
+    def test_trailing_newline_in_key_is_stripped(self):
+        import os
+        from unittest import mock
+        from producer.voice import ElevenLabsVoice
+        seen = {}
+        def fake(req, timeout=0):
+            seen["key"] = req.get_header("Xi-api-key")
+            raise OSError("stop")
+        with mock.patch.dict(os.environ, {"ELEVENLABS_API_KEY": "abc123\n"}), \
+                mock.patch("urllib.request.urlopen", side_effect=fake), tempfile.TemporaryDirectory() as d:
+            with self.assertRaises(ProducerError):
+                ElevenLabsVoice().synthesize("oi", Path(d) / "a.wav")
+        self.assertEqual(seen["key"], "abc123")

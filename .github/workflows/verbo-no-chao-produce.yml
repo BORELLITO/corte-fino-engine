@@ -100,3 +100,4 @@ jobs:
             --notes "Prévia automática. Rascunho privado. NÃO é publicação. Direitos pendentes." \
             chat_preview.mp4 "$OUT"
 
+# retrigger 2

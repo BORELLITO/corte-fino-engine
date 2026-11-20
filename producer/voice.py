@@ -48,7 +48,7 @@ class ElevenLabsVoice:
         self._key_env = api_key_env
 
     def _request(self, text: str) -> bytes:
-        key = os.environ.get(self._key_env, "")
+        key = os.environ.get(self._key_env, "").strip()
         if not key:
             raise ProducerError("producer:voice:elevenlabs_key_missing")
         body = json.dumps({"text": text, "model_id": self.model_id}).encode("utf-8")
@@ -61,6 +61,8 @@ class ElevenLabsVoice:
                 return resp.read()
         except urllib.error.HTTPError as exc:
             raise ProducerError(f"producer:voice:elevenlabs_http_{exc.code}") from exc
+        except ValueError as exc:  # malformed key/header; never echo the value
+            raise ProducerError("producer:voice:elevenlabs_key_malformed") from exc
         except (urllib.error.URLError, TimeoutError, OSError) as exc:
             raise ProducerError(f"producer:voice:elevenlabs_network:{type(exc).__name__}") from exc
 
@@ -87,7 +89,7 @@ class OpenAIVoice:
         self.voice, self.model, self.timeout, self._key_env = voice, model, timeout, api_key_env
 
     def synthesize(self, text: str, dst_wav: Path) -> None:
-        key = os.environ.get(self._key_env, "")
+        key = os.environ.get(self._key_env, "").strip()
         if not key:
             raise ProducerError("producer:voice:openai_key_missing")
         body = json.dumps({"model": self.model, "voice": self.voice, "input": strip_audio_tags(text),
@@ -99,6 +101,8 @@ class OpenAIVoice:
                 pcm = resp.read()
         except urllib.error.HTTPError as exc:
             raise ProducerError(f"producer:voice:openai_http_{exc.code}") from exc
+        except ValueError as exc:
+            raise ProducerError("producer:voice:openai_key_malformed") from exc
         except (urllib.error.URLError, TimeoutError, OSError) as exc:
             raise ProducerError(f"producer:voice:openai_network:{type(exc).__name__}") from exc
         _write_pcm_as_wav(pcm, dst_wav)
