@@ -79,6 +79,16 @@ class RunflowEntryTests(unittest.TestCase):
         self.assertIn(("d.yml", "push_without_branch_filter"), rules)
         self.assertNotIn("e.yml", {f for f, _ in rules})
 
+    def test_master_run_secret_allowed_only_in_its_own_workflow(self):
+        root = self._copy_root()
+        wf = root / ".github" / "workflows"
+        body = "on:\n  workflow_dispatch:\njobs:\n  x:\n    env:\n      K: ${{ secrets.VNC_E01_AUDIO_URL }}\n"
+        (wf / "verbo-no-chao-e01-master-run.yml").write_text(body)
+        (wf / "other.yml").write_text(body)
+        flagged = {f["file"] for f in audit_workflows(root)}
+        self.assertNotIn("verbo-no-chao-e01-master-run.yml", flagged)
+        self.assertIn("other.yml", flagged)
+
     def test_guard_blocks_when_workflow_hazard_present(self):
         root = self._copy_root()
         (root / ".github" / "workflows" / "bad.yml").write_text("on:\n  schedule:\n    - cron: '0 * * * *'\njobs: {}\n")

@@ -1,0 +1,24 @@
+name: Verbo no Chão — E01 master preview run (entrega privada via log, sem artefato)
+# Roda só na branch descartável de execução. Custo zero: baixa a voz já gerada (R4), não gera nada.
+on:
+  push:
+    branches: ["verbo-no-chao/e01-master-run-20261120-v1"]
+    paths: ["contracts/e01_master_run_trigger.txt", ".github/workflows/verbo-no-chao-e01-master-run.yml", "agents/e01_master_build.py"]
+permissions:
+  contents: read
+jobs:
+  build:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: python -m pip install --disable-pip-version-check "imageio-ffmpeg==0.6.0" "pillow==12.3.0" numpy
+      - name: Build E01 master preview
+        env:
+          VNC_E01_AUDIO_URL: ${{ secrets.VNC_E01_AUDIO_URL }}
+        run: python -m agents.e01_master_build
