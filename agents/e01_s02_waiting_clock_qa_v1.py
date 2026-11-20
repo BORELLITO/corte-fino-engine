@@ -11,7 +11,6 @@ import json
 import tempfile
 from pathlib import Path
 
-from PIL import Image, ImageDraw, ImageFont, ImageStat, ImageChops
 
 from agents.e01_s01_multi_stock_pilot_v1 import download_source, probe
 from agents.e01_s01_single_take_stock_qa import crop_native, frame_at, run_cmd
@@ -92,6 +91,7 @@ def validate(root=ROOT, data=None):
 
 
 def contact_sheet(frames, path):
+    from PIL import Image, ImageDraw, ImageStat, ImageChops
     if len(frames) != 3 or any(im.size != (216,384) for im in frames):
         raise S02StockGateError("invalid_sample_geometry")
     sheet=Image.new("RGB",(648,426),(20,20,22))
