@@ -50,7 +50,7 @@ jobs:
       - name: Install producer runtime
         if: steps.spec.outputs.found == 'true'
         run: |
-          sudo apt-get update -qq && sudo apt-get install -y -qq espeak-ng
+          sudo apt-get update -qq && sudo apt-get install -y -qq espeak-ng ffmpeg
           python -m pip install --disable-pip-version-check -r requirements-producer.txt
       - name: Produce preview and validate with the engine gates
         if: steps.spec.outputs.found == 'true'
