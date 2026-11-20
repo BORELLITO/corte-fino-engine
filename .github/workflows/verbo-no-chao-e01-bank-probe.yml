@@ -1,0 +1,16 @@
+name: Verbo no Chão — banks reachability probe (read-only)
+on:
+  push:
+    branches: ["verbo-no-chao/e01-ai-i2v-probe-20261120-v1"]
+    paths: [".github/workflows/verbo-no-chao-e01-bank-probe.yml", "agents/e01_bank_probe.py"]
+permissions:
+  contents: read
+jobs:
+  probe:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          persist-credentials: false
+      - run: python3 -m agents.e01_bank_probe
