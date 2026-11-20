@@ -1,0 +1,74 @@
+name: Verbo no Chão — E01 S09 Mixkit 4K first physical multi-crop QA (one-shot)
+
+# This is a once-only research test. GitHub Actions runs it only when this
+# exact workflow file is first added on the isolated research branch.
+# No manual dispatch, scheduler, paid provider, TTS, publication or merge.
+on:
+  push:
+    branches:
+      - "verbo-no-chao/e01-multibank-stock-intake-20261120-v1"
+    paths:
+      - ".github/workflows/verbo-no-chao-e01-s09-mixkit-first-intake-20261120.yml"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: vnc-e01-s09-mixkit-99890-one-shot-20261120
+  cancel-in-progress: false
+
+jobs:
+  read-only-physical-mixkit-intake:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - name: Checkout isolated VNC branch without retained write token
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - name: Fail closed on second run or changed workflow commit
+        shell: bash
+        run: |
+          set -euo pipefail
+          file=.github/workflows/verbo-no-chao-e01-s09-mixkit-first-intake-20261120.yml
+          test "$GITHUB_REF_NAME" = "verbo-no-chao/e01-multibank-stock-intake-20261120-v1"
+          test "$(git diff-tree --no-commit-id --name-status -r "$GITHUB_SHA")" = "$(printf 'A\t%s' "$file")"
+          test "$(git rev-list --count "$GITHUB_SHA" -- "$file")" -eq 1
+      - uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065
+        with:
+          python-version: "3.12"
+      - name: Install exact media decoder and QA contact-sheet dependency
+        shell: bash
+        run: |
+          set -euo pipefail
+          timeout -k 5s 120s python -m pip install --disable-pip-version-check --no-cache-dir --retries 0 portable-ffmpeg==0.5.0 Pillow==11.3.0
+          python - <<'PY'
+          import os
+          from pathlib import Path
+          from portable_ffmpeg import get_ffmpeg
+          ffmpeg, ffprobe=get_ffmpeg()
+          dest=Path(os.environ["RUNNER_TEMP"])/"vnc-s09-ffmpeg"
+          dest.mkdir(parents=True,exist_ok=True)
+          for name,src in (("ffmpeg",ffmpeg),("ffprobe",ffprobe)):
+              (dest/name).symlink_to(Path(src))
+          with open(os.environ["GITHUB_PATH"],"a",encoding="utf-8") as handle:
+              handle.write(str(dest)+"\n")
+          PY
+      - name: Offline anti-forgery tests on the 12-scene plan and Mixkit source
+        run: python -m unittest tests.test_e01_multibank_mixkit_s09_qa_20261120_v1 -v
+      - name: Download one verified Mixkit Free 4K clip and inspect real 3-by-3 crop sheet
+        shell: bash
+        run: |
+          set -euo pipefail
+          timeout -k 5s 405s python -u -m agents.e01_mixkit_s09_physical_qa_20261120_v1 --out artifacts/vnc_e01_s09_mixkit_99890
+      - name: Retain ONLY watermarked 5.77s video, 9-frame JPEG and JSON (one day)
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: VNC-E01-S09-MIXKIT-99890-4K-PHYSICAL-QA-UNAPPROVED
+          path: artifacts/vnc_e01_s09_mixkit_99890/
+          if-no-files-found: warn
+          retention-days: 1
+
+# Never retain or publish the 4K source, and never infer approval from tests.
