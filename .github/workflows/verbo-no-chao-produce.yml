@@ -1,5 +1,4 @@
 name: Verbo no Chão — Produzir episódio (preview)
-# run 3: render path fix
 
 on:
   workflow_dispatch:
@@ -13,11 +12,6 @@ on:
         required: false
         default: "pixabay"
         type: string
-  push:  # TEMPORÁRIO: primeira prova real; removido logo após o primeiro run
-    branches:
-      - "verbo-no-chao/producer-p0-v1"
-    paths:
-      - ".github/workflows/verbo-no-chao-produce.yml"
   schedule:
     - cron: "17 9 * * 1"   # segunda; só roda se queue/next.json existir
 
@@ -40,7 +34,6 @@ jobs:
         id: spec
         run: |
           SPEC="${{ inputs.spec_path }}"
-          if [ "${{ github.event_name }}" = "push" ]; then SPEC="episodes/EXAMPLE.json"; fi
           if [ -z "$SPEC" ]; then SPEC="queue/next.json"; fi
           if [ ! -f "$SPEC" ]; then echo "found=false" >> "$GITHUB_OUTPUT"; echo "sem spec: nada a produzir"; exit 0; fi
           echo "found=true" >> "$GITHUB_OUTPUT"
