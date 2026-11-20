@@ -128,7 +128,7 @@ class FasterWhisperAligner:
                 str(wav), language="pt", word_timestamps=True)
             heard = [(w.word, w.start, w.end) for s in segments for w in (s.words or [])]
         except Exception as exc:
-            raise ProducerError(f"producer:captions:asr_failed:{type(exc).__name__}") from exc
+            raise ProducerError(f"producer:captions:asr_failed:{type(exc).__name__}:{str(exc)[:200]}") from exc
         if not heard:
             raise ProducerError("producer:captions:asr_empty")
         a, b = [_norm(w) for w in words], [_norm(h[0]) for h in heard]

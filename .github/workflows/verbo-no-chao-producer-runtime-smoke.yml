@@ -31,7 +31,9 @@ jobs:
           python -m pip install --disable-pip-version-check torch --index-url https://download.pytorch.org/whl/cpu
           python -m pip install --disable-pip-version-check -r requirements-producer.txt
       - name: Smoke — one sentence through Kokoro and ASR alignment
-        run: python -m producer.smoke | tee smoke-report.json
+        run: |
+          set -o pipefail
+          python -m producer.smoke | tee smoke-report.json
       - uses: actions/upload-artifact@v4
         if: always()
         with:
