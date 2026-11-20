@@ -1,0 +1,119 @@
+{
+  "schema_version": "1.0.0",
+  "project_id": "VERBO_NO_CHAO_EXCLUSIVO",
+  "episode_id": "VNC-W01-E1",
+  "scene_id": "VNC-E01V2-S02",
+  "as_of": "2026-11-19",
+  "scope": "S02_ONLY_SOURCE_SPECIFIC_EDITORIAL_REJECTION_NOT_GLOBAL_ID_BAN",
+  "decision": "REJECTED_FOR_S02_EDITORIAL",
+  "decision_basis": "Direct human visual analysis of real 0.5/2.4/4.5s contact frames and 9-sample review of existing S02 grade A",
+  "approved_scene_s01_preserved": true,
+  "owner_approval_for_s02": false,
+  "alt_source": {
+    "provider": "Pexels",
+    "creator": "Sini Ko",
+    "video_id": 29862379,
+    "page": "https://www.pexels.com/video/dramatic-clock-ticking-in-dark-room-29862379/",
+    "licensing_general": "Pexels Free",
+    "source_bytes": 57975096,
+    "sha256": "a6058b295f21cbfa5381d6a19263a1ed5606dcfb87a6579ae0aa4611e5130052",
+    "codec": "h264",
+    "width": 3840,
+    "height": 2160,
+    "duration_seconds": 11.74,
+    "full_video_decode_pass": true,
+    "native_crop": [
+      1214,
+      2160
+    ],
+    "was_cropped_with_no_upscale_to_1080x1920": true,
+    "camera_original_proven": false,
+    "individual_third_party_rights_cleared": false
+  },
+  "derived_preview": {
+    "width": 720,
+    "height": 1280,
+    "fps": 30,
+    "frames": 147,
+    "duration_seconds": 4.9,
+    "bytes": 236453,
+    "sha256": "3bb1c6efced29fbd5d48b235aec69af20d7e5c7bebf0b03fc8d09488d020ae94",
+    "full_decode_pass": true,
+    "independent_local_sha_verified": true,
+    "verified_no_audio": true,
+    "not_a_master": true,
+    "watermarked": true
+  },
+  "frame_contact": {
+    "samples_seconds": [
+      0.5,
+      2.4,
+      4.5
+    ],
+    "luma_means": [
+      7.12,
+      10.07,
+      39.03
+    ],
+    "frame_difference_means": [
+      3.25,
+      28.99
+    ],
+    "sha256": "09b71d78c6d4a42dc95138bb4f99daad10ebef91c82b9e38951123f720fbfe43",
+    "observations": [
+      "0.5s almost completely black: poor immediate legibility",
+      "2.4s dim red alarm clock, obscure face",
+      "4.5s clock fully illuminated with bright white face, saturated red housing, green background",
+      "Temporal difference dominated by exposure-light reveal; not proof of ticking hand or real camera provenance"
+    ],
+    "rejection_reasons": [
+      "Strong exposure change within 4.9s conflicts with approved S01 restrained noir palette",
+      "Red/green product palette is unrelated to approved blue-black nocturnal motif",
+      "Revealed clock dial too bright; would repeat caption contrast issue",
+      "No improved continuity over existing S02 Grade A"
+    ]
+  },
+  "baseline_s02_grade_a": {
+    "source_id": 7034348,
+    "graded_preview_sha256": "0392829780be80a3228c5c03ee9f06aa9a6332ea1222b95e2687279596b022c3",
+    "full_nine_frame_review_composed": true,
+    "audit_sheet_sha256": "a589e5c417840ba9db31e665adf1a7c23ab6142b5dfde9db7108234563cf2b8c",
+    "sample_times_seconds": [
+      0.05,
+      0.65,
+      1.25,
+      1.85,
+      2.45,
+      3.05,
+      3.65,
+      4.25,
+      4.8
+    ],
+    "observed_risks": [
+      "QUARTZ is visibly printed on clock dial; textual element, not automatically a trademark infringement",
+      "Clock occupies significant lower frame area including caption safe zone",
+      "Without final subtitle render, legibility over pale clock face not assured"
+    ],
+    "editorial_approval_status": "PENDING_OWNER_REVIEW",
+    "master_and_rights_status": "BLOCKED"
+  },
+  "evidence_workflow": "https://github.com/BORELLITO/verbo-no-chao-engine/actions/runs/44660021135",
+  "evidence_privately_stored": {
+    "rejected_candidate_folder": "/VERBO_NO_CHAO/E01_STOCK_QA_20261119/S02_DARK_CLOCK_ALTERNATIVE_REJECTED/",
+    "files": [
+      "S02_29862379_PREVIEW_REJEITADA.mp4",
+      "S02_29862379_FRAMES_REJEITADOS.jpg",
+      "S02_29862379_PROVA_FISICA.json"
+    ],
+    "current_grade_nine_frame_audit": "/VERBO_NO_CHAO/E01_STOCK_QA_20261119/S02_WAITING_CLOCK_REVIEW/S02_GRADE_A_9_FRAMES_AUDITORIA.jpg"
+  },
+  "existing_original_storyboard_unchanged": true,
+  "script_audio_subtitle_cues_unchanged": true,
+  "rights_cleared": false,
+  "s02_editorial_approved": false,
+  "master_allowed": false,
+  "publication_authorized": false,
+  "merge_authorized": false,
+  "spend_authorized": false,
+  "next_gate": "Do not recycle source 29862379 for S02. Original S02 GRADE A remains nonapproved; user may evaluate full clip with eventual subtitle overlay, or research more subtle alternative with native portrait crop."
+}
