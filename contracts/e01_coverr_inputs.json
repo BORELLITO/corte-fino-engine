@@ -1,9 +1,8 @@
-{"per_scene":10,"queries":{
-"S02":["waiting","hands waiting","clock"],
-"S03":["rainy street night","empty street","city night"],
-"S06":["praying","hands prayer","bible"],
-"S07":["writing","open book","reading bible"],
-"S08":["thinking","contemplating window","pensive"],
-"S09":["taking notes","journal","writing notebook"],
-"S11":["sunrise window","light window","morning prayer"],
-"S12":["sunrise","path forward","dawn hills"]}}
+{"per_scene":12,"queries":{
+"TRISTE_CHUVA":["rain","rain window","rainy night","storm"],
+"TRISTE_NEVOA":["fog","foggy forest","mist mountains","dark clouds"],
+"TRISTE_MAR":["stormy sea","dark ocean waves","lonely road","grey sky"],
+"VIRADA_LUZ":["clouds parting","sun rays clouds","light breaking through","break of dawn"],
+"LIBERTACAO_MONTANHA":["sunrise mountains","golden hour mountains","mountain valley sunrise","aerial mountains"],
+"LIBERTACAO_CAMPO":["open field wind","golden field","meadow sunrise","green hills"],
+"LIBERTACAO_MAR":["sunrise ocean","calm sea sunrise","beach horizon","sunset sea"]}}
