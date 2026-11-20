@@ -16,6 +16,8 @@ import unicodedata
 from pathlib import Path
 from typing import Any
 
+from PIL import ImageFont
+
 from agents.content_production import ProductionError, check
 from agents.autonomous_editorial_gate import canonical_sha
 
@@ -24,9 +26,21 @@ ASR_BYTES = 72475
 SCRIPT_SHA = "c64b57cb9d6529b60b9e80ab7607e5887f909dd00e14cd80ed9ec2b7474a5dc6"
 WAV_SHA = "4f2ee1ff0171ddedb7c64e0dce2300c53a0ef105ef12d643a7af6b0a4621942e"
 VOICE_DURATION = 70.425
-MAX_LINE = 28
+# v3c layout (PlayRes 1080x1920). Widths are measured in real pixels with the
+# exact font that libass renders; character counts are not a valid proxy.
+FONT_PATH = Path(__file__).resolve().parents[1] / "assets/fonts/AtkinsonHyperlegibleNext-Bold.ttf"
+FONT_SHA = "aa4ee81e4b45aeaf70f5c33f0f1290640b5fe36a34664165f2bae1e35b003546"
+FONT_FAMILY = "Atkinson Hyperlegible Next"
+FONT_ASS_SIZE = 107          # ASS Fontsize; em = 76 px for this font
+FONT_EM_PX = 76
+MAX_LINE_PX = 700            # text width; rendered bbox is ~15 px wider
+MARGIN_SIDE = 180            # keeps x in 180..900 (right HUD rail clear)
+MARGIN_BOTTOM = 576          # bottom HUD clearance, measured on 3 screenshots
+COLOR_SUNG = "&H00F2B0C4"    # light lilac (provisional brand colour)
+COLOR_UNSUNG = "&H00EEF1F2"  # warm white
 MAX_LINES = 2
-MAX_CUE_WORDS = 8
+MAX_CUE_WORDS = 7
+ONE_LINE_MAX_WORDS = 3
 MAX_CUE_DURATION = 3.4
 MIN_CUE_DURATION = 0.28
 
@@ -189,72 +203,116 @@ def combine_alignments(script: list[dict[str, Any]],
     return words, summary
 
 
+_FONT: Any = None
+FUNCTION_WORDS = {
+    "a","o","as","os","e","de","do","da","dos","das","em","no","na","nos",
+    "nas","um","uma","que","com","para","por","ou","mas","se","ao","à",
+    "não","nem","sua","seu","suas","seus","você","é",
+}
+
+
+def text_width(text: str) -> float:
+    global _FONT
+    if _FONT is None:
+        check(FONT_PATH.is_file() and digest_file(FONT_PATH) == FONT_SHA,
+              "caption:caption_font_missing_or_changed")
+        _FONT = ImageFont.truetype(str(FONT_PATH), FONT_EM_PX)
+    return _FONT.getlength(text)
+
+
+def _split(raw: list[str]) -> tuple[float, list[str]] | None:
+    """Best 1- or 2-line layout under MAX_LINE_PX, or None. Lower is better."""
+    one = " ".join(raw)
+    if len(raw) <= ONE_LINE_MAX_WORDS and text_width(one) <= MAX_LINE_PX:
+        return 0.0, [one]
+    best = None
+    for i in range(1, len(raw)):
+        left, right = " ".join(raw[:i]), " ".join(raw[i:])
+        wl, wr = text_width(left), text_width(right)
+        if max(wl, wr) > MAX_LINE_PX:
+            continue
+        pen = (abs(wl - wr)
+               + (40 if raw[i-1].lower().strip(",.?!:;") in FUNCTION_WORDS else 0)
+               + (0 if wl <= wr else 25))
+        if best is None or pen < best[0]:
+            best = (pen, [left, right])
+    return best
+
+
 def cue_lines(words: list[dict[str, Any]]) -> list[str]:
-    raw = [w["text"] for w in words]
-    joined = " ".join(raw)
-    if len(joined) <= MAX_LINE:
-        return [joined]
-    # Split at a word boundary, balancing size and never exceeding two lines.
-    candidates = []
-    for split in range(1,len(raw)+1):
-        left=" ".join(raw[:split])
-        right=" ".join(raw[split:])
-        if len(left) <= MAX_LINE and len(right) <= MAX_LINE:
-            candidates.append((abs(len(left)-len(right)),split,left,right))
-    check(candidates, "caption:more_than_two_lines")
-    _,_,a,b = min(candidates)
-    return [a] if not b else [a,b]
+    layout = _split([w["text"] for w in words])
+    check(layout is not None, "caption:more_than_two_lines")
+    return layout[1]
+
+
+def _segment_cost(group: list[dict[str, Any]]) -> float:
+    cost = (len(group) - 5) ** 2 + 3.0
+    last = group[-1]["text"]
+    if last[-1] in ".?!":
+        cost -= 14
+    elif last[-1] in ",:;":
+        cost -= 9
+    elif last.lower().strip(",.") in FUNCTION_WORDS:
+        cost += 22
+    if any(w["text"][-1] in ".?!" for w in group[:-1]):
+        cost += 30
+    if any(w["text"][-1] in ",:;" for w in group[:-1]):
+        cost += 6
+    if len(group) >= 2 and len(cue_lines(group)) == 1:
+        cost += 1.5
+    return cost
 
 
 def make_cues(words: list[dict[str, Any]]) -> list[dict[str, Any]]:
-    cues=[];i=0
-    while i < len(words):
-        j=i
-        while j<len(words):
-            group=words[i:j+1]
-            start,end=group[0]["start"],group[-1]["end"]
-            check(start is not None and end is not None,"caption:unresolved_time")
-            joined=" ".join(w["text"] for w in group)
-            if (len(group)>MAX_CUE_WORDS or end-start>MAX_CUE_DURATION
-                    or len(joined)>MAX_LINES*MAX_LINE):
-                break
-            # A total length <= 56 is NOT sufficient: word boundaries can
-            # still make a legal two-line (28 chars each) split impossible.
-            # End the cue BEFORE adding an unbreakable extra word.
-            try:
-                cue_lines(group)
-            except ProductionError:
-                break
-            if j+1<len(words) and group[-1]["block"] != words[j+1]["block"]:
-                j += 1;break
-            j += 1
-            if len(group)>=3 and group[-1]["text"].endswith((".","!","?")):
-                break
-        if j==i:
-            raise ProductionError("caption:cannot_fit_single_word")
-        group=words[i:j]
-        start=max(0.0,group[0]["start"])
-        end=min(VOICE_DURATION,group[-1]["end"])
-        check(end-start>=MIN_CUE_DURATION,"caption:cue_too_short")
-        lines=cue_lines(group)
+    n = len(words)
+    for w in words:
+        check(w["start"] is not None and w["end"] is not None,
+              "caption:unresolved_time")
+    INF = float("inf")
+    dp = [INF] * (n + 1); back = [0] * (n + 1); dp[0] = 0.0
+    for j in range(1, n + 1):
+        for i in range(max(0, j - MAX_CUE_WORDS), j):
+            if dp[i] == INF:
+                continue
+            group = words[i:j]
+            if len({w["block"] for w in group}) > 1:
+                continue
+            if group[-1]["end"] - group[0]["start"] > MAX_CUE_DURATION:
+                continue
+            if _split([w["text"] for w in group]) is None:
+                continue
+            c = dp[i] + _segment_cost(group)
+            if c < dp[j]:
+                dp[j] = c; back[j] = i
+    check(dp[n] < INF, "caption:cannot_fit_single_word")
+    bounds = []; j = n
+    while j > 0:
+        bounds.append((back[j], j)); j = back[j]
+    cues = []
+    for i, j in reversed(bounds):
+        group = words[i:j]
+        start = max(0.0, group[0]["start"])
+        end = min(VOICE_DURATION, group[-1]["end"])
+        check(end - start >= MIN_CUE_DURATION, "caption:cue_too_short")
         cues.append({
-            "index":len(cues)+1,"start":round(start,3),"end":round(end,3),
-            "lines":lines,"words":group,"block":group[0]["block"],
+            "index": len(cues) + 1, "start": round(start, 3),
+            "end": round(end, 3), "lines": cue_lines(group),
+            "words": group, "block": group[0]["block"],
         })
-        i=j
     # SRT track can show a tiny gap between phrases; no early words or overlaps.
-    for k,cue in enumerate(cues):
+    for k, cue in enumerate(cues):
         if k:
-            prev=cues[k-1]
+            prev = cues[k-1]
             if cue["start"] < prev["end"]:
-                overlap=prev["end"]-cue["start"]
-                check(overlap<=0.18,"caption:overlap_not_just_small_asr_jitter")
-                prev["end"]=round(cue["start"],3)
-        check(cue["end"]>cue["start"] and len(cue["lines"])<=MAX_LINES
-              and all(len(line)<=MAX_LINE for line in cue["lines"]),
+                overlap = prev["end"] - cue["start"]
+                check(overlap <= 0.18,
+                      "caption:overlap_not_just_small_asr_jitter")
+                prev["end"] = round(cue["start"], 3)
+        check(cue["end"] > cue["start"] and len(cue["lines"]) <= MAX_LINES
+              and all(text_width(line) <= MAX_LINE_PX for line in cue["lines"]),
               "caption:invalid_bounded_cue")
     check(cues[0]["start"] <= .5
-          and cues[-1]["end"] >= VOICE_DURATION-1.3
+          and cues[-1]["end"] >= VOICE_DURATION - 1.3
           and len(cues) >= 20, "caption:coverage_too_short")
     return cues
 
@@ -284,8 +342,8 @@ def ass_time(s: float) -> str:
 
 
 def export_ass(cues: list[dict[str, Any]]) -> str:
-    header = """[Script Info]
-Title: VERBO NO CHAO | E01 V2 | QA-ONLY KARAOKE
+    header = f"""[Script Info]
+Title: VERBO NO CHAO | E01 V2 | QA-ONLY KARAOKE (layout v3c)
 ScriptType: v4.00+
 PlayResX: 1080
 PlayResY: 1920
@@ -294,7 +352,7 @@ ScaledBorderAndShadow: yes
 
 [V4+ Styles]
 Format: Name, Fontname, Fontsize, PrimaryColour, SecondaryColour, OutlineColour, BackColour, Bold, Italic, Underline, StrikeOut, ScaleX, ScaleY, Spacing, Angle, BorderStyle, Outline, Shadow, Alignment, MarginL, MarginR, MarginV, Encoding
-Style: Caption,DejaVu Sans,66,&H00F2F1EE,&H005BA7E6,&H0012100E,&H80000000,1,0,0,0,100,100,0,0,1,5,1,2,100,100,380,1
+Style: Caption,{FONT_FAMILY},{FONT_ASS_SIZE},{COLOR_SUNG},{COLOR_UNSUNG},&H00141210,&H96000000,-1,0,0,0,100,100,0.6,0,1,7,3,2,{MARGIN_SIDE},{MARGIN_SIDE},{MARGIN_BOTTOM},1
 Style: QA,DejaVu Sans,34,&H00E6E6E6,&H00E6E6E6,&H0012100E,&H80000000,1,0,0,0,100,100,0,0,1,2,0,8,90,90,118,1
 
 [Events]
@@ -305,22 +363,22 @@ Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text
         +",QA,,0,0,0,,PRÉVIA TÉCNICA - NÃO PUBLICAR"
     ]
     for c in cues:
-        # ASS karaoke is illustrative QA of ASR word timing, not approval of
-        # final caption positions or frame-perfect narrator alignment.
-        parts=[];prev=c["start"]
+        # Karaoke tags are cumulative; every boundary is derived from the
+        # ABSOLUTE rounded word time so centisecond rounding never drifts.
+        # \kf fills the word smoothly across exactly its ASR start..end.
+        base=round(c["start"]*100)
+        parts=[];cursor=0
         line_boundary = len(c["lines"][0].split())
         for idx,w in enumerate(c["words"]):
             if idx:
                 parts.append(r"\N" if len(c["lines"]) == 2 and idx == line_boundary else " ")
-            t=max(0,w["start"]-prev)
-            if t>0.08:
-                parts.append(r"{\k"+str(round(t*100))+"}")
-            duration=max(0.05,w["end"]-w["start"])
-            parts.append(r"{\k"+str(round(duration*100))+"}"+w["text"].replace("{","").replace("}",""))
-            prev=w["end"]
+            ws=max(cursor,round(w["start"]*100)-base)
+            we=max(ws+1,round(w["end"]*100)-base)
+            if ws>cursor:
+                parts.append(r"{\k"+str(ws-cursor)+"}")
+            parts.append(r"{\kf"+str(we-ws)+"}"+w["text"].replace("{","").replace("}",""))
+            cursor=we
         body="".join(parts)
-        # SRT lines are wrap-checked. ASS may render differently due to font,
-        # so final media geometry QA is still mandatory.
         out.append(f"Dialogue: 0,{ass_time(c['start'])},{ass_time(c['end'])},Caption,,0,0,0,,{body}")
     return header+"\n".join(out)+"\n"
 
@@ -362,7 +420,8 @@ def evaluate(root: Path, report_path: Path) -> tuple[list[dict[str, Any]], dict[
         "source_wav_sha256":WAV_SHA,"source_asr_report_sha256":ASR_SHA,
         "duration_seconds":VOICE_DURATION,"language":"pt-BR",
         "cue_count":len(cues),"max_lines":MAX_LINES,
-        "max_line_characters":MAX_LINE,
+        "max_line_width_px":MAX_LINE_PX,
+        "caption_layout":"v3c_atkinson_lilac_margins180_bottom576",
         "min_caption_start":cues[0]["start"],
         "last_caption_end":cues[-1]["end"],
         "alignment":alignment,

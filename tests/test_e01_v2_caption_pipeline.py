@@ -8,7 +8,8 @@ from pathlib import Path
 from agents.content_production import ProductionError
 from agents.e01_v2_caption_pipeline import (
     ASR_SHA, ASR_BYTES, SCRIPT_SHA, WAV_SHA, VOICE_DURATION,
-    MAX_LINE, MAX_LINES, norm, canonical_words, asr_words,
+    MAX_LINE_PX, MAX_LINES, MARGIN_SIDE, MARGIN_BOTTOM, FONT_PATH, FONT_SHA,
+    FONT_ASS_SIZE, COLOR_SUNG, COLOR_UNSUNG, text_width, digest_file, norm, canonical_words, asr_words,
     align_once, combine_alignments, cue_lines, make_cues,
     clock, export_srt, export_vtt, export_ass, evaluate,
 )
@@ -56,17 +57,23 @@ class E01CaptionQATests(unittest.TestCase):
         self.assertTrue(all(w["alignment"]=="EXACT" for w in out))
 
     def test_short_phrase_is_one_line(self):
-        group=[{"text":w} for w in ("Às","vezes,","esperar","machuca.")]
-        self.assertEqual(cue_lines(group),["Às vezes, esperar machuca."])
+        group=[{"text":w} for w in ("Às","vezes,","esperar")]
+        self.assertEqual(cue_lines(group),["Às vezes, esperar"])
 
-    def test_two_line_balancing_never_exceeds_28_chars(self):
+    def test_two_line_balancing_never_exceeds_pixel_limit(self):
         group=[{"text":w} for w in
-               ("Os","primeiros","versos","não","entregam","uma","explicação.")]
+               ("Os","primeiros","versos","não")]
         lines=cue_lines(group)
         self.assertLessEqual(len(lines),2)
-        self.assertTrue(all(len(l)<=MAX_LINE for l in lines))
+        self.assertTrue(all(text_width(l)<=MAX_LINE_PX for l in lines))
         self.assertEqual(" ".join(lines),
-                         "Os primeiros versos não entregam uma explicação.")
+                         "Os primeiros versos não")
+
+    def test_too_many_words_for_two_pixel_lines_is_fail_closed(self):
+        group=[{"text":w} for w in
+               ("Os","primeiros","versos","não","entregam","uma","explicação.")]
+        with self.assertRaisesRegex(ProductionError,"more_than_two_lines"):
+            cue_lines(group)
 
     def test_unbreakable_single_word_is_fail_closed(self):
         with self.assertRaisesRegex(ProductionError,"more_than_two_lines"):
@@ -85,7 +92,9 @@ class E01CaptionQATests(unittest.TestCase):
         cues=make_cues(tokens)
         self.assertGreater(len(cues),20)
         self.assertTrue(all(len(c["lines"])<=2 for c in cues))
-        self.assertTrue(all(all(len(line)<=28 for line in c["lines"]) for c in cues))
+        self.assertTrue(all(all(text_width(line)<=MAX_LINE_PX for line in c["lines"])
+                            for c in cues))
+        self.assertTrue(all(len(c["words"])<=7 for c in cues))
         self.assertEqual(
             " ".join(w["text"] for c in cues for w in c["words"]),
             " ".join(w["text"] for w in tokens))
@@ -112,6 +121,54 @@ class E01CaptionQATests(unittest.TestCase):
                      for i,w in enumerate("Nomear o que está errado e procurar ajuda".split())]}]
         art=export_ass(c)
         self.assertEqual(art.count(r"\N"),1)
+
+    def test_font_asset_is_pinned_and_has_license(self):
+        self.assertEqual(digest_file(FONT_PATH),FONT_SHA)
+        lic=(ROOT/"assets/fonts/OFL-AtkinsonHyperlegibleNext.txt").read_text(encoding="utf-8")
+        self.assertIn("SIL Open Font License",lic)
+
+    def test_layout_keeps_text_inside_hud_safe_columns(self):
+        # rendered bbox ~= text width + 15 px (outline/spacing, measured)
+        self.assertLessEqual(MARGIN_SIDE+MAX_LINE_PX+15,900)
+        self.assertGreaterEqual(MARGIN_SIDE,180)
+        self.assertGreaterEqual(MARGIN_BOTTOM,576)
+        art=export_ass([{"index":1,"start":1,"end":2,"lines":["a"],
+                         "words":[{"text":"a","start":1,"end":2}]}])
+        self.assertIn(f"Atkinson Hyperlegible Next,{FONT_ASS_SIZE},{COLOR_SUNG},{COLOR_UNSUNG}",art)
+        self.assertIn(f",{MARGIN_SIDE},{MARGIN_SIDE},{MARGIN_BOTTOM},1",art)
+
+    def test_karaoke_kf_durations_equal_asr_word_times_without_drift(self):
+        import re as _re
+        words=[]
+        t=10.0
+        for w,d,gap in (("Eu",.17,0),("clamo,",.43,.11),("e",.12,.33),
+                         ("não",.26,.05),("ouves.",.58,.09)):
+            t+=gap;words.append({"text":w,"start":round(t,3),"end":round(t+d,3)});t+=d
+        cue={"index":1,"start":words[0]["start"],"end":words[-1]["end"],
+             "lines":["Eu clamo, e não ouves."],"words":words}
+        line=[l for l in export_ass([cue]).splitlines() if l.startswith("Dialogue: 0")][0]
+        text=line.split(",,0,0,0,,",1)[1]
+        tags=_re.findall(r"\{\\(kf|k)(\d+)\}([^{]*)",text)
+        base=round(cue["start"]*100);cursor=0
+        kf=[(int(n),w.strip()) for typ,n,w in tags if typ=="kf"]
+        pos=0;edges=[]
+        for typ,n,w in tags:
+            pos+=int(n)
+            if typ=="kf":edges.append(pos)
+        self.assertEqual(len(kf),len(words))
+        for (n,w),src,edge in zip(kf,words,edges):
+            self.assertEqual(w,src["text"])
+            self.assertEqual(edge,round(src["end"]*100)-base)  # absolute, zero drift
+        self.assertEqual(edges[-1],round(cue["end"]*100)-base)
+
+    def test_karaoke_never_fills_a_word_before_it_is_spoken(self):
+        import re as _re
+        cues=[{"index":1,"start":5.0,"end":6.0,"lines":["a b"],
+               "words":[{"text":"a","start":5.0,"end":5.2},
+                        {"text":"b","start":5.6,"end":6.0}]}]
+        text=export_ass(cues).splitlines()[-1].split(",,0,0,0,,",1)[1]
+        # 20cs word, 40cs silence (\k), 40cs word -> b starts exactly at 60cs
+        self.assertIn(r"{\kf20}a {\k40}{\kf40}b",text)
 
     def test_absent_real_asr_json_refused(self):
         with tempfile.TemporaryDirectory() as d:
