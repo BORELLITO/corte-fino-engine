@@ -12,9 +12,6 @@ on:
         required: false
         default: "pixabay"
         type: string
-  push:
-    branches: ["verbo-no-chao/producer-p0-v1"]
-    paths: [".github/workflows/verbo-no-chao-produce.yml"]
   schedule:
     - cron: "17 9 * * 1"   # segunda; só roda se queue/next.json existir
 
@@ -36,7 +33,7 @@ jobs:
           INPUT_SPEC: ${{ inputs.spec_path }}
         run: |
           SPEC="$INPUT_SPEC"
-          if [ -z "$SPEC" ]; then SPEC="${GITHUB_EVENT_NAME:+episodes/EXAMPLE.json}"; fi
+          if [ -z "$SPEC" ]; then SPEC="queue/next.json"; fi
           if [ ! -f "$SPEC" ]; then echo "found=false" >> "$GITHUB_OUTPUT"; echo "sem spec: nada a produzir"; exit 0; fi
           echo "found=true" >> "$GITHUB_OUTPUT"
           echo "path=$SPEC" >> "$GITHUB_OUTPUT"
@@ -100,4 +97,3 @@ jobs:
             --notes "Prévia automática. Rascunho privado. NÃO é publicação. Direitos pendentes." \
             chat_preview.mp4 "$OUT"
 
-# retrigger 2
