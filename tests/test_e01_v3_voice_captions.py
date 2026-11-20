@@ -120,5 +120,38 @@ class AcousticOnsetGateTests(unittest.TestCase):
         self.assertTrue(all(w["start"] < w["start_scribe"] for w in snapped))
 
 
+class WhisperCrosscheckGateTests(unittest.TestCase):
+    """Offline: stored Whisper (no reference text) starts vs the current timing contract."""
+    def test_crosscheck_within_tolerance_and_bound_to_audio_hash(self):
+        import statistics
+        x = json.loads(Path("contracts/e01_v3_whisper_crosscheck_v1.json").read_text(encoding="utf-8"))
+        c = json.loads(Path("contracts/e01_v3_voice_johnes_word_timing_v1.json").read_text(encoding="utf-8"))
+        self.assertEqual(x["audio_sha256"], c["provenance"]["audio_probe"]["file_sha256"])
+        ref = {w["index"]: w["start"] for w in c["words"]}
+        d = [w["asr_start"] - ref[w["index"]] for w in x["words"]]
+        self.assertGreaterEqual(len(d), 179)
+        self.assertLessEqual(abs(statistics.median(d) - (-0.10)), 0.05)       # known Whisper bias
+        self.assertLessEqual(sorted(abs(v) for v in d)[int(.95 * len(d)) - 1], 0.30)
+        self.assertLessEqual(max(abs(v) for v in d), 0.80)
+        by = {w["index"]: w["asr_start"] for w in x["words"]}
+        for w in c["words"]:   # snapped words must move TOWARD Whisper, never away
+            if "start_scribe" in w and w["index"] in by:
+                self.assertLess(abs(by[w["index"]] - w["start"]), abs(by[w["index"]] - w["start_scribe"]))
+
+
+class HudGeometryGateTests(unittest.TestCase):
+    """Caption box vs the cross-platform universal safe zone (900x1400 centred in 1080x1920,
+    bottom dead zone >= 320 px). Source: published third-party guides, NOT measured on a device."""
+    def test_caption_box_inside_universal_safe_zone(self):
+        from agents.e01_v2_caption_pipeline import MAX_LINE_PX, MARGIN_BOTTOM, FONT_ASS_SIZE, MAX_LINES
+        half = (MAX_LINE_PX + 15) / 2
+        left, right = 540 - half, 540 + half
+        bottom = 1920 - MARGIN_BOTTOM
+        top = bottom - MAX_LINES * FONT_ASS_SIZE * 1.3
+        self.assertGreaterEqual(left, 90)      # universal 900 px wide zone
+        self.assertLessEqual(right, 990)
+        self.assertGreaterEqual(top, 260)      # universal 1400 px tall zone
+        self.assertLessEqual(bottom, 1920 - 320)
+
 if __name__ == "__main__":
     unittest.main()

@@ -32,3 +32,10 @@ Status: implementadas e testadas no pipeline (`agents/e01_v2_caption_pipeline.py
 - Sem travessão, hífen decorativo ou reticências. Nenhuma linha começa com pontuação.
 - Quebras de linha definidas por plano curado (`contracts/e01_v3_caption_plan_v1.json`), validado contra o roteiro canônico e as regras tipográficas. Largura máxima 715 px.
 - Resíduo conhecido, NÃO RESOLVIDO: "diante de uma / sociedade ferida" (limite geométrico de 2 linhas).
+
+## Verificação permanente (sem áudio no repositório)
+- O repositório é PÚBLICO e a licença da voz não está liberada: o áudio NÃO é commitado.
+- Fonte de verdade do áudio: geração ElevenLabs R1bSiYeFLAjkPhLzTvq4 (conta privada do dono), fixada por sha256 35f43519…b5685.
+- Dados derivados (sem áudio) versionados: silêncios medidos, tempos por palavra e comparação Whisper (`contracts/e01_v3_whisper_crosscheck_v1.json`). Os testes offline os exigem.
+- Reconferência com áudio novo: o job de sync (branch probe) exige o mesmo sha256 antes de comparar.
+- HUD: caixa da legenda validada por teste contra a zona segura universal 900x1400 (fonte: guias de terceiros). NÃO medido em aparelho.
