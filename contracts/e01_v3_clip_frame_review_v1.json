@@ -1,0 +1,323 @@
+{
+ "schema_version": "1",
+ "project": "VERBO NO CHAO",
+ "episode_id": "E01",
+ "kind": "REAL_FRAME_REVIEW_OF_SHORTLIST",
+ "evidence": "GitHub run 44809708946 (branch verbo-no-chao/e01-clip-review-20261120-v1): clips downloaded on the runner, 5 frames each reviewed by the assistant; frames NOT committed",
+ "limits": "5 sampled frames per clip, not full playback; band overlap is a visual estimate; Pexels license generally allows free use but per-clip third-party rights (signs, faces, brands) are not cleared; nothing approved by the owner",
+ "scenes_without_any_candidate": [
+  "S06",
+  "S11"
+ ],
+ "scenes_without_acceptable_candidate": [
+  "S02"
+ ],
+ "strong_candidates": [
+  "S01:19967985",
+  "S05:30635115",
+  "S10:5493833"
+ ],
+ "reviews": [
+  {
+   "scene": "S01",
+   "pexels_id": 19967985,
+   "verdict": "STRONG_CANDIDATE",
+   "reason_pt": "Chuva noturna real em janela, rua com carros e luzes âmbar/verde, vertical nativo, movimento claro; encaixa na direção visual aprovada de S01.",
+   "conditions_pt": "Remover faixa de áudio embutida.",
+   "metrics": {
+    "seconds": 15.59,
+    "w": 1080,
+    "h": 1920,
+    "fps": 60.0,
+    "audio": true,
+    "bytes": 11520723,
+    "motion_mean_abs_diff": 20.5,
+    "band_mean_luma": 77.5,
+    "band_luma_std": 53.8,
+    "covers_need": true,
+    "need_s": 7.06
+   },
+   "frames_sampled": 5,
+   "approved": false,
+   "rights_cleared": false
+  },
+  {
+   "scene": "S01",
+   "pexels_id": 34473102,
+   "verdict": "ALTERNATE_FOR_S07_CONDITIONAL",
+   "reason_pt": "Muito escuro e quase estático (gotas); fraco como abertura, útil como plano de apoio de janela chuvosa em S07.",
+   "conditions_pt": "Uso só se S07 precisar de segundo plano.",
+   "metrics": {
+    "seconds": 11.07,
+    "w": 2160,
+    "h": 3840,
+    "fps": 30.0,
+    "audio": false,
+    "bytes": 25865453,
+    "motion_mean_abs_diff": 5.71,
+    "band_mean_luma": 44.0,
+    "band_luma_std": 18.6,
+    "covers_need": true,
+    "need_s": 7.06
+   },
+   "frames_sampled": 5,
+   "approved": false,
+   "rights_cleared": false
+  },
+  {
+   "scene": "S02",
+   "pexels_id": 16883959,
+   "verdict": "REJECTED_EDITORIAL",
+   "reason_pt": "Relógio pequeno em 16:9 (recorte vertical perde contexto), movimento 0,39 (quase estático), sem mãos nem espera corporal.",
+   "conditions_pt": null,
+   "metrics": {
+    "seconds": 16.04,
+    "w": 3840,
+    "h": 2160,
+    "fps": 25.0,
+    "audio": true,
+    "bytes": 14583571,
+    "motion_mean_abs_diff": 0.39,
+    "band_mean_luma": null,
+    "band_luma_std": null,
+    "covers_need": true,
+    "need_s": 3.72
+   },
+   "frames_sampled": 5,
+   "approved": false,
+   "rights_cleared": false
+  },
+  {
+   "scene": "S02",
+   "pexels_id": 6634798,
+   "verdict": "REJECTED_EDITORIAL",
+   "reason_pt": "Fundo branco claro e clipe horizontal; quebra o tom escuro e quente do mundo visual.",
+   "conditions_pt": null,
+   "metrics": {
+    "seconds": 8.44,
+    "w": 1920,
+    "h": 1080,
+    "fps": 25.0,
+    "audio": false,
+    "bytes": 5405773,
+    "motion_mean_abs_diff": 22.0,
+    "band_mean_luma": null,
+    "band_luma_std": null,
+    "covers_need": true,
+    "need_s": 3.72
+   },
+   "frames_sampled": 5,
+   "approved": false,
+   "rights_cleared": false
+  },
+  {
+   "scene": "S03",
+   "pexels_id": 40417800,
+   "verdict": "CANDIDATE_WITH_CONDITIONS",
+   "reason_pt": "Rua molhada, luz de dia nublado, sem rostos legíveis, pouca ligação com violência/injustiça; só como metáfora de espaço comum.",
+   "conditions_pt": "Revisão de letreiros e direitos de terceiros pendente.",
+   "metrics": {
+    "seconds": 12.98,
+    "w": 2160,
+    "h": 3840,
+    "fps": 60.0,
+    "audio": false,
+    "bytes": 64760630,
+    "motion_mean_abs_diff": 11.95,
+    "band_mean_luma": 101.9,
+    "band_luma_std": 54.5,
+    "covers_need": true,
+    "need_s": 7.38
+   },
+   "frames_sampled": 5,
+   "approved": false,
+   "rights_cleared": false
+  },
+  {
+   "scene": "S04",
+   "pexels_id": 6577554,
+   "verdict": "WEAK_SYMBOLIC",
+   "reason_pt": "Chama de vela com fumaça, luz quente, sem texto; não é pergaminho/pena, só luz simbólica.",
+   "conditions_pt": "Aceitar apenas se o diretor aprovar vela como símbolo; remover áudio.",
+   "metrics": {
+    "seconds": 18.54,
+    "w": 2160,
+    "h": 3744,
+    "fps": 29.97,
+    "audio": true,
+    "bytes": 46477590,
+    "motion_mean_abs_diff": 15.58,
+    "band_mean_luma": 157.6,
+    "band_luma_std": 33.3,
+    "covers_need": true,
+    "need_s": 4.36
+   },
+   "frames_sampled": 5,
+   "approved": false,
+   "rights_cleared": false
+  },
+  {
+   "scene": "S05",
+   "pexels_id": 30635115,
+   "verdict": "STRONG_CANDIDATE",
+   "reason_pt": "Silhueta caminhando em corredor de arcadas dim e quente, vertical nativo, sem rosto; encaixa em 'lei que perdeu a força'.",
+   "conditions_pt": "Checar se a arquitetura é reconhecível como local real.",
+   "metrics": {
+    "seconds": 11.73,
+    "w": 2160,
+    "h": 3840,
+    "fps": 60.0,
+    "audio": false,
+    "bytes": 14649451,
+    "motion_mean_abs_diff": 4.45,
+    "band_mean_luma": 35.3,
+    "band_luma_std": 28.7,
+    "covers_need": true,
+    "need_s": 8.32
+   },
+   "frames_sampled": 5,
+   "approved": false,
+   "rights_cleared": false
+  },
+  {
+   "scene": "S07",
+   "pexels_id": 9902446,
+   "verdict": "CANDIDATE_WITH_CONDITIONS",
+   "reason_pt": "Pessoa de costas diante da janela, sem rosto; mas luz cinza de dia e clipe horizontal 4096x2160.",
+   "conditions_pt": "Recorte central 9:16 (1215 px de largura, acima de 1080) e correção de cor para escurecer.",
+   "metrics": {
+    "seconds": 20.36,
+    "w": 4096,
+    "h": 2160,
+    "fps": 25.0,
+    "audio": false,
+    "bytes": 35169416,
+    "motion_mean_abs_diff": 20.64,
+    "band_mean_luma": null,
+    "band_luma_std": null,
+    "covers_need": true,
+    "need_s": 10.49
+   },
+   "frames_sampled": 5,
+   "approved": false,
+   "rights_cleared": false
+  },
+  {
+   "scene": "S08",
+   "pexels_id": 7350189,
+   "verdict": "CANDIDATE_WITH_CONDITIONS",
+   "reason_pt": "Mãos em oração, sem efeito sobrenatural; porém rosto parcialmente visível, fundo claro rosa e mãos dentro da faixa protegida (estimativa por 5 quadros).",
+   "conditions_pt": "Zoom ~1,5x deslocando as mãos para cima da faixa; decidir sobre rosto visível.",
+   "metrics": {
+    "seconds": 14.64,
+    "w": 2160,
+    "h": 3840,
+    "fps": 25.0,
+    "audio": false,
+    "bytes": 20207560,
+    "motion_mean_abs_diff": 36.09,
+    "band_mean_luma": 166.2,
+    "band_luma_std": 29.9,
+    "covers_need": true,
+    "need_s": 9.02
+   },
+   "frames_sampled": 5,
+   "approved": false,
+   "rights_cleared": false
+  },
+  {
+   "scene": "S09",
+   "pexels_id": 5904567,
+   "verdict": "CANDIDATE_WITH_CONDITIONS",
+   "reason_pt": "Mão escrevendo em caderno, gesto certo, sem texto legível; luz clara de dia e a ação cai na faixa protegida (estimativa por 5 quadros).",
+   "conditions_pt": "Zoom ~1,5x subindo a ação acima da faixa; correção de cor.",
+   "metrics": {
+    "seconds": 10.03,
+    "w": 2160,
+    "h": 3840,
+    "fps": 23.98,
+    "audio": true,
+    "bytes": 18209231,
+    "motion_mean_abs_diff": 22.85,
+    "band_mean_luma": 189.0,
+    "band_luma_std": 45.8,
+    "covers_need": true,
+    "need_s": 4.84
+   },
+   "frames_sampled": 5,
+   "approved": false,
+   "rights_cleared": false
+  },
+  {
+   "scene": "S10",
+   "pexels_id": 5493833,
+   "verdict": "STRONG_CANDIDATE",
+   "reason_pt": "Duas pessoas de mãos dadas, sem rostos, fundo escuro neutro, vertical, 27 s; apoio sem cura prometida. Melhor ajuste do lote.",
+   "conditions_pt": "Dois recortes distintos do mesmo clipe cobrem as duas partes de S10 (8,2 s); remover áudio se houver.",
+   "metrics": {
+    "seconds": 27.12,
+    "w": 2160,
+    "h": 4096,
+    "fps": 25.0,
+    "audio": false,
+    "bytes": 62654655,
+    "motion_mean_abs_diff": 19.77,
+    "band_mean_luma": 67.3,
+    "band_luma_std": 39.7,
+    "covers_need": true,
+    "need_s": 9.16
+   },
+   "frames_sampled": 5,
+   "approved": false,
+   "rights_cleared": false
+  },
+  {
+   "scene": "S12",
+   "pexels_id": 6931515,
+   "verdict": "WEAK_CANDIDATE",
+   "reason_pt": "Mãos abrindo caderno, mas mesa branca, xícara de café e luz muito clara; destoa do mundo escuro.",
+   "conditions_pt": "Só com correção de cor forte; preferir novo clipe.",
+   "metrics": {
+    "seconds": 16.24,
+    "w": 2160,
+    "h": 3840,
+    "fps": 25.0,
+    "audio": false,
+    "bytes": 14291695,
+    "motion_mean_abs_diff": 21.29,
+    "band_mean_luma": 191.3,
+    "band_luma_std": 24.0,
+    "covers_need": true,
+    "need_s": 10.06
+   },
+   "frames_sampled": 5,
+   "approved": false,
+   "rights_cleared": false
+  },
+  {
+   "scene": "S12",
+   "pexels_id": 32421244,
+   "verdict": "REJECTED_EDITORIAL",
+   "reason_pt": "Teclado gamer azul e tons frios; estética tecnológica fora do tom cristão sóbrio.",
+   "conditions_pt": null,
+   "metrics": {
+    "seconds": 19.12,
+    "w": 1080,
+    "h": 1920,
+    "fps": 25.0,
+    "audio": false,
+    "bytes": 4813325,
+    "motion_mean_abs_diff": 6.01,
+    "band_mean_luma": 131.5,
+    "band_luma_std": 77.8,
+    "covers_need": true,
+    "need_s": 10.06
+   },
+   "frames_sampled": 5,
+   "approved": false,
+   "rights_cleared": false
+  }
+ ],
+ "any_clip_approved": false,
+ "publication_authorized": false
+}

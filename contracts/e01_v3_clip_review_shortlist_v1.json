@@ -1,0 +1,23 @@
+{
+ "schema_version": "1",
+ "project": "VERBO NO CHAO",
+ "episode_id": "E01",
+ "kind": "REAL_CLIP_REVIEW_SHORTLIST",
+ "source": "Pexels page metadata found by web search on 2026-11-20 (page text only, nothing downloaded at selection time)",
+ "note": "Frames are reviewed only inside the conversation; nothing is committed. Rights, approval and publication stay false.",
+ "candidates": [
+  {"scene":"S01","id":19967985,"need_s":7.06,"page":"https://www.pexels.com/video/raindrops-on-window-19967985/","meta":"1080x1920, 15 s, night rain through window"},
+  {"scene":"S01","id":34473102,"need_s":7.06,"page":"https://www.pexels.com/video/calm-night-rain-on-city-windowpane-view-34473102/","meta":"2160x3840, 11 s, night rain window city lights"},
+  {"scene":"S02","id":16883959,"need_s":3.72,"page":"https://www.pexels.com/video/alarm-clock-16883959/","meta":"16 s, analog clock on wooden table"},
+  {"scene":"S02","id":6634798,"need_s":3.72,"page":"https://www.pexels.com/video/a-video-of-a-person-flipping-a-hourglass-on-top-of-a-wooden-table-6634798/","meta":"1920x1080, 8 s, hand flips hourglass on wooden table (crop risk)"},
+  {"scene":"S04","id":6577554,"need_s":4.36,"page":"https://www.pexels.com/video/close-up-video-of-a-scented-candle-6577554/","meta":"2363x4096, 19 s, candle (weak symbolic, no parchment found)"},
+  {"scene":"S05","id":30635115,"need_s":8.32,"page":"https://www.pexels.com/video/moody-silhouette-walking-in-dimly-lit-corridor-30635115/","meta":"vertical, silhouette in dim historic corridor"},
+  {"scene":"S07","id":9902446,"need_s":10.49,"page":"https://www.pexels.com/video/back-view-of-a-man-looking-out-the-window-9902446/","meta":"4096x2160, 20 s, back view man at window (crop risk)"},
+  {"scene":"S10","id":5493833,"need_s":9.16,"page":"https://www.pexels.com/video/two-persons-holding-each-other-hands-5493833/","meta":"2160x4096, 27 s, two people holding hands, caregiving"},
+  {"scene":"S12","id":6931515,"need_s":10.06,"page":"https://www.pexels.com/video/male-hands-opening-daily-planner-6931515/","meta":"2160x3840, 16 s, hands opening notebook, coffee cup"},
+  {"scene":"S12","id":32421244,"need_s":10.06,"page":"https://www.pexels.com/video/close-up-of-hand-writing-in-notebook-at-desk-32421244/","meta":"1080x1920, 19 s, hand writing at desk"},
+  {"scene":"S09","id":5904567,"need_s":4.84,"page":"https://www.pexels.com/video/a-person-writing-in-the-notebook-5904567/","meta":"existing candidate, 2160x3840, 10 s"},
+  {"scene":"S08","id":7350189,"need_s":9.02,"page":"https://www.pexels.com/video/close-up-video-of-a-man-praying-7350189/","meta":"existing candidate, 2160x3840, 15 s"},
+  {"scene":"S03","id":40417800,"need_s":7.38,"page":"https://www.pexels.com/video/rainy-day-in-a-quiet-urban-street-4041780/","meta":"existing candidate, 2160x3840, 13 s"}
+ ]
+}
