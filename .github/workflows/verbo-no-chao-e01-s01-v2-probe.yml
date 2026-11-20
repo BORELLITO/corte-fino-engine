@@ -1,9 +1,11 @@
 name: Verbo no Chão — E01 S01 LTX23 ONE-SHOT (spent nonce; no manual replay)
 
 on:
-  # P1 containment: push trigger removed (spent one-shot nonce, provider call).
-  # Remaining dispatch is inert: job requires event_name == push and a fixed commit message.
-  workflow_dispatch:
+  push:
+    branches:
+      - "verbo-no-chao/e01-stock-curation-gate-v1"
+    paths:
+      - "contracts/e01_ltx23_s01_one_shot_trigger_20261118.json"
 
 concurrency:
   group: vnc-e01-s01-one-shot-20261118
