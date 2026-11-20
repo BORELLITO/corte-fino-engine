@@ -1,0 +1,59 @@
+{
+  "schema_version": "1.0.0",
+  "project_id": "VERBO_NO_CHAO_EXCLUSIVO",
+  "episode_id": "VNC-W01-E1",
+  "scene_pair": [
+    "VNC-E01V2-S01",
+    "VNC-E01V2-S02"
+  ],
+  "date": "2026-11-19",
+  "status": "VISUAL_TRANSITION_QA_ONLY",
+  "source_previews": [
+    {
+      "scene_id": "VNC-E01V2-S01",
+      "preview_sha256": "724ae91368af7d843f39195b34f77db50341aa7f92b0e5960a17061e9da3f961",
+      "frames_used": 172,
+      "visual_approved_by_owner": true
+    },
+    {
+      "scene_id": "VNC-E01V2-S02",
+      "preview_sha256": "31d9500f8d5d321d14f6da9b6c65c1a96eb230354c62f03ece51abf955813786",
+      "frames_used": 147,
+      "visual_approved_by_owner": false
+    }
+  ],
+  "output": {
+    "filename": "S01_APPROVED_S02_CANDIDATE_TRANSITION_QA_NOT_MASTER.mp4",
+    "sha256": "31ea65a045bbe067a66837b85c03ccc9fdf20bf93ac6b15603c6f4c7bf66156b",
+    "bytes": 1840317,
+    "codec": "h264",
+    "width": 720,
+    "height": 1280,
+    "fps": 30,
+    "frames": 319,
+    "duration_seconds": 10.633333,
+    "audio": false,
+    "has_qa_watermarks": true,
+    "full_decode_success": true,
+    "ffprobe_verified": true,
+    "sha_verified": true
+  },
+  "concatenation_method": "Source S01 trim 172 frames; S02 trim 147 frames; concat at 30 fps; FFmpeg libx264 QA output, no audio",
+  "independent_visual_comparison_sample_seconds": [
+    5.65,
+    5.95
+  ],
+  "s01_original_untouched": true,
+  "s02_art_review_pending": true,
+  "third_party_rights_cleared": false,
+  "master_allowed": false,
+  "publication_authorized": false,
+  "evidence_library_path": "/VERBO_NO_CHAO/E01_STOCK_QA_20261119/S02_WAITING_CLOCK_REVIEW/",
+  "assets_preserved": [
+    "S01_S02_TRANSICAO_VISUAL_NAO_APROVADA.mp4",
+    "S01_S02_COMPARACAO_DO_CORTE.jpg",
+    "S01_S02_TRANSICAO_RELATORIO.json"
+  ],
+  "aesthetic_observation": "Approved S01 blue-dark rain cut to high-contrast white clock face on black; intentionally symbolic waiting metaphor, but visual jump needs owner aesthetic evaluation before release",
+  "next_action": "Owner reviews short transition and S02 option; no automatic master/publication."
+}
