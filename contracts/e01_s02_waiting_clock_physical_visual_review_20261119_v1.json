@@ -1,0 +1,99 @@
+{
+  "schema_version": "1.0.0",
+  "project_id": "VERBO_NO_CHAO_EXCLUSIVO",
+  "episode_id": "VNC-W01-E1",
+  "scene_id": "VNC-E01V2-S02",
+  "as_of_date": "2026-11-19",
+  "s01_user_visual_approval_preserved": true,
+  "s01_approved_preview_sha256": "724ae91368af7d843f39195b34f77db50341aa7f92b0e5960a17061e9da3f961",
+  "s02_editorial_decision": "PREVIEW_CANDIDATE_HUMAN_AESTHETIC_APPROVAL_PENDING",
+  "s02_original_storyboard_unchanged": true,
+  "narrative_title": "A dor da espera",
+  "proposal": "Use macro footage of ticking dark retro clock as a time-passing symbol after S01 night rain; not a shared room, actor or literal reenactment",
+  "s02_window_seconds": {
+    "start": 5.74,
+    "end": 10.62
+  },
+  "frame_boundary_plan": {
+    "fps": 30,
+    "s01_end_frame_exclusive": 172,
+    "s02_end_frame_exclusive": 319,
+    "s02_frame_count": 147
+  },
+  "source": {
+    "stock_site": "Pexels",
+    "video_id": 7034348,
+    "source_page_url": "https://www.pexels.com/video/clock-is-ticking-7034348/",
+    "source_creator_page_name": "Tima Miroshnichenko",
+    "source_license_page": "https://www.pexels.com/license/",
+    "source_bytes": 6202873,
+    "source_sha256": "6a8f877c0e57a1397f4eb96ffc9a86d25e173019fb298ec0a6945b73973f2a40",
+    "native_width": 1080,
+    "native_height": 1920,
+    "duration_seconds": 20.2,
+    "codec": "h264",
+    "full_stream_decode_pass": true,
+    "commercial_release_individual_cleared": false
+  },
+  "preview": {
+    "name": "S02_WAITING_CLOCK_QA_NOT_MASTER.mp4",
+    "sha256": "31d9500f8d5d321d14f6da9b6c65c1a96eb230354c62f03ece51abf955813786",
+    "bytes": 203410,
+    "width": 720,
+    "height": 1280,
+    "frames": 147,
+    "fps": 30,
+    "duration_seconds": 4.9,
+    "watermark": true,
+    "audio_present": false,
+    "captions_present": false,
+    "independent_local_sha_verified": true,
+    "independent_local_ffprobe_verified": true,
+    "independent_local_full_video_decode_pass": true
+  },
+  "visual_frame_sample": {
+    "name": "S02_CLOCK_REAL_FRAMES_QA.jpg",
+    "sha256": "28a0284ab8106274a60b937921f309572746c66ac44e3e342362b1712ad854b2",
+    "samples_s": [
+      0.5,
+      2.4,
+      4.5
+    ],
+    "luma_mean": [
+      63.74,
+      71.51,
+      77.06
+    ],
+    "frame_mean_difference": [
+      24.84,
+      25.69
+    ],
+    "strengths": [
+      "Real time passing communicated by moving clock hands",
+      "Black surrounding background",
+      "Portrait native source with no source cropping needed"
+    ],
+    "limitations": [
+      "Prominent white clock face is much brighter than approved S01 blue-black rain",
+      "Large clock numerals may compete with narrative subtleties",
+      "No hand on wooden table as in original S02 storyboard",
+      "Frame samples do not establish full-shot human editorial clearance"
+    ],
+    "scene_suitability_approved": false,
+    "owner_review_approved": false,
+    "full_frame_visual_qa_complete": false
+  },
+  "evidence_run": "https://github.com/BORELLITO/verbo-no-chao-engine/actions/runs/44644297546",
+  "saved_in_private_library": "/VERBO_NO_CHAO/E01_STOCK_QA_20261119/S02_WAITING_CLOCK_REVIEW/",
+  "saved_asset_names": [
+    "S02_7034348_PREVIA_NAO_APROVADA.mp4",
+    "S02_7034348_FOTOGRAMAS_QA.jpg",
+    "S02_7034348_RELATORIO_FISICO.json"
+  ],
+  "editorial_approved": false,
+  "rights_cleared": false,
+  "master_allowed": false,
+  "publication_authorized": false,
+  "production_merged": false,
+  "proposed_next_action": "Review S02 full 4.9s candidate aesthetically against approved S01; if too harsh visually, seek darker analog-time motif before montage. Do not overwrite canonical storyboard."
+}

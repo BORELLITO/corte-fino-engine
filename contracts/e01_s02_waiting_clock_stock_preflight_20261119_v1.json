@@ -1,0 +1,86 @@
+{
+  "schema_version": "1.0.0",
+  "project_id": "VERBO_NO_CHAO_EXCLUSIVO",
+  "episode_id": "VNC-W01-E1",
+  "scene_id": "VNC-E01V2-S02",
+  "purpose": "S02_REAL_STOCK_CLOCK_REVIEW_ONLY",
+  "narrative_block": "connection",
+  "title": "A dor da espera",
+  "original_s02_window_seconds": {
+    "start": 5.74,
+    "end": 10.62,
+    "duration": 4.88
+  },
+  "cut_frame_plan_30fps": {
+    "s01_last_exclusive": 172,
+    "s02_last_exclusive": 319,
+    "s02_frames": 147,
+    "s02_preview_duration_seconds": 4.9
+  },
+  "previous_scene": {
+    "scene_id": "VNC-E01V2-S01",
+    "s01_visual_approved": true,
+    "approved_preview_sha256": "724ae91368af7d843f39195b34f77db50341aa7f92b0e5960a17061e9da3f961",
+    "approved_art_direction": "RAINY_NIGHT_BLUE_SHADOWS_S01_ONLY",
+    "source_id": 31069867,
+    "owner_approval_ref": "contracts/e01_s01_owner_visual_approval_20261119_v1.json"
+  },
+  "symbolic_transition_proposal": "Rain on nighttime window -> moving clock hands in dimness to convey waiting, without claiming one person or room",
+  "deviations_from_original": [
+    "S02 clock closeup instead of anonymous same-person hand resting by table",
+    "No claim of shared room or shared actor with S01",
+    "Clock numbers may be prominent; evaluate whether they compete with captions"
+  ],
+  "source": {
+    "video_id": 7034348,
+    "page_url": "https://www.pexels.com/video/clock-is-ticking-7034348/",
+    "creator": "Tima Miroshnichenko",
+    "license_label": "Free",
+    "license_page": "https://www.pexels.com/license/",
+    "page_metadata": {
+      "width": 1080,
+      "height": 1920,
+      "duration_seconds": 20,
+      "fps": 25
+    },
+    "metadata_checked_on": "2026-11-19",
+    "physical_source_acquired": false,
+    "source_sha256": null,
+    "third_party_rights_clearance": false,
+    "visual_qa_completed": false,
+    "scene_specific_release_cleared": false
+  },
+  "alternatives_if_rejected": [
+    {
+      "video_id": 36448548,
+      "page_url": "https://www.pexels.com/video/vintage-alarm-clock-on-wooden-desk-36448548/",
+      "page_metadata": {
+        "width": 3840,
+        "height": 2160,
+        "duration_seconds": 10,
+        "fps": 29.97
+      },
+      "known_risk": "horizontal crop may cut clock and warm ambient may not match rainy-blue S01",
+      "status": "PAGE_METADATA_ONLY_NOT_DOWNLOADED"
+    }
+  ],
+  "output_preview": {
+    "width": 720,
+    "height": 1280,
+    "fps": 30,
+    "frames": 147,
+    "watermark": "PREVIA DE QA - NAO PUBLICAR",
+    "audio": false,
+    "captions": false
+  },
+  "rights_cleared": false,
+  "editorial_approved": false,
+  "owner_approved_for_s02": false,
+  "s01_reference_modified": false,
+  "source_original_persisted": false,
+  "master_allowed": false,
+  "publication_authorized": false,
+  "spending_authorized": false,
+  "video_style": "REAL_TEMPORAL_VIDEO_NOT_STILL_ZOOM",
+  "result_state": "RESEARCH_AWAITING_PHYSICAL_FRAMES"
+}
