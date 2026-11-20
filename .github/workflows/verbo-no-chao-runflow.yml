@@ -41,8 +41,7 @@ jobs:
 
       - name: Testes do motor
         run: |
-          python -m pip install -q pytest
-          python -m pytest -q tests/test_runflow_entry.py tests/test_pipeline.py
+          python -m unittest -q tests.test_runflow_entry tests.test_pipeline
 
       - name: Runflow (entrada única)
         env:
