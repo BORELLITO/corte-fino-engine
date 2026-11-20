@@ -1,8 +1,7 @@
 {"per_scene":12,"queries":{
-"TRISTE_CHUVA":["rain","rain window","rainy night","storm"],
-"TRISTE_NEVOA":["fog","foggy forest","mist mountains","dark clouds"],
-"TRISTE_MAR":["stormy sea","dark ocean waves","lonely road","grey sky"],
-"VIRADA_LUZ":["clouds parting","sun rays clouds","light breaking through","break of dawn"],
-"LIBERTACAO_MONTANHA":["sunrise mountains","golden hour mountains","mountain valley sunrise","aerial mountains"],
-"LIBERTACAO_CAMPO":["open field wind","golden field","meadow sunrise","green hills"],
-"LIBERTACAO_MAR":["sunrise ocean","calm sea sunrise","beach horizon","sunset sea"]}}
+"R_ESCURO":["storm clouds timelapse","rain on leaves","dark forest rain","thunderstorm sky"],
+"R_NEVOA":["fog valley aerial","misty mountains","mist lake","foggy morning landscape"],
+"R_ABERTURA":["sun rays forest","sunbeams clouds","clouds timelapse sunrise","light through trees"],
+"R_LIBERT_MONT":["mountain lake","alps aerial","snow mountains sunrise","aerial mountain valley"],
+"R_LIBERT_CAMPO":["golden field sunset","wheat field wind","green valley aerial","flowers meadow"],
+"R_LIBERT_AGUA":["waterfall","lake reflection","calm lake sunrise","river aerial"]}}
