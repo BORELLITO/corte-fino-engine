@@ -225,7 +225,7 @@ def contact_sheet(src,out,width,height):
             "sample_times_seconds":samples,"cropping_variants":gradients}
 
 
-def render_center(src,dst,width,height):
+def render_right75(src,dst,width,height):
     import math
     from PIL import Image, ImageDraw
     with tempfile.TemporaryDirectory(prefix="vnc-mixkit-overlay-") as td:
@@ -238,7 +238,7 @@ def render_center(src,dst,width,height):
                      fill=(250,250,250,255))
         im.save(overlay)
         cw=2*math.floor(height*9/16/2)
-        filt=(f"[0:v]fps={TARGET_FPS},crop={cw}:{height}:(iw-{cw})/2:0,"
+        filt=(f"[0:v]fps={TARGET_FPS},crop={cw}:{height}:3*(iw-{cw})/4:0,"
               f"scale={W}:{H}:flags=lanczos,setsar=1[scene];"
               "[scene][1:v]overlay=0:0:repeatlast=1:shortest=0:format=auto,"
               "format=yuv420p[v]")
@@ -285,7 +285,7 @@ def run(out:Path):
             report["source"]={**receipt,**meta,"source_full_decode_claimed":False}
             contact=contact_sheet(source,qa_jpg,meta["width"],meta["height"])
             report["cropping"]=contact
-            movie=render_center(source,qa_mp4,meta["width"],meta["height"])
+            movie=render_right75(source,qa_mp4,meta["width"],meta["height"])
             report.update(status="PHYSICAL_MIXKIT_S09_PREVIEW_READY_FOR_EDITORIAL_QA",
                           source={**receipt,**meta,"source_full_decode_claimed":False},
                           cropping=contact,preview=movie,
