@@ -1,6 +1,7 @@
 """Negative QA, two-line captions and release-boundary regression tests."""
 import json
 import math
+import re
 import tempfile
 import unittest
 from pathlib import Path
@@ -15,7 +16,7 @@ needs_pillow = unittest.skipUnless(
 from agents.e01_v2_caption_pipeline import (
     ASR_SHA, ASR_BYTES, SCRIPT_SHA, WAV_SHA, VOICE_DURATION,
     MAX_LINE_PX, MAX_LINES, MARGIN_SIDE, MARGIN_BOTTOM, FONT_PATH, FONT_SHA,
-    FONT_ASS_SIZE, COLOR_SUNG, COLOR_UNSUNG, text_width, digest_file, norm, canonical_words, asr_words,
+    FONT_ASS_SIZE, COLOR_ACTIVE, COLOR_BASE, typography_violations, text_width, digest_file, norm, canonical_words, asr_words,
     align_once, combine_alignments, cue_lines, make_cues,
     clock, export_srt, export_vtt, export_ass, evaluate,
 )
@@ -123,7 +124,7 @@ class E01CaptionQATests(unittest.TestCase):
                      {"text":"machuca.","start":7.1,"end":7.76}]}]
         self.assertIn("00:00:06,060 --> 00:00:07,760",export_srt(c))
         self.assertIn("WEBVTT",export_vtt(c))
-        self.assertIn(r"{\k",export_ass(c))
+        self.assertIn(r"{\1c&H00F2B0C4&}",export_ass(c))
 
     def test_karaoke_breaks_follow_exact_srt_lines(self):
         c=[{"index":1,"start":5.0,"end":6.4,
@@ -131,7 +132,8 @@ class E01CaptionQATests(unittest.TestCase):
             "words":[{"text":w,"start":5+.1*i,"end":5+.1*(i+1)}
                      for i,w in enumerate("Nomear o que está errado e procurar ajuda".split())]}]
         art=export_ass(c)
-        self.assertEqual(art.count(r"\N"),1)
+        events=[l for l in art.splitlines() if l.startswith("Dialogue: 0")]
+        self.assertTrue(events and all(l.count(r"\N")==1 for l in events))
 
     @needs_pillow
     def test_font_asset_is_pinned_and_has_license(self):
@@ -147,41 +149,37 @@ class E01CaptionQATests(unittest.TestCase):
         self.assertGreaterEqual(MARGIN_BOTTOM,576)
         art=export_ass([{"index":1,"start":1,"end":2,"lines":["a"],
                          "words":[{"text":"a","start":1,"end":2}]}])
-        self.assertIn(f"Atkinson Hyperlegible Next,{FONT_ASS_SIZE},{COLOR_SUNG},{COLOR_UNSUNG}",art)
+        self.assertIn(f"Atkinson Hyperlegible Next,{FONT_ASS_SIZE},{COLOR_BASE},{COLOR_BASE}",art)
         self.assertIn(f",{MARGIN_SIDE},{MARGIN_SIDE},{MARGIN_BOTTOM},1",art)
 
-    def test_karaoke_kf_durations_equal_asr_word_times_without_drift(self):
-        import re as _re
-        words=[]
-        t=10.0
-        for w,d,gap in (("Eu",.17,0),("clamo,",.43,.11),("e",.12,.33),
-                         ("não",.26,.05),("ouves.",.58,.09)):
-            t+=gap;words.append({"text":w,"start":round(t,3),"end":round(t+d,3)});t+=d
-        cue={"index":1,"start":words[0]["start"],"end":words[-1]["end"],
-             "lines":["Eu clamo, e não ouves."],"words":words}
-        line=[l for l in export_ass([cue]).splitlines() if l.startswith("Dialogue: 0")][0]
-        text=line.split(",,0,0,0,,",1)[1]
-        tags=_re.findall(r"\{\\(kf|k)(\d+)\}([^{]*)",text)
-        base=round(cue["start"]*100);cursor=0
-        kf=[(int(n),w.strip()) for typ,n,w in tags if typ=="kf"]
-        pos=0;edges=[]
-        for typ,n,w in tags:
-            pos+=int(n)
-            if typ=="kf":edges.append(pos)
-        self.assertEqual(len(kf),len(words))
-        for (n,w),src,edge in zip(kf,words,edges):
-            self.assertEqual(w,src["text"])
-            self.assertEqual(edge,round(src["end"]*100)-base)  # absolute, zero drift
-        self.assertEqual(edges[-1],round(cue["end"]*100)-base)
+    def test_only_the_spoken_word_is_highlighted_and_resets_after(self):
+        words=[{"text":"Eu","start":10.0,"end":10.2},
+               {"text":"clamo,","start":10.3,"end":10.8},
+               {"text":"e","start":11.6,"end":11.7},
+               {"text":"não","start":11.75,"end":12.0}]
+        cue={"index":1,"start":9.9,"end":12.3,"lines":["Eu clamo, e não"],"words":words}
+        ev=[]
+        for l in export_ass([cue]).splitlines():
+            if l.startswith("Dialogue: 0"):
+                f=l.split(",",9);ev.append((f[1],f[2],f[9]))
+        def active(text):
+            return re.findall(r"\{\\1c"+re.escape(COLOR_ACTIVE)+r"&\}([^{]*)",text)
+        # every event shows the whole caption; at most ONE word is lilac
+        for _,_,t in ev:
+            self.assertLessEqual(len(active(t)),1)
+            self.assertEqual(re.sub(r"\{[^}]*\}","",t).replace("\\N"," "),"Eu clamo, e não")
+        seq=[active(t)[0] if active(t) else None for _,_,t in ev]
+        # Eu -> clamo, (bridged gap 0.1) -> nothing (long gap) -> e -> não -> nothing
+        self.assertEqual(seq,[None,"Eu","clamo,",None,"e","não",None])
+        # a spoken word never stays lilac after its turn
+        self.assertEqual(seq.count("Eu"),1)
 
-    def test_karaoke_never_fills_a_word_before_it_is_spoken(self):
-        import re as _re
-        cues=[{"index":1,"start":5.0,"end":6.0,"lines":["a b"],
-               "words":[{"text":"a","start":5.0,"end":5.2},
-                        {"text":"b","start":5.6,"end":6.0}]}]
-        text=export_ass(cues).splitlines()[-1].split(",,0,0,0,,",1)[1]
-        # 20cs word, 40cs silence (\k), 40cs word -> b starts exactly at 60cs
-        self.assertIn(r"{\kf20}a {\k40}{\kf40}b",text)
+    def test_events_are_contiguous_without_overlap(self):
+        words=[{"text":"a","start":1.0,"end":1.2},{"text":"b","start":1.25,"end":1.5}]
+        cue={"index":1,"start":0.9,"end":1.9,"lines":["a b"],"words":words}
+        ev=[l.split(",",9) for l in export_ass([cue]).splitlines() if l.startswith("Dialogue: 0")]
+        for x,y in zip(ev,ev[1:]):
+            self.assertLessEqual(x[2],y[1])
 
     def test_absent_real_asr_json_refused(self):
         with tempfile.TemporaryDirectory() as d:

@@ -12,9 +12,9 @@ needs_pillow = unittest.skipUnless(
 from agents.e01_v2_caption_from_real_timing import build
 
 EXPECTED = {
-    "e01-v2-captions-v3.srt": "65d72e3fe4a0b58e92b33e344dafe2c5686f467c82e94e883816df4e2e35e10c",
-    "e01-v2-captions-v3.vtt": "9e8aaa699564572b9be999157d19268c4204d8105616d46844c7b360fee496be",
-    "e01-v2-karaoke-v3-qa.ass": "21a362e0854af64d727757f083cbff0bce8479f09078baf5525efac261f27d40",
+    "e01-v2-captions-v3.srt": "bfee8ca546e9a536c1ddc2592d3e6c241fb254c8116c83215456561c83ea8a99",
+    "e01-v2-captions-v3.vtt": "40be595a620ce70635e046a449ec9065ca5c7a4c1fbea6980998d8e19a2bc986",
+    "e01-v2-karaoke-v3-qa.ass": "609127a8ac74eca1c9e1fcc407509c084f11fea8f9db312934301d27294277b3"
 }
 
 
@@ -26,7 +26,8 @@ class RealTimingCaptionBuildTests(unittest.TestCase):
             self.assertEqual(digests, EXPECTED)
             ass = (Path(d) / "e01-v2-karaoke-v3-qa.ass").read_text(encoding="utf-8")
             self.assertIn("PRÉVIA TÉCNICA - NÃO PUBLICAR", ass)
-            self.assertEqual(ass.count("{\\kf"), 182)
+            self.assertNotIn("\\kf", ass)  # no accumulated fill: one lilac word at a time
+            self.assertGreaterEqual(ass.count("{\\1c&H00F2B0C4&}"), 182)
 
 
 if __name__ == "__main__":

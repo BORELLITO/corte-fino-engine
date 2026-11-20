@@ -51,9 +51,20 @@ class VoiceCandidateTests(unittest.TestCase):
             ass = (Path(t) / "e01-v3-johnes-karaoke-qa.ass").read_text(encoding="utf-8")
             srt = (Path(t) / "e01-v3-johnes-captions.srt").read_text(encoding="utf-8")
         self.assertIn("Atkinson Hyperlegible Next", ass)
-        n_kf = len(re.findall(r"\{\\kf\d+\}", ass))
-        self.assertEqual(n_kf, 182)
+        # exactly one lilac word per highlight event, never accumulated fill
+        self.assertNotIn(r"\kf", ass)
+        evs=[l for l in ass.splitlines() if l.startswith("Dialogue: 0")]
+        self.assertTrue(all(l.count(r"{\1c&H00F2B0C4&}") <= 1 for l in evs))
+        self.assertEqual(sum(l.count(r"{\1c&H00F2B0C4&}") for l in evs) >= 182, True)
         self.assertIn("00:01:16", srt)  # last caption near 76.7 s
+
+    @unittest.skipUnless(_PIL is not None, "Pillow is installed in the dedicated caption workflow")
+    def test_typography_rules_flag_known_residual_cues_only(self):
+        from agents.e01_v2_caption_pipeline import make_cues
+        words, duration = load()
+        flagged=[c["index"] for c in make_cues(words, duration) if c.get("rule_violations")]
+        # known residual cases are listed in docs/REGRAS_LEGENDA_VNC_V1.md
+        self.assertLessEqual(len(flagged), 4)
 
 
 if __name__ == "__main__":
