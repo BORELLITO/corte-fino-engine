@@ -22,6 +22,8 @@ EPISODE_RE = re.compile(r"^E[0-9]{2}$")
 MODES = ("preflight", "preview")
 ALLOWED_REPORT_SUFFIXES = {".json", ".md"}
 PAID_HOSTS = ("api.elevenlabs.io", "api.openai.com", "api.anthropic.com")
+# Único segredo extra permitido: link temporário de LEITURA da voz já gerada, só no workflow do master.
+ALLOWED_SECRETS = {"verbo-no-chao-e01-master-run.yml": {"VNC_E01_AUDIO_URL"}}
 
 
 def audit_workflows(root: Path) -> list[dict[str, str]]:
@@ -32,7 +34,7 @@ def audit_workflows(root: Path) -> list[dict[str, str]]:
         name = path.name
         if re.search(r"^\s*schedule\s*:", text, re.M) or "cron:" in text:
             findings.append({"file": name, "severity": "BLOCK", "rule": "schedule_trigger"})
-        extra = sorted(set(re.findall(r"secrets\.([A-Za-z0-9_]+)", text)) - {"GITHUB_TOKEN"})
+        extra = sorted(set(re.findall(r"secrets\.([A-Za-z0-9_]+)", text)) - {"GITHUB_TOKEN"} - ALLOWED_SECRETS.get(name, set()))
         if extra:
             findings.append({"file": name, "severity": "BLOCK", "rule": "non_github_secret:" + ",".join(extra)})
         for host in PAID_HOSTS:
