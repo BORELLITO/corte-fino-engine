@@ -176,7 +176,7 @@ class MeasuredCaptionBandTests(unittest.TestCase):
     def test_old_visual_zone_does_not_cover_the_captions(self):
         # documented inconsistency: 'lower 420 px' starts at y=1500, below the captions (y<=1327)
         self.assertLess(self.b["measured_px"]["y_max"], 1920 - 420)
-        self.assertIs(self.b["approved_by_user"], False)
+        self.assertIs(self.b["approved_by_user"], True)  # owner approved the band 2026-11-20
 
 
 if __name__ == "__main__":
