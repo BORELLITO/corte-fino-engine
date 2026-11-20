@@ -21,4 +21,5 @@ Cor lilás `#C4B0F2` é provisória; a cor final de identidade é decisão do us
 
 ## Mudanças que afetam decisões anteriores
 - As 28 legendas originais viram ~44 com a fonte maior (evidência antiga em `contracts/e01_v2_caption_qa_real_evidence_v1.json` mantida intacta, é histórica).
-- Legenda ocupa até ~y 1080–1344; o gate visual (`safe_zone_bottom_px=380`, "420px") NÃO foi alterado: decisão pendente do usuário.
+- A legenda de 2 linhas ocupa a faixa acima de 576 px da borda inferior (altura exata das 2 linhas NÃO medida neste doc); o gate visual (`safe_zone_bottom_px=380`, "420px") NÃO foi alterado: decisão pendente do usuário.
+- Testes que medem pixels (precisam de Pillow) rodam localmente (OK) mas ficam pulados no CI principal; o workflow dedicado de legendas (que agora instala Pillow) NÃO foi executado nesta branch.
