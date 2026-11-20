@@ -77,10 +77,11 @@ class S02RealCaptionSafezoneTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as td:
             folder=Path(td)
             with patch.object(c,"command",side_effect=AssertionError("ffmpeg should not be attempted")):
-                code,result=c.render(folder/"missing_s01.mp4",
+                code=c.render(folder/"missing_s01.mp4",
                                      folder/"missing_s02.mp4",
                                      folder/"missing_ass.ass",
                                      folder/"out")
+            result=json.loads((folder/"out"/"S02_REAL_KARAOKE_QA_RESULT.json").read_text(encoding="utf8"))
             self.assertEqual(code,2)
             self.assertEqual(result["status"],"BLOCKED_KARAOKE_QA_NOT_REPRODUCED")
             self.assertFalse(result["master_allowed"])
@@ -94,8 +95,9 @@ class S02RealCaptionSafezoneTests(unittest.TestCase):
             for f in files:
                 f.write_bytes(b"fake")
             with patch.object(c,"command",side_effect=AssertionError("decoder must not run")):
-                code,result=c.render(*files,root/"out")
+                code=c.render(*files,root/"out")
             self.assertEqual(code,2)
+            result=json.loads((root/"out"/"S02_REAL_KARAOKE_QA_RESULT.json").read_text(encoding="utf8"))
             self.assertEqual(result["status"],"BLOCKED_KARAOKE_QA_NOT_REPRODUCED")
 
     def test_physical_evidence_is_explicitly_not_editorial_approval(self):
