@@ -1,0 +1,22 @@
+name: Verbo no Chão — E01 free AI image-to-video probe (read-only)
+on:
+  push:
+    branches: ["verbo-no-chao/e01-ai-i2v-probe-20261120-v1"]
+    paths:
+      - ".github/workflows/verbo-no-chao-e01-ai-i2v-probe.yml"
+      - "agents/e01_ai_i2v_probe.py"
+      - "contracts/e01_ai_i2v_probe_inputs.json"
+permissions:
+  contents: read
+jobs:
+  probe:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: python -m pip install --disable-pip-version-check gradio_client
+      - name: Probe (no generation, no spend, no publish)
+        run: python -m agents.e01_ai_i2v_probe contracts/e01_ai_i2v_probe_inputs.json

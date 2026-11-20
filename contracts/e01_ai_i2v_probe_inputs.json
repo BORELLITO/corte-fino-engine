@@ -1,0 +1,19 @@
+{
+ "note": "TEMPORARY signed links (expire 2026-11-20 23:00 UTC); probe branch only, delete after use. Images are the owner-approved/under-review AI reference frames.",
+ "images": {
+  "S01": "https://elevenlabsusercontent.com/database/workspace/5a541ff7094f40e3b222d0cbb57e081d/content_generation/J5zoKq1ZayzhoLlSQLrp/n3upkykwh3sBWLJq0To1/content.png?Expires=1795215600&KeyName=assets-cdn-key-1&Signature=LbnFHZFhlSn49VPRhZCNfg-mwpQ=",
+  "S02": "https://elevenlabsusercontent.com/database/workspace/5a541ff7094f40e3b222d0cbb57e081d/content_generation/fLAy3lVBjbbbDgxr7t8g/L9TvANlEey4uqtLUnZpz/content.png?Expires=1795215600&KeyName=assets-cdn-key-1&Signature=hfxFgyTHlwIL2pJU9VKynAIBUf0=",
+  "S06": "https://elevenlabsusercontent.com/database/workspace/5a541ff7094f40e3b222d0cbb57e081d/content_generation/To9wyK6gLJ5UlL7gpJ1q/B2tmJLvge0MmpDahh9N2/content.png?Expires=1795215600&KeyName=assets-cdn-key-1&Signature=FNgHn9SIFclKSq-zg8nQweNxp_E=",
+  "S07": "https://elevenlabsusercontent.com/database/workspace/5a541ff7094f40e3b222d0cbb57e081d/content_generation/hlaOUFDVxSHOPs0Y2dGp/5SzAhRLv6g5zgWBePBdb/content.png?Expires=1795215600&KeyName=assets-cdn-key-1&Signature=ZzXYYeTpu4NDHTxJVRf1wiiATqw=",
+  "S08": "https://elevenlabsusercontent.com/database/workspace/5a541ff7094f40e3b222d0cbb57e081d/content_generation/QAvYVdW49iPNts6Y6scl/eDjHOQ4jRTwU4VIQ7faT/content.png?Expires=1795215600&KeyName=assets-cdn-key-1&Signature=vnnX5zc238Vj86ojNcG17X1pbpc=",
+  "S09": "https://elevenlabsusercontent.com/database/workspace/5a541ff7094f40e3b222d0cbb57e081d/content_generation/t5M0S1pJ7j5TSqO0bxEQ/uskguSlVZrDL7jXwtGuG/content.png?Expires=1795215600&KeyName=assets-cdn-key-1&Signature=uxq49yBxk1C9B1Zc8_ID4l07wu4=",
+  "S11": "https://elevenlabsusercontent.com/database/workspace/5a541ff7094f40e3b222d0cbb57e081d/content_generation/xn7uQlopAmgflPynBmri/nmhlfZe7bYWaWbAAHOtP/content.png?Expires=1795215600&KeyName=assets-cdn-key-1&Signature=-ecwzo8bfpsb4xc1w9jPOaV9d38="
+ },
+ "spaces": [
+  "Lightricks/LTX-2-3",
+  "multimodalart/wan-2-2-first-last-frame",
+  "mcp-tools/wan-2-2-first-last-frame",
+  "Smikke/wan2-video-generation",
+  "dream2589632147/Dream-wan2-2-faster-Pro"
+ ]
+}
