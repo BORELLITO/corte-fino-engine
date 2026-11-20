@@ -1,4 +1,5 @@
 # Producer runtime (CI only). Versions to be pinned after the first successful run.
 soundfile>=0.12,<1
 kokoro>=0.9,<1
+av>=14,<20   # faster-whisper 1.2.1 needs av.open(metadata_errors=...), absent in old av
 faster-whisper==1.2.1
