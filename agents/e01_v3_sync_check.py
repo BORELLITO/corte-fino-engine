@@ -36,9 +36,13 @@ def main():
     wav = Path("/tmp/johnes.mp3")
     wav.write_bytes(urllib.request.urlopen(urllib.request.Request(
         url, headers={"User-Agent": "vnc-sync"}), timeout=120).read())
+    import imageio_ffmpeg, numpy as np
+    raw = subprocess.run([imageio_ffmpeg.get_ffmpeg_exe(), "-v", "error", "-i", str(wav), "-f", "f32le",
+                          "-ac", "1", "-ar", "16000", "-"], capture_output=True, check=True).stdout
+    samples = np.frombuffer(raw, dtype=np.float32)
     from faster_whisper import WhisperModel
     model = WhisperModel("small", device="cpu", compute_type="int8")
-    segs, _ = model.transcribe(str(wav), language="pt", beam_size=5, temperature=0.0,
+    segs, _ = model.transcribe(samples, language="pt", beam_size=5, temperature=0.0,
                                word_timestamps=True, condition_on_previous_text=False)
     asr = [(norm(w.word), w.start, w.end) for s in segs for w in s.words if norm(w.word)]
     ref = json.loads(TIMING.read_text(encoding="utf-8"))["words"]
