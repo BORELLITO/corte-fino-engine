@@ -2,7 +2,7 @@
 
 ## Fonte canônica
 
-A branch de operação do canal é verbo-no-chao/bootstrap. Esta documentação, os contratos em contracts/, o validador em engine/ e os testes em tests/ formam a fonte de verdade versionada.
+A branch operacional atual verificada em 20/11/2026 é `verbo-no-chao/e01-stock-curation-gate-v1` (HEAD baseline `db6e1d4acf23e82793f6230535a1716842ba5cd0`). A antiga `verbo-no-chao/bootstrap` é um marco histórico, NÃO a branch operacional vigente. O repositório atual é `BORELLITO/verbo-no-chao-engine`, público, anteriormente acessado pelo nome `corte-fino-engine`. Esta documentação, os contratos em `contracts/`, o validador em `engine/` e os testes em `tests/` são fontes versionadas; decisões humanas posteriores em PRs ainda não integradas devem ser consultadas, mas não tratadas como código já em produção.
 
 O branch main permanece histórico e congelado. O Because Of This Stories é somente referência externa e não pode ser modificado nem importar conteúdo para este motor.
 

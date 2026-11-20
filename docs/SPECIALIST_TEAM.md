@@ -6,7 +6,7 @@
 
 A arquitetura aprovada tem oito especialistas. Esta versão executa **oito auditorias independentes, reais e de leitura**, cada uma em um job isolado do GitHub Actions. O coordenador exige os oito relatórios distintos e integra seus bloqueios e provas. Não são oito modelos de linguagem permanentes; criatividade autônoma, prospecção de tendências e geração multimídia ainda dependem de executores e fontes autorizados.
 
-Branch canônica do projeto: `verbo-no-chao/bootstrap`. Branch histórica `main` não é modificada. Não importar mídia, código operacional, vozes, prompts ou identidade do Corte Fino ou do Because Of This.
+Branch operacional verificada em 20/11/2026: `verbo-no-chao/e01-stock-curation-gate-v1` (baseline `db6e1d4a`). `verbo-no-chao/bootstrap` foi o bootstrap histórico e a `main` contém histórico legado de outro motor; nenhum dos dois deve ser tratado como saída de produção VNC nesta auditoria. Não importar mídia, código operacional, vozes, prompts ou identidade do Corte Fino ou do Because Of This.
 
 ## Blocos e responsabilidades
 
@@ -33,10 +33,10 @@ Branch canônica do projeto: `verbo-no-chao/bootstrap`. Branch histórica `main`
 
 - GitHub Actions: `permissions: contents: read`.
 - Sem segredos, API paga, publicações, postagem automática, mudança de contas ou acesso a dados pessoais.
-- Oito relatórios não equivalem a oito modelos de IA com sessões persistentes; não declarar geração automática de roteiro/arte/vídeo que não ocorreu.
+- Estes oito papéis atuais abrangem estratégia, crescimento, ideias, roteiro, capas, shorts, métricas e monetização. Não constituem oito auditores independentes específicos de Bíblia, direção cinematográfica, FFmpeg, direitos ou mix; essas dimensões exigem gates próprios e provas por cena. Oito relatórios não equivalem a oito modelos de IA com sessões persistentes; não declarar geração automática de roteiro/arte/vídeo que não ocorreu.
 - Equipe jamais autoriza publicação nem promove Salmo 13 por conta própria.
 - `PASS_CHECKED_SCOPE` significa apenas que a verificação limitada daquele especialista passou, **não** uma aprovação completa do vídeo.
-- O projeto permanece cloud-only, com POCO como controle apenas.
+- O projeto permanece cloud-only, com POCO como controle apenas. O workflow de especialistas executa novamente em cada push para `verbo-no-chao/**` e não deve ser confundido com uma operação multimídia concluída.
 - `schedule` automático não foi habilitado porque o GitHub executa cron somente a partir da branch padrão, que neste projeto é a `main` histórica/congelada. Habilitar recorrência requer uma decisão de arquitetura separada.
 
 ## Documentos de evidência futuros

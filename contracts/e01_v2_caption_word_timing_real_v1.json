@@ -1,0 +1,1854 @@
+{
+  "schema_version": "1.0.0",
+  "project": "verbo-no-chao",
+  "episode_id": "VNC-W01-E1",
+  "candidate_version": 2,
+  "stage": "REAL_WORD_TIMING_PROVISIONAL_NOT_MASTER",
+  "provenance": {
+    "source_repository": "BORELLITO/verbo-no-chao-engine",
+    "source_workflow_run_id": 44208934506,
+    "source_artifact_id": 14385236602,
+    "source_artifact_name": "vnc-e01-v2-captions-timecoded-qa-only",
+    "source_artifact_zip_sha256": "2ea85dba50b4b91d71e4ff53a99b80cf0170ba042080322d435379686d0f8e64",
+    "source_file": "e01-v2-caption-timeline.json",
+    "source_file_bytes": 48154,
+    "source_file_sha256": "cac98a9c82dfbcdc0d77c204733d31f3568bc1b5991bcbe2d5b5fc0c9aa5d53e",
+    "evidence_contract": "contracts/e01_v2_caption_qa_real_evidence_v1.json",
+    "script_sha256": "c64b57cb9d6529b60b9e80ab7607e5887f909dd00e14cd80ed9ec2b7474a5dc6",
+    "wav_sha256": "4f2ee1ff0171ddedb7c64e0dce2300c53a0ef105ef12d643a7af6b0a4621942e",
+    "asr_report_sha256": "377063ff846ddef641b9288656ea867ede965a73991abe6b4c203dec3a919a8b",
+    "asr_report_bytes": 72475,
+    "copied_verbatim_no_interpolation": true,
+    "source_cue_count": 28,
+    "source_layout_note": "Source artifact cues (28) were grouped by the pre-v3 layout (28 chars/line, 8 words/cue). Only word timings are authoritative here; re-cue with the current make_cues."
+  },
+  "speech_duration_seconds": 70.425,
+  "word_count": 182,
+  "words": [
+    {
+      "index": 0,
+      "text": "Você",
+      "start": 0.0,
+      "end": 0.34,
+      "alignment": "SMALL_EXACT",
+      "key": "voce",
+      "block": "opening",
+      "asr_confidence": 0.83978
+    },
+    {
+      "index": 1,
+      "text": "já",
+      "start": 0.34,
+      "end": 0.54,
+      "alignment": "SMALL_EXACT",
+      "key": "ja",
+      "block": "opening",
+      "asr_confidence": 0.99728
+    },
+    {
+      "index": 2,
+      "text": "repetiu",
+      "start": 0.54,
+      "end": 1.06,
+      "alignment": "SMALL_EXACT",
+      "key": "repetiu",
+      "block": "opening",
+      "asr_confidence": 0.99827
+    },
+    {
+      "index": 3,
+      "text": "a",
+      "start": 1.06,
+      "end": 1.2,
+      "alignment": "SMALL_EXACT",
+      "key": "a",
+      "block": "opening",
+      "asr_confidence": 0.98494
+    },
+    {
+      "index": 4,
+      "text": "mesma",
+      "start": 1.2,
+      "end": 1.44,
+      "alignment": "SMALL_EXACT",
+      "key": "mesma",
+      "block": "opening",
+      "asr_confidence": 0.99735
+    },
+    {
+      "index": 5,
+      "text": "pergunta",
+      "start": 1.44,
+      "end": 1.88,
+      "alignment": "SMALL_EXACT",
+      "key": "pergunta",
+      "block": "opening",
+      "asr_confidence": 0.99755
+    },
+    {
+      "index": 6,
+      "text": "tantas",
+      "start": 1.88,
+      "end": 2.32,
+      "alignment": "SMALL_EXACT",
+      "key": "tantas",
+      "block": "opening",
+      "asr_confidence": 0.99083
+    },
+    {
+      "index": 7,
+      "text": "vezes",
+      "start": 2.32,
+      "end": 2.72,
+      "alignment": "SMALL_EXACT",
+      "key": "vezes",
+      "block": "opening",
+      "asr_confidence": 0.99885
+    },
+    {
+      "index": 8,
+      "text": "que",
+      "start": 2.72,
+      "end": 3.1,
+      "alignment": "SMALL_EXACT",
+      "key": "que",
+      "block": "opening",
+      "asr_confidence": 0.67703
+    },
+    {
+      "index": 9,
+      "text": "começou",
+      "start": 3.1,
+      "end": 3.52,
+      "alignment": "SMALL_EXACT",
+      "key": "comecou",
+      "block": "opening",
+      "asr_confidence": 0.98791
+    },
+    {
+      "index": 10,
+      "text": "a",
+      "start": 3.52,
+      "end": 3.66,
+      "alignment": "SMALL_EXACT",
+      "key": "a",
+      "block": "opening",
+      "asr_confidence": 0.9968
+    },
+    {
+      "index": 11,
+      "text": "acreditar",
+      "start": 3.66,
+      "end": 4.14,
+      "alignment": "SMALL_EXACT",
+      "key": "acreditar",
+      "block": "opening",
+      "asr_confidence": 0.99693
+    },
+    {
+      "index": 12,
+      "text": "que",
+      "start": 4.14,
+      "end": 4.36,
+      "alignment": "SMALL_EXACT",
+      "key": "que",
+      "block": "opening",
+      "asr_confidence": 0.99176
+    },
+    {
+      "index": 13,
+      "text": "ninguém",
+      "start": 4.36,
+      "end": 4.66,
+      "alignment": "SMALL_EXACT",
+      "key": "ninguem",
+      "block": "opening",
+      "asr_confidence": 0.98508
+    },
+    {
+      "index": 14,
+      "text": "estava",
+      "start": 4.66,
+      "end": 5.04,
+      "alignment": "SMALL_EXACT",
+      "key": "estava",
+      "block": "opening",
+      "asr_confidence": 0.99273
+    },
+    {
+      "index": 15,
+      "text": "ouvindo?",
+      "start": 5.04,
+      "end": 5.54,
+      "alignment": "SMALL_EXACT",
+      "key": "ouvindo",
+      "block": "opening",
+      "asr_confidence": 0.99806
+    },
+    {
+      "index": 16,
+      "text": "Às",
+      "start": 6.06,
+      "end": 6.3,
+      "alignment": "SMALL_EXACT",
+      "key": "as",
+      "block": "connection",
+      "asr_confidence": 0.63077
+    },
+    {
+      "index": 17,
+      "text": "vezes,",
+      "start": 6.3,
+      "end": 6.62,
+      "alignment": "SMALL_EXACT",
+      "key": "vezes",
+      "block": "connection",
+      "asr_confidence": 0.99915
+    },
+    {
+      "index": 18,
+      "text": "esperar",
+      "start": 6.74,
+      "end": 7.1,
+      "alignment": "SMALL_EXACT",
+      "key": "esperar",
+      "block": "connection",
+      "asr_confidence": 0.99223
+    },
+    {
+      "index": 19,
+      "text": "machuca.",
+      "start": 7.1,
+      "end": 7.76,
+      "alignment": "SMALL_EXACT",
+      "key": "machuca",
+      "block": "connection",
+      "asr_confidence": 0.97853
+    },
+    {
+      "index": 20,
+      "text": "Dói",
+      "start": 8.2,
+      "end": 8.46,
+      "alignment": "SMALL_EXACT",
+      "key": "doi",
+      "block": "connection",
+      "asr_confidence": 0.79666
+    },
+    {
+      "index": 21,
+      "text": "ainda",
+      "start": 8.46,
+      "end": 8.62,
+      "alignment": "SMALL_EXACT",
+      "key": "ainda",
+      "block": "connection",
+      "asr_confidence": 0.99293
+    },
+    {
+      "index": 22,
+      "text": "mais",
+      "start": 8.62,
+      "end": 9.0,
+      "alignment": "SMALL_EXACT",
+      "key": "mais",
+      "block": "connection",
+      "asr_confidence": 0.99928
+    },
+    {
+      "index": 23,
+      "text": "ver",
+      "start": 9.0,
+      "end": 9.18,
+      "alignment": "SMALL_EXACT",
+      "key": "ver",
+      "block": "connection",
+      "asr_confidence": 0.92811
+    },
+    {
+      "index": 24,
+      "text": "injustiças",
+      "start": 9.18,
+      "end": 9.76,
+      "alignment": "SMALL_EXACT",
+      "key": "injusticas",
+      "block": "connection",
+      "asr_confidence": 0.99016
+    },
+    {
+      "index": 25,
+      "text": "repetidas",
+      "start": 9.76,
+      "end": 10.46,
+      "alignment": "SMALL_EXACT",
+      "key": "repetidas",
+      "block": "connection",
+      "asr_confidence": 0.9983
+    },
+    {
+      "index": 26,
+      "text": "e",
+      "start": 10.46,
+      "end": 10.62,
+      "alignment": "SMALL_EXACT",
+      "key": "e",
+      "block": "connection",
+      "asr_confidence": 0.9834
+    },
+    {
+      "index": 27,
+      "text": "pessoas",
+      "start": 10.62,
+      "end": 10.94,
+      "alignment": "SMALL_EXACT",
+      "key": "pessoas",
+      "block": "connection",
+      "asr_confidence": 0.9981
+    },
+    {
+      "index": 28,
+      "text": "feridas,",
+      "start": 10.94,
+      "end": 11.46,
+      "alignment": "SMALL_EXACT",
+      "key": "feridas",
+      "block": "connection",
+      "asr_confidence": 0.99375
+    },
+    {
+      "index": 29,
+      "text": "enquanto",
+      "start": 11.76,
+      "end": 12.1,
+      "alignment": "SMALL_EXACT",
+      "key": "enquanto",
+      "block": "connection",
+      "asr_confidence": 0.99569
+    },
+    {
+      "index": 30,
+      "text": "parece",
+      "start": 12.1,
+      "end": 12.56,
+      "alignment": "SMALL_EXACT",
+      "key": "parece",
+      "block": "connection",
+      "asr_confidence": 0.9988
+    },
+    {
+      "index": 31,
+      "text": "que",
+      "start": 12.56,
+      "end": 12.8,
+      "alignment": "SMALL_EXACT",
+      "key": "que",
+      "block": "connection",
+      "asr_confidence": 0.99888
+    },
+    {
+      "index": 32,
+      "text": "nada",
+      "start": 12.8,
+      "end": 12.98,
+      "alignment": "SMALL_EXACT",
+      "key": "nada",
+      "block": "connection",
+      "asr_confidence": 0.99813
+    },
+    {
+      "index": 33,
+      "text": "muda.",
+      "start": 12.98,
+      "end": 13.44,
+      "alignment": "SMALL_EXACT",
+      "key": "muda",
+      "block": "connection",
+      "asr_confidence": 0.99746
+    },
+    {
+      "index": 34,
+      "text": "E",
+      "start": 13.86,
+      "end": 13.96,
+      "alignment": "SMALL_EXACT",
+      "key": "e",
+      "block": "connection",
+      "asr_confidence": 0.96826
+    },
+    {
+      "index": 35,
+      "text": "admitir",
+      "start": 13.96,
+      "end": 14.44,
+      "alignment": "SMALL_EXACT",
+      "key": "admitir",
+      "block": "connection",
+      "asr_confidence": 0.96922
+    },
+    {
+      "index": 36,
+      "text": "essa",
+      "start": 14.44,
+      "end": 14.68,
+      "alignment": "SMALL_EXACT",
+      "key": "essa",
+      "block": "connection",
+      "asr_confidence": 0.96744
+    },
+    {
+      "index": 37,
+      "text": "revolta",
+      "start": 14.68,
+      "end": 15.26,
+      "alignment": "SMALL_EXACT",
+      "key": "revolta",
+      "block": "connection",
+      "asr_confidence": 0.9737
+    },
+    {
+      "index": 38,
+      "text": "pode",
+      "start": 15.26,
+      "end": 15.52,
+      "alignment": "SMALL_EXACT",
+      "key": "pode",
+      "block": "connection",
+      "asr_confidence": 0.98889
+    },
+    {
+      "index": 39,
+      "text": "trazer",
+      "start": 15.52,
+      "end": 15.92,
+      "alignment": "SMALL_EXACT",
+      "key": "trazer",
+      "block": "connection",
+      "asr_confidence": 0.99165
+    },
+    {
+      "index": 40,
+      "text": "vergonha.",
+      "start": 15.92,
+      "end": 16.52,
+      "alignment": "SMALL_EXACT",
+      "key": "vergonha",
+      "block": "connection",
+      "asr_confidence": 0.99759
+    },
+    {
+      "index": 41,
+      "text": "Em",
+      "start": 16.96,
+      "end": 17.08,
+      "alignment": "SMALL_EXACT",
+      "key": "em",
+      "block": "biblical_reference",
+      "asr_confidence": 0.98694
+    },
+    {
+      "index": 42,
+      "text": "Habacuque,",
+      "start": 17.08,
+      "end": 17.6,
+      "alignment": "SMALL_PHONETIC_ALIAS",
+      "key": "habacuque",
+      "block": "biblical_reference",
+      "asr_confidence": 0.68067
+    },
+    {
+      "index": 43,
+      "text": "capítulo",
+      "start": 17.68,
+      "end": 18.06,
+      "alignment": "SMALL_EXACT",
+      "key": "capitulo",
+      "block": "biblical_reference",
+      "asr_confidence": 0.81025
+    },
+    {
+      "index": 44,
+      "text": "um,",
+      "start": 18.06,
+      "end": 18.28,
+      "alignment": "SMALL_PHONETIC_ALIAS",
+      "key": "um",
+      "block": "biblical_reference",
+      "asr_confidence": 0.64975
+    },
+    {
+      "index": 45,
+      "text": "o",
+      "start": 18.46,
+      "end": 18.48,
+      "alignment": "SMALL_EXACT",
+      "key": "o",
+      "block": "biblical_reference",
+      "asr_confidence": 0.98585
+    },
+    {
+      "index": 46,
+      "text": "profeta",
+      "start": 18.48,
+      "end": 18.82,
+      "alignment": "SMALL_EXACT",
+      "key": "profeta",
+      "block": "biblical_reference",
+      "asr_confidence": 0.95646
+    },
+    {
+      "index": 47,
+      "text": "denuncia",
+      "start": 18.82,
+      "end": 19.28,
+      "alignment": "SMALL_EXACT",
+      "key": "denuncia",
+      "block": "biblical_reference",
+      "asr_confidence": 0.98828
+    },
+    {
+      "index": 48,
+      "text": "violência,",
+      "start": 19.28,
+      "end": 19.92,
+      "alignment": "SMALL_EXACT",
+      "key": "violencia",
+      "block": "biblical_reference",
+      "asr_confidence": 0.88234
+    },
+    {
+      "index": 49,
+      "text": "injustiça",
+      "start": 20.16,
+      "end": 20.78,
+      "alignment": "SMALL_EXACT",
+      "key": "injustica",
+      "block": "biblical_reference",
+      "asr_confidence": 0.99911
+    },
+    {
+      "index": 50,
+      "text": "e",
+      "start": 20.78,
+      "end": 20.94,
+      "alignment": "SMALL_EXACT",
+      "key": "e",
+      "block": "biblical_reference",
+      "asr_confidence": 0.96106
+    },
+    {
+      "index": 51,
+      "text": "uma",
+      "start": 20.94,
+      "end": 21.08,
+      "alignment": "SMALL_EXACT",
+      "key": "uma",
+      "block": "biblical_reference",
+      "asr_confidence": 0.99626
+    },
+    {
+      "index": 52,
+      "text": "lei",
+      "start": 21.08,
+      "end": 21.32,
+      "alignment": "SMALL_EXACT",
+      "key": "lei",
+      "block": "biblical_reference",
+      "asr_confidence": 0.99637
+    },
+    {
+      "index": 53,
+      "text": "que",
+      "start": 21.32,
+      "end": 21.5,
+      "alignment": "SMALL_EXACT",
+      "key": "que",
+      "block": "biblical_reference",
+      "asr_confidence": 0.99489
+    },
+    {
+      "index": 54,
+      "text": "perdeu",
+      "start": 21.5,
+      "end": 21.88,
+      "alignment": "SMALL_EXACT",
+      "key": "perdeu",
+      "block": "biblical_reference",
+      "asr_confidence": 0.99424
+    },
+    {
+      "index": 55,
+      "text": "a",
+      "start": 21.88,
+      "end": 21.94,
+      "alignment": "SMALL_EXACT",
+      "key": "a",
+      "block": "biblical_reference",
+      "asr_confidence": 0.96957
+    },
+    {
+      "index": 56,
+      "text": "força.",
+      "start": 21.94,
+      "end": 22.3,
+      "alignment": "SMALL_EXACT",
+      "key": "forca",
+      "block": "biblical_reference",
+      "asr_confidence": 0.99469
+    },
+    {
+      "index": 57,
+      "text": "Ele",
+      "start": 22.78,
+      "end": 22.96,
+      "alignment": "SMALL_EXACT",
+      "key": "ele",
+      "block": "biblical_reference",
+      "asr_confidence": 0.98766
+    },
+    {
+      "index": 58,
+      "text": "leva",
+      "start": 22.96,
+      "end": 23.3,
+      "alignment": "SMALL_EXACT",
+      "key": "leva",
+      "block": "biblical_reference",
+      "asr_confidence": 0.99642
+    },
+    {
+      "index": 59,
+      "text": "essa",
+      "start": 23.3,
+      "end": 23.68,
+      "alignment": "SMALL_EXACT",
+      "key": "essa",
+      "block": "biblical_reference",
+      "asr_confidence": 0.97744
+    },
+    {
+      "index": 60,
+      "text": "indignação",
+      "start": 23.68,
+      "end": 24.44,
+      "alignment": "SMALL_EXACT",
+      "key": "indignacao",
+      "block": "biblical_reference",
+      "asr_confidence": 0.97041
+    },
+    {
+      "index": 61,
+      "text": "a",
+      "start": 24.44,
+      "end": 24.62,
+      "alignment": "SMALL_EXACT",
+      "key": "a",
+      "block": "biblical_reference",
+      "asr_confidence": 0.95319
+    },
+    {
+      "index": 62,
+      "text": "Deus.",
+      "start": 24.62,
+      "end": 24.88,
+      "alignment": "SMALL_EXACT",
+      "key": "deus",
+      "block": "biblical_reference",
+      "asr_confidence": 0.9914
+    },
+    {
+      "index": 63,
+      "text": "Não",
+      "start": 24.88,
+      "end": 25.6,
+      "alignment": "SMALL_EXACT",
+      "key": "nao",
+      "block": "biblical_reference",
+      "asr_confidence": 0.30851
+    },
+    {
+      "index": 64,
+      "text": "está",
+      "start": 25.6,
+      "end": 25.84,
+      "alignment": "SMALL_EXACT",
+      "key": "esta",
+      "block": "biblical_reference",
+      "asr_confidence": 0.98258
+    },
+    {
+      "index": 65,
+      "text": "buscando",
+      "start": 25.84,
+      "end": 26.2,
+      "alignment": "SMALL_EXACT",
+      "key": "buscando",
+      "block": "biblical_reference",
+      "asr_confidence": 0.99675
+    },
+    {
+      "index": 66,
+      "text": "uma",
+      "start": 26.2,
+      "end": 26.48,
+      "alignment": "SMALL_EXACT",
+      "key": "uma",
+      "block": "biblical_reference",
+      "asr_confidence": 0.99561
+    },
+    {
+      "index": 67,
+      "text": "conquista",
+      "start": 26.48,
+      "end": 26.98,
+      "alignment": "SMALL_EXACT",
+      "key": "conquista",
+      "block": "biblical_reference",
+      "asr_confidence": 0.99263
+    },
+    {
+      "index": 68,
+      "text": "pessoal:",
+      "start": 26.98,
+      "end": 27.58,
+      "alignment": "SMALL_EXACT",
+      "key": "pessoal",
+      "block": "biblical_reference",
+      "asr_confidence": 0.98808
+    },
+    {
+      "index": 69,
+      "text": "sofre",
+      "start": 27.86,
+      "end": 28.26,
+      "alignment": "SMALL_EXACT",
+      "key": "sofre",
+      "block": "biblical_reference",
+      "asr_confidence": 0.96509
+    },
+    {
+      "index": 70,
+      "text": "diante",
+      "start": 28.26,
+      "end": 28.64,
+      "alignment": "SMALL_EXACT",
+      "key": "diante",
+      "block": "biblical_reference",
+      "asr_confidence": 0.99637
+    },
+    {
+      "index": 71,
+      "text": "de",
+      "start": 28.64,
+      "end": 28.82,
+      "alignment": "SMALL_EXACT",
+      "key": "de",
+      "block": "biblical_reference",
+      "asr_confidence": 0.992
+    },
+    {
+      "index": 72,
+      "text": "uma",
+      "start": 28.82,
+      "end": 28.94,
+      "alignment": "SMALL_EXACT",
+      "key": "uma",
+      "block": "biblical_reference",
+      "asr_confidence": 0.99646
+    },
+    {
+      "index": 73,
+      "text": "sociedade",
+      "start": 28.94,
+      "end": 29.36,
+      "alignment": "SMALL_EXACT",
+      "key": "sociedade",
+      "block": "biblical_reference",
+      "asr_confidence": 0.98852
+    },
+    {
+      "index": 74,
+      "text": "ferida.",
+      "start": 29.36,
+      "end": 29.98,
+      "alignment": "SMALL_EXACT",
+      "key": "ferida",
+      "block": "biblical_reference",
+      "asr_confidence": 0.99696
+    },
+    {
+      "index": 75,
+      "text": "Os",
+      "start": 30.44,
+      "end": 30.58,
+      "alignment": "SMALL_EXACT",
+      "key": "os",
+      "block": "reflection",
+      "asr_confidence": 0.99075
+    },
+    {
+      "index": 76,
+      "text": "primeiros",
+      "start": 30.58,
+      "end": 31.0,
+      "alignment": "SMALL_EXACT",
+      "key": "primeiros",
+      "block": "reflection",
+      "asr_confidence": 0.98847
+    },
+    {
+      "index": 77,
+      "text": "versos",
+      "start": 31.0,
+      "end": 31.66,
+      "alignment": "SMALL_EXACT",
+      "key": "versos",
+      "block": "reflection",
+      "asr_confidence": 0.93871
+    },
+    {
+      "index": 78,
+      "text": "não",
+      "start": 31.66,
+      "end": 31.94,
+      "alignment": "SMALL_EXACT",
+      "key": "nao",
+      "block": "reflection",
+      "asr_confidence": 0.94312
+    },
+    {
+      "index": 79,
+      "text": "entregam",
+      "start": 31.94,
+      "end": 32.46,
+      "alignment": "SMALL_EXACT",
+      "key": "entregam",
+      "block": "reflection",
+      "asr_confidence": 0.98113
+    },
+    {
+      "index": 80,
+      "text": "uma",
+      "start": 32.46,
+      "end": 32.62,
+      "alignment": "SMALL_EXACT",
+      "key": "uma",
+      "block": "reflection",
+      "asr_confidence": 0.99738
+    },
+    {
+      "index": 81,
+      "text": "explicação",
+      "start": 32.62,
+      "end": 33.18,
+      "alignment": "SMALL_EXACT",
+      "key": "explicacao",
+      "block": "reflection",
+      "asr_confidence": 0.99638
+    },
+    {
+      "index": 82,
+      "text": "confortável.",
+      "start": 33.18,
+      "end": 33.98,
+      "alignment": "SMALL_EXACT",
+      "key": "confortavel",
+      "block": "reflection",
+      "asr_confidence": 0.99529
+    },
+    {
+      "index": 83,
+      "text": "Mostram",
+      "start": 34.42,
+      "end": 34.78,
+      "alignment": "SMALL_EXACT",
+      "key": "mostram",
+      "block": "reflection",
+      "asr_confidence": 0.78112
+    },
+    {
+      "index": 84,
+      "text": "um",
+      "start": 34.78,
+      "end": 34.96,
+      "alignment": "SMALL_EXACT",
+      "key": "um",
+      "block": "reflection",
+      "asr_confidence": 0.93623
+    },
+    {
+      "index": 85,
+      "text": "homem",
+      "start": 34.96,
+      "end": 35.18,
+      "alignment": "SMALL_EXACT",
+      "key": "homem",
+      "block": "reflection",
+      "asr_confidence": 0.99656
+    },
+    {
+      "index": 86,
+      "text": "que",
+      "start": 35.18,
+      "end": 35.36,
+      "alignment": "SMALL_EXACT",
+      "key": "que",
+      "block": "reflection",
+      "asr_confidence": 0.99493
+    },
+    {
+      "index": 87,
+      "text": "se",
+      "start": 35.36,
+      "end": 35.5,
+      "alignment": "SMALL_EXACT",
+      "key": "se",
+      "block": "reflection",
+      "asr_confidence": 0.99424
+    },
+    {
+      "index": 88,
+      "text": "recusa",
+      "start": 35.5,
+      "end": 35.86,
+      "alignment": "SMALL_EXACT",
+      "key": "recusa",
+      "block": "reflection",
+      "asr_confidence": 0.84556
+    },
+    {
+      "index": 89,
+      "text": "a",
+      "start": 35.86,
+      "end": 36.0,
+      "alignment": "SMALL_EXACT",
+      "key": "a",
+      "block": "reflection",
+      "asr_confidence": 0.98431
+    },
+    {
+      "index": 90,
+      "text": "chamar",
+      "start": 36.0,
+      "end": 36.4,
+      "alignment": "SMALL_EXACT",
+      "key": "chamar",
+      "block": "reflection",
+      "asr_confidence": 0.98947
+    },
+    {
+      "index": 91,
+      "text": "o",
+      "start": 36.4,
+      "end": 36.48,
+      "alignment": "SMALL_EXACT",
+      "key": "o",
+      "block": "reflection",
+      "asr_confidence": 0.97604
+    },
+    {
+      "index": 92,
+      "text": "mal",
+      "start": 36.48,
+      "end": 36.64,
+      "alignment": "SMALL_EXACT",
+      "key": "mal",
+      "block": "reflection",
+      "asr_confidence": 0.95208
+    },
+    {
+      "index": 93,
+      "text": "de",
+      "start": 36.64,
+      "end": 36.78,
+      "alignment": "SMALL_EXACT",
+      "key": "de",
+      "block": "reflection",
+      "asr_confidence": 0.97621
+    },
+    {
+      "index": 94,
+      "text": "normal",
+      "start": 36.78,
+      "end": 37.1,
+      "alignment": "SMALL_EXACT",
+      "key": "normal",
+      "block": "reflection",
+      "asr_confidence": 0.98593
+    },
+    {
+      "index": 95,
+      "text": "e",
+      "start": 37.1,
+      "end": 37.48,
+      "alignment": "SMALL_EXACT",
+      "key": "e",
+      "block": "reflection",
+      "asr_confidence": 0.95572
+    },
+    {
+      "index": 96,
+      "text": "não",
+      "start": 37.48,
+      "end": 37.58,
+      "alignment": "SMALL_EXACT",
+      "key": "nao",
+      "block": "reflection",
+      "asr_confidence": 0.99864
+    },
+    {
+      "index": 97,
+      "text": "esconde",
+      "start": 37.58,
+      "end": 38.02,
+      "alignment": "SMALL_EXACT",
+      "key": "esconde",
+      "block": "reflection",
+      "asr_confidence": 0.99146
+    },
+    {
+      "index": 98,
+      "text": "suas",
+      "start": 38.02,
+      "end": 38.24,
+      "alignment": "SMALL_EXACT",
+      "key": "suas",
+      "block": "reflection",
+      "asr_confidence": 0.95989
+    },
+    {
+      "index": 99,
+      "text": "perguntas.",
+      "start": 38.24,
+      "end": 38.96,
+      "alignment": "SMALL_EXACT",
+      "key": "perguntas",
+      "block": "reflection",
+      "asr_confidence": 0.99911
+    },
+    {
+      "index": 100,
+      "text": "O",
+      "start": 39.38,
+      "end": 39.52,
+      "alignment": "SMALL_EXACT",
+      "key": "o",
+      "block": "reflection",
+      "asr_confidence": 0.98484
+    },
+    {
+      "index": 101,
+      "text": "diálogo",
+      "start": 39.52,
+      "end": 39.92,
+      "alignment": "SMALL_EXACT",
+      "key": "dialogo",
+      "block": "reflection",
+      "asr_confidence": 0.971
+    },
+    {
+      "index": 102,
+      "text": "continua",
+      "start": 39.92,
+      "end": 40.46,
+      "alignment": "SMALL_EXACT",
+      "key": "continua",
+      "block": "reflection",
+      "asr_confidence": 0.98973
+    },
+    {
+      "index": 103,
+      "text": "ao",
+      "start": 40.46,
+      "end": 40.7,
+      "alignment": "SMALL_EXACT",
+      "key": "ao",
+      "block": "reflection",
+      "asr_confidence": 0.98597
+    },
+    {
+      "index": 104,
+      "text": "longo",
+      "start": 40.7,
+      "end": 40.9,
+      "alignment": "SMALL_EXACT",
+      "key": "longo",
+      "block": "reflection",
+      "asr_confidence": 0.99922
+    },
+    {
+      "index": 105,
+      "text": "do",
+      "start": 40.9,
+      "end": 41.06,
+      "alignment": "SMALL_EXACT",
+      "key": "do",
+      "block": "reflection",
+      "asr_confidence": 0.99757
+    },
+    {
+      "index": 106,
+      "text": "livro,",
+      "start": 41.06,
+      "end": 41.38,
+      "alignment": "SMALL_EXACT",
+      "key": "livro",
+      "block": "reflection",
+      "asr_confidence": 0.99733
+    },
+    {
+      "index": 107,
+      "text": "com",
+      "start": 41.62,
+      "end": 41.74,
+      "alignment": "SMALL_EXACT",
+      "key": "com",
+      "block": "reflection",
+      "asr_confidence": 0.99485
+    },
+    {
+      "index": 108,
+      "text": "respostas",
+      "start": 41.74,
+      "end": 42.28,
+      "alignment": "SMALL_EXACT",
+      "key": "respostas",
+      "block": "reflection",
+      "asr_confidence": 0.9984
+    },
+    {
+      "index": 109,
+      "text": "difíceis.",
+      "start": 42.28,
+      "end": 42.96,
+      "alignment": "SMALL_EXACT",
+      "key": "dificeis",
+      "block": "reflection",
+      "asr_confidence": 0.99533
+    },
+    {
+      "index": 110,
+      "text": "A",
+      "start": 43.36,
+      "end": 43.52,
+      "alignment": "SMALL_EXACT",
+      "key": "a",
+      "block": "reflection",
+      "asr_confidence": 0.90539
+    },
+    {
+      "index": 111,
+      "text": "fé",
+      "start": 43.52,
+      "end": 43.66,
+      "alignment": "SMALL_EXACT",
+      "key": "fe",
+      "block": "reflection",
+      "asr_confidence": 0.98184
+    },
+    {
+      "index": 112,
+      "text": "não",
+      "start": 43.66,
+      "end": 43.8,
+      "alignment": "SMALL_EXACT",
+      "key": "nao",
+      "block": "reflection",
+      "asr_confidence": 0.99832
+    },
+    {
+      "index": 113,
+      "text": "precisa",
+      "start": 43.8,
+      "end": 44.16,
+      "alignment": "SMALL_EXACT",
+      "key": "precisa",
+      "block": "reflection",
+      "asr_confidence": 0.99861
+    },
+    {
+      "index": 114,
+      "text": "fingir",
+      "start": 44.16,
+      "end": 44.74,
+      "alignment": "SMALL_EXACT",
+      "key": "fingir",
+      "block": "reflection",
+      "asr_confidence": 0.99495
+    },
+    {
+      "index": 115,
+      "text": "que",
+      "start": 44.74,
+      "end": 44.86,
+      "alignment": "SMALL_EXACT",
+      "key": "que",
+      "block": "reflection",
+      "asr_confidence": 0.99699
+    },
+    {
+      "index": 116,
+      "text": "a",
+      "start": 44.86,
+      "end": 44.94,
+      "alignment": "SMALL_EXACT",
+      "key": "a",
+      "block": "reflection",
+      "asr_confidence": 0.9632
+    },
+    {
+      "index": 117,
+      "text": "injustiça",
+      "start": 44.94,
+      "end": 45.52,
+      "alignment": "SMALL_EXACT",
+      "key": "injustica",
+      "block": "reflection",
+      "asr_confidence": 0.99516
+    },
+    {
+      "index": 118,
+      "text": "é",
+      "start": 45.52,
+      "end": 45.68,
+      "alignment": "SMALL_EXACT",
+      "key": "e",
+      "block": "reflection",
+      "asr_confidence": 0.99782
+    },
+    {
+      "index": 119,
+      "text": "paz.",
+      "start": 45.68,
+      "end": 45.92,
+      "alignment": "SMALL_EXACT",
+      "key": "paz",
+      "block": "reflection",
+      "asr_confidence": 0.98207
+    },
+    {
+      "index": 120,
+      "text": "É",
+      "start": 46.42,
+      "end": 46.58,
+      "alignment": "SMALL_EXACT",
+      "key": "e",
+      "block": "reflection",
+      "asr_confidence": 0.99358
+    },
+    {
+      "index": 121,
+      "text": "possível",
+      "start": 46.58,
+      "end": 46.92,
+      "alignment": "SMALL_EXACT",
+      "key": "possivel",
+      "block": "reflection",
+      "asr_confidence": 0.9981
+    },
+    {
+      "index": 122,
+      "text": "orar",
+      "start": 46.92,
+      "end": 47.38,
+      "alignment": "SMALL_EXACT",
+      "key": "orar",
+      "block": "reflection",
+      "asr_confidence": 0.99495
+    },
+    {
+      "index": 123,
+      "text": "e",
+      "start": 47.38,
+      "end": 47.54,
+      "alignment": "SMALL_EXACT",
+      "key": "e",
+      "block": "reflection",
+      "asr_confidence": 0.99554
+    },
+    {
+      "index": 124,
+      "text": "reconhecer",
+      "start": 47.54,
+      "end": 48.18,
+      "alignment": "SMALL_EXACT",
+      "key": "reconhecer",
+      "block": "reflection",
+      "asr_confidence": 0.99526
+    },
+    {
+      "index": 125,
+      "text": "o",
+      "start": 48.18,
+      "end": 48.42,
+      "alignment": "SMALL_EXACT",
+      "key": "o",
+      "block": "reflection",
+      "asr_confidence": 0.99728
+    },
+    {
+      "index": 126,
+      "text": "que",
+      "start": 48.42,
+      "end": 48.5,
+      "alignment": "SMALL_EXACT",
+      "key": "que",
+      "block": "reflection",
+      "asr_confidence": 0.99904
+    },
+    {
+      "index": 127,
+      "text": "precisa",
+      "start": 48.5,
+      "end": 48.88,
+      "alignment": "SMALL_EXACT",
+      "key": "precisa",
+      "block": "reflection",
+      "asr_confidence": 0.99865
+    },
+    {
+      "index": 128,
+      "text": "ser",
+      "start": 48.88,
+      "end": 49.16,
+      "alignment": "SMALL_EXACT",
+      "key": "ser",
+      "block": "reflection",
+      "asr_confidence": 0.99735
+    },
+    {
+      "index": 129,
+      "text": "enfrentado.",
+      "start": 49.16,
+      "end": 49.8,
+      "alignment": "SMALL_EXACT",
+      "key": "enfrentado",
+      "block": "reflection",
+      "asr_confidence": 0.99877
+    },
+    {
+      "index": 130,
+      "text": "Talvez",
+      "start": 49.8,
+      "end": 50.6,
+      "alignment": "SMALL_EXACT",
+      "key": "talvez",
+      "block": "application",
+      "asr_confidence": 0.94373
+    },
+    {
+      "index": 131,
+      "text": "hoje",
+      "start": 50.6,
+      "end": 50.88,
+      "alignment": "SMALL_EXACT",
+      "key": "hoje",
+      "block": "application",
+      "asr_confidence": 0.9074
+    },
+    {
+      "index": 132,
+      "text": "você",
+      "start": 50.88,
+      "end": 51.16,
+      "alignment": "SMALL_EXACT",
+      "key": "voce",
+      "block": "application",
+      "asr_confidence": 0.96938
+    },
+    {
+      "index": 133,
+      "text": "precise",
+      "start": 51.16,
+      "end": 51.62,
+      "alignment": "SMALL_EXACT",
+      "key": "precise",
+      "block": "application",
+      "asr_confidence": 0.98533
+    },
+    {
+      "index": 134,
+      "text": "nomear",
+      "start": 51.62,
+      "end": 52.12,
+      "alignment": "SMALL_EXACT",
+      "key": "nomear",
+      "block": "application",
+      "asr_confidence": 0.99137
+    },
+    {
+      "index": 135,
+      "text": "o",
+      "start": 52.12,
+      "end": 52.22,
+      "alignment": "SMALL_EXACT",
+      "key": "o",
+      "block": "application",
+      "asr_confidence": 0.99616
+    },
+    {
+      "index": 136,
+      "text": "que",
+      "start": 52.22,
+      "end": 52.3,
+      "alignment": "SMALL_EXACT",
+      "key": "que",
+      "block": "application",
+      "asr_confidence": 0.99198
+    },
+    {
+      "index": 137,
+      "text": "está",
+      "start": 52.3,
+      "end": 52.48,
+      "alignment": "SMALL_EXACT",
+      "key": "esta",
+      "block": "application",
+      "asr_confidence": 0.9924
+    },
+    {
+      "index": 138,
+      "text": "errado,",
+      "start": 52.48,
+      "end": 52.86,
+      "alignment": "SMALL_EXACT",
+      "key": "errado",
+      "block": "application",
+      "asr_confidence": 0.99689
+    },
+    {
+      "index": 139,
+      "text": "procurar",
+      "start": 53.16,
+      "end": 53.58,
+      "alignment": "SMALL_EXACT",
+      "key": "procurar",
+      "block": "application",
+      "asr_confidence": 0.9951
+    },
+    {
+      "index": 140,
+      "text": "apoio",
+      "start": 53.58,
+      "end": 53.98,
+      "alignment": "SMALL_EXACT",
+      "key": "apoio",
+      "block": "application",
+      "asr_confidence": 0.99642
+    },
+    {
+      "index": 141,
+      "text": "confiável",
+      "start": 53.98,
+      "end": 54.64,
+      "alignment": "SMALL_EXACT",
+      "key": "confiavel",
+      "block": "application",
+      "asr_confidence": 0.99513
+    },
+    {
+      "index": 142,
+      "text": "ou",
+      "start": 54.64,
+      "end": 54.98,
+      "alignment": "SMALL_EXACT",
+      "key": "ou",
+      "block": "application",
+      "asr_confidence": 0.88812
+    },
+    {
+      "index": 143,
+      "text": "dar",
+      "start": 54.98,
+      "end": 55.18,
+      "alignment": "SMALL_EXACT",
+      "key": "dar",
+      "block": "application",
+      "asr_confidence": 0.99831
+    },
+    {
+      "index": 144,
+      "text": "um",
+      "start": 55.18,
+      "end": 55.32,
+      "alignment": "SMALL_EXACT",
+      "key": "um",
+      "block": "application",
+      "asr_confidence": 0.99509
+    },
+    {
+      "index": 145,
+      "text": "passo",
+      "start": 55.32,
+      "end": 55.56,
+      "alignment": "SMALL_EXACT",
+      "key": "passo",
+      "block": "application",
+      "asr_confidence": 0.99511
+    },
+    {
+      "index": 146,
+      "text": "responsável",
+      "start": 55.56,
+      "end": 56.32,
+      "alignment": "SMALL_EXACT",
+      "key": "responsavel",
+      "block": "application",
+      "asr_confidence": 0.99215
+    },
+    {
+      "index": 147,
+      "text": "em",
+      "start": 56.32,
+      "end": 56.46,
+      "alignment": "SMALL_EXACT",
+      "key": "em",
+      "block": "application",
+      "asr_confidence": 0.99826
+    },
+    {
+      "index": 148,
+      "text": "favor",
+      "start": 56.46,
+      "end": 56.66,
+      "alignment": "SMALL_EXACT",
+      "key": "favor",
+      "block": "application",
+      "asr_confidence": 0.86954
+    },
+    {
+      "index": 149,
+      "text": "de",
+      "start": 56.66,
+      "end": 57.02,
+      "alignment": "SMALL_EXACT",
+      "key": "de",
+      "block": "application",
+      "asr_confidence": 0.9696
+    },
+    {
+      "index": 150,
+      "text": "alguém.",
+      "start": 57.38,
+      "end": 57.74,
+      "alignment": "SMALL_EXACT",
+      "key": "alguem",
+      "block": "application",
+      "asr_confidence": 0.8764
+    },
+    {
+      "index": 151,
+      "text": "E",
+      "start": 57.64,
+      "end": 58.0,
+      "alignment": "BASE_EXACT_FALLBACK",
+      "key": "e",
+      "block": "application",
+      "asr_confidence": 0.8369
+    },
+    {
+      "index": 152,
+      "text": "pode",
+      "start": 57.74,
+      "end": 58.06,
+      "alignment": "SMALL_EXACT",
+      "key": "pode",
+      "block": "application",
+      "asr_confidence": 0.60035
+    },
+    {
+      "index": 153,
+      "text": "levar",
+      "start": 58.06,
+      "end": 58.86,
+      "alignment": "SMALL_EXACT",
+      "key": "levar",
+      "block": "application",
+      "asr_confidence": 0.97509
+    },
+    {
+      "index": 154,
+      "text": "suas",
+      "start": 58.86,
+      "end": 59.14,
+      "alignment": "SMALL_EXACT",
+      "key": "suas",
+      "block": "application",
+      "asr_confidence": 0.92886
+    },
+    {
+      "index": 155,
+      "text": "perguntas",
+      "start": 59.14,
+      "end": 59.78,
+      "alignment": "SMALL_EXACT",
+      "key": "perguntas",
+      "block": "application",
+      "asr_confidence": 0.99639
+    },
+    {
+      "index": 156,
+      "text": "à",
+      "start": 59.78,
+      "end": 59.9,
+      "alignment": "SMALL_EXACT",
+      "key": "a",
+      "block": "application",
+      "asr_confidence": 0.66083
+    },
+    {
+      "index": 157,
+      "text": "oração,",
+      "start": 59.9,
+      "end": 60.3,
+      "alignment": "SMALL_EXACT",
+      "key": "oracao",
+      "block": "application",
+      "asr_confidence": 0.99099
+    },
+    {
+      "index": 158,
+      "text": "sem",
+      "start": 60.3,
+      "end": 60.72,
+      "alignment": "SMALL_EXACT",
+      "key": "sem",
+      "block": "application",
+      "asr_confidence": 0.97482
+    },
+    {
+      "index": 159,
+      "text": "inventar",
+      "start": 60.72,
+      "end": 61.2,
+      "alignment": "SMALL_EXACT",
+      "key": "inventar",
+      "block": "application",
+      "asr_confidence": 0.99452
+    },
+    {
+      "index": 160,
+      "text": "respostas.",
+      "start": 61.2,
+      "end": 61.96,
+      "alignment": "SMALL_EXACT",
+      "key": "respostas",
+      "block": "application",
+      "asr_confidence": 0.99643
+    },
+    {
+      "index": 161,
+      "text": "Nem",
+      "start": 62.38,
+      "end": 62.56,
+      "alignment": "SMALL_EXACT",
+      "key": "nem",
+      "block": "conclusion",
+      "asr_confidence": 0.98135
+    },
+    {
+      "index": 162,
+      "text": "toda",
+      "start": 62.56,
+      "end": 62.8,
+      "alignment": "SMALL_EXACT",
+      "key": "toda",
+      "block": "conclusion",
+      "asr_confidence": 0.99631
+    },
+    {
+      "index": 163,
+      "text": "espera",
+      "start": 62.8,
+      "end": 63.24,
+      "alignment": "SMALL_EXACT",
+      "key": "espera",
+      "block": "conclusion",
+      "asr_confidence": 0.53204
+    },
+    {
+      "index": 164,
+      "text": "tem",
+      "start": 63.24,
+      "end": 63.54,
+      "alignment": "SMALL_EXACT",
+      "key": "tem",
+      "block": "conclusion",
+      "asr_confidence": 0.97605
+    },
+    {
+      "index": 165,
+      "text": "explicação",
+      "start": 63.54,
+      "end": 64.12,
+      "alignment": "SMALL_EXACT",
+      "key": "explicacao",
+      "block": "conclusion",
+      "asr_confidence": 0.98821
+    },
+    {
+      "index": 166,
+      "text": "pronta.",
+      "start": 64.12,
+      "end": 64.62,
+      "alignment": "SMALL_EXACT",
+      "key": "pronta",
+      "block": "conclusion",
+      "asr_confidence": 0.99726
+    },
+    {
+      "index": 167,
+      "text": "Mas",
+      "start": 65.04,
+      "end": 65.22,
+      "alignment": "SMALL_EXACT",
+      "key": "mas",
+      "block": "conclusion",
+      "asr_confidence": 0.99258
+    },
+    {
+      "index": 168,
+      "text": "o",
+      "start": 65.22,
+      "end": 65.32,
+      "alignment": "SMALL_EXACT",
+      "key": "o",
+      "block": "conclusion",
+      "asr_confidence": 0.98334
+    },
+    {
+      "index": 169,
+      "text": "silêncio",
+      "start": 65.32,
+      "end": 65.72,
+      "alignment": "SMALL_EXACT",
+      "key": "silencio",
+      "block": "conclusion",
+      "asr_confidence": 0.98134
+    },
+    {
+      "index": 170,
+      "text": "não",
+      "start": 65.72,
+      "end": 65.88,
+      "alignment": "SMALL_EXACT",
+      "key": "nao",
+      "block": "conclusion",
+      "asr_confidence": 0.99629
+    },
+    {
+      "index": 171,
+      "text": "obriga",
+      "start": 65.88,
+      "end": 66.34,
+      "alignment": "SMALL_EXACT",
+      "key": "obriga",
+      "block": "conclusion",
+      "asr_confidence": 0.99381
+    },
+    {
+      "index": 172,
+      "text": "você",
+      "start": 66.34,
+      "end": 66.58,
+      "alignment": "SMALL_EXACT",
+      "key": "voce",
+      "block": "conclusion",
+      "asr_confidence": 0.94832
+    },
+    {
+      "index": 173,
+      "text": "a",
+      "start": 66.58,
+      "end": 66.7,
+      "alignment": "SMALL_EXACT",
+      "key": "a",
+      "block": "conclusion",
+      "asr_confidence": 0.9869
+    },
+    {
+      "index": 174,
+      "text": "abandonar",
+      "start": 66.7,
+      "end": 67.2,
+      "alignment": "SMALL_EXACT",
+      "key": "abandonar",
+      "block": "conclusion",
+      "asr_confidence": 0.99699
+    },
+    {
+      "index": 175,
+      "text": "a",
+      "start": 67.2,
+      "end": 67.24,
+      "alignment": "SMALL_EXACT",
+      "key": "a",
+      "block": "conclusion",
+      "asr_confidence": 0.96477
+    },
+    {
+      "index": 176,
+      "text": "verdade,",
+      "start": 67.24,
+      "end": 67.68,
+      "alignment": "SMALL_EXACT",
+      "key": "verdade",
+      "block": "conclusion",
+      "asr_confidence": 0.99732
+    },
+    {
+      "index": 177,
+      "text": "a",
+      "start": 68.1,
+      "end": 68.14,
+      "alignment": "SMALL_EXACT",
+      "key": "a",
+      "block": "conclusion",
+      "asr_confidence": 0.97234
+    },
+    {
+      "index": 178,
+      "text": "responsabilidade",
+      "start": 68.14,
+      "end": 69.18,
+      "alignment": "SMALL_EXACT",
+      "key": "responsabilidade",
+      "block": "conclusion",
+      "asr_confidence": 0.99727
+    },
+    {
+      "index": 179,
+      "text": "ou",
+      "start": 69.18,
+      "end": 69.46,
+      "alignment": "SMALL_EXACT",
+      "key": "ou",
+      "block": "conclusion",
+      "asr_confidence": 0.94714
+    },
+    {
+      "index": 180,
+      "text": "a",
+      "start": 69.46,
+      "end": 69.54,
+      "alignment": "SMALL_EXACT",
+      "key": "a",
+      "block": "conclusion",
+      "asr_confidence": 0.98299
+    },
+    {
+      "index": 181,
+      "text": "esperança.",
+      "start": 69.54,
+      "end": 70.14,
+      "alignment": "SMALL_EXACT",
+      "key": "esperanca",
+      "block": "conclusion",
+      "asr_confidence": 0.99791
+    }
+  ],
+  "limitations": [
+    "Times are ASR estimates (whisper small primary), not acoustic ground truth; 'asr_confidence' is an ASR estimate.",
+    "2 words use SMALL_PHONETIC_ALIAS and 1 uses BASE_EXACT_FALLBACK timing.",
+    "Frame-by-frame karaoke sync not verified; publication not authorized."
+  ]
+}

@@ -1,0 +1,153 @@
+{
+ "schema_version": "3.0.0",
+ "pipeline_id": "vnc-episode-pipeline",
+ "episode_id": "E01",
+ "description": "Pipeline E01 v3 (voz Johnes Bittar, 76,67 s, 12 cenas refeitas). Cada etapa só é DONE quando a evidência declarada satisfaz todas as condições. Etapa sem workflow seguro é marcada NO_AUTOMATED_EXECUTOR, nunca executada às cegas. Gasto novo 0 e publicação sempre manual.",
+ "budget_new_spend_brl": 0,
+ "publication_authorized": false,
+ "stages": [
+  {
+   "id": "script",
+   "requires": [],
+   "executor": "auto",
+   "workflow": null,
+   "evidence": "contracts/e01_ai_editorial_review_v2.json",
+   "done_when": [
+    {
+     "field": "decision_status",
+     "equals": "AUTO_APPROVED_FOR_INTERNAL_PRODUCTION"
+    }
+   ]
+  },
+  {
+   "id": "voice_measured",
+   "requires": [
+    "script"
+   ],
+   "executor": "auto",
+   "workflow": null,
+   "evidence": "contracts/e01_v3_voice_johnes_word_timing_v1.json",
+   "done_when": [
+    {
+     "field": "stage",
+     "equals": "VOICE_CANDIDATE_JOHNES_MEASURED_AUDIO_NOT_MASTER"
+    },
+    {
+     "field": "word_count",
+     "equals": 182
+    }
+   ]
+  },
+  {
+   "id": "voice_rights",
+   "requires": [
+    "voice_measured"
+   ],
+   "executor": "human_only",
+   "workflow": null,
+   "evidence": "contracts/e01_v3_voice_johnes_word_timing_v1.json",
+   "done_when": [
+    {
+     "field": "voice_rights_cleared",
+     "equals": true
+    }
+   ]
+  },
+  {
+   "id": "captions_band",
+   "requires": [
+    "voice_measured"
+   ],
+   "executor": "auto",
+   "workflow": null,
+   "evidence": "contracts/e01_v3_caption_band_v1.json",
+   "done_when": [
+    {
+     "field": "approved_by_user",
+     "equals": true
+    }
+   ]
+  },
+  {
+   "id": "scene_refit",
+   "requires": [
+    "voice_measured"
+   ],
+   "executor": "auto",
+   "workflow": null,
+   "evidence": "contracts/e01_v3_12_scene_refit_v1.json",
+   "done_when": [
+    {
+     "field": "kind",
+     "equals": "SCENE_TIMING_REFIT_ONLY"
+    },
+    {
+     "field": "duration_seconds",
+     "equals": 76.67
+    }
+   ]
+  },
+  {
+   "id": "clips_approved",
+   "requires": [
+    "scene_refit",
+    "captions_band"
+   ],
+   "executor": "auto",
+   "workflow": null,
+   "evidence": "contracts/e01_v3_clip_review_v1.json",
+   "done_when": [
+    {
+     "field": "any_clip_approved",
+     "equals": true
+    }
+   ]
+  },
+  {
+   "id": "clips_rights",
+   "requires": [
+    "clips_approved"
+   ],
+   "executor": "auto",
+   "workflow": null,
+   "evidence": "contracts/e01_v3_clip_review_v1.json",
+   "done_when": [
+    {
+     "field": "rights_cleared",
+     "equals": true
+    }
+   ]
+  },
+  {
+   "id": "master",
+   "requires": [
+    "clips_rights",
+    "voice_rights"
+   ],
+   "executor": "auto",
+   "workflow": "verbo-no-chao-runflow.yml",
+   "evidence": "contracts/e01_v3_master_evidence_v1.json",
+   "done_when": [
+    {
+     "field": "final_video_master_approved",
+     "equals": true
+    }
+   ]
+  },
+  {
+   "id": "publication",
+   "requires": [
+    "master"
+   ],
+   "executor": "human_only",
+   "workflow": null,
+   "evidence": "contracts/e01_v3_master_evidence_v1.json",
+   "done_when": [
+    {
+     "field": "publication_authorized",
+     "equals": true
+    }
+   ]
+  }
+ ]
+}
