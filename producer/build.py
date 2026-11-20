@@ -31,7 +31,8 @@ def _check_spec(spec: Any) -> None:
 
 
 def build_package(spec: dict[str, Any], out_dir: Path, voice: VoiceProvider,
-                  footage: FootageProvider, aligner: Aligner | None = None) -> Path:
+                  footage: FootageProvider, aligner: Aligner | None = None,
+                  rejected: set[str] | None = None) -> Path:
     _check_spec(spec)
     out_dir.mkdir(parents=True, exist_ok=True)
     if (out_dir / "package.json").exists():
@@ -56,7 +57,7 @@ def build_package(spec: dict[str, Any], out_dir: Path, voice: VoiceProvider,
     total = duration_sec(voice_path)
 
     # 2. Footage: each scene gets a clip of at least its audio length, never reused.
-    used: set[str] = set()
+    used: set[str] = set(rejected or ())  # protected rejections are pre-seeded as "already used"
     assets = []
     for scene, dur in zip(scenes, durations):
         clip = footage.fetch(scene["footage_query"], dur, used, clips_dir)

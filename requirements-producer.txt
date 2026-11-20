@@ -1,5 +1,5 @@
 # Producer runtime (CI only). Versions to be pinned after the first successful run.
 soundfile>=0.12,<1
 kokoro>=0.9,<1
-av>=14,<20   # faster-whisper 1.2.1 needs av.open(metadata_errors=...), absent in old av
+av>=14,<17   # PyAV 19 removed av.open(metadata_errors=...) which faster-whisper 1.2.1 uses (verified: 16.0.1 ok, 19.0.2 TypeError)
 faster-whisper==1.2.1

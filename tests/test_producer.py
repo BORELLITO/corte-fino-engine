@@ -16,6 +16,7 @@ from producer import captions
 from producer.build import build_package
 from producer.common import ProducerError, audio_integrity_ok, duration_sec, run_ffmpeg, sha256_file
 from producer.footage import Clip, PexelsFootage
+from producer.rejections import load_rejections
 from producer.music import write_music
 
 HAS_FFMPEG = bool(shutil.which("ffmpeg") and shutil.which("ffprobe"))
@@ -116,6 +117,24 @@ class ProducerPipelineTest(unittest.TestCase):
 
 
 class ProducerUnitTest(unittest.TestCase):
+    def test_real_repo_rejections_are_loaded(self):
+        found = load_rejections(Path(__file__).resolve().parent.parent / "contracts")
+        self.assertIn("pexels-7977614", found)  # S04 rejection contract
+        self.assertIn("f596f2a768d943061f5bc76cd37484840ab0bed72d852f02d5379e601daab6ee", found)  # S10
+
+    @needs_ffmpeg
+    def test_rejected_sources_are_preseeded_into_exclusion_set(self):
+        seen = []
+
+        class Recorder(FakeFootage):
+            def fetch(self, query, min_seconds, exclude, dst_dir):
+                seen.append(set(exclude))
+                return super().fetch(query, min_seconds, exclude, dst_dir)
+
+        build_package(SPEC, Path(tempfile.mkdtemp()) / "p", FakeVoice(), Recorder(), None,
+                      rejected={"pexels-7977614"})
+        self.assertTrue(all("pexels-7977614" in e for e in seen) and len(seen) == 3)
+
     @needs_ffmpeg
     def test_music_is_deterministic_original_and_not_clipped(self):
         d = Path(tempfile.mkdtemp())

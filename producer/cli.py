@@ -12,6 +12,7 @@ from .build import build_package
 from .captions import FasterWhisperAligner
 from .common import ProducerError
 from .footage import LocalCatalogFootage, PexelsFootage
+from .rejections import load_rejections
 from .voice import KokoroVoice
 
 
@@ -25,10 +26,13 @@ def main(argv: list[str] | None = None) -> int:
     args = ap.parse_args(argv)
     try:
         spec = json.loads(args.spec.read_text(encoding="utf-8"))
+        if spec.get("approved_sources_only") and not args.footage.startswith("local:"):
+            raise ProducerError("producer:spec:approved_sources_only_requires_local_catalog")
+        rejected = load_rejections(Path(__file__).resolve().parent.parent / "contracts")
         footage = (LocalCatalogFootage(Path(args.footage[6:])) if args.footage.startswith("local:")
                    else PexelsFootage())
         aligner = None if args.no_asr else FasterWhisperAligner()
-        build_package(spec, args.out, KokoroVoice(**spec.get("voice", {})), footage, aligner)
+        build_package(spec, args.out, KokoroVoice(**spec.get("voice", {})), footage, aligner, rejected)
     except (ProducerError, OSError, json.JSONDecodeError) as exc:
         print(f"BLOCKED\n- {exc}")
         return 1
