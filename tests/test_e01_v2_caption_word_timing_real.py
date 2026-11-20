@@ -4,6 +4,12 @@ import json
 import unittest
 from pathlib import Path
 
+try:
+    from PIL import ImageFont as _PIL
+except ImportError:
+    _PIL = None
+needs_pillow = unittest.skipUnless(
+    _PIL is not None, "Pillow is installed in the dedicated caption workflow")
 from agents.e01_v2_caption_pipeline import (
     ASR_BYTES, ASR_SHA, MAX_LINES, SCRIPT_SHA, VOICE_DURATION, WAV_SHA, make_cues,
 )
@@ -47,6 +53,7 @@ class E01RealWordTimingTests(unittest.TestCase):
             self.assertLessEqual(a["start"], b["start"])
             self.assertLessEqual(a["end"], b["end"])
 
+    @needs_pillow
     def test_make_cues_two_lines_no_overlap(self):
         cues = make_cues([dict(x) for x in self.words])
         # Current (v3) layout re-cues the words; the artifact's 28 cues used the old layout.
