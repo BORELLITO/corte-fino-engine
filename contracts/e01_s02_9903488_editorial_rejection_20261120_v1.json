@@ -1,0 +1,102 @@
+{
+  "schema_version": "1.0.0",
+  "project_id": "VERBO_NO_CHAO_EXCLUSIVO",
+  "episode_id": "VNC-W01-E1",
+  "scene_id": "VNC-E01V2-S02",
+  "decision_id": "VNC-E01-S02-PEXELS-9903488-SENIOR-EDITORIAL-REJECTION-20261120",
+  "decision": "REJECTED_FOR_S02_SCENE_FIDELITY",
+  "decision_authority": "EDITORIAL_QA_ONLY_NOT_OWNER_APPROVAL",
+  "source_scope": "ONLY_PEXELS_9903488_FOR_E01_S02",
+  "observed_source": {
+    "provider": "Pexels",
+    "creator": "Ron Lach",
+    "video_id": 9903488,
+    "page": "https://www.pexels.com/video/a-man-organizing-the-things-on-his-table-9903488/",
+    "source_bytes": 60515189,
+    "source_sha256": "ab34b60af5d700e94fc70fc19982ff974a3c52c3a6484ce4a48ce07c965d1d86",
+    "width": 2160,
+    "height": 4096,
+    "seconds": 32.36,
+    "codec": "h264",
+    "portrait_native_crop": [
+      2160,
+      3840
+    ],
+    "source_full_decode_claimed": false,
+    "source_listing_license": "Free",
+    "individual_rights_cleared": false,
+    "camera_origin_independently_proven": false
+  },
+  "qa_preview": {
+    "filename": "S02_HAND_DESK_9903488_QA_NOT_MASTER.mp4",
+    "sha256": "af604d62cc899206e341dd569897a5f5dc82d724f9cd1170cff9948e903a5107",
+    "bytes": 476674,
+    "width": 720,
+    "height": 1280,
+    "frames": 147,
+    "fps": 30,
+    "seconds": 4.9,
+    "no_audio": true,
+    "watermarked": true,
+    "ffprobe_pass": true,
+    "full_preview_decode_pass": true,
+    "independent_local_rehash_pass": true
+  },
+  "qa_frames": {
+    "file": "S02_HAND_DESK_9903488_FRAMES_QA.jpg",
+    "sha256": "0802ca9e6a566c9c0c5cb0d0b8df9a3e9c2cb06c3690b5cf06adf043d64186e3",
+    "times_s": [
+      0.5,
+      2.4,
+      4.5
+    ],
+    "luma_means": [
+      142.97,
+      145.8,
+      101.42
+    ],
+    "frame_difference_means": [
+      38.988,
+      96.384
+    ],
+    "motion_in_samples_confirmed": true
+  },
+  "editorial_analysis": {
+    "canonical_storyboard_scene": "A dor da espera",
+    "storyboard_visual": "Same anonymous adult hand resting on worn wooden table near discreet analog clock; dark charcoal jacket; warm fingertips; subtle side dolly; negative space below for karaoke",
+    "observed_visual": "Bright desk with documents and tools, numerous objects and large bottles, person writing/organizing materials; mustard-brown sleeve and back/head visible by 4.5 s; small clock at far left; dynamic busy hands",
+    "mismatches": [
+      "Hard bright workspace/office light vs approved S01 nocturnal rain atmosphere",
+      "Mustard-brown outerwear vs storyboard dark charcoal jacket continuity",
+      "Active writing/organizing implies work productivity, not stillness or bodily waiting",
+      "Small clock at left margin is not near resting hand in the shown frames",
+      "Busy tabletop competes with subtitles and undermines restrained investigative-noir palette",
+      "Same actor/location as S01 not independently demonstrated"
+    ],
+    "strengths": [
+      "native 2160x3840 vertical crop without upscaling",
+      "real decodable changing film frames",
+      "documented free stock listing; no paid API"
+    ],
+    "editorial_score_status": "FAIL_STORY_AND_PALETTE_FIT",
+    "license_status": "GENERAL_PEXELS_LISTING_ONLY_NOT_INDIVIDUAL_CLEARANCE"
+  },
+  "evidence_action": "https://github.com/BORELLITO/verbo-no-chao-engine/actions/runs/44711536426",
+  "private_evidence": "/VERBO_NO_CHAO/E01_STOCK_QA_20261120/S02_HAND_DESK_9903488_REJECTED/",
+  "preserved_reference": {
+    "s01_owner_visual_approval_sha256": "724ae91368af7d843f39195b34f77db50341aa7f92b0e5960a17061e9da3f961",
+    "s01_unchanged": true,
+    "previous_s02_grade_a_sha256": "0392829780be80a3228c5c03ee9f06aa9a6332ea1222b95e2687279596b022c3",
+    "previous_s02_with_original_audio_sha256": "979fcb7d630177efc99e76baa98adc0d34cf0d3a89beaf06484060c7bdd6e5f6",
+    "previous_s02_owner_approved": false,
+    "previous_s02_still_not_discarded": true
+  },
+  "s02_owner_approved": false,
+  "rights_cleared": false,
+  "master_allowed": false,
+  "publication_authorized": false,
+  "merge_authorized": false,
+  "new_spending_authorized": false,
+  "next_action": "Look for verified native moving footage matching a night interior with a resting hand and discreet time reference; do not repeat bright workspace source for S02.",
+  "date_local": "2026-11-20"
+}
