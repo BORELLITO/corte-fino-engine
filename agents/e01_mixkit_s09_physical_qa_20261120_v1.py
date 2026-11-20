@@ -25,7 +25,7 @@ TARGET_FPS = 30
 PREVIEW_FRAMES = 173
 W,H=720,1280
 CONTACT = "S09_MIXKIT_99890_3x3_REAL_CROPS_QA.jpg"
-PREVIEW = "S09_MIXKIT_99890_CENTER_CROP_MOTION_QA_NOT_MASTER.mp4"
+PREVIEW = "S09_MIXKIT_99890_RIGHT75_CROP_MOTION_QA_NOT_MASTER.mp4"
 REPORT = "S09_MIXKIT_99890_PHYSICAL_REPORT.json"
 QA_NOTICE = "PREVIA TECNICA / NAO PUBLICAR"
 
@@ -227,10 +227,16 @@ def contact_sheet(src,out,width,height):
 
 def render_center(src,dst,width,height):
     import math
-    from agents.e01_s01_night_rain_motif_probe_v1 import watermark
+    from PIL import Image, ImageDraw
     with tempfile.TemporaryDirectory(prefix="vnc-mixkit-overlay-") as td:
         overlay=Path(td)/"watermark.png"
-        watermark(overlay)
+        # Self-contained QA watermark: no dependency on unmerged S01 draft code.
+        im=Image.new("RGBA",(W,H),(0,0,0,0))
+        drawing=ImageDraw.Draw(im)
+        drawing.rectangle((0,0,W,60),fill=(0,0,0,165))
+        drawing.text((12,18),"VNC E01 S09 - PREVIA QA - NAO PUBLICAR",
+                     fill=(250,250,250,255))
+        im.save(overlay)
         cw=2*math.floor(height*9/16/2)
         filt=(f"[0:v]fps={TARGET_FPS},crop={cw}:{height}:(iw-{cw})/2:0,"
               f"scale={W}:{H}:flags=lanczos,setsar=1[scene];"
@@ -276,7 +282,9 @@ def run(out:Path):
         with tempfile.TemporaryDirectory(prefix="vnc-mixkit99890-") as working:
             source,receipt=download_original(Path(working))
             meta=source_metadata(source)
+            report["source"]={**receipt,**meta,"source_full_decode_claimed":False}
             contact=contact_sheet(source,qa_jpg,meta["width"],meta["height"])
+            report["cropping"]=contact
             movie=render_center(source,qa_mp4,meta["width"],meta["height"])
             report.update(status="PHYSICAL_MIXKIT_S09_PREVIEW_READY_FOR_EDITORIAL_QA",
                           source={**receipt,**meta,"source_full_decode_claimed":False},
