@@ -1,9 +1,9 @@
-{"queries":{
-"S02_espera":["person waiting window","waiting hands","clock ticking night"],
-"S03_injustica":["night street rain city","empty street night","crowd walking city"],
-"S06_oracao":["praying","praying hands","bible reading"],
-"S07_escrita":["writing notebook","hand writing","open bible"],
-"S08_dialogo":["person thinking window","contemplation","listening"],
-"S09_anotando":["taking notes","journal writing","pen paper"],
-"S11_oracao_luz":["sunrise window","light through window","hope sunrise"],
-"S12_esperanca":["sunrise hills","walking forward path","dawn light"]}}
+{"per_scene":10,"queries":{
+"S02":["waiting","hands waiting","clock"],
+"S03":["rainy street night","empty street","city night"],
+"S06":["praying","hands prayer","bible"],
+"S07":["writing","open book","reading bible"],
+"S08":["thinking","contemplating window","pensive"],
+"S09":["taking notes","journal","writing notebook"],
+"S11":["sunrise window","light window","morning prayer"],
+"S12":["sunrise","path forward","dawn hills"]}}
