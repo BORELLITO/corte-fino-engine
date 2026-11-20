@@ -1,5 +1,4 @@
 # Producer runtime (CI only). Versions to be pinned after the first successful run.
-numpy>=2,<3
 soundfile>=0.12,<1
 kokoro>=0.9,<1
 faster-whisper==1.2.1

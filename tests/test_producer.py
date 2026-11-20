@@ -3,12 +3,12 @@
 The doubles are only ever used here; the real providers fail closed (see last tests).
 """
 import json
+import math
 import tempfile
 import unittest
 import wave
+from array import array
 from pathlib import Path
-
-import numpy as np
 
 from orchestrator.runflow import run_flow
 from producer import captions
@@ -32,8 +32,7 @@ class FakeVoice:
 
     def synthesize(self, text, dst):
         n = int(24000 * (0.4 + 0.08 * len(text.split())))
-        t = np.arange(n) / 24000
-        pcm = (0.3 * np.sin(2 * np.pi * 220 * t) * 32767).astype("<i2")
+        pcm = array("h", (int(0.3 * 32767 * math.sin(2 * math.pi * 220 * i / 24000)) for i in range(n)))
         with wave.open(str(dst), "wb") as w:
             w.setnchannels(1); w.setsampwidth(2); w.setframerate(24000)
             w.writeframes(pcm.tobytes())

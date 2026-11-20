@@ -1,6 +1,7 @@
 """Voice stage: one WAV per scene, so scene timing is measured, never guessed."""
 from __future__ import annotations
 
+import re
 from pathlib import Path
 from typing import Protocol
 
@@ -42,8 +43,10 @@ class KokoroVoice:
         import soundfile as sf  # type: ignore
 
         try:
+            # espeak-based pt-BR G2P truncates long text unless sentences are split by "\n".
+            prepared = re.sub(r"(?<=[.!?;:])\s+", "\n", text.strip())
             chunks = [audio for _, _, audio in
-                      self._load()(text, voice=self.voice, speed=self.speed)]
+                      self._load()(prepared, voice=self.voice, speed=self.speed)]
         except Exception as exc:  # model download / inference failure
             raise ProducerError(f"producer:voice:kokoro_failed:{type(exc).__name__}") from exc
         if not chunks:
