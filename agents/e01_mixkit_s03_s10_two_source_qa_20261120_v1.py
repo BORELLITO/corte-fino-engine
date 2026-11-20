@@ -11,8 +11,12 @@ import urllib.request, urllib.parse
 from pathlib import Path
 
 from agents.e01_mixkit_s09_physical_qa_20261120_v1 import (
-    ROOT, CONTRACT, IntakeError, NoRedirect, file_sha, checked, probe
+    ROOT, IntakeError, NoRedirect, file_sha, checked, probe
 )
+
+# Relative path is intentional: adversarial tests must NEVER overwrite live
+# repo contracts when a temporary root is provided.
+CONTRACT = Path("contracts/e01_multibank_scene_coverage_20261120_v1.json")
 
 SOURCES={
  "S03":{
