@@ -66,7 +66,7 @@ def main():
         "ass_vs_ref_over_0.05": sum(abs(x) > .05 for x in ass_dev),
         "asr_text": " ".join(a[0] for a in asr)[:400],
     }
-    print(START); print(json.dumps(rep, ensure_ascii=False)); print(END)
+    print(START); print(json.dumps(rep, ensure_ascii=False, default=float)); print(END)
 
 
 main()
