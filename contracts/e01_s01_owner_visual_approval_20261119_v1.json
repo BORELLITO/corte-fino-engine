@@ -1,0 +1,37 @@
+{
+  "schema_version": "1.0.0",
+  "project_id": "VERBO_NO_CHAO_EXCLUSIVO",
+  "episode_id": "VNC-W01-E1",
+  "decision_id": "VNC-E01-S01-OWNER-VISUAL-APPROVAL-20261119",
+  "recorded_on_local_date": "2026-11-19",
+  "time_zone": "America/Sao_Paulo",
+  "source_of_decision": "User's direct message in this project conversation: Aprovado",
+  "approval_status": "APPROVED_S01_VISUAL_DIRECTION_ONLY",
+  "approval_scope": {
+    "scene_id": "VNC-E01V2-S01",
+    "concept": "NIGHT_RAIN_WINDOW_SINGLE_TAKE_SYMBOLIC_VISUAL_ALTERNATIVE",
+    "source_video_id": 31069867,
+    "preview_sha256": "724ae91368af7d843f39195b34f77db50341aa7f92b0e5960a17061e9da3f961",
+    "sample_preview_duration_seconds": 5.766667,
+    "preview_is_watermarked": true,
+    "visual_style_approved": true,
+    "symbolic_replacement_of_literal_room_a_for_s01_approved": true,
+    "extend_to_other_scenes_automatically": false
+  },
+  "non_authorizations": {
+    "approved_for_1080x1920_master": false,
+    "source_license_and_third_party_rights_cleared": false,
+    "face_logo_and_text_full_qa_completed": false,
+    "audio_mixing_approved": false,
+    "caption_sync_approved": false,
+    "other_eleven_scenes_approved": false,
+    "storyboard_mutation_auto_authorized": false,
+    "publish_or_schedule_authorized": false,
+    "production_branch_merge_authorized": false,
+    "new_spend_authorized": false
+  },
+  "operational_effect": "S01 visual concept approved; create an explicitly versioned candidate storyboard variant for downstream editorial review, keeping original V2 unchanged. Assess transition with S02 independently.",
+  "decision_provenance_note": "The approval is scoped from the user's immediate 'Aprovado' response to the physical S01 rain-motif preview and editorial presentation. It is not a cryptographic signature or release permit.",
+  "derived_from": "contracts/e01_s01_night_rain_physical_visual_review_20261119_v1.json",
+  "preserve_prior_qa_snapshots": true
+}
