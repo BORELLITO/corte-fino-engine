@@ -1,0 +1,48 @@
+name: Verbo no Chão — Chrome public browser instead of TinyFish (NO LOGIN)
+
+on:
+  push:
+    branches:
+      - "verbo-no-chao/e01-stock-curation-gate-v1"
+    paths:
+      - "agents/e01_public_browser_playwright.py"
+      - "tests/test_e01_public_browser_playwright.py"
+      - ".github/workflows/verbo-no-chao-public-playwright-browser.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: vnc-playwright-public-proof-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  chromium-public-document-proof:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Install Playwright and reuse official runner Google Chrome
+        run: |
+          python -m pip install --disable-pip-version-check "playwright>=1.55,<2"
+          if command -v google-chrome >/dev/null; then
+            google-chrome --version
+          else
+            python -m playwright install --with-deps chromium
+          fi
+      - name: Validate exact allowed public pages and no credential actions
+        run: python -m unittest tests.test_e01_public_browser_playwright -v
+      - name: Actually launch Chromium and inspect public pages, never log in
+        run: timeout -k 5s 130s python -u -m agents.e01_public_browser_playwright
+      - name: Preserve public-only proof, short retention
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: VNC-PUBLIC-PLAYWRIGHT-BROWSER-NO-TINY-NO-LOGIN
+          path: artifacts/e01_public_browser_playwright
+          if-no-files-found: warn
+          retention-days: 1

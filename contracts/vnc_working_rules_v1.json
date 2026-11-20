@@ -1,0 +1,48 @@
+{
+  "schema_version": "1",
+  "project": "VERBO NO CHAO",
+  "kind": "WORKING_RULES",
+  "set_by": "owner (user), 2026-11-20",
+  "scope": "every episode, every stage",
+  "rules": [
+    {
+      "id": "R1",
+      "name": "TANGIBLE_PREVIEW_EVERY_DELIVERY",
+      "text_pt": "Toda entrega traz um exemplo visual palpável (imagem, vídeo curto ou prova renderizada) para o usuário aprovar vendo. Sem prévia, a etapa não está entregue.",
+      "enforced_by": [
+        "tests/test_vnc_working_rules.py",
+        "contracts/e01_v3_preview_manifest_v1.json"
+      ]
+    },
+    {
+      "id": "R2",
+      "name": "REVIEW_AND_REFINE_ALL_CLIPS",
+      "text_pt": "Todos os clipes de todas as cenas são revisados e refinados a cada mudança de tempo, voz ou legenda: duração com folga, faixa protegida da legenda, continuidade, estado de direitos. Cena sem clipe viável é declarada como tal, nunca preenchida com suposição.",
+      "enforced_by": [
+        "tests/test_vnc_working_rules.py",
+        "agents/e01_v3_clip_review.py",
+        "contracts/e01_v3_clip_review_v1.json"
+      ]
+    },
+    {
+      "id": "R3",
+      "name": "ELEVENLABS_AUDIO_ONLY_FREE_VISUALS",
+      "text_pt": "O ElevenLabs é usado somente para áudio (voz, trilha, efeitos). Imagens e vídeos nunca são gerados nele. Visuais saem de stock gratuito ou de geração gratuita, sem gasto. Os 7 quadros IA já gerados lá (6 imagens novas + 1 referência S01, mais 1 vídeo S01 de teste) ficam permitidos como material de partida, sem novas gerações pagas.",
+      "enforced_by": [
+        "tests/test_vnc_working_rules.py",
+        "contracts/vnc_working_rules_v1.json"
+      ]
+    },
+    {
+      "id": "R4",
+      "name": "VOICE_LOCK_NO_REGENERATION",
+      "text_pt": "Uma vez gerada e escolhida a voz, ela é usada até a versão final do vídeo. Nunca gerar voz nova nem regerar o áudio à toa para não gastar créditos do ElevenLabs. Nova geração de voz só com pedido explícito do dono, aviso prévio de custo e motivo registrado. Cada etapa só entra em ação no seu momento, na ordem do pipeline.",
+      "enforced_by": [
+        "tests/test_vnc_working_rules.py",
+        "contracts/vnc_working_rules_v1.json",
+        "contracts/e01_pipeline_v3.json"
+      ]
+    }
+  ],
+  "honesty": "A prévia mostra o que foi gerado; não substitui aprovação do usuário nem revisão de quadros reais. O que não foi visto fica NÃO VERIFICADO."
+}

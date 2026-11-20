@@ -1,61 +1,63 @@
 name: Verbo no Chão — Runflow de Produção
 
+# Entrada única de produção. Custo novo R$0, sem segredos, sem publicação.
 on:
   workflow_dispatch:
     inputs:
-      brief_json:
-        description: "Brief JSON do próximo vídeo"
+      episode_id:
+        description: "Episódio (E01..E99)"
         required: true
+        default: "E01"
         type: string
-      provider_package_path:
-        description: "Diretório versionado com package.json e artefatos materializados pelo provedor cloud"
-        required: false
-        default: "run-input/package"
-        type: string
+      mode:
+        description: "preflight = só avaliar evidências; preview = avaliar e renderizar se houver pacote físico"
+        required: true
+        default: "preflight"
+        type: choice
+        options: [preflight, preview]
 
 permissions:
   contents: read
 
+concurrency:
+  group: verbo-no-chao-runflow-${{ inputs.episode_id }}
+  cancel-in-progress: false
+
 jobs:
   runflow:
     runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      VNC_BUDGET_NEW_SPEND: "0"
+      VNC_PUBLICATION_AUTHORIZED: "false"
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          persist-credentials: false
 
       - uses: actions/setup-python@v5
         with:
           python-version: "3.12"
 
-      - name: Write immutable run brief
-        env:
-          BRIEF_JSON: ${{ inputs.brief_json }}
+      - name: Testes do motor
         run: |
-          mkdir -p run-input
-          printf '%s' "$BRIEF_JSON" > run-input/brief.json
-          python - <<'PY'
-          import json
-          with open("run-input/brief.json", encoding="utf-8") as handle:
-              value = json.load(handle)
-          if not isinstance(value, dict):
-              raise SystemExit("brief_json must be an object")
-          print("brief: PASS")
-          PY
+          python -m unittest -q tests.test_runflow_entry tests.test_pipeline
 
-      - name: Execute cloud runflow and blocking gates
+      - name: Runflow (entrada única)
         env:
-          PACKAGE_DIR: ${{ inputs.provider_package_path }}
+          EPISODE_ID: ${{ inputs.episode_id }}
+          MODE: ${{ inputs.mode }}
         run: |
-          python -m orchestrator.runflow \
-            --brief run-input/brief.json \
-            --package-dir "$PACKAGE_DIR" \
-            --report-dir run-reports \
-            --render
+          python -m orchestrator.runflow_entry --episode-id "$EPISODE_ID" --mode "$MODE" --report-dir run-reports
+          cat run-reports/runflow_entry_summary.md >> "$GITHUB_STEP_SUMMARY"
 
-      - name: Upload validated run report
+      - name: Upload relatório sanitizado (somente JSON/MD)
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: verbo-no-chao-runflow-${{ github.run_id }}
-          path: run-reports/
+          name: verbo-no-chao-runflow-${{ inputs.episode_id }}-${{ github.run_id }}
+          path: |
+            run-reports/*.json
+            run-reports/*.md
           if-no-files-found: error
           retention-days: 14

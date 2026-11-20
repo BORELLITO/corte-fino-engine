@@ -1,0 +1,205 @@
+{
+ "schema_version": "1",
+ "project": "VERBO NO CHAO",
+ "episode_id": "E01",
+ "kind": "MIXKIT_VERTICAL_FRAME_REVIEW",
+ "evidence": "GitHub runs 44813173389, 44813654252, 44813835836 (branch verbo-no-chao/e01-ai-i2v-probe-20261120-v1): previews baixadas no runner, 5 quadros por clipe vistos pelo assistente; quadros e vídeos NÃO commitados",
+ "limits": "prévias 360x640 a 720x1280; 5 quadros por clipe, não reprodução completa; licença Mixkit Stock Video Free License vista na página, mas direitos de terceiros (pessoas, locais, letreiros) não liberados; nada aprovado",
+ "coverage": {
+  "scanned": "Mixkit com orientation=vertical, 12 temas de cena",
+  "not_scanned": [
+   "Pexels (busca nova)",
+   "Pixabay",
+   "Coverr",
+   "Videvo",
+   "Wikimedia",
+   "Internet Archive"
+  ],
+  "s11_s12_listing": "Mixkit devolveu 429 nas buscas de S11 e S12; sem resultado útil"
+ },
+ "scenes_with_strong_free_candidate": [
+  "S04",
+  "S05",
+  "S10"
+ ],
+ "scenes_without_acceptable_free_candidate": [
+  "S06",
+  "S07",
+  "S08",
+  "S09",
+  "S11",
+  "S12"
+ ],
+ "reviews": [
+  {
+   "scene": "S01",
+   "mixkit_id": "99841",
+   "verdict": "WEAK",
+   "reason_pt": "Bokeh de gotas na chuva, noite, 22 s, mas abstrato e verde saturado; sem janela nem ambiente.",
+   "approved": false,
+   "rights_cleared": false
+  },
+  {
+   "scene": "S02",
+   "mixkit_id": "100893",
+   "verdict": "CANDIDATE",
+   "reason_pt": "Dedo girando disco de telefone, tons âmbar, 19 s, 720x1280. Espera simbólica; sem rosto.",
+   "approved": false,
+   "rights_cleared": false
+  },
+  {
+   "scene": "S02",
+   "mixkit_id": "100950",
+   "verdict": "CANDIDATE",
+   "reason_pt": "Mãos em silhueta contra luzes noturnas da cidade, 5,3 s, 720x1280. Escuro e coerente com a paleta.",
+   "approved": false,
+   "rights_cleared": false
+  },
+  {
+   "scene": "S03",
+   "mixkit_id": "40746",
+   "verdict": "CANDIDATE",
+   "reason_pt": "Rua noturna com prédios azulados e grade, câmera estática, 11 s. Metáfora urbana sóbria.",
+   "approved": false,
+   "rights_cleared": false
+  },
+  {
+   "scene": "S03",
+   "mixkit_id": "3456",
+   "verdict": "WEAK",
+   "reason_pt": "Rua molhada à noite com faróis e clarões fortes, muito movimento; letreiro visível.",
+   "approved": false,
+   "rights_cleared": false
+  },
+  {
+   "scene": "S03",
+   "mixkit_id": "44694",
+   "verdict": "SUPPORT_ONLY",
+   "reason_pt": "Bokeh de avenida, abstrato; serve só de transição.",
+   "approved": false,
+   "rights_cleared": false
+  },
+  {
+   "scene": "S04",
+   "mixkit_id": "41739",
+   "verdict": "STRONG",
+   "reason_pt": "Mãos juntas em volta de uma vela em copo, vermelho e cobre, 12 s, vertical. Serve de símbolo sóbrio.",
+   "approved": false,
+   "rights_cleared": false
+  },
+  {
+   "scene": "S04",
+   "mixkit_id": "3438",
+   "verdict": "CANDIDATE",
+   "reason_pt": "Muitas velas com chamas, 11 s; fica escuro no fim.",
+   "approved": false,
+   "rights_cleared": false
+  },
+  {
+   "scene": "S04",
+   "mixkit_id": "3458",
+   "verdict": "WEAK",
+   "reason_pt": "Uma vela, quase tudo preto; chama some no fim.",
+   "approved": false,
+   "rights_cleared": false
+  },
+  {
+   "scene": "S05",
+   "mixkit_id": "22724",
+   "verdict": "STRONG",
+   "reason_pt": "Porta de igreja gótica ao fundo, vitrais e pessoas em silhueta, 12 s, solene e escuro; direitos de imagem de pessoas e local a checar.",
+   "approved": false,
+   "rights_cleared": false
+  },
+  {
+   "scene": "S06",
+   "mixkit_id": "4953",
+   "verdict": "REJECTED",
+   "reason_pt": "Mulher escrevendo em caderno, rosto visível e luz clara.",
+   "approved": false,
+   "rights_cleared": false
+  },
+  {
+   "scene": "S06",
+   "mixkit_id": "101404",
+   "verdict": "REJECTED",
+   "reason_pt": "Máquina de escrever vermelha em mesa branca com xícara; claro e colorido.",
+   "approved": false,
+   "rights_cleared": false
+  },
+  {
+   "scene": "S07",
+   "mixkit_id": "42734",
+   "verdict": "REJECTED",
+   "reason_pt": "Rosto de mulher com árvore sobreposta; fora do tom.",
+   "approved": false,
+   "rights_cleared": false
+  },
+  {
+   "scene": "S07",
+   "mixkit_id": "100558",
+   "verdict": "WEAK",
+   "reason_pt": "Silhueta em janela escura, preto e branco granulado, horizontal 640x360 na prévia.",
+   "approved": false,
+   "rights_cleared": false
+  },
+  {
+   "scene": "S09",
+   "mixkit_id": "39855",
+   "verdict": "REJECTED",
+   "reason_pt": "Mão escrevendo em folha branca com monitor; claro.",
+   "approved": false,
+   "rights_cleared": false
+  },
+  {
+   "scene": "S09",
+   "mixkit_id": "101542",
+   "verdict": "REJECTED",
+   "reason_pt": "Mãos digitando em teclado branco; claro.",
+   "approved": false,
+   "rights_cleared": false
+  },
+  {
+   "scene": "S10",
+   "mixkit_id": "100951",
+   "verdict": "STRONG",
+   "reason_pt": "Mãos em silhueta se unindo contra luzes noturnas da cidade, 7,8 s, 720x1280; sem rosto, sem promessa de cura.",
+   "approved": false,
+   "rights_cleared": false
+  },
+  {
+   "scene": "S10",
+   "mixkit_id": "100953",
+   "verdict": "WEAK",
+   "reason_pt": "Casal em silhueta testa com testa; leitura romântica, não de apoio.",
+   "approved": false,
+   "rights_cleared": false
+  },
+  {
+   "scene": "S10",
+   "mixkit_id": "100735",
+   "verdict": "REJECTED",
+   "reason_pt": "Fundo verde (chroma key).",
+   "approved": false,
+   "rights_cleared": false
+  },
+  {
+   "scene": "S01",
+   "mixkit_id": "101475",
+   "verdict": "REJECTED",
+   "reason_pt": "Reflexo de guarda-chuva em água azul clara; fora do tom.",
+   "approved": false,
+   "rights_cleared": false
+  },
+  {
+   "scene": "S01",
+   "mixkit_id": "101485",
+   "verdict": "REJECTED",
+   "reason_pt": "Reflexo de casal na chuva em água azul clara; fora do tom.",
+   "approved": false,
+   "rights_cleared": false
+  }
+ ],
+ "any_clip_approved": false,
+ "publication_authorized": false
+}

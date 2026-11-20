@@ -1,0 +1,42 @@
+name: Verbo no Chão — S10 genuine support hands retake physical QA
+
+on:
+  push:
+    branches:
+      - "verbo-no-chao/e01-stock-curation-gate-v1"
+    paths:
+      - "agents/e01_s10_support_v2.py"
+      - "tests/test_e01_s10_support_v2.py"
+      - ".github/workflows/verbo-no-chao-e01-s10-support-retake.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  support-s10:
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Validate correct source and release lock
+        run: python -m unittest tests.test_e01_s10_support_v2 -v
+      - name: Verify FFmpeg
+        run: |
+          if ! command -v ffmpeg >/dev/null || ! command -v ffprobe >/dev/null; then
+            sudo apt-get update -qq
+            sudo DEBIAN_FRONTEND=noninteractive apt-get install -y -qq ffmpeg
+          fi
+      - name: Download one no-key source, decode, sample 3 frames
+        run: timeout -k 5s 355s python -u -m agents.e01_s10_support_v2
+      - name: Preserve physical editorial material temporarily
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: VNC-E01-S10-support-hands-real-footage-EDITORIAL-PENDING
+          path: artifacts/e01_s10_support_v2
+          retention-days: 1
+          if-no-files-found: warn

@@ -1,0 +1,45 @@
+{
+ "schema_version": "1.0.0",
+ "project": "verbo-no-chao",
+ "episode_id": "E01",
+ "kind": "CLIP_DIRECTION_APPROVAL_BY_OWNER",
+ "approved_by_user": true,
+ "approved_on": "2026-11-20",
+ "scope": "DIRECAO_VISUAL_APENAS_NAO_MASTER",
+ "any_clip_approved": true,
+ "rights_cleared": false,
+ "publication_authorized": false,
+ "clips": [
+  {
+   "scene": "S01",
+   "source": "pexels",
+   "id": "19967985"
+  },
+  {
+   "scene": "S04",
+   "source": "mixkit",
+   "id": "41739"
+  },
+  {
+   "scene": "S05",
+   "source": "pexels",
+   "id": "30635115"
+  },
+  {
+   "scene": "S10",
+   "source": "pexels",
+   "id": "5493833"
+  }
+ ],
+ "scenes_without_approved_clip": [
+  "S02",
+  "S03",
+  "S06",
+  "S07",
+  "S08",
+  "S09",
+  "S11",
+  "S12"
+ ],
+ "note_pt": "Aprovação visual do dono. Direitos de cada clipe seguem NÃO VERIFICADOS; nada aqui é master nem publicação."
+}

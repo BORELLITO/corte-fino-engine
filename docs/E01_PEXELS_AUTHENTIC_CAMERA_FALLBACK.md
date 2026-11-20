@@ -1,0 +1,19 @@
+# E01 no-key licensed 4K camera video alternative — provider Pexels
+
+This is a second **fully automated and no-cost way to obtain genuinely camera-recorded motion**, not AI-generated footage. It does not solve the generation of 12 custom actor-consistent scenes and does not replace the approved AI continuity plan.
+
+- **Real concrete candidate:** https://www.pexels.com/video/a-silhouette-of-a-man-sitting-alone-beside-a-window-8860242/ ; cottonbro studio, 4096×2160, 25fps, 36 seconds (as labeled by Pexels).
+- **Source license:** https://www.pexels.com/license/ ; Pexels authorizes free use, editing, and usage on social platforms, subject to restrictions for identifiable people, endorsement and offensive framing. Pexels explicitly permits use on YouTube. Real person depicted in a spiritually reflective scene must not be represented as real victim or endorsed religious statements. Identity and any recognizable face remain subject to review.
+- **Download:** Pexels public download button resolves to first-party videos.pexels.com MP4 (official URL); no API key or account used. It may block bots; that is a provider-level failure that cannot be bypassed by extracting hidden secrets or using proxies.
+- Single bounded CI run downloads original source into ephemeral runner with 500MB cap and extracts three different crop choices (left / center / right) at **720×1280 and ~6.1 sec**, preserving source temporal movement and original fps 25. No invented content or slideshow. Source is discarded locally after conversion, preview/sha report artifacts expire after 1 day.
+- Full FFmpeg stream decoding, actual 9:16 geometry, duration >=5.74s, SHA256 hash and still reference frame required. Presence of the actor/window, dark night mood, closed notebook and rain **is not inferred from resolution**. Cinematic 9:16 crop may exclude actor; all choices require subjective visual audit before adoption.
+- Different natural FPS than 30fps master remains a technical issue; lossless resampling must not be described as native capture at 30fps. Resolution master 1080×1920 remains blocked.
+- Successful technical access does not grant source ownership, rights beyond Pexels terms, character match or publish clearance. No changes to S01 approved story or prior 12-scene lock.
+- **Before execution:** configured, no MP4 acquired yet. Will update after GitHub Actions physical test.
+
+## Other genuine no-cost possibilities investigated
+- **Agnes AI 2.5 Flash** API: official developer repository describes **$0/sec promotional 720p T2V**, current in November 2026, but requires initial **free API key from Agnes Platform** and free queue can be congested. Zero spending requires free model only and authorization check; never invent user credentials or silently enroll. Official model catalog: https://github.com/AgnesAI-Labs/skills/blob/main/agnes-ai-models/references/model_catalog.md ; https://github.com/AgnesAI-Labs/AgnesAI-Models.
+- **Google Vids** official free personal video generations, 1080p available but requires Google login in interactive app; no free public API verified. https://support.google.com/docs/answer/15609411 and https://blog.google/products-and-platforms/products/workspace/omni-1-2-flash-google-vids/
+- **Bing Video Creator** standard-speed is free, requires personal Microsoft sign-in, no supported no-login API. https://www.microsoft.com/bing/features/bing-video-creator
+- **ZSky AI** free browser unlimited video but explicitly PROHIBITS headless browser and automation on free tier. API only Max paid, do not attempt to automate. https://zsky.ai/terms ; https://zsky.ai/developers
+- **Kaggle** free GPU notebooks via authenticated Kaggle API after one-time verification. Useful more stable in the long run only if account/API key connected; do not claim free GPU means free anonymous API. https://www.kaggle.com/docs/notebooks

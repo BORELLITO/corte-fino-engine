@@ -1,0 +1,74 @@
+{
+  "schema_version": "1.0.0",
+  "project_id": "VERBO_NO_CHAO_EXCLUSIVO",
+  "episode_id": "VNC-W01-E1",
+  "scene_id": "VNC-E01V2-S04",
+  "review_date": "2026-11-19",
+  "reviewer_role": "EDITORIAL_DIRECTOR_FRAME_INSPECTION",
+  "canonical_source": "contracts/e01_v2_12_scene_visual_plan_v1.json",
+  "status": "BOTH_STOCK_SOURCES_REJECTED_FOR_S04_ONLY",
+  "source_s04_duration_seconds": 5.82,
+  "rejected_source_video_ids": [
+    7977614,
+    11137423
+  ],
+  "editorial_approved": false,
+  "commercial_rights_cleared": false,
+  "allowed_in_master": false,
+  "publication_authorized": false,
+  "evidence": [
+    {
+      "id": 7977614,
+      "source_page": "https://www.pexels.com/video/person-using-a-quill-7977614/",
+      "source_author": "RDNE Stock project",
+      "decision": "REJECTED_FOR_S04",
+      "reason_pt": "12 quadros reais mostram caveira decorativa ao fundo, figurino de aparência mística, livro de fantasia e pena larga; a iconografia de bruxaria conflita com a representação bíblica simbólica sóbria.",
+      "source_sha256": "3140ee521b6e24fdb2d4660d0cf038e53f19e17faf85b0e3232ecc81d2a397c0",
+      "source_bytes": 5615842,
+      "duration_seconds": 13.6136,
+      "width": 1080,
+      "height": 1920,
+      "fps": 29.97002997002997,
+      "fully_decoded": true,
+      "frames_reviewed": 12,
+      "contact_sheet_hashes": [
+        "3bcf688bcbed4fcf1833f954cd20153374435543b3aedc8d766c8d236d00d7a7",
+        "a9da3abe7f8b19ff7eb897043c4832c4fe3d2ca2bfc5dd81031e706f2420156d"
+      ],
+      "technical_run": "https://github.com/BORELLITO/corte-fino-engine/actions/runs/44488842125",
+      "commercial_rights_cleared": false,
+      "allowed_for_s04_master": false
+    },
+    {
+      "id": 11137423,
+      "source_page": "https://www.pexels.com/video/close-up-on-writing-with-ink-pen-11137423/",
+      "source_author": "emirkhan bal",
+      "decision": "REJECTED_FOR_S04",
+      "reason_pt": "12 quadros de recorte central mostram caneta metálica moderna, escrita legível e mão truncada pela borda direita; plano 16:9 tem vela afastada da mão, impossível enquadrar ambos no 9:16 nativo sem extrapolar o recorte. Não corresponde a pena de junco pairando sobre pergaminho vazio.",
+      "source_sha256": "357430ded428ceaa4d9bf00a58b74fb54f8ed9f020110faf3d3db1dabc7f9f4f",
+      "source_bytes": 34387210,
+      "duration_seconds": 20.415,
+      "width": 3840,
+      "height": 2160,
+      "fps": 25,
+      "portrait_native_crop": [
+        1214,
+        2160
+      ],
+      "fully_decoded": true,
+      "frames_reviewed": 12,
+      "wide_frames_reviewed": 8,
+      "contact_sheet_hashes": [
+        "07df8fb4736602844f934fd7ea96db4fdbc0dda87a43bdbc5ab0a47d068dd182",
+        "7d3f3a17f186658c1613e72890144b87f70418b2442a1336a2e38ab938b9059d",
+        "9d5ccd3f52adfd5afe016a4c4d62a3b4b49112810a5f17f8584157c8309df720"
+      ],
+      "technical_run": "https://github.com/BORELLITO/corte-fino-engine/actions/runs/44489536506",
+      "commercial_rights_cleared": false,
+      "allowed_for_s04_master": false
+    }
+  ],
+  "policy": "Scene-specific block only. Do not change canonical source blacklists or label footage as generative. Pexels commercial license generic permission does not prove featured IP/person rights or scene suitability.",
+  "automatic_reselection_for_s04": false,
+  "master_created": false
+}

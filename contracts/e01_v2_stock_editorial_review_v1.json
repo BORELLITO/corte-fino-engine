@@ -1,0 +1,58 @@
+{
+  "schema_version": "1.0.0",
+  "project": "verbo-no-chao",
+  "episode_id": "VNC-W01-E1",
+  "candidate_version": 2,
+  "scope": "THREE_SAMPLED_FRAMES_PER_STOCK_VIDEO_EDITORIAL_REVIEW",
+  "evidence_action_run": 44222503550,
+  "evidence_action_url": "https://github.com/BORELLITO/corte-fino-engine/actions/runs/44222503550",
+  "evidence_artifact_id": 14391027472,
+  "contact_sheet_sha256": "54e3f9b9ba891565b1fae13146cda41804c68269b564551b574abcd709bb367b",
+  "frames_inspected_total": 12,
+  "review_basis": "Real Pexels video frames at 15%, 50%, 85% from actual verified MP4s; editorial judgment based only on those twelve samples, not the entire video",
+  "reviewed_video_full_playback": false,
+  "rights_cleared": false,
+  "first_party_music_license_cleared": false,
+  "voice_runtime_license_cleared": false,
+  "editorial_release_authorized": false,
+  "master_rendered": false,
+  "publication_authorized": false,
+  "decisions": [
+    {
+      "asset_id": "E01V2-STOCK-S03-A",
+      "scene_id": "VNC-E01V2-S03",
+      "decision": "REJECTED_HARMONY",
+      "shot_score_0_5": 2,
+      "rationale": "Rainy street shows everyday traffic and pedestrians, but social-injustice passage is not meaningfully represented; distant signages and scene do not establish the intended Brazilian narrative. Avoid stock filler.",
+      "rights_released": false,
+      "allowed_for_master": false
+    },
+    {
+      "asset_id": "E01V2-STOCK-S05-A",
+      "scene_id": "VNC-E01V2-S05",
+      "decision": "CONDITIONAL_METAPHOR",
+      "shot_score_0_5": 3,
+      "rationale": "Dim warm-amber corridor visually matches tension and atmosphere; not evidence of historical biblical architecture. Conditional on careful context, safe-zone, logo and source-rights review.",
+      "rights_released": false,
+      "allowed_for_master": false
+    },
+    {
+      "asset_id": "E01V2-STOCK-S08-A",
+      "scene_id": "VNC-E01V2-S08",
+      "decision": "REJECTED_HARMONY",
+      "shot_score_0_5": 1,
+      "rationale": "Front close-up exposes face and eyeglasses of a different actor; contradicts anonymous recurring protagonist and original hands-only prayer concept. Third-party depiction needs separate checking.",
+      "rights_released": false,
+      "allowed_for_master": false
+    },
+    {
+      "asset_id": "E01V2-STOCK-S09-A",
+      "scene_id": "VNC-E01V2-S09",
+      "decision": "REJECTED_HARMONY",
+      "shot_score_0_5": 1,
+      "rationale": "Bright office/laptop and visible person mismatch dark modest-room journal aesthetic; writing may be readable and frames resemble generic corporate stock.",
+      "rights_released": false,
+      "allowed_for_master": false
+    }
+  ]
+}

@@ -1,0 +1,42 @@
+name: Verbo no Chão — independent S10 S05 real stock physical QA
+
+on:
+  push:
+    branches:
+      - "verbo-no-chao/e01-stock-curation-gate-v1"
+    paths:
+      - "agents/e01_two_real_stock_support.py"
+      - "tests/test_e01_two_real_stock_support.py"
+      - ".github/workflows/verbo-no-chao-supporting-scenes-qa.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  two-scenes:
+    runs-on: ubuntu-latest
+    timeout-minutes: 14
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Unit tests for download safety, scene mapping and release locks
+        run: python -m unittest tests.test_e01_two_real_stock_support -v
+      - name: Install free video decoder if needed
+        run: |
+          if ! command -v ffmpeg >/dev/null || ! command -v ffprobe >/dev/null; then
+            sudo apt-get update -qq
+            sudo DEBIAN_FRONTEND=noninteractive apt-get install -y -qq ffmpeg
+          fi
+      - name: Download each public source once, crop and decode both
+        run: timeout -k 5s 720s python -u agents/e01_two_real_stock_support.py
+      - name: Preserve only short-lived candidate videos and QA report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: VNC-E01-S10-S05-real-video-candidates-EDITORIAL-PENDING
+          path: artifacts/e01_two_stock_support_candidates
+          retention-days: 1
+          if-no-files-found: warn

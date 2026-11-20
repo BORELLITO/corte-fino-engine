@@ -1,0 +1,46 @@
+name: Verbo no Chão — E01 replacement real-clip QA (no master)
+
+on:
+  push:
+    branches:
+      - "verbo-no-chao/e01-stock-curation-gate-v1"
+    paths:
+      - "agents/e01_stock_alternatives.py"
+      - "tests/test_e01_stock_alternatives.py"
+      - "contracts/e01_v2_stock_alternatives_v1.json"
+      - ".github/workflows/verbo-no-chao-e01-alternatives.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  alternatives-physical-and-contact-qa:
+    runs-on: ubuntu-latest
+    timeout-minutes: 19
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Install imaging dependency and video decoders
+        run: |
+          python -m pip install "Pillow>=11.3,<13"
+          if ! command -v ffmpeg >/dev/null || ! command -v ffprobe >/dev/null; then
+            sudo apt-get update -qq
+            sudo DEBIAN_FRONTEND=noninteractive apt-get install -y -qq ffmpeg
+          fi
+      - name: Execute adversarial tests
+        run: python -m unittest tests.test_e01_stock_alternatives tests.test_e01_stock_frame_qa -v
+      - name: Verify four different replacement MP4s and sample real frames
+        run: python -m agents.e01_stock_alternatives --out e01-alt-qa
+      - name: Upload tiny QA evidence only
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: verbo-no-chao-e01-alt-qa-${{ github.run_id }}
+          path: |
+            e01-alt-qa/*.json
+            e01-alt-qa/*contact-sheet-NOT-PUBLISH.jpg
+          if-no-files-found: warn
+          retention-days: 2

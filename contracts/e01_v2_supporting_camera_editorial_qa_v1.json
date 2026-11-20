@@ -1,0 +1,92 @@
+{
+  "schema_version": "1.0.0",
+  "project": "verbo-no-chao",
+  "episode_id": "VNC-W01-E1",
+  "scope": "TWO_REAL_STOCK_SCENES_FIRST_PASS_AND_S10_RETARGET",
+  "source_license": "https://www.pexels.com/license/",
+  "prior_runs": [
+    44299321368,
+    44300173063
+  ],
+  "source_backup_private_drive_verified": true,
+  "prior_sources": [
+    {
+      "scene_id": "VNC-E01V2-S10",
+      "video_id": 4828603,
+      "source_sha256": "575423922f4c026cb06e5213d5a4ff4facafbdfe131b795d3ef8ea90680366e1",
+      "preview_sha256": "a78164cdc8a97d92dc727b245bc15afc0313189775a09f8f6caba5cb91411f78",
+      "technical_decode": true,
+      "actual_preview_duration": 8,
+      "decision": "REJECTED_NARRATIVE",
+      "reason": "Casual coffee drinking/cafe with an electronic object; does not show community support clearly; tabletop is commercial cafe."
+    },
+    {
+      "scene_id": "VNC-E01V2-S05",
+      "video_id": 37340388,
+      "source_sha256": "d497186c118041aecb457938e6337f20744b20a7042f24aecbe50e7aee103a34",
+      "preview_sha256": "869917b52b83b5ec07f439c76934524d2adffbf8a9aff8d766f92d9d46ea05a8",
+      "technical_decode": true,
+      "actual_preview_duration": 8,
+      "decision": "REJECTED_HISTORICAL_CONTEXT",
+      "reason": "Very recognisable sunlit real stone courtyard/arches, bright blue bench/carpeting; risk of pretending a genuine religious site depicts ancient Judah, contrary to locked metaphor."
+    }
+  ],
+  "s10_candidate": {
+    "scene_id": "VNC-E01V2-S10",
+    "video_id": 6381001,
+    "creator": "Liza Summer",
+    "page": "https://www.pexels.com/video/woman-holding-the-hand-of-another-person-6381001/",
+    "source_sha256": "46b4219d2f563cb48ffb18c24c1987f9512ac80862fbd0b778ba2cfd6385b926",
+    "source_original_dimensions": [
+      1440,
+      2560
+    ],
+    "source_original_fps": "24000/1001",
+    "source_original_duration_seconds": 10.01,
+    "source_bytes": 10411117,
+    "preview_sha256": "7d094a12d8fb3a9bcfcdc9e98895f97191b392258a7cfd94f219b49b7a3a0e9a",
+    "preview_duration_seconds": 8,
+    "preview_width": 720,
+    "preview_height": 1280,
+    "preview_derived_fps": "30/1",
+    "second_graded_preview_sha256": "996cacfe98ed8169ef0931f45ea336ee520441c7b5b545c07178857d2fea5a35",
+    "second_graded_preview_bytes": 843214,
+    "grade_recipe": "crop=620:1102:50:178,scale=720:1280:flags=lanczos,eq=brightness=-0.035:contrast=1.06:saturation=0.81",
+    "graded_local_preview_only": true,
+    "graded_backup_in_drive": false,
+    "qa_frames_first_pass_seconds": [
+      1.2,
+      4,
+      6.8
+    ],
+    "qa_frames_second_pass_seconds": [
+      0.5,
+      1.5,
+      2.5,
+      3.5,
+      4.5,
+      5.5,
+      6.5,
+      7.5
+    ],
+    "people_facial_identity_not_shown_in_cropped_review": true,
+    "video_is_physically_recorded_not_ai_generated": true,
+    "physical_video_motion": true,
+    "visible_actual_supportive_gesture": true,
+    "hands_on_table": false,
+    "room_matches_modest_community_room": false,
+    "main_actor_or_wardrobe_continuity_verified": false,
+    "condition": "CONDITIONAL_SYMBOLIC_SUPPORT_ONLY",
+    "score_0_5": 3.5,
+    "reason": "Real, unambiguous supportive hands and privacy-friendly faceless crop; but denim daylight sofa differs from script's simple community table/dark look. Can be a symbolic closeup only after formal editorial decision.",
+    "accepted_for_locked_storyboard": false,
+    "license_rights_reviewed_for_specific_usage": false
+  },
+  "underlying_video_source_claim_revalidated_with_raw_capture": false,
+  "source_licence_legal_review_complete": false,
+  "participant_endorsement_authorized": false,
+  "full_editorial_review_completed": false,
+  "rights_cleared": false,
+  "final_master_produced": false,
+  "publication_authorized": false
+}

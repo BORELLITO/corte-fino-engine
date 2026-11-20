@@ -1,0 +1,22 @@
+{
+ "schema_version": "1.0.0",
+ "project": "verbo-no-chao",
+ "kind": "OWNER_STANDING_AUTONOMY",
+ "declared_on": "2026-11-20",
+ "claude_may_approve": [
+  "direção visual de clipes (coerência, harmonia, tom de paz, prosperidade e fé)",
+  "verificação de licença em páginas oficiais",
+  "merge de PRs do motor com CI verde e testes passando"
+ ],
+ "claude_must_not": [
+  "publicar ou agendar publicação",
+  "gastar dinheiro ou créditos novos",
+  "gerar nova voz (R4)",
+  "gerar imagem ou vídeo no ElevenLabs (R3)",
+  "expor mídia com direitos pendentes em repositório público"
+ ],
+ "owner_only": [
+  "publicação final"
+ ],
+ "note_pt": "O dono aprovou a primeira vez como exemplo; as próximas aprovações visuais e de direitos são do Claude, com evidência registrada."
+}

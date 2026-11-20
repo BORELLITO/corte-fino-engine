@@ -1,0 +1,35 @@
+name: Verbo no Chão — Wan ZeroGPU retired remote probe, offline guard only
+
+# MASTER V2 containment (2026-11-20). No manual replay of third-party GPU
+# calls. Preserve historical module/evidence but stop automatic provider use.
+on:
+  push:
+    branches:
+      - "verbo-no-chao/e01-stock-curation-gate-v1"
+    paths:
+      - ".github/workflows/verbo-no-chao-e01-free-motion-probe.yml"
+      - "tests/test_vnc_provider_replay_containment_v2.py"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: vnc-wan22-retired-provider-guard
+  cancel-in-progress: false
+
+jobs:
+  offline-only:
+    name: VNC Wan22 offline anti-replay gate (zero GPU calls)
+    runs-on: ubuntu-latest
+    timeout-minutes: 3
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065
+        with:
+          python-version: "3.12"
+      - name: Verify no remote GPU generation path
+        run: python -m unittest tests.test_vnc_provider_replay_containment_v2 -v
+
+# No workflow_dispatch, schedule, Gradio, provider prediction, upload or publish.

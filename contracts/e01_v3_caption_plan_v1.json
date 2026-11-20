@@ -1,0 +1,173 @@
+{
+ "schema_version": "1.0.0",
+ "episode_id": "VNC-W01-E1",
+ "kind": "CURATED_CAPTION_PLAN",
+ "note": "Editor-reviewed line breaks (tokens carry ORIGINAL punctuation; display rules strip it). Rule checks in agents/e01_v2_caption_pipeline.py; residual flagged cues listed in docs.",
+ "cues": [
+  [
+   "Você já repetiu",
+   "a mesma pergunta"
+  ],
+  [
+   "tantas vezes",
+   "que começou"
+  ],
+  [
+   "a acreditar",
+   "que ninguém"
+  ],
+  [
+   "estava ouvindo?"
+  ],
+  [
+   "Às vezes,",
+   "esperar machuca."
+  ],
+  [
+   "Dói ainda mais",
+   "ver injustiças"
+  ],
+  [
+   "repetidas",
+   "e pessoas feridas,"
+  ],
+  [
+   "enquanto parece",
+   "que nada muda."
+  ],
+  [
+   "E admitir",
+   "essa revolta"
+  ],
+  [
+   "pode trazer",
+   "vergonha."
+  ],
+  [
+   "Em Habacuque,",
+   "capítulo um,"
+  ],
+  [
+   "o profeta",
+   "denuncia violência,"
+  ],
+  [
+   "injustiça e uma lei",
+   "que perdeu a força."
+  ],
+  [
+   "Ele leva",
+   "essa indignação"
+  ],
+  [
+   "a Deus."
+  ],
+  [
+   "Não está buscando"
+  ],
+  [
+   "uma conquista",
+   "pessoal: sofre"
+  ],
+  [
+   "diante de uma",
+   "sociedade ferida."
+  ],
+  [
+   "Os primeiros versos",
+   "não entregam"
+  ],
+  [
+   "uma explicação",
+   "confortável."
+  ],
+  [
+   "Mostram",
+   "um homem"
+  ],
+  [
+   "que se recusa",
+   "a chamar"
+  ],
+  [
+   "o mal de normal"
+  ],
+  [
+   "e não esconde",
+   "suas perguntas."
+  ],
+  [
+   "O diálogo continua",
+   "ao longo do livro,"
+  ],
+  [
+   "com respostas",
+   "difíceis."
+  ],
+  [
+   "A fé não precisa",
+   "fingir"
+  ],
+  [
+   "que a injustiça",
+   "é paz."
+  ],
+  [
+   "É possível orar",
+   "e reconhecer"
+  ],
+  [
+   "o que precisa",
+   "ser enfrentado."
+  ],
+  [
+   "Talvez hoje",
+   "você precise"
+  ],
+  [
+   "nomear",
+   "o que está errado,"
+  ],
+  [
+   "procurar apoio",
+   "confiável"
+  ],
+  [
+   "ou dar um passo",
+   "responsável"
+  ],
+  [
+   "em favor de alguém."
+  ],
+  [
+   "E pode levar",
+   "suas perguntas"
+  ],
+  [
+   "à oração,"
+  ],
+  [
+   "sem inventar",
+   "respostas."
+  ],
+  [
+   "Nem toda espera"
+  ],
+  [
+   "tem explicação",
+   "pronta."
+  ],
+  [
+   "Mas o silêncio",
+   "não obriga"
+  ],
+  [
+   "você a abandonar",
+   "a verdade,"
+  ],
+  [
+   "a responsabilidade",
+   "ou a esperança."
+  ]
+ ]
+}

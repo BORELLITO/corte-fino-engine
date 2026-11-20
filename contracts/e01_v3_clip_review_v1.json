@@ -1,0 +1,289 @@
+{
+ "schema_version": "1",
+ "project": "VERBO NO CHAO",
+ "episode_id": "E01",
+ "kind": "CLIP_REVIEW_METADATA_ONLY",
+ "frames_viewed": false,
+ "basis": "repository evidence; no frame was viewed in this review",
+ "scenes_with_viable_candidate": 3,
+ "scenes_without_clip": 9,
+ "any_clip_approved": false,
+ "rights_cleared": false,
+ "publication_authorized": false,
+ "unreconciled": "Project doc MAPA_12_CENAS cites Mixkit #4331 (S03), #99890 (S09), #8748 (S10) but the repository contracts hold Pexels candidates; the two lists are not reconciled and Mixkit ids are NOT VERIFIED here.",
+ "scenes": [
+  {
+   "scene": "VNC-E01V2-S01",
+   "title": "HOOK: pergunta sem resposta",
+   "scene_seconds": 6.06,
+   "min_source_seconds_with_handles": 7.06,
+   "needs_second_shot": false,
+   "world": "ROOM_A",
+   "viable_candidates": [],
+   "rejected_or_superseded": 2,
+   "status": "NO_VIABLE_CLIP_ACQUISITION_NEEDED",
+   "search_terms_en": [
+    "unrecognizable person sitting beside rainy dark window notebook cinematic vertical video",
+    "faceless adult sitting at window dim room video"
+   ],
+   "refined_requirements": {
+    "min_source_seconds": 7.06,
+    "framing_pt": "Ação principal (rosto, mãos, objeto-chave) fora da faixa y 1100-1360 e x 140-940 do quadro 1080x1920; preferir sujeito no terço superior ou centro-baixo escuro e vazio.",
+    "second_shot_pt": null
+   }
+  },
+  {
+   "scene": "VNC-E01V2-S02",
+   "title": "A dor da espera",
+   "scene_seconds": 2.716,
+   "min_source_seconds_with_handles": 3.72,
+   "needs_second_shot": false,
+   "world": "ROOM_A",
+   "viable_candidates": [],
+   "rejected_or_superseded": 0,
+   "status": "NO_VIABLE_CLIP_ACQUISITION_NEEDED",
+   "search_terms_en": [
+    "close up hands wooden table analog clock waiting warm lamp video",
+    "anonymous hands still on dark wood desk cinematic footage"
+   ],
+   "refined_requirements": {
+    "min_source_seconds": 3.72,
+    "framing_pt": "Ação principal (rosto, mãos, objeto-chave) fora da faixa y 1100-1360 e x 140-940 do quadro 1080x1920; preferir sujeito no terço superior ou centro-baixo escuro e vazio.",
+    "second_shot_pt": null
+   }
+  },
+  {
+   "scene": "VNC-E01V2-S03",
+   "title": "Violência e injustiça",
+   "scene_seconds": 6.379,
+   "min_source_seconds_with_handles": 7.38,
+   "needs_second_shot": false,
+   "world": "SOCIAL_CONTEXT_B",
+   "viable_candidates": [
+    {
+     "clip": "E01V2-STOCK-S03-A",
+     "source": "Pexels 40417800",
+     "native_seconds": 12.983333,
+     "physically_probed": true,
+     "sha256": "7cc0d7691ff862ff416fddf446c89b6d2b457bb6bc8b812dcf53a07ef5fb326f",
+     "state": "PENDING_FRAME_REVIEW",
+     "evidence": "contracts/e01_v2_stock_candidates_v1.json",
+     "covers_scene_with_handles": true
+    }
+   ],
+   "rejected_or_superseded": 1,
+   "status": "CANDIDATE_PENDING_FRAME_REVIEW",
+   "search_terms_en": [
+    "quiet neglected public space street documentary dusk no faces free stock video",
+    "rainy neighborhood broken bench anonymous city documentary vertical"
+   ],
+   "refined_requirements": {
+    "min_source_seconds": 7.38,
+    "framing_pt": "Ação principal (rosto, mãos, objeto-chave) fora da faixa y 1100-1360 e x 140-940 do quadro 1080x1920; preferir sujeito no terço superior ou centro-baixo escuro e vazio.",
+    "second_shot_pt": null
+   }
+  },
+  {
+   "scene": "VNC-E01V2-S04",
+   "title": "Habacuque: contexto",
+   "scene_seconds": 3.358,
+   "min_source_seconds_with_handles": 4.36,
+   "needs_second_shot": false,
+   "world": "BIBLICAL_SYMBOL_C",
+   "viable_candidates": [],
+   "rejected_or_superseded": 0,
+   "status": "NO_VIABLE_CLIP_ACQUISITION_NEEDED",
+   "search_terms_en": [
+    "blank parchment reed pen macro warm lamp close up video",
+    "old writing tools blank paper shadows historical symbolic footage"
+   ],
+   "refined_requirements": {
+    "min_source_seconds": 4.36,
+    "framing_pt": "Ação principal (rosto, mãos, objeto-chave) fora da faixa y 1100-1360 e x 140-940 do quadro 1080x1920; preferir sujeito no terço superior ou centro-baixo escuro e vazio.",
+    "second_shot_pt": null
+   }
+  },
+  {
+   "scene": "VNC-E01V2-S05",
+   "title": "A lei perdeu a força",
+   "scene_seconds": 7.324,
+   "min_source_seconds_with_handles": 8.32,
+   "needs_second_shot": false,
+   "world": "BIBLICAL_SYMBOL_C",
+   "viable_candidates": [],
+   "rejected_or_superseded": 2,
+   "status": "NO_VIABLE_CLIP_ACQUISITION_NEEDED",
+   "search_terms_en": [
+    "dim old stone hallway empty warm tungsten slow dolly vertical video",
+    "moody stone arch empty corridor warm light stock video"
+   ],
+   "refined_requirements": {
+    "min_source_seconds": 8.32,
+    "framing_pt": "Ação principal (rosto, mãos, objeto-chave) fora da faixa y 1100-1360 e x 140-940 do quadro 1080x1920; preferir sujeito no terço superior ou centro-baixo escuro e vazio.",
+    "second_shot_pt": null
+   }
+  },
+  {
+   "scene": "VNC-E01V2-S06",
+   "title": "Não há resposta fácil",
+   "scene_seconds": 7.819,
+   "min_source_seconds_with_handles": 8.82,
+   "needs_second_shot": false,
+   "world": "ROOM_A",
+   "viable_candidates": [],
+   "rejected_or_superseded": 0,
+   "status": "NO_VIABLE_CLIP_ACQUISITION_NEEDED",
+   "search_terms_en": [
+    "empty notebook warm wooden desk shadow cinematic closeup footage",
+    "open blank journal dark room warm lighting vertical video"
+   ],
+   "refined_requirements": {
+    "min_source_seconds": 8.82,
+    "framing_pt": "Ação principal (rosto, mãos, objeto-chave) fora da faixa y 1100-1360 e x 140-940 do quadro 1080x1920; preferir sujeito no terço superior ou centro-baixo escuro e vazio.",
+    "second_shot_pt": null
+   }
+  },
+  {
+   "scene": "VNC-E01V2-S07",
+   "title": "Recusar normalizar o mal",
+   "scene_seconds": 9.489,
+   "min_source_seconds_with_handles": 10.49,
+   "needs_second_shot": true,
+   "world": "ROOM_A",
+   "viable_candidates": [],
+   "rejected_or_superseded": 0,
+   "status": "NO_VIABLE_CLIP_ACQUISITION_NEEDED",
+   "search_terms_en": [
+    "back silhouette same dark room looking through rain window evening video",
+    "faceless person standing by window cinematic moody stock footage"
+   ],
+   "refined_requirements": {
+    "min_source_seconds": 10.49,
+    "framing_pt": "Ação principal (rosto, mãos, objeto-chave) fora da faixa y 1100-1360 e x 140-940 do quadro 1080x1920; preferir sujeito no terço superior ou centro-baixo escuro e vazio.",
+    "second_shot_pt": "Cena >= 8 s: exige segundo plano real ou movimento de câmera justificado, nunca congelamento."
+   }
+  },
+  {
+   "scene": "VNC-E01V2-S08",
+   "title": "Fé sem fingimento",
+   "scene_seconds": 8.018,
+   "min_source_seconds_with_handles": 9.02,
+   "needs_second_shot": true,
+   "world": "ROOM_A",
+   "viable_candidates": [
+    {
+     "clip": "E01V2-STOCK-S08-A",
+     "source": "Pexels 7350189",
+     "native_seconds": 14.64,
+     "physically_probed": true,
+     "sha256": "70b69f800d6bb1ec8386afee61e8ae07e5e2d4f0ce97d4851b19ce37dc7d2cba",
+     "state": "PENDING_FRAME_REVIEW",
+     "evidence": "contracts/e01_v2_stock_candidates_v1.json",
+     "covers_scene_with_handles": true
+    }
+   ],
+   "rejected_or_superseded": 1,
+   "status": "CANDIDATE_PENDING_FRAME_REVIEW",
+   "search_terms_en": [
+    "close up anonymous open hands praying at desk low warm light video",
+    "hands open quiet prayer dark room notebook no face video"
+   ],
+   "refined_requirements": {
+    "min_source_seconds": 9.02,
+    "framing_pt": "Ação principal (rosto, mãos, objeto-chave) fora da faixa y 1100-1360 e x 140-940 do quadro 1080x1920; preferir sujeito no terço superior ou centro-baixo escuro e vazio.",
+    "second_shot_pt": "Cena >= 8 s: exige segundo plano real ou movimento de câmera justificado, nunca congelamento."
+   }
+  },
+  {
+   "scene": "VNC-E01V2-S09",
+   "title": "Nomear o que está errado",
+   "scene_seconds": 3.84,
+   "min_source_seconds_with_handles": 4.84,
+   "needs_second_shot": false,
+   "world": "ROOM_A",
+   "viable_candidates": [
+    {
+     "clip": "E01V2-STOCK-S09-A",
+     "source": "Pexels 5904567",
+     "native_seconds": 10.026667,
+     "physically_probed": true,
+     "sha256": "40c6d291f47e607d3d9fbf6d9952803a9e6e630040a88515b729a2dd2657bd78",
+     "state": "PENDING_FRAME_REVIEW",
+     "evidence": "contracts/e01_v2_stock_candidates_v1.json",
+     "covers_scene_with_handles": true
+    }
+   ],
+   "rejected_or_superseded": 2,
+   "status": "CANDIDATE_PENDING_FRAME_REVIEW",
+   "search_terms_en": [
+    "hands writing private journal low tungsten light shallow depth of field footage",
+    "anonymous hands writing notebook soft focus dark room video"
+   ],
+   "refined_requirements": {
+    "min_source_seconds": 4.84,
+    "framing_pt": "Ação principal (rosto, mãos, objeto-chave) fora da faixa y 1100-1360 e x 140-940 do quadro 1080x1920; preferir sujeito no terço superior ou centro-baixo escuro e vazio.",
+    "second_shot_pt": null
+   }
+  },
+  {
+   "scene": "VNC-E01V2-S10",
+   "title": "Apoio responsável",
+   "scene_seconds": 8.165,
+   "min_source_seconds_with_handles": 9.16,
+   "needs_second_shot": true,
+   "world": "COMMUNITY_D",
+   "viable_candidates": [],
+   "rejected_or_superseded": 2,
+   "status": "NO_VIABLE_CLIP_ACQUISITION_NEEDED",
+   "search_terms_en": [
+    "two anonymous people supportive conversation hands at table modest room video",
+    "faceless two people listening indoors emotional documentary shot"
+   ],
+   "refined_requirements": {
+    "min_source_seconds": 9.16,
+    "framing_pt": "Ação principal (rosto, mãos, objeto-chave) fora da faixa y 1100-1360 e x 140-940 do quadro 1080x1920; preferir sujeito no terço superior ou centro-baixo escuro e vazio.",
+    "second_shot_pt": "Cena >= 8 s: exige segundo plano real ou movimento de câmera justificado, nunca congelamento."
+   }
+  },
+  {
+   "scene": "VNC-E01V2-S11",
+   "title": "A espera não acaba aqui",
+   "scene_seconds": 4.438,
+   "min_source_seconds_with_handles": 5.44,
+   "needs_second_shot": false,
+   "world": "ROOM_A",
+   "viable_candidates": [],
+   "rejected_or_superseded": 0,
+   "status": "NO_VIABLE_CLIP_ACQUISITION_NEEDED",
+   "search_terms_en": [
+    "quiet dim room desk notebook dawn window natural warm video",
+    "still closed journal on desk early morning dark room film"
+   ],
+   "refined_requirements": {
+    "min_source_seconds": 5.44,
+    "framing_pt": "Ação principal (rosto, mãos, objeto-chave) fora da faixa y 1100-1360 e x 140-940 do quadro 1080x1920; preferir sujeito no terço superior ou centro-baixo escuro e vazio.",
+    "second_shot_pt": null
+   }
+  },
+  {
+   "scene": "VNC-E01V2-S12",
+   "title": "Verdade e esperança — loop",
+   "scene_seconds": 9.064,
+   "min_source_seconds_with_handles": 10.06,
+   "needs_second_shot": true,
+   "world": "ROOM_A",
+   "viable_candidates": [],
+   "rejected_or_superseded": 0,
+   "status": "NO_VIABLE_CLIP_ACQUISITION_NEEDED",
+   "search_terms_en": [
+    "hands opening notebook dark table near window close shot video",
+    "journal opening hands subdued warm room portrait footage"
+   ],
+   "refined_requirements": {
+    "min_source_seconds": 10.06,
+    "framing_pt": "Ação principal (rosto, mãos, objeto-chave) fora da faixa y 1100-1360 e x 140-940 do quadro 1080x1920; preferir sujeito no terço superior ou centro-baixo escuro e vazio.",
+    "second_shot_pt": "Cena >= 8 s: exige segundo plano real ou movimento de câmera justificado, nunca congelamento."
+   }
+  }
+ ]
+}
