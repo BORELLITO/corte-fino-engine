@@ -228,6 +228,22 @@ class ProducerUnitTest(unittest.TestCase):
         late = [captions.Cue(0.0, 5.0, ("a b",))]
         self.assertIn("cue:outside_audio_window", captions.verify_cues(late, scenes))
 
+    def test_ass_two_line_cue_uses_hard_break_and_no_stray_characters(self):
+        # Regression: precedence bug rendered "\\Line1NLine2" instead of "Line1\\NLine2".
+        d = Path(tempfile.mkdtemp()) / "t.ass"
+        captions.write_ass([captions.Cue(0.0, 2.5, ("Senhor até quando", "clamarei sem que tu ouças?"))], d)
+        line = next(x for x in d.read_text(encoding="utf-8").splitlines() if x.startswith("Dialogue"))
+        text = line.split(",", 4)[4]
+        self.assertEqual(text, "Senhor até quando\\Nclamarei sem que tu ouças?")
+
+    def test_catalog_entry_cannot_escape_its_directory(self):
+        from producer.footage import LocalCatalogFootage
+        d = Path(tempfile.mkdtemp())
+        (d / "catalog.json").write_text(json.dumps([{"asset_id": "x", "file": "../../etc/passwd",
+            "source_url": "https://x", "license_url": "https://l", "license_name": "t", "tags": ["a"]}]))
+        with self.assertRaises(ProducerError):
+            LocalCatalogFootage(d).fetch("a", 1.0, set(), d)
+
     def test_wrap_respects_two_lines(self):
         words = ("Senhor até quando clamarei sem que tu ouças e não me salvarás").split()
         for chunk in captions.chunk_words(words):

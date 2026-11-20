@@ -110,8 +110,9 @@ def write_ass(cues: list[Cue], path: Path) -> None:
         "Style: Default,DejaVu Sans,42,&H00FFFFFF,&H00000000,&H64000000,1,1,2,1,2,80,80,220\n\n"
         "[Events]\nFormat: Layer,Start,End,Style,Text\n"
     )
-    body = "".join(f"Dialogue: 0,{_ts(c.start)},{_ts(c.end)},Default,{chr(92) + 'N'.join(c.lines)}\n"
-                    for c in cues)
+    newline = "\\N"  # ASS hard line break
+    body = "".join(f"Dialogue: 0,{_ts(c.start)},{_ts(c.end)},Default,{newline.join(c.lines)}\n"
+                   for c in cues)
     path.write_text(head + body, encoding="utf-8")
 
 

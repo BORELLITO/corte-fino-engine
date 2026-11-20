@@ -22,9 +22,6 @@ jobs:
   produce:
     runs-on: ubuntu-latest
     timeout-minutes: 60
-    env:
-      PEXELS_API_KEY: ${{ secrets.PEXELS_API_KEY }}
-      PIXABAY_API_KEY: ${{ secrets.PIXABAY_API_KEY }}
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
@@ -32,8 +29,10 @@ jobs:
           python-version: "3.12"
       - name: Resolve spec
         id: spec
+        env:
+          INPUT_SPEC: ${{ inputs.spec_path }}
         run: |
-          SPEC="${{ inputs.spec_path }}"
+          SPEC="$INPUT_SPEC"
           if [ -z "$SPEC" ]; then SPEC="queue/next.json"; fi
           if [ ! -f "$SPEC" ]; then echo "found=false" >> "$GITHUB_OUTPUT"; echo "sem spec: nada a produzir"; exit 0; fi
           echo "found=true" >> "$GITHUB_OUTPUT"
@@ -45,10 +44,16 @@ jobs:
         if: steps.spec.outputs.found == 'true'
         run: |
           sudo apt-get update -qq && sudo apt-get install -y -qq espeak-ng ffmpeg
+          python -m pip install --disable-pip-version-check torch==2.15.0 --index-url https://download.pytorch.org/whl/cpu
           python -m pip install --disable-pip-version-check -r requirements-producer.txt
       - name: Produce preview and validate with the engine gates
         if: steps.spec.outputs.found == 'true'
-        run: python -m producer.cli "${{ steps.spec.outputs.path }}" --out build/episode --report-dir run-reports --footage "${{ inputs.footage || 'pixabay' }}"
+        env:
+          PEXELS_API_KEY: ${{ secrets.PEXELS_API_KEY }}
+          PIXABAY_API_KEY: ${{ secrets.PIXABAY_API_KEY }}
+          SPEC_PATH: ${{ steps.spec.outputs.path }}
+          FOOTAGE: ${{ inputs.footage || 'pixabay' }}
+        run: python -m producer.cli "$SPEC_PATH" --out build/episode --report-dir run-reports --footage "$FOOTAGE"
       - name: Upload preview + reports (never publishes)
         if: always() && steps.spec.outputs.found == 'true'
         uses: actions/upload-artifact@v4

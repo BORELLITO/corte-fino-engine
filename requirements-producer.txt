@@ -1,5 +1,12 @@
-# Producer runtime (CI only). Versions to be pinned after the first successful run.
-soundfile>=0.12,<1
-kokoro>=0.9,<1
-av>=14,<17   # PyAV 19 removed av.open(metadata_errors=...) which faster-whisper 1.2.1 uses (verified: 16.0.1 ok, 19.0.2 TypeError)
+# Producer runtime (CI only). Pinned to the versions of the first green real run
+# (run 44765502748, Python 3.12). Update deliberately, then re-run the runtime smoke.
+av==16.1.0                # PyAV >=19 removed av.open(metadata_errors=...) used by faster-whisper
+ctranslate2==4.9.0
 faster-whisper==1.2.1
+huggingface-hub==2.4.0
+kokoro==0.9.4
+misaki==0.9.4
+onnxruntime==1.32.0
+soundfile==0.14.0
+tokenizers==0.23.3
+transformers==5.23.0

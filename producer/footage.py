@@ -51,7 +51,10 @@ class LocalCatalogFootage:
         words = set(query.casefold().split())
         ranked = sorted(self.items, key=lambda i: -len(words & {t.casefold() for t in i.get("tags", [])}))
         for item in ranked:
-            hash_id = sha256_file(self.dir / item["file"])
+            target = (self.dir / item["file"]).resolve()
+            if not target.is_relative_to(self.dir.resolve()) or not target.is_file():
+                continue  # catalog entries must stay inside the catalog directory
+            hash_id = sha256_file(target)
             if item["asset_id"] in exclude or item["source_url"] in exclude or hash_id in exclude:
                 continue
             clip = Clip(item["asset_id"], self.dir / item["file"], item["source_url"],

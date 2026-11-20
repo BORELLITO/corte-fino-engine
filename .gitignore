@@ -10,3 +10,9 @@ operations/
 editorial-deliveries/
 agent-reports/
 agent-team-report.json
+
+# Producer outputs (media must never be committed)
+build/
+run-reports/
+*.mp4
+*.wav
