@@ -1,0 +1,1489 @@
+{
+ "schema_version": "1.0.0",
+ "project": "verbo-no-chao",
+ "episode_id": "VNC-W01-E1",
+ "stage": "VOICE_CANDIDATE_JOHNES_WORD_TIMING_NOT_MASTER",
+ "provenance": {
+  "tts_provider": "ElevenLabs",
+  "tts_model": "eleven_v4",
+  "voice_name": "Johnes Bittar",
+  "voice_id": "sJfod1k0iiI5CA9IP0R2",
+  "elevenlabs_flow_id": "Pg2RAjKXKs8U09i1f4F3",
+  "tts_generation_id": "R1bSiYeFLAjkPhLzTvq4",
+  "tts_credits": 1097,
+  "timing_source": "ElevenLabs Scribe v1 (eleven_scribe_v1)",
+  "timing_generation_id": "6hKLUaOdiwXmnHWqxCz8",
+  "script_sha256": "c64b57cb9d6529b60b9e80ab7607e5887f909dd00e14cd80ed9ec2b7474a5dc6",
+  "user_listening_approval": "APPROVED_BY_USER_2026-11-20_BY_EAR_NOT_MEASURED"
+ },
+ "speech_duration_seconds": 76.72,
+ "word_count": 182,
+ "words": [
+  {
+   "index": 0,
+   "text": "Você",
+   "start": 0.0,
+   "end": 0.32,
+   "block": "opening",
+   "key": "voce"
+  },
+  {
+   "index": 1,
+   "text": "já",
+   "start": 0.36,
+   "end": 0.44,
+   "block": "opening",
+   "key": "ja"
+  },
+  {
+   "index": 2,
+   "text": "repetiu",
+   "start": 0.48,
+   "end": 0.88,
+   "block": "opening",
+   "key": "repetiu"
+  },
+  {
+   "index": 3,
+   "text": "a",
+   "start": 0.96,
+   "end": 1.12,
+   "block": "opening",
+   "key": "a"
+  },
+  {
+   "index": 4,
+   "text": "mesma",
+   "start": 1.2,
+   "end": 1.44,
+   "block": "opening",
+   "key": "mesma"
+  },
+  {
+   "index": 5,
+   "text": "pergunta",
+   "start": 1.52,
+   "end": 2.0,
+   "block": "opening",
+   "key": "pergunta"
+  },
+  {
+   "index": 6,
+   "text": "tantas",
+   "start": 2.16,
+   "end": 2.64,
+   "block": "opening",
+   "key": "tantas"
+  },
+  {
+   "index": 7,
+   "text": "vezes",
+   "start": 2.72,
+   "end": 3.12,
+   "block": "opening",
+   "key": "vezes"
+  },
+  {
+   "index": 8,
+   "text": "que",
+   "start": 3.2,
+   "end": 3.28,
+   "block": "opening",
+   "key": "que"
+  },
+  {
+   "index": 9,
+   "text": "começou",
+   "start": 3.4,
+   "end": 3.68,
+   "block": "opening",
+   "key": "comecou"
+  },
+  {
+   "index": 10,
+   "text": "a",
+   "start": 3.72,
+   "end": 3.76,
+   "block": "opening",
+   "key": "a"
+  },
+  {
+   "index": 11,
+   "text": "acreditar",
+   "start": 3.8,
+   "end": 4.24,
+   "block": "opening",
+   "key": "acreditar"
+  },
+  {
+   "index": 12,
+   "text": "que",
+   "start": 4.32,
+   "end": 4.4,
+   "block": "opening",
+   "key": "que"
+  },
+  {
+   "index": 13,
+   "text": "ninguém",
+   "start": 4.48,
+   "end": 4.88,
+   "block": "opening",
+   "key": "ninguem"
+  },
+  {
+   "index": 14,
+   "text": "estava",
+   "start": 4.96,
+   "end": 5.2,
+   "block": "opening",
+   "key": "estava"
+  },
+  {
+   "index": 15,
+   "text": "ouvindo?",
+   "start": 5.28,
+   "end": 5.76,
+   "block": "opening",
+   "key": "ouvindo"
+  },
+  {
+   "index": 16,
+   "text": "Às",
+   "start": 6.4,
+   "end": 6.6,
+   "block": "connection",
+   "key": "as"
+  },
+  {
+   "index": 17,
+   "text": "vezes,",
+   "start": 6.64,
+   "end": 7.28,
+   "block": "connection",
+   "key": "vezes"
+  },
+  {
+   "index": 18,
+   "text": "esperar",
+   "start": 7.36,
+   "end": 7.76,
+   "block": "connection",
+   "key": "esperar"
+  },
+  {
+   "index": 19,
+   "text": "machuca.",
+   "start": 7.84,
+   "end": 8.76,
+   "block": "connection",
+   "key": "machuca"
+  },
+  {
+   "index": 20,
+   "text": "Dói",
+   "start": 9.04,
+   "end": 9.28,
+   "block": "connection",
+   "key": "doi"
+  },
+  {
+   "index": 21,
+   "text": "ainda",
+   "start": 9.4,
+   "end": 9.68,
+   "block": "connection",
+   "key": "ainda"
+  },
+  {
+   "index": 22,
+   "text": "mais",
+   "start": 9.76,
+   "end": 10.0,
+   "block": "connection",
+   "key": "mais"
+  },
+  {
+   "index": 23,
+   "text": "ver",
+   "start": 10.08,
+   "end": 10.24,
+   "block": "connection",
+   "key": "ver"
+  },
+  {
+   "index": 24,
+   "text": "injustiças",
+   "start": 10.32,
+   "end": 10.96,
+   "block": "connection",
+   "key": "injusticas"
+  },
+  {
+   "index": 25,
+   "text": "repetidas",
+   "start": 11.04,
+   "end": 11.76,
+   "block": "connection",
+   "key": "repetidas"
+  },
+  {
+   "index": 26,
+   "text": "e",
+   "start": 11.84,
+   "end": 11.92,
+   "block": "connection",
+   "key": "e"
+  },
+  {
+   "index": 27,
+   "text": "pessoas",
+   "start": 12.0,
+   "end": 12.32,
+   "block": "connection",
+   "key": "pessoas"
+  },
+  {
+   "index": 28,
+   "text": "feridas,",
+   "start": 12.4,
+   "end": 13.12,
+   "block": "connection",
+   "key": "feridas"
+  },
+  {
+   "index": 29,
+   "text": "enquanto",
+   "start": 13.2,
+   "end": 13.52,
+   "block": "connection",
+   "key": "enquanto"
+  },
+  {
+   "index": 30,
+   "text": "parece",
+   "start": 13.6,
+   "end": 13.84,
+   "block": "connection",
+   "key": "parece"
+  },
+  {
+   "index": 31,
+   "text": "que",
+   "start": 13.92,
+   "end": 14.0,
+   "block": "connection",
+   "key": "que"
+  },
+  {
+   "index": 32,
+   "text": "nada",
+   "start": 14.16,
+   "end": 14.4,
+   "block": "connection",
+   "key": "nada"
+  },
+  {
+   "index": 33,
+   "text": "muda.",
+   "start": 14.48,
+   "end": 15.44,
+   "block": "connection",
+   "key": "muda"
+  },
+  {
+   "index": 34,
+   "text": "E",
+   "start": 15.48,
+   "end": 15.52,
+   "block": "connection",
+   "key": "e"
+  },
+  {
+   "index": 35,
+   "text": "admitir",
+   "start": 15.64,
+   "end": 16.08,
+   "block": "connection",
+   "key": "admitir"
+  },
+  {
+   "index": 36,
+   "text": "essa",
+   "start": 16.16,
+   "end": 16.24,
+   "block": "connection",
+   "key": "essa"
+  },
+  {
+   "index": 37,
+   "text": "revolta",
+   "start": 16.32,
+   "end": 16.96,
+   "block": "connection",
+   "key": "revolta"
+  },
+  {
+   "index": 38,
+   "text": "pode",
+   "start": 17.04,
+   "end": 17.2,
+   "block": "connection",
+   "key": "pode"
+  },
+  {
+   "index": 39,
+   "text": "trazer",
+   "start": 17.28,
+   "end": 17.52,
+   "block": "connection",
+   "key": "trazer"
+  },
+  {
+   "index": 40,
+   "text": "vergonha.",
+   "start": 17.6,
+   "end": 18.52,
+   "block": "connection",
+   "key": "vergonha"
+  },
+  {
+   "index": 41,
+   "text": "Em",
+   "start": 18.88,
+   "end": 18.96,
+   "block": "biblical_reference",
+   "key": "em"
+  },
+  {
+   "index": 42,
+   "text": "Habacuque,",
+   "start": 19.04,
+   "end": 19.68,
+   "block": "biblical_reference",
+   "key": "habacuque"
+  },
+  {
+   "index": 43,
+   "text": "capítulo",
+   "start": 19.76,
+   "end": 20.08,
+   "block": "biblical_reference",
+   "key": "capitulo"
+  },
+  {
+   "index": 44,
+   "text": "um,",
+   "start": 20.24,
+   "end": 20.64,
+   "block": "biblical_reference",
+   "key": "um"
+  },
+  {
+   "index": 45,
+   "text": "o",
+   "start": 20.68,
+   "end": 20.72,
+   "block": "biblical_reference",
+   "key": "o"
+  },
+  {
+   "index": 46,
+   "text": "profeta",
+   "start": 20.8,
+   "end": 21.2,
+   "block": "biblical_reference",
+   "key": "profeta"
+  },
+  {
+   "index": 47,
+   "text": "denuncia",
+   "start": 21.28,
+   "end": 21.76,
+   "block": "biblical_reference",
+   "key": "denuncia"
+  },
+  {
+   "index": 48,
+   "text": "violência,",
+   "start": 21.84,
+   "end": 22.72,
+   "block": "biblical_reference",
+   "key": "violencia"
+  },
+  {
+   "index": 49,
+   "text": "injustiça",
+   "start": 22.8,
+   "end": 23.52,
+   "block": "biblical_reference",
+   "key": "injustica"
+  },
+  {
+   "index": 50,
+   "text": "e",
+   "start": 23.76,
+   "end": 23.84,
+   "block": "biblical_reference",
+   "key": "e"
+  },
+  {
+   "index": 51,
+   "text": "uma",
+   "start": 23.96,
+   "end": 24.08,
+   "block": "biblical_reference",
+   "key": "uma"
+  },
+  {
+   "index": 52,
+   "text": "lei",
+   "start": 24.16,
+   "end": 24.32,
+   "block": "biblical_reference",
+   "key": "lei"
+  },
+  {
+   "index": 53,
+   "text": "que",
+   "start": 24.4,
+   "end": 24.56,
+   "block": "biblical_reference",
+   "key": "que"
+  },
+  {
+   "index": 54,
+   "text": "perdeu",
+   "start": 24.64,
+   "end": 24.96,
+   "block": "biblical_reference",
+   "key": "perdeu"
+  },
+  {
+   "index": 55,
+   "text": "a",
+   "start": 25.0,
+   "end": 25.04,
+   "block": "biblical_reference",
+   "key": "a"
+  },
+  {
+   "index": 56,
+   "text": "força.",
+   "start": 25.12,
+   "end": 25.6,
+   "block": "biblical_reference",
+   "key": "forca"
+  },
+  {
+   "index": 57,
+   "text": "Ele",
+   "start": 26.16,
+   "end": 26.32,
+   "block": "biblical_reference",
+   "key": "ele"
+  },
+  {
+   "index": 58,
+   "text": "leva",
+   "start": 26.4,
+   "end": 26.72,
+   "block": "biblical_reference",
+   "key": "leva"
+  },
+  {
+   "index": 59,
+   "text": "essa",
+   "start": 26.8,
+   "end": 26.88,
+   "block": "biblical_reference",
+   "key": "essa"
+  },
+  {
+   "index": 60,
+   "text": "indignação",
+   "start": 26.96,
+   "end": 27.52,
+   "block": "biblical_reference",
+   "key": "indignacao"
+  },
+  {
+   "index": 61,
+   "text": "a",
+   "start": 27.56,
+   "end": 27.6,
+   "block": "biblical_reference",
+   "key": "a"
+  },
+  {
+   "index": 62,
+   "text": "Deus.",
+   "start": 27.68,
+   "end": 28.32,
+   "block": "biblical_reference",
+   "key": "deus"
+  },
+  {
+   "index": 63,
+   "text": "Não",
+   "start": 28.56,
+   "end": 28.64,
+   "block": "biblical_reference",
+   "key": "nao"
+  },
+  {
+   "index": 64,
+   "text": "está",
+   "start": 28.72,
+   "end": 28.88,
+   "block": "biblical_reference",
+   "key": "esta"
+  },
+  {
+   "index": 65,
+   "text": "buscando",
+   "start": 28.96,
+   "end": 29.36,
+   "block": "biblical_reference",
+   "key": "buscando"
+  },
+  {
+   "index": 66,
+   "text": "uma",
+   "start": 29.44,
+   "end": 29.52,
+   "block": "biblical_reference",
+   "key": "uma"
+  },
+  {
+   "index": 67,
+   "text": "conquista",
+   "start": 29.64,
+   "end": 30.0,
+   "block": "biblical_reference",
+   "key": "conquista"
+  },
+  {
+   "index": 68,
+   "text": "pessoal:",
+   "start": 30.08,
+   "end": 31.04,
+   "block": "biblical_reference",
+   "key": "pessoal"
+  },
+  {
+   "index": 69,
+   "text": "sofre",
+   "start": 31.2,
+   "end": 31.52,
+   "block": "biblical_reference",
+   "key": "sofre"
+  },
+  {
+   "index": 70,
+   "text": "diante",
+   "start": 31.6,
+   "end": 31.92,
+   "block": "biblical_reference",
+   "key": "diante"
+  },
+  {
+   "index": 71,
+   "text": "de",
+   "start": 31.96,
+   "end": 32.0,
+   "block": "biblical_reference",
+   "key": "de"
+  },
+  {
+   "index": 72,
+   "text": "uma",
+   "start": 32.08,
+   "end": 32.16,
+   "block": "biblical_reference",
+   "key": "uma"
+  },
+  {
+   "index": 73,
+   "text": "sociedade",
+   "start": 32.28,
+   "end": 32.8,
+   "block": "biblical_reference",
+   "key": "sociedade"
+  },
+  {
+   "index": 74,
+   "text": "ferida.",
+   "start": 32.88,
+   "end": 33.64,
+   "block": "biblical_reference",
+   "key": "ferida"
+  },
+  {
+   "index": 75,
+   "text": "Os",
+   "start": 33.92,
+   "end": 34.0,
+   "block": "reflection",
+   "key": "os"
+  },
+  {
+   "index": 76,
+   "text": "primeiros",
+   "start": 34.08,
+   "end": 34.48,
+   "block": "reflection",
+   "key": "primeiros"
+  },
+  {
+   "index": 77,
+   "text": "versos",
+   "start": 34.56,
+   "end": 35.04,
+   "block": "reflection",
+   "key": "versos"
+  },
+  {
+   "index": 78,
+   "text": "não",
+   "start": 35.08,
+   "end": 35.2,
+   "block": "reflection",
+   "key": "nao"
+  },
+  {
+   "index": 79,
+   "text": "entregam",
+   "start": 35.32,
+   "end": 35.68,
+   "block": "reflection",
+   "key": "entregam"
+  },
+  {
+   "index": 80,
+   "text": "uma",
+   "start": 35.76,
+   "end": 35.84,
+   "block": "reflection",
+   "key": "uma"
+  },
+  {
+   "index": 81,
+   "text": "explicação",
+   "start": 35.92,
+   "end": 36.4,
+   "block": "reflection",
+   "key": "explicacao"
+  },
+  {
+   "index": 82,
+   "text": "confortável.",
+   "start": 36.48,
+   "end": 37.28,
+   "block": "reflection",
+   "key": "confortavel"
+  },
+  {
+   "index": 83,
+   "text": "Mostram",
+   "start": 37.68,
+   "end": 38.08,
+   "block": "reflection",
+   "key": "mostram"
+  },
+  {
+   "index": 84,
+   "text": "um",
+   "start": 38.16,
+   "end": 38.24,
+   "block": "reflection",
+   "key": "um"
+  },
+  {
+   "index": 85,
+   "text": "homem",
+   "start": 38.32,
+   "end": 38.56,
+   "block": "reflection",
+   "key": "homem"
+  },
+  {
+   "index": 86,
+   "text": "que",
+   "start": 38.64,
+   "end": 38.72,
+   "block": "reflection",
+   "key": "que"
+  },
+  {
+   "index": 87,
+   "text": "se",
+   "start": 38.8,
+   "end": 38.88,
+   "block": "reflection",
+   "key": "se"
+  },
+  {
+   "index": 88,
+   "text": "recusa",
+   "start": 38.96,
+   "end": 39.44,
+   "block": "reflection",
+   "key": "recusa"
+  },
+  {
+   "index": 89,
+   "text": "a",
+   "start": 39.48,
+   "end": 39.52,
+   "block": "reflection",
+   "key": "a"
+  },
+  {
+   "index": 90,
+   "text": "chamar",
+   "start": 39.6,
+   "end": 39.92,
+   "block": "reflection",
+   "key": "chamar"
+  },
+  {
+   "index": 91,
+   "text": "o",
+   "start": 39.96,
+   "end": 40.0,
+   "block": "reflection",
+   "key": "o"
+  },
+  {
+   "index": 92,
+   "text": "mal",
+   "start": 40.12,
+   "end": 40.24,
+   "block": "reflection",
+   "key": "mal"
+  },
+  {
+   "index": 93,
+   "text": "de",
+   "start": 40.32,
+   "end": 40.4,
+   "block": "reflection",
+   "key": "de"
+  },
+  {
+   "index": 94,
+   "text": "normal",
+   "start": 40.68,
+   "end": 40.96,
+   "block": "reflection",
+   "key": "normal"
+  },
+  {
+   "index": 95,
+   "text": "e",
+   "start": 41.12,
+   "end": 41.2,
+   "block": "reflection",
+   "key": "e"
+  },
+  {
+   "index": 96,
+   "text": "não",
+   "start": 41.28,
+   "end": 41.44,
+   "block": "reflection",
+   "key": "nao"
+  },
+  {
+   "index": 97,
+   "text": "esconde",
+   "start": 41.56,
+   "end": 41.92,
+   "block": "reflection",
+   "key": "esconde"
+  },
+  {
+   "index": 98,
+   "text": "suas",
+   "start": 42.0,
+   "end": 42.16,
+   "block": "reflection",
+   "key": "suas"
+  },
+  {
+   "index": 99,
+   "text": "perguntas.",
+   "start": 42.24,
+   "end": 42.88,
+   "block": "reflection",
+   "key": "perguntas"
+  },
+  {
+   "index": 100,
+   "text": "O",
+   "start": 43.44,
+   "end": 43.52,
+   "block": "reflection",
+   "key": "o"
+  },
+  {
+   "index": 101,
+   "text": "diálogo",
+   "start": 43.6,
+   "end": 44.0,
+   "block": "reflection",
+   "key": "dialogo"
+  },
+  {
+   "index": 102,
+   "text": "continua",
+   "start": 44.08,
+   "end": 44.64,
+   "block": "reflection",
+   "key": "continua"
+  },
+  {
+   "index": 103,
+   "text": "ao",
+   "start": 44.68,
+   "end": 44.72,
+   "block": "reflection",
+   "key": "ao"
+  },
+  {
+   "index": 104,
+   "text": "longo",
+   "start": 44.8,
+   "end": 45.0,
+   "block": "reflection",
+   "key": "longo"
+  },
+  {
+   "index": 105,
+   "text": "do",
+   "start": 45.04,
+   "end": 45.12,
+   "block": "reflection",
+   "key": "do"
+  },
+  {
+   "index": 106,
+   "text": "livro,",
+   "start": 45.24,
+   "end": 45.6,
+   "block": "reflection",
+   "key": "livro"
+  },
+  {
+   "index": 107,
+   "text": "com",
+   "start": 45.68,
+   "end": 45.76,
+   "block": "reflection",
+   "key": "com"
+  },
+  {
+   "index": 108,
+   "text": "respostas",
+   "start": 45.88,
+   "end": 46.32,
+   "block": "reflection",
+   "key": "respostas"
+  },
+  {
+   "index": 109,
+   "text": "difíceis.",
+   "start": 46.4,
+   "end": 47.4,
+   "block": "reflection",
+   "key": "dificeis"
+  },
+  {
+   "index": 110,
+   "text": "A",
+   "start": 47.68,
+   "end": 47.76,
+   "block": "reflection",
+   "key": "a"
+  },
+  {
+   "index": 111,
+   "text": "fé",
+   "start": 47.92,
+   "end": 48.16,
+   "block": "reflection",
+   "key": "fe"
+  },
+  {
+   "index": 112,
+   "text": "não",
+   "start": 48.32,
+   "end": 48.4,
+   "block": "reflection",
+   "key": "nao"
+  },
+  {
+   "index": 113,
+   "text": "precisa",
+   "start": 48.48,
+   "end": 49.04,
+   "block": "reflection",
+   "key": "precisa"
+  },
+  {
+   "index": 114,
+   "text": "fingir",
+   "start": 49.12,
+   "end": 49.52,
+   "block": "reflection",
+   "key": "fingir"
+  },
+  {
+   "index": 115,
+   "text": "que",
+   "start": 49.6,
+   "end": 49.68,
+   "block": "reflection",
+   "key": "que"
+  },
+  {
+   "index": 116,
+   "text": "a",
+   "start": 49.707,
+   "end": 49.733,
+   "block": "reflection",
+   "key": "a"
+  },
+  {
+   "index": 117,
+   "text": "injustiça",
+   "start": 49.76,
+   "end": 50.4,
+   "block": "reflection",
+   "key": "injustica"
+  },
+  {
+   "index": 118,
+   "text": "é",
+   "start": 50.48,
+   "end": 50.56,
+   "block": "reflection",
+   "key": "e"
+  },
+  {
+   "index": 119,
+   "text": "paz.",
+   "start": 50.693,
+   "end": 51.16,
+   "block": "reflection",
+   "key": "paz"
+  },
+  {
+   "index": 120,
+   "text": "É",
+   "start": 51.36,
+   "end": 51.44,
+   "block": "reflection",
+   "key": "e"
+  },
+  {
+   "index": 121,
+   "text": "possível",
+   "start": 51.52,
+   "end": 52.0,
+   "block": "reflection",
+   "key": "possivel"
+  },
+  {
+   "index": 122,
+   "text": "orar",
+   "start": 52.08,
+   "end": 52.4,
+   "block": "reflection",
+   "key": "orar"
+  },
+  {
+   "index": 123,
+   "text": "e",
+   "start": 52.56,
+   "end": 52.64,
+   "block": "reflection",
+   "key": "e"
+  },
+  {
+   "index": 124,
+   "text": "reconhecer",
+   "start": 52.72,
+   "end": 53.36,
+   "block": "reflection",
+   "key": "reconhecer"
+  },
+  {
+   "index": 125,
+   "text": "o",
+   "start": 53.4,
+   "end": 53.44,
+   "block": "reflection",
+   "key": "o"
+  },
+  {
+   "index": 126,
+   "text": "que",
+   "start": 53.52,
+   "end": 53.6,
+   "block": "reflection",
+   "key": "que"
+  },
+  {
+   "index": 127,
+   "text": "precisa",
+   "start": 53.72,
+   "end": 54.0,
+   "block": "reflection",
+   "key": "precisa"
+  },
+  {
+   "index": 128,
+   "text": "ser",
+   "start": 54.08,
+   "end": 54.16,
+   "block": "reflection",
+   "key": "ser"
+  },
+  {
+   "index": 129,
+   "text": "enfrentado.",
+   "start": 54.24,
+   "end": 54.96,
+   "block": "reflection",
+   "key": "enfrentado"
+  },
+  {
+   "index": 130,
+   "text": "Talvez",
+   "start": 55.52,
+   "end": 55.92,
+   "block": "application",
+   "key": "talvez"
+  },
+  {
+   "index": 131,
+   "text": "hoje",
+   "start": 56.0,
+   "end": 56.24,
+   "block": "application",
+   "key": "hoje"
+  },
+  {
+   "index": 132,
+   "text": "você",
+   "start": 56.28,
+   "end": 56.48,
+   "block": "application",
+   "key": "voce"
+  },
+  {
+   "index": 133,
+   "text": "precise",
+   "start": 56.56,
+   "end": 56.96,
+   "block": "application",
+   "key": "precise"
+  },
+  {
+   "index": 134,
+   "text": "nomear",
+   "start": 57.12,
+   "end": 57.44,
+   "block": "application",
+   "key": "nomear"
+  },
+  {
+   "index": 135,
+   "text": "o",
+   "start": 57.52,
+   "end": 57.56,
+   "block": "application",
+   "key": "o"
+  },
+  {
+   "index": 136,
+   "text": "que",
+   "start": 57.6,
+   "end": 57.64,
+   "block": "application",
+   "key": "que"
+  },
+  {
+   "index": 137,
+   "text": "está",
+   "start": 57.68,
+   "end": 57.88,
+   "block": "application",
+   "key": "esta"
+  },
+  {
+   "index": 138,
+   "text": "errado,",
+   "start": 57.92,
+   "end": 58.56,
+   "block": "application",
+   "key": "errado"
+  },
+  {
+   "index": 139,
+   "text": "procurar",
+   "start": 58.64,
+   "end": 58.96,
+   "block": "application",
+   "key": "procurar"
+  },
+  {
+   "index": 140,
+   "text": "apoio",
+   "start": 59.12,
+   "end": 59.36,
+   "block": "application",
+   "key": "apoio"
+  },
+  {
+   "index": 141,
+   "text": "confiável",
+   "start": 59.44,
+   "end": 60.08,
+   "block": "application",
+   "key": "confiavel"
+  },
+  {
+   "index": 142,
+   "text": "ou",
+   "start": 60.4,
+   "end": 60.56,
+   "block": "application",
+   "key": "ou"
+  },
+  {
+   "index": 143,
+   "text": "dar",
+   "start": 60.64,
+   "end": 60.72,
+   "block": "application",
+   "key": "dar"
+  },
+  {
+   "index": 144,
+   "text": "um",
+   "start": 60.8,
+   "end": 60.88,
+   "block": "application",
+   "key": "um"
+  },
+  {
+   "index": 145,
+   "text": "passo",
+   "start": 61.0,
+   "end": 61.16,
+   "block": "application",
+   "key": "passo"
+  },
+  {
+   "index": 146,
+   "text": "responsável",
+   "start": 61.2,
+   "end": 62.0,
+   "block": "application",
+   "key": "responsavel"
+  },
+  {
+   "index": 147,
+   "text": "em",
+   "start": 62.04,
+   "end": 62.08,
+   "block": "application",
+   "key": "em"
+  },
+  {
+   "index": 148,
+   "text": "favor",
+   "start": 62.16,
+   "end": 62.4,
+   "block": "application",
+   "key": "favor"
+  },
+  {
+   "index": 149,
+   "text": "de",
+   "start": 62.44,
+   "end": 62.48,
+   "block": "application",
+   "key": "de"
+  },
+  {
+   "index": 150,
+   "text": "alguém.",
+   "start": 62.56,
+   "end": 63.44,
+   "block": "application",
+   "key": "alguem"
+  },
+  {
+   "index": 151,
+   "text": "E",
+   "start": 63.52,
+   "end": 63.6,
+   "block": "application",
+   "key": "e"
+  },
+  {
+   "index": 152,
+   "text": "pode",
+   "start": 63.68,
+   "end": 63.84,
+   "block": "application",
+   "key": "pode"
+  },
+  {
+   "index": 153,
+   "text": "levar",
+   "start": 63.92,
+   "end": 64.16,
+   "block": "application",
+   "key": "levar"
+  },
+  {
+   "index": 154,
+   "text": "suas",
+   "start": 64.24,
+   "end": 64.48,
+   "block": "application",
+   "key": "suas"
+  },
+  {
+   "index": 155,
+   "text": "perguntas",
+   "start": 64.56,
+   "end": 64.96,
+   "block": "application",
+   "key": "perguntas"
+  },
+  {
+   "index": 156,
+   "text": "à",
+   "start": 65.0,
+   "end": 65.04,
+   "block": "application",
+   "key": "a"
+  },
+  {
+   "index": 157,
+   "text": "oração,",
+   "start": 65.12,
+   "end": 65.84,
+   "block": "application",
+   "key": "oracao"
+  },
+  {
+   "index": 158,
+   "text": "sem",
+   "start": 65.92,
+   "end": 66.0,
+   "block": "application",
+   "key": "sem"
+  },
+  {
+   "index": 159,
+   "text": "inventar",
+   "start": 66.08,
+   "end": 66.56,
+   "block": "application",
+   "key": "inventar"
+  },
+  {
+   "index": 160,
+   "text": "respostas.",
+   "start": 66.68,
+   "end": 67.84,
+   "block": "application",
+   "key": "respostas"
+  },
+  {
+   "index": 161,
+   "text": "Nem",
+   "start": 67.92,
+   "end": 68.08,
+   "block": "conclusion",
+   "key": "nem"
+  },
+  {
+   "index": 162,
+   "text": "toda",
+   "start": 68.133,
+   "end": 68.24,
+   "block": "conclusion",
+   "key": "toda"
+  },
+  {
+   "index": 163,
+   "text": "espera",
+   "start": 68.32,
+   "end": 68.8,
+   "block": "conclusion",
+   "key": "espera"
+  },
+  {
+   "index": 164,
+   "text": "tem",
+   "start": 68.88,
+   "end": 68.96,
+   "block": "conclusion",
+   "key": "tem"
+  },
+  {
+   "index": 165,
+   "text": "explicação",
+   "start": 69.04,
+   "end": 69.6,
+   "block": "conclusion",
+   "key": "explicacao"
+  },
+  {
+   "index": 166,
+   "text": "pronta.",
+   "start": 69.68,
+   "end": 70.56,
+   "block": "conclusion",
+   "key": "pronta"
+  },
+  {
+   "index": 167,
+   "text": "Mas",
+   "start": 70.64,
+   "end": 70.72,
+   "block": "conclusion",
+   "key": "mas"
+  },
+  {
+   "index": 168,
+   "text": "o",
+   "start": 70.76,
+   "end": 70.8,
+   "block": "conclusion",
+   "key": "o"
+  },
+  {
+   "index": 169,
+   "text": "silêncio",
+   "start": 70.92,
+   "end": 71.52,
+   "block": "conclusion",
+   "key": "silencio"
+  },
+  {
+   "index": 170,
+   "text": "não",
+   "start": 71.6,
+   "end": 71.68,
+   "block": "conclusion",
+   "key": "nao"
+  },
+  {
+   "index": 171,
+   "text": "obriga",
+   "start": 71.76,
+   "end": 72.16,
+   "block": "conclusion",
+   "key": "obriga"
+  },
+  {
+   "index": 172,
+   "text": "você",
+   "start": 72.24,
+   "end": 72.56,
+   "block": "conclusion",
+   "key": "voce"
+  },
+  {
+   "index": 173,
+   "text": "a",
+   "start": 72.6,
+   "end": 72.64,
+   "block": "conclusion",
+   "key": "a"
+  },
+  {
+   "index": 174,
+   "text": "abandonar",
+   "start": 72.72,
+   "end": 73.28,
+   "block": "conclusion",
+   "key": "abandonar"
+  },
+  {
+   "index": 175,
+   "text": "a",
+   "start": 73.307,
+   "end": 73.333,
+   "block": "conclusion",
+   "key": "a"
+  },
+  {
+   "index": 176,
+   "text": "verdade,",
+   "start": 73.36,
+   "end": 74.16,
+   "block": "conclusion",
+   "key": "verdade"
+  },
+  {
+   "index": 177,
+   "text": "a",
+   "start": 74.2,
+   "end": 74.24,
+   "block": "conclusion",
+   "key": "a"
+  },
+  {
+   "index": 178,
+   "text": "responsabilidade",
+   "start": 74.32,
+   "end": 75.52,
+   "block": "conclusion",
+   "key": "responsabilidade"
+  },
+  {
+   "index": 179,
+   "text": "ou",
+   "start": 75.6,
+   "end": 75.68,
+   "block": "conclusion",
+   "key": "ou"
+  },
+  {
+   "index": 180,
+   "text": "a",
+   "start": 75.76,
+   "end": 75.893,
+   "block": "conclusion",
+   "key": "a"
+  },
+  {
+   "index": 181,
+   "text": "esperança.",
+   "start": 76.027,
+   "end": 76.72,
+   "block": "conclusion",
+   "key": "esperanca"
+  }
+ ],
+ "limitations": [
+  "Audio file NOT downloaded (egress blocked): file hash, true file duration and loudness are NOT VERIFIED.",
+  "Voice rights/commercial licence of the library voice NOT VERIFIED; voice_rights_cleared=false.",
+  "Word times come from Scribe, not from the audio; sentence-final words span trailing pause (up to ~1 s) so karaoke fill may lag on them: NOT VERIFIED by ear.",
+  "This candidate does NOT replace the canonical 70.425 s WAV; scene timings (12 scenes) not yet re-fitted.",
+  "Not master, not published."
+ ],
+ "voice_rights_cleared": false,
+ "production_audio_master_approved": false,
+ "publication_authorized": false
+}

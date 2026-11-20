@@ -267,7 +267,8 @@ def _segment_cost(group: list[dict[str, Any]]) -> float:
     return cost
 
 
-def make_cues(words: list[dict[str, Any]]) -> list[dict[str, Any]]:
+def make_cues(words: list[dict[str, Any]],
+              duration: float = VOICE_DURATION) -> list[dict[str, Any]]:
     n = len(words)
     for w in words:
         check(w["start"] is not None and w["end"] is not None,
@@ -296,7 +297,7 @@ def make_cues(words: list[dict[str, Any]]) -> list[dict[str, Any]]:
     for i, j in reversed(bounds):
         group = words[i:j]
         start = max(0.0, group[0]["start"])
-        end = min(VOICE_DURATION, group[-1]["end"])
+        end = min(duration, group[-1]["end"])
         check(end - start >= MIN_CUE_DURATION, "caption:cue_too_short")
         cues.append({
             "index": len(cues) + 1, "start": round(start, 3),
@@ -316,7 +317,7 @@ def make_cues(words: list[dict[str, Any]]) -> list[dict[str, Any]]:
               and all(text_width(line) <= MAX_LINE_PX for line in cue["lines"]),
               "caption:invalid_bounded_cue")
     check(cues[0]["start"] <= .5
-          and cues[-1]["end"] >= VOICE_DURATION - 1.3
+          and cues[-1]["end"] >= duration - 1.3
           and len(cues) >= 20, "caption:coverage_too_short")
     return cues
 
@@ -345,7 +346,8 @@ def ass_time(s: float) -> str:
     return f"{cs//360000:01}:{(cs//6000)%60:02}:{(cs//100)%60:02}.{cs%100:02}"
 
 
-def export_ass(cues: list[dict[str, Any]]) -> str:
+def export_ass(cues: list[dict[str, Any]],
+               duration: float = VOICE_DURATION) -> str:
     header = f"""[Script Info]
 Title: VERBO NO CHAO | E01 V2 | QA-ONLY KARAOKE (layout v3c)
 ScriptType: v4.00+
@@ -363,7 +365,7 @@ Style: QA,DejaVu Sans,34,&H00E6E6E6,&H00E6E6E6,&H0012100E,&H80000000,1,0,0,0,100
 Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text
 """
     out=[
-        "Dialogue: 1,0:00:00.00,"+ass_time(VOICE_DURATION)
+        "Dialogue: 1,0:00:00.00,"+ass_time(duration)
         +",QA,,0,0,0,,PRÉVIA TÉCNICA - NÃO PUBLICAR"
     ]
     for c in cues:
