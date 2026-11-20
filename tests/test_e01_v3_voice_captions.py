@@ -153,5 +153,31 @@ class HudGeometryGateTests(unittest.TestCase):
         self.assertGreaterEqual(top, 260)      # universal 1400 px tall zone
         self.assertLessEqual(bottom, 1920 - 320)
 
+class MeasuredCaptionBandTests(unittest.TestCase):
+    def setUp(self):
+        self.b = json.loads(Path("contracts/e01_v3_caption_band_v1.json").read_text(encoding="utf-8"))
+
+    def test_render_measured_band_is_symmetric_and_inside_universal_zone(self):
+        m, c = self.b["measured_px"], self.b["clear_px"]
+        self.assertLessEqual(abs(c["left"] - c["right"]), 2)            # symmetry
+        self.assertEqual(c["left"], m["x_min"])
+        self.assertEqual(c["right"], 1079 - m["x_max"])
+        self.assertGreaterEqual(c["left"], 90)                          # universal 900 px zone
+        self.assertGreaterEqual(c["bottom"], 320)                       # bottom UI dead zone
+        self.assertEqual(c["bottom"], 1920 - m["y_max"] - 1)
+
+    def test_protected_band_encloses_the_measured_captions(self):
+        m, p = self.b["measured_px"], self.b["protected_band_for_primary_action"]
+        self.assertLessEqual(p["y_from"], m["y_min"] - 30)
+        self.assertGreaterEqual(p["y_to"], m["y_max"] + 30)
+        self.assertLessEqual(p["x_from"], m["x_min"] - 30)
+        self.assertGreaterEqual(p["x_to"], m["x_max"] + 30)
+
+    def test_old_visual_zone_does_not_cover_the_captions(self):
+        # documented inconsistency: 'lower 420 px' starts at y=1500, below the captions (y<=1327)
+        self.assertLess(self.b["measured_px"]["y_max"], 1920 - 420)
+        self.assertIs(self.b["approved_by_user"], False)
+
+
 if __name__ == "__main__":
     unittest.main()

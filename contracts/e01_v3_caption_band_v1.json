@@ -1,0 +1,15 @@
+{
+ "schema_version": "1",
+ "project": "VERBO NO CHAO",
+ "kind": "MEASURED_CAPTION_BAND",
+ "method": "ffmpeg libass render of e01-v3-johnes-karaoke-qa.ass over a black 1080x1920 frame, one frame per distinct caption state (44), pixels with luma>30 and y>=900 (the technical-preview watermark at the top is excluded); includes outline and shadow",
+ "ass_sha256_note": "measured on the 43-cue curated plan build; any caption change requires re-measuring",
+ "canvas": {"width": 1080, "height": 1920},
+ "measured_px": {"x_min": 179, "x_max": 900, "y_min": 1139, "y_max": 1327},
+ "clear_px": {"left": 179, "right": 179, "bottom": 592, "top_of_caption_from_bottom": 781},
+ "protected_band_for_primary_action": {"y_from": 1100, "y_to": 1360, "x_from": 140, "x_to": 940, "margin_px": 39},
+ "finding": "The visual plan protects 'lower center 380/420 px' (y>=1500/1540). The captions sit at y 1139-1327 (593-781 px above the bottom), so that zone protects nothing the captions use. Primary action (faces, hands, key object) must stay outside the protected band above, or be accepted behind the captions.",
+ "device_measured": false,
+ "platform_ui_source": "published third-party guides only (universal 900x1400, bottom dead zone >=320 px)",
+ "approved_by_user": false
+}
