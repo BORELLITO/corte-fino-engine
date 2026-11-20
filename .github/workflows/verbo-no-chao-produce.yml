@@ -12,6 +12,11 @@ on:
         required: false
         default: "pixabay"
         type: string
+  push:  # TEMPORÁRIO: provar a entrega por rascunho de release; removido logo após
+    branches:
+      - "verbo-no-chao/producer-p0-v1"
+    paths:
+      - ".github/workflows/verbo-no-chao-produce.yml"
   schedule:
     - cron: "17 9 * * 1"   # segunda; só roda se queue/next.json existir
 
@@ -33,6 +38,7 @@ jobs:
           INPUT_SPEC: ${{ inputs.spec_path }}
         run: |
           SPEC="$INPUT_SPEC"
+          if [ "${{ github.event_name }}" = "push" ]; then SPEC="episodes/EXAMPLE.json"; fi
           if [ -z "$SPEC" ]; then SPEC="queue/next.json"; fi
           if [ ! -f "$SPEC" ]; then echo "found=false" >> "$GITHUB_OUTPUT"; echo "sem spec: nada a produzir"; exit 0; fi
           echo "found=true" >> "$GITHUB_OUTPUT"
@@ -66,3 +72,33 @@ jobs:
             run-reports/
           if-no-files-found: warn
           retention-days: 14
+
+  deliver:
+    # Separate job: the only place with write permission, and it never sees the API secrets.
+    # Creates a DRAFT release (invisible to the public) so the preview can be fetched without
+    # exposing media through public Actions artifacts.
+    needs: produce
+    if: needs.produce.result == 'success'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: vnc-preview-${{ github.run_id }}
+          path: delivered
+      - name: Light chat preview (540x960) + draft release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: preview-${{ github.run_id }}
+        run: |
+          sudo apt-get update -qq && sudo apt-get install -y -qq ffmpeg
+          OUT=$(find delivered -name output.mp4 | head -1)
+          test -n "$OUT" || { echo "output.mp4 ausente: nada a entregar"; exit 1; }
+          ffmpeg -nostdin -v error -y -i "$OUT" -vf scale=540:-2 -c:v libx264 -preset veryfast -crf 26 -c:a aac -b:a 96k -movflags +faststart chat_preview.mp4
+          gh release create "$TAG" --repo "$GITHUB_REPOSITORY" --draft --prerelease --target "$GITHUB_SHA" \
+            --title "Prévia $TAG (rascunho, não publicado)" \
+            --notes "Prévia automática. Rascunho privado. NÃO é publicação. Direitos pendentes." \
+            chat_preview.mp4 "$OUT"
+
