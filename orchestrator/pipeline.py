@@ -89,7 +89,7 @@ def evaluate(pipeline: dict[str, Any], root: Path) -> dict[str, Any]:
         "next_action": (
             None if not nxt else
             "owner_authorization_required" if nxt[1]["status"] == HUMAN else
-            f"run_workflow:{nxt[1]['workflow']}"
+            f"run_workflow:{nxt[1]['workflow']}" if nxt[1].get("workflow") else "no_automated_executor"
         ),
         "stages": results,
     }
