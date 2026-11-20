@@ -201,11 +201,10 @@ def render(s01:Path,s02:Path,ass:Path,out:Path,root=ROOT):
                 "status":"REAL_KARAOKE_319FRAME_QA_PHYSICALLY_VERIFIED_EDITORIAL_PENDING",
                 "source_sha256":{"s01":sha(inputs[0]),"s02_grade_a":sha(inputs[1]),"ass":sha(inputs[2])},
                 "graded_s02": {"sha256":sha(grade),"bytes":grade.stat().st_size},
-                "preview":{"**":None,**meta,"sha256":sha(final),"bytes":final.stat().st_size,
+                "preview":{**meta,"sha256":sha(final),"bytes":final.stat().st_size,
                            "watermarked":True,"full_decode_pass":True,
                            "ass_sha256_unchanged":True}
             })
-            result["preview"].pop("**",None)
     except (OSError,ValueError,subprocess.TimeoutExpired,KeyError,TypeError,UnicodeDecodeError) as exc:
         final.unlink(missing_ok=True)
         result["error_type"]=type(exc).__name__
