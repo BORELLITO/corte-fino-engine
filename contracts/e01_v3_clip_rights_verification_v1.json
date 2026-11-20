@@ -1,0 +1,49 @@
+{
+ "schema_version": "1.0.0",
+ "project": "verbo-no-chao",
+ "kind": "CLIP_RIGHTS_VERIFICATION",
+ "episode_id": "E01",
+ "verified_on": "2026-11-20",
+ "method": "leitura das páginas oficiais de licença (somente leitura, custo 0)",
+ "clips": [
+  {
+   "scene": "S01",
+   "source": "pexels",
+   "id": "19967985",
+   "license": "Pexels License",
+   "verdict": "COMERCIAL_SEM_ATRIBUICAO",
+   "caveat_pt": "sem rostos; remover áudio embutido"
+  },
+  {
+   "scene": "S05",
+   "source": "pexels",
+   "id": "30635115",
+   "license": "Pexels License",
+   "verdict": "COMERCIAL_SEM_ATRIBUICAO",
+   "caveat_pt": "silhueta sem rosto"
+  },
+  {
+   "scene": "S10",
+   "source": "pexels",
+   "id": "5493833",
+   "license": "Pexels License",
+   "verdict": "COMERCIAL_SEM_ATRIBUICAO",
+   "caveat_pt": "mãos, sem rostos"
+  },
+  {
+   "scene": "S04",
+   "source": "mixkit",
+   "id": "41739",
+   "license": "Mixkit Stock Video Free License",
+   "verdict": "COMERCIAL_SEM_ATRIBUICAO",
+   "caveat_pt": "mãos de uma moça com vela; sem rosto descrito; a página não cita licença restrita"
+  }
+ ],
+ "sources": [
+  "https://help.pexels.com/hc/en-us/articles/360042295174-What-is-the-license-of-the-photos-and-videos-on-Pexels",
+  "https://mixkit.co/free-stock-video/hands-of-a-girl-holding-a-candle-in-the-dark-41739/"
+ ],
+ "rights_cleared": true,
+ "scope_pt": "Somente estes 4 clipes. Pexels: verificada a licença geral do site, não a página de cada clipe. Cenas S02, S03, S06 a S09, S11 e S12 seguem sem clipe.",
+ "publication_authorized": false
+}

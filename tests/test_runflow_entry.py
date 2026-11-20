@@ -29,7 +29,8 @@ class RunflowEntryTests(unittest.TestCase):
         self.assertEqual(rep["budget_new_spend_brl"], 0)
         self.assertNotEqual(rep["stages"]["publication"]["status"], "DONE")
         self.assertEqual(rep["stages"]["voice_rights"]["status"], "DONE")
-        self.assertEqual(rep["stages"]["clips_rights"]["status"], "READY")
+        self.assertEqual(rep["stages"]["clips_rights"]["status"], "DONE")
+        self.assertEqual(rep["stages"]["master"]["status"], "READY")
         self.assertEqual(rep["next_action"], "blocked:NO_AUTOMATED_EXECUTOR")
         self.assertNotEqual(rep["stages"]["master"]["status"], "DONE")
 
@@ -92,7 +93,7 @@ class RunflowEntryTests(unittest.TestCase):
         spec = json.loads((ROOT / "contracts" / "e01_pipeline_v3.json").read_text())
         out = evaluate(spec, ROOT)
         self.assertEqual(out["stages"]["clips_approved"]["status"], "DONE")
-        self.assertEqual(out["stages"]["clips_rights"]["status"], "READY")
+        self.assertEqual(out["stages"]["clips_rights"]["status"], "DONE")
         self.assertEqual(out["next_action"], "no_automated_executor")
         self.assertNotEqual(out["next_action"], "run_workflow:None")
 
@@ -102,6 +103,17 @@ class RunflowEntryTests(unittest.TestCase):
         self.assertIs(v["publication_authorized"], False)
         self.assertIn("NAO_VERIFICADA", v["rights_basis"])
         self.assertEqual(v["applies_to"], "TODOS_OS_EPISODIOS")
+
+    def test_standing_autonomy_never_covers_publication_or_spend(self):
+        a = json.loads((ROOT / "contracts" / "vnc_owner_standing_autonomy_v1.json").read_text())
+        self.assertIn("publicar ou agendar publicação", a["claude_must_not"])
+        self.assertIn("gastar dinheiro ou créditos novos", a["claude_must_not"])
+        self.assertEqual(a["owner_only"], ["publicação final"])
+
+    def test_rights_evidence_is_scoped_and_not_publication(self):
+        r = json.loads((ROOT / "contracts" / "e01_v3_clip_rights_verification_v1.json").read_text())
+        self.assertEqual({c["scene"] for c in r["clips"]}, {"S01", "S04", "S05", "S10"})
+        self.assertIs(r["publication_authorized"], False)
 
     def test_master_requires_voice_and_clip_rights_and_publication_is_human(self):
         spec = json.loads((ROOT / "contracts" / "e01_pipeline_v3.json").read_text())
