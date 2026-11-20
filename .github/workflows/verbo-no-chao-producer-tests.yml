@@ -1,0 +1,25 @@
+name: Verbo no Chão — Producer (testes de mídia real)
+
+on:
+  push:
+    branches:
+      - "verbo-no-chao/**"
+  pull_request:
+    branches:
+      - "verbo-no-chao/bootstrap"
+
+permissions:
+  contents: read
+
+jobs:
+  producer-media:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Install FFmpeg (libass for subtitles filter)
+        run: sudo apt-get update -qq && sudo apt-get install -y -qq ffmpeg
+      - name: Producer end-to-end with real FFmpeg (test doubles for voice/footage/ASR)
+        run: python -m unittest tests.test_producer -v

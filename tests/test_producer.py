@@ -4,6 +4,7 @@ The doubles are only ever used here; the real providers fail closed (see last te
 """
 import json
 import math
+import shutil
 import tempfile
 import unittest
 import wave
@@ -16,6 +17,9 @@ from producer.build import build_package
 from producer.common import ProducerError, audio_integrity_ok, duration_sec, run_ffmpeg, sha256_file
 from producer.footage import Clip, PexelsFootage
 from producer.music import write_music
+
+HAS_FFMPEG = bool(shutil.which("ffmpeg") and shutil.which("ffprobe"))
+needs_ffmpeg = unittest.skipUnless(HAS_FFMPEG, "FFmpeg required for real media execution")
 
 SPEC = {
     "episode_id": "TEST01",
@@ -67,6 +71,7 @@ class FakeAligner:
         return captions.proportional_times(words, 0.0, total)
 
 
+@needs_ffmpeg
 class ProducerPipelineTest(unittest.TestCase):
     def build(self, voice=None, footage=None, aligner="fake"):
         tmp = Path(tempfile.mkdtemp())
@@ -111,6 +116,7 @@ class ProducerPipelineTest(unittest.TestCase):
 
 
 class ProducerUnitTest(unittest.TestCase):
+    @needs_ffmpeg
     def test_music_is_deterministic_original_and_not_clipped(self):
         d = Path(tempfile.mkdtemp())
         write_music(d / "a.wav", 6.0, seed=3)
