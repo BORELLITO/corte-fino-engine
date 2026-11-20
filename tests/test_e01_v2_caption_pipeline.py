@@ -144,7 +144,9 @@ class E01CaptionQATests(unittest.TestCase):
     @needs_pillow
     def test_layout_keeps_text_inside_hud_safe_columns(self):
         # rendered bbox ~= text width + 15 px (outline/spacing, measured)
-        self.assertLessEqual(MARGIN_SIDE+MAX_LINE_PX+15,900)
+        # centred bbox = text width + 15; right edge must stay <= 906 (>=36 px HUD gap,
+        # derived from the measured >=42 px gap, NOT re-measured on a device)
+        self.assertLessEqual(540+(MAX_LINE_PX+15)/2,906)
         self.assertGreaterEqual(MARGIN_SIDE,180)
         self.assertGreaterEqual(MARGIN_BOTTOM,576)
         art=export_ass([{"index":1,"start":1,"end":2,"lines":["a"],

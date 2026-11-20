@@ -26,3 +26,9 @@ Status: implementadas e testadas no pipeline (`agents/e01_v2_caption_pipeline.py
 - Toda legenda que ainda quebra uma regra recebe `rule_violations` e DEVE ser revista por humano antes de aprovar. Nunca esconder.
 - Casos residuais no E01 (voz Johnes, fonte 107): "diante de uma / sociedade ferida.", "Os primeiros / versos", "A fé não precisa / fingir", "responsável em / favor de alguém." — geometria de 700 px não permite quebra perfeita em 2 linhas; decisão do usuário pendente.
 - O léxico de palavras que não podem terminar linha é em português e heurístico: NÃO substitui a revisão visual de cada episódio novo.
+
+## Pontuação exibida (regra permanente)
+- Ponto final nunca é exibido. `, : ;` somem no fim da legenda; vírgula e dois-pontos internos ficam. `?` e `!` ficam.
+- Sem travessão, hífen decorativo ou reticências. Nenhuma linha começa com pontuação.
+- Quebras de linha definidas por plano curado (`contracts/e01_v3_caption_plan_v1.json`), validado contra o roteiro canônico e as regras tipográficas. Largura máxima 715 px.
+- Resíduo conhecido, NÃO RESOLVIDO: "diante de uma / sociedade ferida" (limite geométrico de 2 linhas).

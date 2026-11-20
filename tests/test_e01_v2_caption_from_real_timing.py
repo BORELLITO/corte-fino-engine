@@ -12,9 +12,9 @@ needs_pillow = unittest.skipUnless(
 from agents.e01_v2_caption_from_real_timing import build
 
 EXPECTED = {
-    "e01-v2-captions-v3.srt": "bfee8ca546e9a536c1ddc2592d3e6c241fb254c8116c83215456561c83ea8a99",
-    "e01-v2-captions-v3.vtt": "40be595a620ce70635e046a449ec9065ca5c7a4c1fbea6980998d8e19a2bc986",
-    "e01-v2-karaoke-v3-qa.ass": "609127a8ac74eca1c9e1fcc407509c084f11fea8f9db312934301d27294277b3"
+    "e01-v2-captions-v3.srt": "666f08f1a3fb151f0fbdb77cc1d52336418c45c6918a1cd7392048998537f171",
+    "e01-v2-captions-v3.vtt": "07ca5a703731dfd4a304abba1f0e87ce3bdc5da91ce4d2281e818a7ccd6dbbc6",
+    "e01-v2-karaoke-v3-qa.ass": "936988d60638e056d5d5a28853e87b6cf3f56aa6d0494081abb8630d87750ee3"
 }
 
 

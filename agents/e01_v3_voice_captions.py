@@ -11,12 +11,14 @@ from pathlib import Path
 
 from agents.content_production import check
 from agents.e01_v2_caption_pipeline import (
-    SCRIPT_SHA, canonical_words, export_ass, export_srt, export_vtt, make_cues,
+    SCRIPT_SHA, canonical_words, export_ass, export_srt, export_vtt,
+    make_cues_from_plan,
 )
 
 ROOT = Path(__file__).resolve().parents[1]
 CONTRACT = ROOT / "contracts/e01_v3_voice_johnes_word_timing_v1.json"
 SCRIPT = ROOT / "contracts/e01_script_v2_candidate.json"
+PLAN = ROOT / "contracts/e01_v3_caption_plan_v1.json"
 SPEECH_DURATION = 76.67
 
 
@@ -44,7 +46,8 @@ def load(path: Path = CONTRACT) -> tuple[list[dict], float]:
 
 def build(out: Path) -> dict[str, str]:
     words, duration = load()
-    cues = make_cues(words, duration)
+    plan = json.loads(PLAN.read_text(encoding="utf-8"))["cues"]
+    cues = make_cues_from_plan(words, plan, duration)
     out.mkdir(parents=True, exist_ok=True)
     files = {
         "e01-v3-johnes-captions.srt": export_srt(cues),

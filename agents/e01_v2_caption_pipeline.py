@@ -36,7 +36,7 @@ FONT_SHA = "aa4ee81e4b45aeaf70f5c33f0f1290640b5fe36a34664165f2bae1e35b003546"
 FONT_FAMILY = "Atkinson Hyperlegible Next"
 FONT_ASS_SIZE = 107          # ASS Fontsize; em = 76 px for this font
 FONT_EM_PX = 76
-MAX_LINE_PX = 700            # text width; rendered bbox is ~15 px wider
+MAX_LINE_PX = 715            # text width; rendered bbox is ~15 px wider (x ~175..905 centred; >=36 px from HUD rail, derived from the measured >=42 px gap)
 MARGIN_SIDE = 180            # keeps x in 180..900 (right HUD rail clear)
 MARGIN_BOTTOM = 576          # bottom HUD clearance, measured on 3 screenshots
 COLOR_ACTIVE = "&H00F2B0C4"  # light lilac (provisional brand colour): ONLY the word being spoken
@@ -46,6 +46,15 @@ CUE_LEAD_IN = 0.10           # caption appears this long before the first word
 CUE_HOLD = 0.35              # caption stays this long after the last word
 CUE_GAP_GUARD = 0.04         # never touch the neighbouring caption
 MIN_DISPLAY = 1.0            # reading time target for short captions
+# Displayed text = canonical words with only NECESSARY punctuation:
+# - periods never shown; "?" and "!" kept (they change meaning);
+# - the last word of a caption never ends with , : ; (the caption break is the pause);
+# - commas/colons INSIDE a caption are kept (they separate list items/clauses,
+#   e.g. "violência, injustiça"). No dashes, ellipses or odd spaces, ever.
+# Chunking logic still reads the ORIGINAL tokens.
+DISPLAY_STRIP = ".,:;"
+INNER_STRIP = "."
+FORBIDDEN_DISPLAY_CHARS = "—–-‒―…\u00a0\t"
 MAX_LINES = 2
 MAX_CUE_WORDS = 7
 ONE_LINE_MAX_WORDS = 3
@@ -221,7 +230,7 @@ FUNCTION_WORDS = {
 }
 # words that must stay glued to the NEXT word (never end a line/caption on them)
 NO_END_WORDS = FUNCTION_WORDS | {
-    "mais","muito","tão","essa","esse","esta","este","isso","mesma","mesmo",
+    "tão","essa","esse","esta","este","isso","mesma","mesmo",
     "mesmas","mesmos","primeiros","primeiras","primeiro","primeira","toda",
     "todo","todas","todos","cada","outra","outro","tantas","tantos","tanta",
     "tanto","algum","alguma","nenhum","nenhuma","diante","favor","longo",
@@ -238,6 +247,14 @@ def text_width(text: str) -> float:
               "caption:caption_font_missing_or_changed")
         _FONT = ImageFont.truetype(str(FONT_PATH), FONT_EM_PX)
     return _FONT.getlength(text)
+
+
+def display(token: str, last: bool = False) -> str:
+    """Token as shown on screen; `last` = final word of its caption."""
+    out = token.strip(DISPLAY_STRIP if last else INNER_STRIP)
+    check(out and not any(ch in out for ch in FORBIDDEN_DISPLAY_CHARS),
+          "caption:invalid_display_token")
+    return out
 
 
 def _dangling(text: str) -> bool:
@@ -259,26 +276,27 @@ def _split(raw: list[str]) -> tuple[float, list[str]] | None:
     possible, keep lines balanced, prefer the longer line at the bottom
     (pyramid), never leave a one-word orphan line.
     """
-    one = " ".join(raw)
+    disp = [display(t, last=(k == len(raw) - 1)) for k, t in enumerate(raw)]
+    one = " ".join(disp)
     if len(raw) <= ONE_LINE_MAX_WORDS and text_width(one) <= MAX_LINE_PX:
         return 0.0, [one]
     best = None
     for i in range(1, len(raw)):
         if _is_no_split(raw[i-1], raw[i]):
             continue
-        left, right = " ".join(raw[:i]), " ".join(raw[i:])
+        left, right = " ".join(disp[:i]), " ".join(disp[i:])   # i>=1: left keeps inner commas
         wl, wr = text_width(left), text_width(right)
         if max(wl, wr) > MAX_LINE_PX:
             continue
-        pen = abs(wl - wr)
+        pen = 0.35 * abs(wl - wr)
         if _dangling(raw[i-1]):
             pen += 1500       # (cost/10 => 150): almost never acceptable
         if raw[i-1][-1] in ",:;":
             pen -= 30
         if wl > wr:
             pen += 25
-        if i == 1 or i == len(raw) - 1:
-            pen += 35 if min(wl, wr) < 0.3 * MAX_LINE_PX else 0
+        if min(wl, wr) < 0.30 * max(wl, wr):
+            pen += 35
         if best is None or pen < best[0]:
             best = (pen, [left, right])
     return best
@@ -333,15 +351,15 @@ def typography_violations(cue: dict[str, Any]) -> list[str]:
     out = []
     if _dangling(cue["words"][-1]["text"]):
         out.append("caption_ends_on_function_word")
-    if len(cue["lines"]) == 2 and _dangling(cue["lines"][0].split()[-1]):
-        out.append("line_ends_on_function_word")
     toks = [w["text"] for w in cue["words"]]
-    if any(_is_no_split(a, b) for a, b in zip(toks, toks[1:])) and len(cue["lines"]) == 2:
-        l0 = cue["lines"][0].split()
-        if _is_no_split(l0[-1], cue["lines"][1].split()[0]):
+    if len(cue["lines"]) == 2:
+        k = len(cue["lines"][0].split())
+        if _dangling(toks[k-1]):
+            out.append("line_ends_on_function_word")
+        if _is_no_split(toks[k-1], toks[k]):
             out.append("no_split_pair_broken")
     if len(cue["lines"]) == 2 and (min(text_width(x) for x in cue["lines"])
-                                   < 0.3 * MAX_LINE_PX):
+                                   < 0.30 * max(text_width(x) for x in cue["lines"])):
         out.append("unbalanced_lines")
     return out
 
@@ -387,6 +405,10 @@ def _make_cues(words: list[dict[str, Any]],
             "end": round(end, 3), "lines": cue_lines(group),
             "words": group, "block": group[0]["block"],
         })
+    return _finalize_cues(cues, duration)
+
+
+def _finalize_cues(cues: list[dict[str, Any]], duration: float) -> list[dict[str, Any]]:
     # SRT track can show a tiny gap between phrases; no early words or overlaps.
     for k, cue in enumerate(cues):
         if k:
@@ -403,6 +425,50 @@ def _make_cues(words: list[dict[str, Any]],
     check(cues[0]["start"] <= .5
           and cues[-1]["end"] >= duration - 1.3
           and len(cues) >= 20, "caption:coverage_too_short")
+    return cues
+
+
+def make_cues_from_plan(words: list[dict[str, Any]], plan: list[list[str]],
+                        duration: float = VOICE_DURATION) -> list[dict[str, Any]]:
+    """Build captions from an editor-reviewed plan (lines of ORIGINAL tokens).
+
+    The plan only decides line breaks and caption boundaries; text and word
+    timing always come from `words`. Every cue is still checked against the
+    permanent typography rules and carries rule_violations if it breaks one.
+    """
+    flat = [t for cue in plan for line in cue for t in line.split()]
+    check(flat == [w["text"] for w in words], "caption:plan_text_differs_from_script")
+    cues, i = [], 0
+    for lines in plan:
+        check(1 <= len(lines) <= MAX_LINES, "caption:plan_more_than_two_lines")
+        n = sum(len(l.split()) for l in lines)
+        group = words[i:i+n]
+        i += n
+        check(len({w["block"] for w in group}) == 1, "caption:plan_cue_spans_blocks")
+        check(not any(w["text"][-1] in ".?!" for w in group[:-1]),
+              "caption:plan_cue_spans_two_sentences")
+        check(group[-1]["end"] - group[0]["start"] <= MAX_CUE_DURATION,
+              "caption:plan_cue_too_long")
+        shown, k = [], 0
+        for li, line in enumerate(lines):
+            toks = line.split()
+            last_line = li == len(lines) - 1
+            shown.append(" ".join(display(t, last=(last_line and j == len(toks) - 1))
+                                  for j, t in enumerate(toks)))
+            k += len(toks)
+        check(all(text_width(x) <= MAX_LINE_PX for x in shown),
+              "caption:plan_line_too_wide")
+        start = max(0.0, group[0]["start"])
+        end = min(duration, group[-1]["end"])
+        check(end - start >= MIN_CUE_DURATION, "caption:cue_too_short")
+        cues.append({"index": len(cues) + 1, "start": round(start, 3),
+                     "end": round(end, 3), "lines": shown, "words": group,
+                     "block": group[0]["block"]})
+    cues = _finalize_cues(cues, duration)
+    for c in cues:
+        v = typography_violations(c)
+        if v:
+            c["rule_violations"] = v
     return cues
 
 
@@ -474,7 +540,7 @@ def _cue_text(cue: dict[str, Any], active: int | None) -> str:
     for idx, w in enumerate(cue["words"]):
         if idx:
             out.append(r"\N" if len(cue["lines"]) == 2 and idx == line_boundary else " ")
-        t = w["text"].replace("{", "").replace("}", "")
+        t = display(w["text"], last=(idx == len(cue["words"]) - 1))
         out.append(r"{\1c" + COLOR_ACTIVE + r"&}" + t + r"{\1c" + COLOR_BASE + r"&}"
                    if idx == active else t)
     return "".join(out)

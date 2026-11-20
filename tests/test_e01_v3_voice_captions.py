@@ -64,7 +64,39 @@ class VoiceCandidateTests(unittest.TestCase):
         words, duration = load()
         flagged=[c["index"] for c in make_cues(words, duration) if c.get("rule_violations")]
         # known residual cases are listed in docs/REGRAS_LEGENDA_VNC_V1.md
-        self.assertLessEqual(len(flagged), 4)
+        self.assertLessEqual(len(flagged), 4)  # heuristic proposal quality floor
+
+    @unittest.skipUnless(_PIL is not None, "Pillow is installed in the dedicated caption workflow")
+    def test_curated_plan_matches_script_and_only_known_residual_is_flagged(self):
+        from agents.e01_v2_caption_pipeline import make_cues_from_plan, text_width, MAX_LINE_PX
+        from agents.e01_v3_voice_captions import PLAN
+        words, duration = load()
+        plan = json.loads(PLAN.read_text(encoding="utf-8"))["cues"]
+        cues = make_cues_from_plan(words, plan, duration)
+        self.assertEqual(sum(len(c["words"]) for c in cues), 182)
+        self.assertTrue(all(text_width(l) <= MAX_LINE_PX for c in cues for l in c["lines"]))
+        self.assertTrue(all(len(c["lines"]) <= 2 for c in cues))
+        flagged = [(c["lines"], c["rule_violations"]) for c in cues if c.get("rule_violations")]
+        self.assertEqual(flagged, [(["diante de uma", "sociedade ferida"],
+                                    ["line_ends_on_function_word"])])
+
+    @unittest.skipUnless(_PIL is not None, "Pillow is installed in the dedicated caption workflow")
+    def test_displayed_text_has_only_necessary_punctuation(self):
+        import re
+        from agents.e01_v2_caption_pipeline import make_cues_from_plan
+        from agents.e01_v3_voice_captions import PLAN
+        words, duration = load()
+        plan = json.loads(PLAN.read_text(encoding="utf-8"))["cues"]
+        for c in make_cues_from_plan(words, plan, duration):
+            text = " ".join(c["lines"])
+            self.assertNotIn(".", text)                       # periods never shown
+            self.assertFalse(re.search(r"[,:;]$", text))       # caption never ends with , : ;
+            self.assertFalse(re.search(r"[—–\-…]", text))      # no dashes or ellipsis
+            self.assertNotIn("  ", text)
+            for line in c["lines"]:
+                self.assertEqual(line, line.strip())
+                self.assertFalse(re.match(r"^[,.:;?!]", line)) # no line starts with punctuation
+        self.assertIn("estava ouvindo?", [" ".join(c["lines"]) for c in make_cues_from_plan(words, plan, duration)])
 
 
 if __name__ == "__main__":
