@@ -29,8 +29,8 @@
   },
   "audit_branch": "verbo-no-chao/master-v2-provider-replay-safety-audit-20261120-v1",
   "branch_baseline_sha": "db6e1d4acf23e82793f6230535a1716842ba5cd0",
-  "last_reviewed_change_commit_before_checkpoint": "241f3666877661eb024a3cc7685f17d91f2dcd2a",
-  "candidate_head_at_checkpoint_creation": "HEAD_EVOLVES_AFTER_THIS_FILE_COMMIT_CHECK_LIVE_GITHUB",
+  "last_reviewed_change_commit_before_checkpoint": "955ea5aad4527e0924f0fcd072c34fcd0af2dbad",
+  "candidate_head_at_checkpoint_creation": "955ea5aad4527e0924f0fcd072c34fcd0af2dbad",
   "current_phase": "SAFE_AUDIT_AND_DRAFT_HARDENING_NOT_MERGED",
   "last_verified_output": {
     "artifact": "E01_S01_APPROVED_RAIN_MOTIF_720P_QA_AND_S02_UNAPPROVED_720P_CAPTION_PREVIEW",
@@ -133,11 +133,6 @@
       "covers_all_changes": false
     },
     {
-      "name": "Final audited branch checks",
-      "conclusion": "PENDING_POST_COMMIT_RECHECK",
-      "covers_all_changes": null
-    },
-    {
       "run_id": 44666051410,
       "head_sha": "39973b561f202cf6435e5695f7a0836b523a212b",
       "name": "Engine Gates baseline prior to expanded containment",
@@ -152,6 +147,24 @@
       "name": "Eight Specialist Audits baseline prior to expanded containment",
       "conclusion": "success",
       "covers_all_changes": false
+    },
+    {
+      "name": "Engine Gates after four workflow retirements",
+      "run_id": 44667114663,
+      "head_sha": "955ea5aad4527e0924f0fcd072c34fcd0af2dbad",
+      "conclusion": "success",
+      "tests_executed": 493,
+      "skipped": 15,
+      "failures": 0,
+      "covers_four_workflow_changes": true
+    },
+    {
+      "name": "Eight Specialist Audits after four workflow retirements",
+      "run_id": 44667114754,
+      "head_sha": "955ea5aad4527e0924f0fcd072c34fcd0af2dbad",
+      "conclusion": "success",
+      "covers_four_workflow_changes": true,
+      "meaning": "deterministic specialists and coordinator; not human visual or full media QA"
     }
   ],
   "external_effects_confirmed": {
@@ -173,7 +186,7 @@
     "public_repository_creation": false,
     "private_media_upload": false
   },
-  "next_single_action": "VERIFY_LATEST_COMMIT_CI_FOR_FOUR_RETIRED_REMOTE_VIDEO_VOICE_WORKFLOWS_THEN_REVIEW_PR66_FOR_EXPLICIT_MERGE_AUTHORIZATION",
+  "next_single_action": "REVIEW_PR66_FOUR_REMOTE_REPLAY_CONTAINMENTS_FOR_EXPLICIT_CONTROLLED_MERGE; S02_REMains_UNAPPROVED",
   "rollback": "Close draft PR without merge; all original default-branch files remain byte-identical.",
   "full_report_ref": "docs/VNC_MASTER_V2_SENIOR_AUDIT_20261120.md",
   "citable_primary_resources": [
@@ -208,5 +221,7 @@
     "tests_covering_changes": "tests/test_vnc_provider_replay_containment_v2.py",
     "evidence_document": "docs/VNC_MASTER_V2_SENIOR_AUDIT_20261120.md",
     "patch_not_merged": true
-  }
+  },
+  "last_checks_verified_utc": "2026-11-20T03:21:42Z",
+  "last_commit_of_this_checkpoint": "SELF_COMMIT_CREATED_AFTER_PREVIOUS_GREEN_HEAD; CHECK_CI_ON_NEW_HEAD_AFTER_COMMIT"
 }
