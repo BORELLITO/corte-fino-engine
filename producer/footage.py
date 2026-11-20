@@ -113,3 +113,56 @@ class PexelsFootage:
                 continue
             return clip
         raise ProducerError(f"producer:footage:no_unused_clip_for:{query}")
+
+
+class PixabayFootage:
+    """Pixabay Videos API (Pixabay Content License). Needs PIXABAY_API_KEY; without it the run stays BLOCKED.
+
+    Pixabay has no portrait filter, so only native 1080x1920+ files are accepted (no upscaled crops).
+    """
+
+    API = "https://pixabay.com/api/videos/"
+    LICENSE_URL = "https://pixabay.com/service/license-summary/"
+
+    def __init__(self, api_key: str | None = None) -> None:
+        self.key = api_key or os.environ.get("PIXABAY_API_KEY", "")
+        if not self.key:
+            raise ProducerError("producer:footage:pixabay_api_key_missing")
+
+    def _get(self, url: str) -> bytes:
+        req = urllib.request.Request(url, headers={"User-Agent": "verbo-no-chao-producer"})
+        with urllib.request.urlopen(req, timeout=60) as resp:  # noqa: S310 (fixed https hosts)
+            return resp.read()
+
+    def fetch(self, query, min_seconds, exclude, dst_dir):
+        qs = urllib.parse.urlencode({"key": self.key, "q": query, "per_page": 50, "safesearch": "true"})
+        try:
+            hits = json.loads(self._get(f"{self.API}?{qs}")).get("hits", [])
+        except Exception as exc:
+            raise ProducerError(f"producer:footage:pixabay_search_failed:{type(exc).__name__}") from exc
+        for hit in hits:
+            asset_id = f"pixabay-{hit['id']}"
+            if asset_id in exclude or hit.get("pageURL") in exclude or hit.get("duration", 0) < min_seconds + 0.5:
+                continue
+            files = [f for f in (hit.get("videos") or {}).values()
+                     if (f.get("width") or 0) >= 1080 and (f.get("height") or 0) >= 1920
+                     and str(f.get("url", "")).startswith("https://")]
+            if not files:
+                continue
+            pick = min(files, key=lambda f: f["width"] * f["height"])
+            dst = dst_dir / f"{asset_id}.mp4"
+            try:
+                dst.write_bytes(self._get(pick["url"]))
+            except Exception as exc:
+                raise ProducerError(f"producer:footage:download_failed:{asset_id}") from exc
+            if sha256_file(dst) in exclude:
+                dst.unlink()
+                continue
+            clip = Clip(asset_id, dst, hit["pageURL"], self.LICENSE_URL, "Pixabay Content License")
+            try:
+                validate_clip(clip, min_seconds)
+            except ProducerError:
+                dst.unlink(missing_ok=True)
+                continue
+            return clip
+        raise ProducerError(f"producer:footage:no_unused_clip_for:{query}")

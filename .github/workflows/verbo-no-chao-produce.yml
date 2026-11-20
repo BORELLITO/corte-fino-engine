@@ -7,6 +7,11 @@ on:
         description: "Spec do episódio (ex.: episodes/E02.json)"
         required: true
         type: string
+      footage:
+        description: "Fonte de footage: pexels | pixabay | local:<pasta>"
+        required: false
+        default: "pixabay"
+        type: string
   schedule:
     - cron: "17 9 * * 1"   # segunda; só roda se queue/next.json existir
 
@@ -19,6 +24,7 @@ jobs:
     timeout-minutes: 60
     env:
       PEXELS_API_KEY: ${{ secrets.PEXELS_API_KEY }}
+      PIXABAY_API_KEY: ${{ secrets.PIXABAY_API_KEY }}
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
@@ -42,7 +48,7 @@ jobs:
           python -m pip install --disable-pip-version-check -r requirements-producer.txt
       - name: Produce preview and validate with the engine gates
         if: steps.spec.outputs.found == 'true'
-        run: python -m producer.cli "${{ steps.spec.outputs.path }}" --out build/episode --report-dir run-reports
+        run: python -m producer.cli "${{ steps.spec.outputs.path }}" --out build/episode --report-dir run-reports --footage "${{ inputs.footage || 'pixabay' }}"
       - name: Upload preview + reports (never publishes)
         if: always() && steps.spec.outputs.found == 'true'
         uses: actions/upload-artifact@v4

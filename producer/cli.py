@@ -11,7 +11,7 @@ from orchestrator.runflow import run_flow
 from .build import build_package
 from .captions import FasterWhisperAligner
 from .common import ProducerError
-from .footage import LocalCatalogFootage, PexelsFootage
+from .footage import LocalCatalogFootage, PexelsFootage, PixabayFootage
 from .rejections import load_rejections
 from .voice import KokoroVoice
 
@@ -21,7 +21,7 @@ def main(argv: list[str] | None = None) -> int:
     ap.add_argument("spec", type=Path)
     ap.add_argument("--out", required=True, type=Path)
     ap.add_argument("--report-dir", type=Path, default=Path("run-reports"))
-    ap.add_argument("--footage", default="pexels", help="pexels | local:<dir with catalog.json>")
+    ap.add_argument("--footage", default="pexels", help="pexels | pixabay | local:<dir with catalog.json>")
     ap.add_argument("--no-asr", action="store_true", help="skip ASR alignment (captions will NOT be marked synchronized)")
     args = ap.parse_args(argv)
     try:
@@ -30,7 +30,7 @@ def main(argv: list[str] | None = None) -> int:
             raise ProducerError("producer:spec:approved_sources_only_requires_local_catalog")
         rejected = load_rejections(Path(__file__).resolve().parent.parent / "contracts")
         footage = (LocalCatalogFootage(Path(args.footage[6:])) if args.footage.startswith("local:")
-                   else PexelsFootage())
+                   else PixabayFootage() if args.footage == "pixabay" else PexelsFootage())
         aligner = None if args.no_asr else FasterWhisperAligner()
         build_package(spec, args.out, KokoroVoice(**spec.get("voice", {})), footage, aligner, rejected)
     except (ProducerError, OSError, json.JSONDecodeError) as exc:

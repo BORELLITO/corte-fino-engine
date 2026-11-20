@@ -15,7 +15,7 @@ from orchestrator.runflow import run_flow
 from producer import captions
 from producer.build import build_package
 from producer.common import ProducerError, audio_integrity_ok, duration_sec, run_ffmpeg, sha256_file
-from producer.footage import Clip, PexelsFootage
+from producer.footage import Clip, PexelsFootage, PixabayFootage
 from producer.rejections import load_rejections
 from producer.music import write_music
 
@@ -151,6 +151,37 @@ class ProducerUnitTest(unittest.TestCase):
                 PexelsFootage()
         finally:
             if old: os.environ["PEXELS_API_KEY"] = old
+
+    def test_pixabay_without_key_fails_closed(self):
+        import os
+        old = os.environ.pop("PIXABAY_API_KEY", None)
+        try:
+            with self.assertRaises(ProducerError):
+                PixabayFootage()
+        finally:
+            if old: os.environ["PIXABAY_API_KEY"] = old
+
+    @needs_ffmpeg
+    def test_pixabay_accepts_only_native_portrait_and_skips_rejected(self):
+        d = Path(tempfile.mkdtemp())
+        run_ffmpeg(["-f", "lavfi", "-i", "testsrc2=size=1080x1920:rate=30", "-t", "3", "-c:v", "libx264",
+                    "-preset", "ultrafast", "-pix_fmt", "yuv420p", str(d / "src.mp4")])
+        data = (d / "src.mp4").read_bytes()
+
+        class Fake(PixabayFootage):
+            def _get(self, url):
+                if "api/videos" in url:
+                    return json.dumps({"hits": [
+                        {"id": 1, "pageURL": "https://p/1", "duration": 9,
+                         "videos": {"large": {"url": "https://c/l.mp4", "width": 1920, "height": 1080}}},
+                        {"id": 2, "pageURL": "https://p/2", "duration": 9,
+                         "videos": {"large": {"url": "https://c/ok.mp4", "width": 1080, "height": 1920}}},
+                    ]}).encode()
+                return data
+        clip = Fake("k").fetch("q", 2.0, set(), d)
+        self.assertEqual(clip.asset_id, "pixabay-2")  # landscape #1 rejected, never upscaled
+        with self.assertRaises(ProducerError):
+            Fake("k").fetch("q", 2.0, {"pixabay-2"}, d)  # protected/used id is skipped
 
     def test_cue_verification_catches_overlap_and_window_escape(self):
         scenes = [("a b", 0.0, 2.0)]
