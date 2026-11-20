@@ -1,0 +1,102 @@
+{
+  "schema_version": "1.0.0",
+  "project_id": "VERBO_NO_CHAO_EXCLUSIVO",
+  "episode_id": "VNC-W01-E1",
+  "scene_id": "VNC-E01V2-S09",
+  "evidence_type": "PHYSICAL_MP4_AND_3x3_REAL_FRAME_REVIEW",
+  "status": "PHYSICAL_TECHNICAL_QA_PASSED_EDITORIAL_PENDING",
+  "evidence_run_id": 44717869759,
+  "evidence_run_url": "https://github.com/BORELLITO/verbo-no-chao-engine/actions/runs/44717869759",
+  "evidence_run_head": "68b43b954816ac6d760a5318e553f6927e637a1c",
+  "recovered_artifact_id": 14620092373,
+  "previous_attempt": {
+    "run_id": 44717362393,
+    "conclusion": "failure",
+    "reason": "Unmerged S01 watermark dependency, fixed to a local PIL watermark with no editorial/content modifications",
+    "has_only_genuine_nine_frames": true
+  },
+  "source": {
+    "provider": "Mixkit",
+    "provider_id": 99890,
+    "listing_url": "https://mixkit.co/free-stock-video/close-up-a-hand-writing-notes-on-a-notebook-with-99890/",
+    "license_label": "Mixkit Stock Video Free License",
+    "license_url": "https://mixkit.co/license/modal/videoFree/",
+    "media_url_host": "assets.mixkit.co",
+    "video_size_bytes": 42005370,
+    "sha256": "c401cd9b6dd78e2a482ef60a355a777d537ee2a5876f9b53f4f25d023c0e8ab8",
+    "codec": "h264",
+    "true_dimensions": [
+      3840,
+      2160
+    ],
+    "listing_dimensions": [
+      4096,
+      2160
+    ],
+    "dimension_mismatch_explained": "Listing showed 4096x2160 but downloaded 4K asset decoded at 3840x2160; contract accepted physical 4K minimum.",
+    "observed_duration_seconds": 8.174833,
+    "observed_fps": "24000/1001",
+    "downloaded_from_https_host_allowlist": true,
+    "source_file_not_committed_to_public_github": true,
+    "source_full_decode_claimed": false,
+    "physical_camera_authenticity_independently_proven": false
+  },
+  "nine_frame_contact_sheet": {
+    "filename": "S09_MIXKIT_99890_3x3_REAL_CROPS_QA.jpg",
+    "sha256": "0bf8c18064c742742df9cb1789e0328cf9016d7474be04c6565ded73effdb8e3",
+    "bytes": 95589,
+    "samples_seconds": [
+      0.5,
+      2.4,
+      5.25
+    ],
+    "crop_options": [
+      "LEFT",
+      "CENTER",
+      "RIGHT"
+    ],
+    "actual_native_portrait_crop": [
+      1214,
+      2160
+    ],
+    "measured_frame_drift_confirmed": true,
+    "right_crop_best_to_show_hand_and_pen": true,
+    "right75_preview_framing_edited_only_from_real_footage": true
+  },
+  "preview": {
+    "filename": "S09_MIXKIT_99890_RIGHT75_CROP_MOTION_QA_NOT_MASTER.mp4",
+    "sha256": "3eb7c59dbeed9d36fd52ea131f52c3fb670849a53d9cf4722b7b5ee0773094d4",
+    "size_bytes": 693859,
+    "width": 720,
+    "height": 1280,
+    "fps": 30,
+    "frames": 173,
+    "seconds": 5.766667,
+    "audio_streams": 0,
+    "captions_burned": false,
+    "full_decode_in_github_actions": true,
+    "full_decode_independent_local": true,
+    "review_watermark_present": true
+  },
+  "editorial": {
+    "visual_review_performed_on_contact_and_preview_frame": true,
+    "editorial_status": "NOT_APPROVED_FOR_SCENE",
+    "candidate_suitability": "The action of writing in a lined notebook is contextually relevant to S09, and 75%-right crop retains hand and pen. Blue denim sleeve/bright tabletop, modern coffee mug and possible text legibility conflict with charcoal night style; no guarantee of same actor as S01.",
+    "no_human_owner_approval": true,
+    "need_safe_zone_review_with_ass": true,
+    "need_visible_writing_privacy_review": true,
+    "need_visual_no_ai_origin_review": true,
+    "alternative_color_grading_not_approved": true
+  },
+  "private_library_folder": "/VERBO_NO_CHAO/E01_MULTIBANK_MIXKIT_QA_20261120/S09_99890/",
+  "original_s01_visual_owner_approved_unchanged": true,
+  "s02_visual_owner_approved": false,
+  "s09_visual_owner_approved": false,
+  "person_and_property_release_verified": false,
+  "music_rights_cleared": false,
+  "master_allowed": false,
+  "publication_authorized": false,
+  "merge_authorized": false,
+  "spending_authorized": false,
+  "dated": "2026-11-20"
+}
