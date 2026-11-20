@@ -1,13 +1,7 @@
 name: Verbo no Chão — LTX-2.3 free ZeroGPU short AI motion smoke
 
 on:
-  push:
-    branches:
-      - "verbo-no-chao/e01-stock-curation-gate-v1"
-    paths:
-      - "agents/e01_ltx23_public_probe.py"
-      - "tests/test_e01_ltx23_public_probe.py"
-      - ".github/workflows/verbo-no-chao-e01-ltx23-motion.yml"
+  # P1 containment: push trigger removed (provider call); manual dispatch only.
   workflow_dispatch:
 
 permissions:

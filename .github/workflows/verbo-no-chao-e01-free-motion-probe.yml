@@ -1,12 +1,7 @@
 name: Verbo no Chão — experimental free Wan2.2 ZeroGPU motion probe
 
 on:
-  push:
-    branches:
-      - "verbo-no-chao/e01-stock-curation-gate-v1"
-    paths:
-      - "agents/e01_public_zerogpu_motion_probe.py"
-      - ".github/workflows/verbo-no-chao-e01-free-motion-probe.yml"
+  # P1 containment: push trigger removed (Wan2.2 ZeroGPU provider call); manual dispatch only.
   workflow_dispatch:
 
 permissions:
