@@ -1,0 +1,92 @@
+{
+  "schema_version": "1.0.0",
+  "project_id": "VERBO_NO_CHAO_EXCLUSIVO",
+  "episode_id": "VNC-W01-E1",
+  "qa_id": "VNC-E01-S01-S02-REAL-VOICE-SYNC-20261120-V1",
+  "scope": "FIRST_319_FRAMES_OF_E01_ONLY_NO_MASTER",
+  "approval_state": "S01_VISUAL_APPROVED_S02_CANDIDATE_NOT_APPROVED",
+  "input": {
+    "video": {
+      "sha256": "f30b1e1461412185f429bfa28c1b42a2def53b6ce8704fcc84a7ee99348f774c",
+      "frames": 319,
+      "width": 720,
+      "height": 1280,
+      "fps": 30,
+      "duration_seconds": 10.633333,
+      "audio_streams": 0,
+      "with_original_karaoke_burned": true
+    },
+    "wav": {
+      "sha256": "4f2ee1ff0171ddedb7c64e0dce2300c53a0ef105ef12d643a7af6b0a4621942e",
+      "sample_rate_hz": 24000,
+      "channels": 1,
+      "sample_format": "s16",
+      "duration_seconds": 70.425,
+      "source_actions_run": 44204100486,
+      "source_artifact_id": 14383520578
+    },
+    "ass": {
+      "sha256": "0b8171a473cbc247eb48ed822bb006a04c74510b8c4cd1b30e409c226f1bb98a",
+      "caption_dialogue_cues": 28,
+      "unchanged": true
+    }
+  },
+  "output_requirements": {
+    "mp4_audio_codec": "aac",
+    "audio_sample_rate_hz": 48000,
+    "channels": 1,
+    "aac_bitrate": "160k",
+    "fps": 30,
+    "video_frames": 319,
+    "width": 720,
+    "height": 1280,
+    "video_bitstream_copy": true,
+    "voice_start_offset_seconds": 0,
+    "voice_duration_seconds": 10.633333,
+    "must_not_add_music": true,
+    "must_not_timestretch_or_rerender_voice": true,
+    "output_must_not_overwrite_existing": true,
+    "full_decode_required": true,
+    "master_allowed": false,
+    "publication_authorized": false,
+    "rights_cleared": false,
+    "merge_authorized": false
+  },
+  "local_physical_evidence": {
+    "preview_filename": "S01_S02_REAL_KARAOKE_AND_ORIGINAL_VOICE_10S_QA_NOT_MASTER.mp4",
+    "preview_sha256": "979fcb7d630177efc99e76baa98adc0d34cf0d3a89beaf06484060c7bdd6e5f6",
+    "preview_bytes": 2264744,
+    "video_duration_seconds": 10.633333,
+    "audio_duration_seconds": 10.633,
+    "full_video_and_audio_decode_passed": true,
+    "sha256_reverified": true,
+    "audio_cross_correlation_relative_to_original_first_10s": 1,
+    "approx_audio_lag_ms": 0,
+    "audio_measurements": {
+      "integrated_loudness_lufs": -22.5,
+      "loudness_range_lu": 2.1,
+      "true_peak_dbtp": -2.3,
+      "mean_volume_dbfs": -22.8,
+      "sample_peak_dbfs": -2.5,
+      "measurement_source": "Original WAV first 10.633s, not full production mix"
+    }
+  },
+  "private_storage": {
+    "voice_wav": "/VERBO_NO_CHAO/E01_AUDIO_CANONICAL_V2/e01-v2-preview-only-SHA_VERIFIED.wav",
+    "qa_preview_folder": "/VERBO_NO_CHAO/E01_S01_S02_QA_REAL_VOICE_20261120/"
+  },
+  "status": "PHYSICALLY_VERIFIED_LOCAL_QA_NOT_OWNER_APPROVED_OR_RELEASED",
+  "limits": [
+    "S02 unapproved symbol/clock/caption overlay",
+    "V2 audio has a one-model ASR segmentation warning; not fully listening-verified",
+    "720p preview not a 1080x1920 master",
+    "No music or final loudness/compression",
+    "Individual source and voice rights not cleared"
+  ],
+  "s01_approved_only": true,
+  "s02_approved": false,
+  "rights_cleared": false,
+  "master_allowed": false,
+  "publication_authorized": false,
+  "created_at_local_date": "2026-11-20"
+}
