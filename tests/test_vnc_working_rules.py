@@ -11,7 +11,7 @@ def _j(p):
 class WorkingRulesTests(unittest.TestCase):
     def test_both_owner_rules_are_registered_with_enforcement(self):
         r = _j("contracts/vnc_working_rules_v1.json")
-        self.assertEqual([x["id"] for x in r["rules"]], ["R1", "R2"])
+        self.assertEqual([x["id"] for x in r["rules"]], ["R1", "R2", "R3"])
         for x in r["rules"]:
             for f in x["enforced_by"]:
                 self.assertTrue(Path(f).is_file(), f)
@@ -63,3 +63,11 @@ class WorkingRulesTests(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class ElevenLabsAudioOnlyRuleTests(unittest.TestCase):
+    def test_r3_registered_and_forbids_visual_generation_there(self):
+        r = _j("contracts/vnc_working_rules_v1.json")
+        r3 = [x for x in r["rules"] if x["id"] == "R3"][0]
+        self.assertIn("somente para áudio", r3["text_pt"])
+        self.assertIn("nunca são gerados nele", r3["text_pt"])

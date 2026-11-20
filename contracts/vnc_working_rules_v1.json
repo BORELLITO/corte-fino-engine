@@ -23,6 +23,15 @@
     "agents/e01_v3_clip_review.py",
     "contracts/e01_v3_clip_review_v1.json"
    ]
+  },
+  {
+   "id": "R3",
+   "name": "ELEVENLABS_AUDIO_ONLY_FREE_VISUALS",
+   "text_pt": "O ElevenLabs é usado somente para áudio (voz, trilha, efeitos). Imagens e vídeos nunca são gerados nele. Visuais saem de stock gratuito ou de geração gratuita, sem gasto. Os 7 quadros IA já gerados lá (6 imagens novas + 1 referência S01, mais 1 vídeo S01 de teste) ficam permitidos como material de partida, sem novas gerações pagas.",
+   "enforced_by": [
+    "tests/test_vnc_working_rules.py",
+    "contracts/vnc_working_rules_v1.json"
+   ]
   }
  ],
  "honesty": "A prévia mostra o que foi gerado; não substitui aprovação do usuário nem revisão de quadros reais. O que não foi visto fica NÃO VERIFICADO."
