@@ -1,0 +1,62 @@
+name: Verbo no Chão — S02 alternate dark-clock 4K physical QA (no release)
+
+on:
+  push:
+    branches:
+      - "verbo-no-chao/e01-s02-dark-clock-alt-qa-20261119-v1"
+    paths:
+      - ".github/workflows/verbo-no-chao-e01-s02-dark-clock-alt-20261119.yml"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: vnc-e01-s02-dark-clock-alt-20261119
+  cancel-in-progress: false
+
+jobs:
+  qa-only-physical-dark-clock:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Install pinned local video inspection tools only
+        run: |
+          set -euo pipefail
+          python -m pip install --disable-pip-version-check --no-cache-dir --retries 0 portable-ffmpeg==0.5.0 Pillow==11.3.0
+          python - <<'PY'
+          import os
+          from pathlib import Path
+          from portable_ffmpeg import get_ffmpeg
+          ffmpeg, ffprobe = get_ffmpeg()
+          root = Path(os.environ["RUNNER_TEMP"])/"vnc-s02-dark-clock-alt"
+          root.mkdir(parents=True, exist_ok=True)
+          for name, source in (("ffmpeg",ffmpeg),("ffprobe",ffprobe)):
+              link=root/name
+              if link.exists() or link.is_symlink():
+                  link.unlink()
+              link.symlink_to(Path(source))
+          with open(os.environ["GITHUB_PATH"],"a") as out:
+              out.write(str(root)+"\n")
+          PY
+      - name: Adversarial offline checks for scene, source, rights, preview
+        run: python -m unittest tests.test_e01_s01_owner_visual_approval_v1 tests.test_e01_s02_dark_clock_alt_qa_v1 -v
+      - name: Physical full MP4 decode, center crop proof, contact JPEG and only marked QA MP4
+        run: |
+          set -euo pipefail
+          timeout -k 5s 460s python -u -m agents.e01_s02_dark_clock_alt_qa_v1 --out artifacts/vnc_s02_dark_clock_alt
+      - name: Save no raw source; retain physical inspection evidence for one day only
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: VNC-E01-S02-DARK-CLOCK-4K-PORTRAIT-QA-NOT-APPROVED
+          path: artifacts/vnc_s02_dark_clock_alt/
+          retention-days: 1
+          if-no-files-found: warn
+
+# Exact branch/YAML one-shot. Never cron/dispatch/master/publish/merge or install paid provider.
