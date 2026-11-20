@@ -2,7 +2,7 @@ name: Verbo no Chão — Coverr discover (read-only)
 on:
   push:
     branches: ["verbo-no-chao/e01-ai-i2v-probe-20261120-v1"]
-    paths: [".github/workflows/verbo-no-chao-e01-coverr-discover.yml", "agents/e01_coverr_discover.py", "contracts/e01_coverr_inputs.json"]
+    paths: [".github/workflows/verbo-no-chao-e01-coverr-discover.yml", "agents/e01_coverr_peek.py"]
 permissions:
   contents: read
 jobs:
@@ -13,4 +13,4 @@ jobs:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
         with:
           persist-credentials: false
-      - run: python3 -m agents.e01_coverr_discover contracts/e01_coverr_inputs.json
+      - run: python3 -m agents.e01_coverr_peek
